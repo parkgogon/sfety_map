@@ -1,0 +1,3549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>대구경북환경본부 소관시설 통합 안전관리 맵</name>
+    <description/>
+    <Style id="icon-1544-AFB42B-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-2.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1544-AFB42B-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-2.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1544-AFB42B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1544-AFB42B-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1544-AFB42B-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1546-9C27B0-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-3.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1546-9C27B0-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-3.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1546-9C27B0">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1546-9C27B0-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1546-9C27B0-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1565-FF5252-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-5.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1565-FF5252-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-5.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1565-FF5252">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1565-FF5252-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1565-FF5252-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1574-C2185B-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-1.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1574-C2185B-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-1.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1574-C2185B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1574-C2185B-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1574-C2185B-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1575-01579B-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-4.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1575-01579B-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-4.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1575-01579B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1575-01579B-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1575-01579B-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1899-FF5252-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-6.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1899-FF5252-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-6.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1899-FF5252">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-FF5252-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-FF5252-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1899-FFEA00-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-7.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1899-FFEA00-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-7.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1899-FFEA00">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-FFEA00-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-FFEA00-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>대기관리1부.xlsx</name>
+      <Placemark>
+        <name>포1호 대기측정소</name>
+        <address>포항 북구 항구동 58-54 (포항대형함정부두)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3049<br>시설구분: 측정소<br>주소: 포항 북구 항구동 58-54 (포항대형함정부두)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3049.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>포항 북구 항구동 58-54 (포항대형함정부두)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>포2호 대기측정소</name>
+        <address>포항 북구 항구동 58-54 (포항대형함정부두)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3050<br>시설구분: 측정소<br>주소: 포항 북구 항구동 58-54 (포항대형함정부두)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3050.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>포항 북구 항구동 58-54 (포항대형함정부두)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>포3호 대기측정소</name>
+        <address>포항 북구 항구동 58-54 (포항대형함정부두)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3051<br>시설구분: 측정소<br>주소: 포항 북구 항구동 58-54 (포항대형함정부두)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3051.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>포항 북구 항구동 58-54 (포항대형함정부두)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>온산산단 대기측정소</name>
+        <address>울산 울준군 온산읍 당월로 118(온산수질개선사업소)　</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3054<br>시설구분: 측정소<br>주소: 울산 울준군 온산읍 당월로 118(온산수질개선사업소)　<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3054.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 울준군 온산읍 당월로 118(온산수질개선사업소)　</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>전하동 대기측정소</name>
+        <address>울산 동구 진성4길 45 (전하2동 주민센터 3층 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3055<br>시설구분: 측정소<br>주소: 울산 동구 진성4길 45 (전하2동 주민센터 3층 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3055.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 동구 진성4길 45 (전하2동 주민센터 3층 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>울1호 대기측정소</name>
+        <address>울산 남구 용잠동 60-16</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3056<br>시설구분: 측정소<br>주소: 울산 남구 용잠동 60-16<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3056.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 남구 용잠동 60-16</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>야음동 대기측정소</name>
+        <address>울산 남구 야음동 45 (야음테니스장 내)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3057<br>시설구분: 측정소<br>주소: 울산 남구 야음동 45 (야음테니스장 내)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3057.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 남구 야음동 45 (야음테니스장 내)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>여천동 대기측정소</name>
+        <address>울산 남구 부두로 9 (현대자동차 엔진공장)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3058<br>시설구분: 측정소<br>주소: 울산 남구 부두로 9 (현대자동차 엔진공장)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3058.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 남구 부두로 9 (현대자동차 엔진공장)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>신정동 대기측정소</name>
+        <address>울산 남구 봉월로 20번길 9 (신정2동 주민센터)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3059<br>시설구분: 측정소<br>주소: 울산 남구 봉월로 20번길 9 (신정2동 주민센터)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3059.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 남구 봉월로 20번길 9 (신정2동 주민센터)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>울산항 대기측정소</name>
+        <address>울산 남구 매암로 96 (5부두)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3060<br>시설구분: 측정소<br>주소: 울산 남구 매암로 96 (5부두)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3060.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>울산 남구 매암로 96 (5부두)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>당감동 대기측정소</name>
+        <address>부산 진구 가야대로703번길 13 (당감2동 71-7, 당감2동 사무소)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3061<br>시설구분: 측정소<br>주소: 부산 진구 가야대로703번길 13 (당감2동 71-7, 당감2동 사무소)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3061.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 진구 가야대로703번길 13 (당감2동 71-7, 당감2동 사무소)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부1호 대기측정소</name>
+        <address>부산 영도구 해양로 293번지</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3062<br>시설구분: 측정소<br>주소: 부산 영도구 해양로 293번지<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3062.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 영도구 해양로 293번지</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부2호 대기측정소</name>
+        <address>부산 영도구 해양로 293번지</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3063<br>시설구분: 측정소<br>주소: 부산 영도구 해양로 293번지<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3063.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 영도구 해양로 293번지</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부3호 대기측정소</name>
+        <address>부산 영도구 해양로 293번지</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3064<br>시설구분: 측정소<br>주소: 부산 영도구 해양로 293번지<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3064.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 영도구 해양로 293번지</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>연산동 대기측정소</name>
+        <address>부산 연제구 중앙대로 1001(부산시청 녹음광장 창고)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3065<br>시설구분: 측정소<br>주소: 부산 연제구 중앙대로 1001(부산시청 녹음광장 창고)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3065.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 연제구 중앙대로 1001(부산시청 녹음광장 창고)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>학장동 대기측정소</name>
+        <address>부산 사상구 대동로 205 학장초등학교 옥상　</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3066<br>시설구분: 측정소<br>주소: 부산 사상구 대동로 205 학장초등학교 옥상　<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3066.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 사상구 대동로 205 학장초등학교 옥상　</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>덕천동 대기측정소</name>
+        <address>부산 북구 만덕대로 155번길 81 (하수관로운영사무소)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3067<br>시설구분: 측정소<br>주소: 부산 북구 만덕대로 155번길 81 (하수관로운영사무소)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3067.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 북구 만덕대로 155번길 81 (하수관로운영사무소)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부산북항 대기측정소</name>
+        <address>부산 동구 충장대로 314　</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3068<br>시설구분: 측정소<br>주소: 부산 동구 충장대로 314　<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3068.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 동구 충장대로 314　</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>대연동 대기측정소</name>
+        <address>부산 남구 용소로 45 (부경대학교 2호관 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3069<br>시설구분: 측정소<br>주소: 부산 남구 용소로 45 (부경대학교 2호관 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3069.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 남구 용소로 45 (부경대학교 2호관 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부산감만 대기측정소</name>
+        <address>부산 남구 북항로 106</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3070<br>시설구분: 측정소<br>주소: 부산 남구 북항로 106<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3070.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 남구 북항로 106</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>정관면 대기측정소</name>
+        <address>부산 기장군 정관면 월평1길 21 (월평초교 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3071<br>시설구분: 측정소<br>주소: 부산 기장군 정관면 월평1길 21 (월평초교 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3071.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 기장군 정관면 월평1길 21 (월평초교 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>장전동 대기측정소</name>
+        <address>부산 금정구 부산대학로 63번길 2 (부산대학교 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3072<br>시설구분: 측정소<br>주소: 부산 금정구 부산대학로 63번길 2 (부산대학교 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3072.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 금정구 부산대학로 63번길 2 (부산대학교 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부산신항 대기측정소</name>
+        <address>부산 강서구 신항남로 416</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3073<br>시설구분: 측정소<br>주소: 부산 강서구 신항남로 416<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3073.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>부산 강서구 신항남로 416</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>지산동 대기측정소</name>
+        <address>대구 수성구 무학로 209(대구경북환경본부) 옥상</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3074<br>시설구분: 측정소<br>주소: 대구 수성구 무학로 209(대구경북환경본부) 옥상<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3074.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 수성구 무학로 209(대구경북환경본부) 옥상</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>만촌동 대기측정소</name>
+        <address>대구 수성구 동원로 84 (차량등록사업소 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3075<br>시설구분: 측정소<br>주소: 대구 수성구 동원로 84 (차량등록사업소 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3075.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 수성구 동원로 84 (차량등록사업소 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>침산동 대기측정소</name>
+        <address>대구 북구 침산남로 9길164(경상여고 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3076<br>시설구분: 측정소<br>주소: 대구 북구 침산남로 9길164(경상여고 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3076.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 북구 침산남로 9길164(경상여고 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>산격동 대기측정소</name>
+        <address>대구 북구 대학로 80 경북대학교(농대2호관5층옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3077<br>시설구분: 측정소<br>주소: 대구 북구 대학로 80 경북대학교(농대2호관5층옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3077.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 북구 대학로 80 경북대학교(농대2호관5층옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>달성산단 대기측정소</name>
+        <address>대구 달성군 논공읍 남리 471-2(달성산단 폐수종말처리장 내)　</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3078<br>시설구분: 측정소<br>주소: 대구 달성군 논공읍 남리 471-2(달성산단 폐수종말처리장 내)　<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3078.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달성군 논공읍 남리 471-2(달성산단 폐수종말처리장 내)　</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>이동차 대기측정소</name>
+        <address>대구 달서구 성서공단로40(대천로)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3079<br>시설구분: 측정소<br>주소: 대구 달서구 성서공단로40(대천로)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3079.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달서구 성서공단로40(대천로)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>대명동 대기측정소</name>
+        <address>대구 남구 성당로 30길 55 (성명초등학교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3080<br>시설구분: 측정소<br>주소: 대구 남구 성당로 30길 55 (성명초등학교)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3080.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 남구 성당로 30길 55 (성명초등학교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>포항항 대기측정소</name>
+        <address>경북 포항시 남구 신항로 99-98</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3081<br>시설구분: 측정소<br>주소: 경북 포항시 남구 신항로 99-98<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3081.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 포항시 남구 신항로 99-98</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>대송면 대기측정소</name>
+        <address>경북 포항시 남구 대송면 홍계길 19 (대송면사무소)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3082<br>시설구분: 측정소<br>주소: 경북 포항시 남구 대송면 홍계길 19 (대송면사무소)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3082.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 포항시 남구 대송면 홍계길 19 (대송면사무소)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안계면 대기측정소</name>
+        <address>경북 의성군 안계면 위양2길 9-26</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3083<br>시설구분: 측정소<br>주소: 경북 의성군 안계면 위양2길 9-26<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3083.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 의성군 안계면 위양2길 9-26</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>태하리 대기측정소</name>
+        <address>경북 울릉군 서면 태하등대길 188 (울릉도등대)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3084<br>시설구분: 측정소<br>주소: 경북 울릉군 서면 태하등대길 188 (울릉도등대)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3084.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 울릉군 서면 태하등대길 188 (울릉도등대)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>화북면 대기측정소</name>
+        <address>경북 영천시 화북면 자천리 387-1번지 (화북정수장내)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3085<br>시설구분: 측정소<br>주소: 경북 영천시 화북면 자천리 387-1번지 (화북정수장내)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3085.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 영천시 화북면 자천리 387-1번지 (화북정수장내)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>강구면 대기측정소</name>
+        <address>경북 영덕군 강구면 강구리 167 (강구대게축구장)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3086<br>시설구분: 측정소<br>주소: 경북 영덕군 강구면 강구리 167 (강구대게축구장)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3086.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 영덕군 강구면 강구리 167 (강구대게축구장)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>계림동 대기측정소</name>
+        <address>경북 상주시 냉림1길 50</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3087<br>시설구분: 측정소<br>주소: 경북 상주시 냉림1길 50<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3087.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 상주시 냉림1길 50</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>석포리 대기측정소</name>
+        <address>경북 봉화군 석포면 석포리 494-3</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3088<br>시설구분: 측정소<br>주소: 경북 봉화군 석포면 석포리 494-3<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3088.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 봉화군 석포면 석포리 494-3</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>대광동 대기측정소</name>
+        <address>경북 김천시 공단로 58(김천 환경사업소 내)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3089<br>시설구분: 측정소<br>주소: 경북 김천시 공단로 58(김천 환경사업소 내)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3089.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 김천시 공단로 58(김천 환경사업소 내)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>산동면 대기측정소</name>
+        <address>경북 구미시 산동면 첨단기업1로 17 (전자정보기술원 혁신관 3층)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3090<br>시설구분: 측정소<br>주소: 경북 구미시 산동면 첨단기업1로 17 (전자정보기술원 혁신관 3층)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3090.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 구미시 산동면 첨단기업1로 17 (전자정보기술원 혁신관 3층)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>광도면 대기측정소</name>
+        <address>경남 통영시 안정리 1022-1 (안정출장소 내)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3091<br>시설구분: 측정소<br>주소: 경남 통영시 안정리 1022-1 (안정출장소 내)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3091.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 통영시 안정리 1022-1 (안정출장소 내)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>통1호 대기측정소</name>
+        <address>경남 통영시 동호동 300-14</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3092<br>시설구분: 측정소<br>주소: 경남 통영시 동호동 300-14<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3092.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 통영시 동호동 300-14</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>통2호 대기측정소</name>
+        <address>경남 통영시 동호동 300-14</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3093<br>시설구분: 측정소<br>주소: 경남 통영시 동호동 300-14<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3093.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 통영시 동호동 300-14</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>부산항 대기측정소</name>
+        <address>경남 창원시 진해구 신항로 434(안골동)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3094<br>시설구분: 측정소<br>주소: 경남 창원시 진해구 신항로 434(안골동)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3094.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 창원시 진해구 신항로 434(안골동)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>명서동 대기측정소</name>
+        <address>경남 창원시 의창구 우곡로101번길28 (명서2동사무소)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3095<br>시설구분: 측정소<br>주소: 경남 창원시 의창구 우곡로101번길28 (명서2동사무소)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3095.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 창원시 의창구 우곡로101번길28 (명서2동사무소)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>대산면 대기측정소</name>
+        <address>경남 창원시 의창구 대산면 갈전로99번길100 (대산정수장)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3096<br>시설구분: 측정소<br>주소: 경남 창원시 의창구 대산면 갈전로99번길100 (대산정수장)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3096.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 창원시 의창구 대산면 갈전로99번길100 (대산정수장)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>마산항 대기측정소</name>
+        <address>경남 창원시 성산구 적현로 424 (귀곡동)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3097<br>시설구분: 측정소<br>주소: 경남 창원시 성산구 적현로 424 (귀곡동)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3097.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 창원시 성산구 적현로 424 (귀곡동)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>봉암동 대기측정소</name>
+        <address>경남 창원시 마산회원구 봉양로 148 (봉암동 주민센터)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3098<br>시설구분: 측정소<br>주소: 경남 창원시 마산회원구 봉양로 148 (봉암동 주민센터)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3098.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 창원시 마산회원구 봉양로 148 (봉암동 주민센터)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>평산동 대기측정소</name>
+        <address>경남 양산시 평산동 486-2 (평산동행정복지센터 옥상)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3099<br>시설구분: 측정소<br>주소: 경남 양산시 평산동 486-2 (평산동행정복지센터 옥상)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3099.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 양산시 평산동 486-2 (평산동행정복지센터 옥상)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>삼천포항 대기측정소</name>
+        <address>경남 사천시 향촌동 1292</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3100<br>시설구분: 측정소<br>주소: 경남 사천시 향촌동 1292<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3100.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 사천시 향촌동 1292</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>남상면 대기측정소</name>
+        <address>경남 거창군 남상면 인평길 36 (남상면사무소 복지회관)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3101<br>시설구분: 측정소<br>주소: 경남 거창군 남상면 인평길 36 (남상면사무소 복지회관)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3101.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 거창군 남상면 인평길 36 (남상면사무소 복지회관)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>죽도산단 대기측정소</name>
+        <address>경남 거제시 장평2로 2길 47 (장평동 거제자동기상관측소)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3102<br>시설구분: 측정소<br>주소: 경남 거제시 장평2로 2길 47 (장평동 거제자동기상관측소)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3102.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 거제시 장평2로 2길 47 (장평동 거제자동기상관측소)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>옥포항 대기측정소</name>
+        <address>경남 거제시 옥포로2길 55(옥포동)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3103<br>시설구분: 측정소<br>주소: 경남 거제시 옥포로2길 55(옥포동)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3103.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 거제시 옥포로2길 55(옥포동)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>옥포산단 대기측정소</name>
+        <address>경남 거제시 아주로 산길 55-1 (아주공설운동장)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3104<br>시설구분: 측정소<br>주소: 경남 거제시 아주로 산길 55-1 (아주공설운동장)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3104.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 거제시 아주로 산길 55-1 (아주공설운동장)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>저구리 대기측정소</name>
+        <address>경남 거제시 남부면 저구리 산116 (한려해상국립공원내)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리1부<br>시설코드: 3105<br>시설구분: 측정소<br>주소: 경남 거제시 남부면 저구리 산116 (한려해상국립공원내)<br>부서 담당자: 이상원 대리(010-4750-8870)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1574-C2185B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3105.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 거제시 남부면 저구리 산116 (한려해상국립공원내)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>이상원 대리(010-4750-8870)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>대기관리2부.xlsx</name>
+      <Placemark>
+        <name>시약제조실</name>
+        <address>대구시 수성구 무학로209</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 대기관리2부<br>시설코드: 3041<br>시설구분: 시험실<br>주소: 대구시 수성구 무학로209<br>부서 담당자: 조도연 과장(010-2693-1102)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1544-AFB42B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 대기관리2부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3041.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>시험실</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 수성구 무학로209</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>조도연 과장(010-2693-1102)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>시설사업1부.xlsx</name>
+      <Placemark>
+        <name>안동임하댐권역 공공하수처리시설 봉화센터</name>
+        <address>경북 봉화군 봉화읍 용담길30-147</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경시설관리처 시설사업1부<br>시설코드: 3033<br>시설구분: 공공하수처리시설<br>주소: 경북 봉화군 봉화읍 용담길30-147<br>부서 담당자: 류수민 주임(010-5045-7696)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1546-9C27B0</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경시설관리처 시설사업1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3033.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>공공하수처리시설</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 봉화군 봉화읍 용담길30-147</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>류수민 주임(010-5045-7696)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안동임하댐권역 공공하수처리시설 영양센터</name>
+        <address>경북 영양군 영양읍 양평길19</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경시설관리처 시설사업1부<br>시설코드: 3034<br>시설구분: 공공하수처리시설<br>주소: 경북 영양군 영양읍 양평길19<br>부서 담당자: 류수민 주임(010-5045-7696)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1546-9C27B0</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경시설관리처 시설사업1부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3034.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>공공하수처리시설</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 영양군 영양읍 양평길19</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>류수민 주임(010-5045-7696)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>유역관리부.xlsx</name>
+      <Placemark>
+        <name>낙동강하류방제비축센터</name>
+        <address>경남 김해시 대동면 초정리 58-11</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3002<br>시설구분: 기타<br>주소: 경남 김해시 대동면 초정리 58-11<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3002.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 김해시 대동면 초정리 58-11</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>소규모방제창고(예천)</name>
+        <address>경북 예천군 지보면 지풍로 1034</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3003<br>시설구분: 기타<br>주소: 경북 예천군 지보면 지풍로 1034<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3003.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 예천군 지보면 지풍로 1034</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>소규모방제창고(적포)</name>
+        <address>경남 합천군 청덕면 앙진리 544-1</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3004<br>시설구분: 기타<br>주소: 경남 합천군 청덕면 앙진리 544-1<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3004.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 합천군 청덕면 앙진리 544-1</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>소규모방제창고(달성)</name>
+        <address>대구 달성군 논공읍 남리 471-2</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3005<br>시설구분: 기타<br>주소: 대구 달성군 논공읍 남리 471-2<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3005.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달성군 논공읍 남리 471-2</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>소규모방제창고(밀양)</name>
+        <address>경남 밀양시 하남읍 수산리 130</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3006<br>시설구분: 기타<br>주소: 경남 밀양시 하남읍 수산리 130<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3006.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 밀양시 하남읍 수산리 130</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>소규모방제창고(창암)</name>
+        <address>경남 김해시 생림면 마사리 20-13</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3007<br>시설구분: 기타<br>주소: 경남 김해시 생림면 마사리 20-13<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3007.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>경남 김해시 생림면 마사리 20-13</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안동댐하류국가수질자동측정소</name>
+        <address>경북 안동시 석주로 264(상아동 산151, 영락교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3008<br>시설구분: 측정소<br>주소: 경북 안동시 석주로 264(상아동 산151, 영락교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3008.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 안동시 석주로 264(상아동 산151, 영락교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>풍양국가수질자동측정소</name>
+        <address>경북 예천군 풍양면 삼강로 1063-57(삼강리 산43-3)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3009<br>시설구분: 측정소<br>주소: 경북 예천군 풍양면 삼강로 1063-57(삼강리 산43-3)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3009.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 예천군 풍양면 삼강로 1063-57(삼강리 산43-3)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>회상국가수질자동측정소</name>
+        <address>경북 상주시 중동면 회상3길 41</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3010<br>시설구분: 측정소<br>주소: 경북 상주시 중동면 회상3길 41<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3010.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 상주시 중동면 회상3길 41</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>신암국가수질자동측정소</name>
+        <address>경북 상주시 중동면 상주다인로 392-9(신암리 176-4, 중동교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3011<br>시설구분: 측정소<br>주소: 경북 상주시 중동면 상주다인로 392-9(신암리 176-4, 중동교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3011.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 상주시 중동면 상주다인로 392-9(신암리 176-4, 중동교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>위천국가수질자동측정소</name>
+        <address>경북 상주시 중동면 우물리 366</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3012<br>시설구분: 측정소<br>주소: 경북 상주시 중동면 우물리 366<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3012.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 상주시 중동면 우물리 366</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>도개국가수질자동측정소</name>
+        <address>경북 구미시 도개면 강동로 2695(신림리 726-10, 일선교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3013<br>시설구분: 측정소<br>주소: 경북 구미시 도개면 강동로 2695(신림리 726-10, 일선교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3013.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 구미시 도개면 강동로 2695(신림리 726-10, 일선교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>감천국가수질자동측정소</name>
+        <address>경북 구미시 선산읍  어강길 201-24(원리 310-5, 남산교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3014<br>시설구분: 측정소<br>주소: 경북 구미시 선산읍  어강길 201-24(원리 310-5, 남산교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3014.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 구미시 선산읍  어강길 201-24(원리 310-5, 남산교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>해평국가수질자동측정소</name>
+        <address>경북 구미시 고아읍 봉한4안길 242(봉한리 2-5, 숭선대교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3015<br>시설구분: 측정소<br>주소: 경북 구미시 고아읍 봉한4안길 242(봉한리 2-5, 숭선대교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3015.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 구미시 고아읍 봉한4안길 242(봉한리 2-5, 숭선대교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>왜관국가수질자동측정소</name>
+        <address>경북 칠곡군 기산면 주산로 1166-39(행정리 1285-1, 제2왜관교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3016<br>시설구분: 측정소<br>주소: 경북 칠곡군 기산면 주산로 1166-39(행정리 1285-1, 제2왜관교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3016.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 칠곡군 기산면 주산로 1166-39(행정리 1285-1, 제2왜관교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>다산국가수질자동측정소</name>
+        <address>경북 고령군 다산면 월암길 131-6</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3017<br>시설구분: 측정소<br>주소: 경북 고령군 다산면 월암길 131-6<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3017.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 고령군 다산면 월암길 131-6</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>내성천국가수질자동측정소</name>
+        <address>경북 예천군 용궁면 회룡대길 2(대은리 480-1)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3018<br>시설구분: 측정소<br>주소: 경북 예천군 용궁면 회룡대길 2(대은리 480-1)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3018.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 예천군 용궁면 회룡대길 2(대은리 480-1)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>구미국가수질자동측정소</name>
+        <address>경북 칠곡군 석적읍 3공단1로 1-15(중리 726-3)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3019<br>시설구분: 측정소<br>주소: 경북 칠곡군 석적읍 3공단1로 1-15(중리 726-3)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3019.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 칠곡군 석적읍 3공단1로 1-15(중리 726-3)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>회천국가수질자동측정소</name>
+        <address>경북 고령군 우곡면 우곡로 1033-12(사촌리 899-1, 윗골교차로)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3020<br>시설구분: 측정소<br>주소: 경북 고령군 우곡면 우곡로 1033-12(사촌리 899-1, 윗골교차로)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3020.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 고령군 우곡면 우곡로 1033-12(사촌리 899-1, 윗골교차로)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>성서국가수질자동측정소</name>
+        <address>대구 달성군 화원읍 구라로 92(구라리 786-2)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3021<br>시설구분: 측정소<br>주소: 대구 달성군 화원읍 구라로 92(구라리 786-2)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3021.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달성군 화원읍 구라로 92(구라리 786-2)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>청도천국가수질자동측정소</name>
+        <address>경북 청도군 청도읍 박월길 12-27(월곡리 74, 박월교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3022<br>시설구분: 측정소<br>주소: 경북 청도군 청도읍 박월길 12-27(월곡리 74, 박월교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3022.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 청도군 청도읍 박월길 12-27(월곡리 74, 박월교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>봉화국가수질자동측정소</name>
+        <address>경북 봉화군 소천면 분철길 15-29(분천리 1146-7)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3023<br>시설구분: 측정소<br>주소: 경북 봉화군 소천면 분철길 15-29(분천리 1146-7)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3023.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 봉화군 소천면 분철길 15-29(분천리 1146-7)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>낙동강중상류방제비축센터</name>
+        <address>대구 달서구 대천동 900-1</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3001<br>시설구분: 기타<br>주소: 대구 달서구 대천동 900-1<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3001.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>기타</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달서구 대천동 900-1</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안동국가수질자동측정소</name>
+        <address>경북 안동시 풍천면 풍일로 36-22(도양리 7-2, 광덕교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3024<br>시설구분: 측정소<br>주소: 경북 안동시 풍천면 풍일로 36-22(도양리 7-2, 광덕교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3024.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 안동시 풍천면 풍일로 36-22(도양리 7-2, 광덕교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>칠곡국가수질자동측정소</name>
+        <address>경북 칠곡군 북삼읍 강변서로 666</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3025<br>시설구분: 측정소<br>주소: 경북 칠곡군 북삼읍 강변서로 666<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3025.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 칠곡군 북삼읍 강변서로 666</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>남천국가수질자동측정소</name>
+        <address>대구 수성구 고산로 277-15(매호동 122-2)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3026<br>시설구분: 측정소<br>주소: 대구 수성구 고산로 277-15(매호동 122-2)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3026.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 수성구 고산로 277-15(매호동 122-2)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>강창국가수질자동측정소</name>
+        <address>대구 달성군 다사읍 서재로 271</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3027<br>시설구분: 측정소<br>주소: 대구 달성군 다사읍 서재로 271<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3027.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>대구 달성군 다사읍 서재로 271</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>고령국가수질자동측정소</name>
+        <address>경북 고령군 성산면 성산로 1140(삼대리 112-3, 고령교)</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 유역관리부<br>시설코드: 3028<br>시설구분: 측정소<br>주소: 경북 고령군 성산면 성산로 1140(삼대리 112-3, 고령교)<br>부서 담당자: 강건호 대리(010-4429-2514)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1575-01579B</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 유역관리부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3028.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>측정소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 고령군 성산면 성산로 1140(삼대리 112-3, 고령교)</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>강건호 대리(010-4429-2514)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>자원순환사업부.xlsx</name>
+      <Placemark>
+        <name>성주폐비닐 재활용시설</name>
+        <address>경북 성주군 가천면 가천로 110-9</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3029<br>시설구분: 영농폐비닐 재활용시설<br>주소: 경북 성주군 가천면 가천로 110-9<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3029.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐비닐 재활용시설</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 성주군 가천면 가천로 110-9</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>봉화폐비닐 재활용시설</name>
+        <address>경북 봉화군 봉화읍 농업인길 94</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3030<br>시설구분: 영농폐비닐 재활용시설<br>주소: 경북 봉화군 봉화읍 농업인길 94<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3030.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐비닐 재활용시설</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 봉화군 봉화읍 농업인길 94</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>의성수거사업소</name>
+        <address>경북 의성군 의성읍 철파리 541-2</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3031<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 의성군 의성읍 철파리 541-2<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3031.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 의성군 의성읍 철파리 541-2</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>영천수거사업소</name>
+        <address>경북 영천시 대창면 대창리 910-1</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3032<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 영천시 대창면 대창리 910-1<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3032.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 영천시 대창면 대창리 910-1</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>영양수거사업소</name>
+        <address>경북 영양군 입암면 신구리 54-2</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3035<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 영양군 입암면 신구리 54-2<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3035.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 영양군 입암면 신구리 54-2</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안동수거사업소</name>
+        <address>경북 안동시 임하면 금소길 97</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3036<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 안동시 임하면 금소길 97<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3036.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 안동시 임하면 금소길 97</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>압수폐기물 보관창고</name>
+        <address>대구시 달서구 성서공단로40</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3037<br>시설구분: 압수폐기물 보관창고<br>주소: 대구시 달서구 성서공단로40<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3037.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>압수폐기물 보관창고</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 달서구 성서공단로40</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>성서청사</name>
+        <address>대구시 달서구 성서공단로40</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3039<br>시설구분: 청사<br>주소: 대구시 달서구 성서공단로40<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3039.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>청사</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 달서구 성서공단로40</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>안동폐비닐 재활용시설</name>
+        <address>경북 안동시 임하면 금소길 97</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3042<br>시설구분: 영농폐비닐 재활용시설<br>주소: 경북 안동시 임하면 금소길 97<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3042.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐비닐 재활용시설</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 안동시 임하면 금소길 97</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>포항수거사업소</name>
+        <address>경북 포항시 북구 우현동 303-3</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3043<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 포항시 북구 우현동 303-3<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3043.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 포항시 북구 우현동 303-3</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>성주수거사업소</name>
+        <address>경북 성주군 가천면 가천로 110-9</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3044<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 성주군 가천면 가천로 110-9<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3044.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 성주군 가천면 가천로 110-9</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>봉화수거사업소</name>
+        <address>경북 봉화군 봉화읍 농업인길 94</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3045<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 봉화군 봉화읍 농업인길 94<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3045.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 봉화군 봉화읍 농업인길 94</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>구미수거사업소</name>
+        <address>경북 구미시 부곡동 635</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3046<br>시설구분: 영농폐기물 수거사업소<br>주소: 경북 구미시 부곡동 635<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3046.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>영농폐기물 수거사업소</value>
+          </Data>
+          <Data name="주소">
+            <value>경북 구미시 부곡동 635</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>재활용품 비축기지</name>
+        <address>대구시 달서구 성서공단로40</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3047<br>시설구분: 재활용품 비축기지<br>주소: 대구시 달서구 성서공단로40<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3047.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>재활용품 비축기지</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 달서구 성서공단로40</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>미래폐자원 거점수거센터</name>
+        <address>대구시 달서구 성서공단로40</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 자원순환관리처 자원순환사업부<br>시설코드: 3048<br>시설구분: 미래폐자원 거점수거센터<br>주소: 대구시 달서구 성서공단로40<br>부서 담당자: 김경환 대리(010-7525-4330)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1565-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 자원순환관리처 자원순환사업부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3048.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>미래폐자원 거점수거센터</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 달서구 성서공단로40</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>김경환 대리(010-7525-4330)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>환경안전경영부.xlsx</name>
+      <Placemark>
+        <name>수성청사</name>
+        <address>대구시 수성구 무학로209</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 환경안전경영부<br>시설코드: 3038<br>시설구분: 청사<br>주소: 대구시 수성구 무학로209<br>부서 담당자: 박명곤 대리(010-2901-7721)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1899-FF5252</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 환경안전경영부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3038.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>청사</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 수성구 무학로209</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>박명곤 대리(010-2901-7721)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+      <Placemark>
+        <name>홍보관</name>
+        <address>대구시 달서구 성서공단로40</address>
+        <description><![CDATA[담당부서: 대구경북환경본부 환경서비스처 환경안전경영부<br>시설코드: 3040<br>시설구분: 홍보관<br>주소: 대구시 달서구 성서공단로40<br>부서 담당자: 박명곤 대리(010-2901-7721)<br>추가정보1: -<br>추가정보2: -<br>비고: -]]></description>
+        <styleUrl>#icon-1899-FFEA00</styleUrl>
+        <ExtendedData>
+          <Data name="담당부서">
+            <value>대구경북환경본부 환경서비스처 환경안전경영부</value>
+          </Data>
+          <Data name="시설코드">
+            <value>3040.0</value>
+          </Data>
+          <Data name="시설구분">
+            <value>홍보관</value>
+          </Data>
+          <Data name="주소">
+            <value>대구시 달서구 성서공단로40</value>
+          </Data>
+          <Data name="부서 담당자">
+            <value>박명곤 대리(010-2901-7721)</value>
+          </Data>
+          <Data name="추가정보1">
+            <value>-</value>
+          </Data>
+          <Data name="추가정보2">
+            <value>-</value>
+          </Data>
+          <Data name="비고">
+            <value>-</value>
+          </Data>
+        </ExtendedData>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>
