@@ -141,7 +141,7 @@ else:
 # 패널 1: 중앙 메인 화면 (실시간 기상특보 및 소관시설 통합 맵)
 # ------------------------------------------
 with col_map:
-    st.subheader("🗺️ 실시간 재난 특보 레이어 & 소관시설 위치")
+    st.subheader("🗺️ 실시간 특보 현황 & 소관시설 위치")
 
     # 지도 상태 관리 (줌/센터 유지)
     if "map_center" not in st.session_state:
@@ -152,48 +152,161 @@ with col_map:
     m = folium.Map(
         location=st.session_state["map_center"],
         zoom_start=st.session_state["map_zoom"],
-        tiles="CartoDB positron",
+        tiles=None,
     )
 
-    # 기상청 특보이미지 오버레이
-    wrn_img_url = kma.get_warning_image_url()
-    bounds = kma.get_image_bounds()
-
-    folium.raster_layers.ImageOverlay(
-        image=wrn_img_url,
-        bounds=bounds,
-        opacity=0.55,
-        name="KMA 기상특보 구역"
+    # 한국어 지명 타일: OpenStreetMap Korea 사용
+    folium.TileLayer(
+        tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        name="지도",
+        overlay=False,
+        control=True,
     ).add_to(m)
 
+    # ── 특보 색상 정의 (같은 계열, 경보=진하게 / 주의보=연하게) ──
+    WARNING_COLORS = {
+        "호우": {"경보": "#1565C0", "주의보": "#90CAF9"},   # 파란계열
+        "대설": {"경보": "#4527A0", "주의보": "#B39DDB"},   # 보라계열
+        "폭염": {"경보": "#D84315", "주의보": "#FFAB91"},   # 주황-빨강계열
+        "한파": {"경보": "#00695C", "주의보": "#80CBC4"},   # 청록계열
+        "강풍": {"경보": "#37474F", "주의보": "#B0BEC5"},   # 회색계열
+        "풍랑": {"경보": "#01579B", "주의보": "#81D4FA"},   # 하늘색계열
+        "태풍": {"경보": "#B71C1C", "주의보": "#EF9A9A"},   # 빨강계열
+        "건조": {"경보": "#E65100", "주의보": "#FFCC80"},   # 오렌지계열
+        "해일": {"경보": "#1A237E", "주의보": "#9FA8DA"},   # 남색계열
+        "황사": {"경보": "#F9A825", "주의보": "#FFF59D"},   # 노랑계열
+        "폭풍해일": {"경보": "#1A237E", "주의보": "#9FA8DA"},
+        "안개": {"경보": "#424242", "주의보": "#E0E0E0"},
+    }
+    DEFAULT_COLOR = {"경보": "#D32F2F", "주의보": "#FFCDD2"}
+
+    # ── 행정구역 경계 GeoJSON 로드 ──
+    @st.cache_data(show_spinner=False)
+    def load_boundary_geojson():
+        boundary_file = os.path.join(os.path.dirname(__file__), "daegu_gyeongbuk_boundaries.json")
+        if os.path.exists(boundary_file):
+            import json
+            with open(boundary_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return None
+
+    boundary_data = load_boundary_geojson()
+
+    # ── 특보 데이터 기반 행정구역 폴리곤 레이어 ──
+    active_warning_types = set()
+    warning_display = warn_df if not warn_df.empty else pd.DataFrame()
+
+    # 특보 발효 지역별 색상/투명도 매핑 생성
+    warning_region_style = {}  # { region_name: (fill_color, opacity, tooltip_text) }
+
+    if not warning_display.empty:
+        dg_warn = warning_display[warning_display['region_up'].str.contains('대구|경북|경상북도', na=False)]
+        for _, row in dg_warn.iterrows():
+            region = row['region']
+            wtype = row['type']
+            level = row['level']
+
+            color_set = WARNING_COLORS.get(wtype, DEFAULT_COLOR)
+            color = color_set.get(level, color_set.get("주의보", "#FFCDD2"))
+            opacity = 0.55 if level == "경보" else 0.35
+            active_warning_types.add((wtype, level))
+            warning_region_style[region] = (color, opacity, f"⚠️ {region} | {wtype} {level}")
+
     if sim_mode:
-        for zone in SIM_ZONES:
-            folium.Circle(
-                location=[zone["lat"], zone["lon"]],
-                radius=15000,
-                color=zone["color"],
-                fill=True,
-                fill_color=zone["color"],
-                fill_opacity=0.4,
-                tooltip=f"🚨 모의 재난 구역: {zone['region']}"
+        sim_region_map = {
+            "포항시": ("호우", "경보"), "구미시": ("강풍", "주의보"),
+            "달서구": ("폭염", "경보"), "안동시": ("태풍", "경보"),
+        }
+        for region, (wtype, level) in sim_region_map.items():
+            color_set = WARNING_COLORS.get(wtype, DEFAULT_COLOR)
+            color = color_set.get(level, "#D32F2F")
+            opacity = 0.55 if level == "경보" else 0.35
+            active_warning_types.add((wtype, level))
+            warning_region_style[region] = (color, opacity, f"🚨 모의: {region} | {wtype} {level}")
+
+    # GeoJSON 폴리곤으로 특보 구역 표시
+    if boundary_data and warning_region_style:
+        import json as _json
+        for feature in boundary_data['features']:
+            feat_name = feature['properties']['name']
+            style_info = warning_region_style.get(feat_name)
+            if style_info is None:
+                continue
+
+            fill_color, opacity, tooltip_text = style_info
+
+            # 개별 Feature를 GeoJson으로 추가
+            folium.GeoJson(
+                {"type": "FeatureCollection", "features": [feature]},
+                style_function=lambda x, fc=fill_color, op=opacity: {
+                    'fillColor': fc,
+                    'color': fc,
+                    'weight': 2,
+                    'fillOpacity': op,
+                },
+                tooltip=tooltip_text,
             ).add_to(m)
 
-    # 소관시설 마커 추가 (카테고리별 색상 부여)
-    colors = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'beige', 'darkblue', 'darkgreen', 'cadetblue', 'darkpurple', 'pink', 'lightblue', 'lightgreen', 'gray', 'black']
-    cats = facility_df['시설구분'].dropna().unique().tolist() if '시설구분' in facility_df.columns else []
-    color_map = {cat: colors[i % len(colors)] for i, cat in enumerate(cats)}
+    # ── 고정 범례 (지도 줌/패닝에 영향받지 않음) ──
+    if active_warning_types:
+        legend_items = ""
+        for wtype, level in sorted(active_warning_types, key=lambda x: (x[0], x[1])):
+            color_set = WARNING_COLORS.get(wtype, DEFAULT_COLOR)
+            color = color_set.get(level, "#FFCDD2")
+            legend_items += (
+                f'<div style="display:flex;align-items:center;margin:3px 0;">'
+                f'<span style="display:inline-block;width:14px;height:14px;'
+                f'border-radius:50%;background:{color};margin-right:6px;'
+                f'border:1px solid rgba(0,0,0,0.2);"></span>'
+                f'<span style="font-size:12px;color:#333;">{wtype} {level}</span></div>'
+            )
+        legend_html = f"""
+        <div style="
+            position: fixed;
+            bottom: 40px; left: 40px;
+            z-index: 9999;
+            background: rgba(255,255,255,0.92);
+            border-radius: 8px;
+            padding: 10px 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+            max-width: 180px;
+        ">
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#222;">⚠️ 기상 특보</div>
+            {legend_items}
+        </div>
+        """
+        m.get_root().html.add_child(folium.Element(legend_html))
+
+    # ── 소관시설 마커 (FontAwesome 아이콘) ──
+    # 시설구분별 FontAwesome 아이콘 및 색상 매핑
+    FACILITY_ICON_MAP = {
+        "측정소":           {"icon": "thermometer-half", "color": "#2196F3", "prefix": "fa"},
+        "공공하수처리시설":   {"icon": "tint",         "color": "#00897B", "prefix": "fa"},
+        "시험실":           {"icon": "flask",          "color": "#7B1FA2", "prefix": "fa"},
+        "청사":             {"icon": "building",       "color": "#455A64", "prefix": "fa"},
+        "홍보관":           {"icon": "bullhorn",       "color": "#F57C00", "prefix": "fa"},
+        "영농폐비닐 재활용시설": {"icon": "recycle",    "color": "#388E3C", "prefix": "fa"},
+        "재활용품 비축기지":  {"icon": "cubes",         "color": "#5D4037", "prefix": "fa"},
+        "영농폐기물 수거사업소": {"icon": "truck",      "color": "#6D4C41", "prefix": "fa"},
+        "미래폐자원 거점수거센터": {"icon": "dot-circle-o", "color": "#00695C", "prefix": "fa"},
+        "압수폐기물 보관창고": {"icon": "archive",      "color": "#795548", "prefix": "fa"},
+        "기타":             {"icon": "map-marker",     "color": "#757575", "prefix": "fa"},
+    }
+    DEFAULT_FACILITY_ICON = {"icon": "map-marker", "color": "#9E9E9E", "prefix": "fa"}
 
     for idx, row in filtered_facility_df.iterrows():
         cat = row.get('시설구분', '')
-        color = color_map.get(cat, 'blue')
+        icon_info = FACILITY_ICON_MAP.get(cat, DEFAULT_FACILITY_ICON)
         dept = row.get('담당부서', '-')
         manager = row.get('부서 담당자', '-')
         code = row.get('시설코드', '-')
         note = row.get('비고', '-')
 
         popup_html = f"""
-        <div style="font-family: Arial, sans-serif; font-size:13px; line-height:1.6; min-width: 250px;">
-            <h4 style="margin:0; color:#1f77b4;">{row['name']}</h4>
+        <div style="font-family: 'Noto Sans KR', Arial, sans-serif; font-size:13px; line-height:1.6; min-width: 250px;">
+            <h4 style="margin:0; color:#1565C0;">{row['name']}</h4>
             <hr style="margin:5px 0;">
             <b>시설구분:</b> {cat}<br>
             <b>담당부서:</b> {dept}<br>
@@ -208,7 +321,12 @@ with col_map:
             location=[row['latitude'], row['longitude']],
             popup=folium.Popup(popup_html, max_width=300),
             tooltip=f"{row['name']} ({cat})",
-            icon=folium.Icon(color=color, icon='info-sign')
+            icon=folium.Icon(
+                color='white',
+                icon_color=icon_info["color"],
+                icon=icon_info["icon"],
+                prefix=icon_info["prefix"],
+            )
         ).add_to(m)
 
     # ★ 핵심 수정: returned_objects=[]로 지도 이벤트가 Streamlit rerun을 유발하지 않도록 차단
