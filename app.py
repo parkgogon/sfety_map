@@ -232,28 +232,48 @@ MAP_HEIGHT = 650
 
 st.markdown(f"""
     <style>
-        /* ── 메인 레이아웃: iframe(지도)이 있는 블록만 타겟 ── */
-        /* 부모 블록: 지도 iframe을 가진 stColumn의 부모 → flex-start */
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] iframe) {{
-            align-items: flex-start !important;
+        /* ── 메인 레이아웃: 미디어 쿼리로 반응형 처리 ── */
+        
+        /* [PC 모드] 가로 768px 이상 */
+        @media (min-width: 768px) {{
+            /* 부모 블록: flex-start 적용 (자식 sticky를 위해 필요) */
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] iframe) {{
+                align-items: flex-start !important;
+            }}
+            /* 좌측: 지도(iframe)를 가진 stColumn → sticky 고정 */
+            div[data-testid="stColumn"]:has(iframe) {{
+                position: sticky !important;
+                top: 60px !important;
+                align-self: flex-start !important;
+                z-index: 10;
+            }}
+            /* 우측: 지도 옆의 패널 컬럼 → 고정 높이 + 내부 스크롤 */
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] iframe) > div[data-testid="stColumn"]:not(:has(iframe)) {{
+                max-height: {MAP_HEIGHT}px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 8px;
+                background: #fafbfc;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            }}
         }}
-        /* 좌측: 지도(iframe)를 가진 stColumn → sticky */
-        div[data-testid="stColumn"]:has(iframe) {{
-            position: sticky !important;
-            top: 60px !important;
-            align-self: flex-start !important;
-            z-index: 10;
-        }}
-        /* 우측: 지도 컬럼 바로 옆 형제 → 고정 높이 + 내부 스크롤 */
-        div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] iframe) > div[data-testid="stColumn"]:not(:has(iframe)) {{
-            max-height: {MAP_HEIGHT}px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 8px;
-            background: #fafbfc;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        
+        /* [모바일 모드] 가로 767px 이하 */
+        @media (max-width: 767px) {{
+            /* 모바일에서는 지도 높이를 축소 */
+            div[data-testid="stColumn"]:has(iframe) iframe {{
+                height: 400px !important;
+            }}
+            /* 우측 패널 디자인은 유지하되 스크롤 제한 해제 */
+            div[data-testid="stHorizontalBlock"]:has(> div[data-testid="stColumn"] iframe) > div[data-testid="stColumn"]:not(:has(iframe)) {{
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 8px;
+                background: #fafbfc;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            }}
         }}
         /* 탭 헤더 sticky (우측 패널 내부에서) */
         div[data-testid="stTabs"] > div[role="tablist"] {{
