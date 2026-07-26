@@ -4,6 +4,8 @@ import datetime
 import os
 import math
 
+import telegram_utils
+
 import folium
 from streamlit_folium import st_folium
 
@@ -543,6 +545,60 @@ with col_panel:
             if target_indices:
                 target_df = filtered_facility_df.loc[target_indices][['name', '시설구분', '부서 담당자', 'address']]
                 st.error(f"🚨 총 {len(target_df)}개의 선제 점검 대상 시설")
+
+                # --- 텔레그램 알림 발송 로직 ---
+                if st.button("🚨 위험 시설 텔레그램 알림 발송", use_container_width=True, type="primary"):
+                    try:
+                        bot_token = st.secrets["telegram"]["bot_token"]
+                        chat_id = st.secrets["telegram"]["chat_id"]
+                        
+                        # 특보별로 시설 매핑
+                        warning_to_facilities = {}
+                        for _, w_row in dg_df.iterrows():
+                            # w_row['type'] (예: 폭염), w_row['level'] (예: 경보)
+                            w_type = f"{w_row.get('type', '')}{w_row.get('level', '')}"
+                            if not w_type:
+                                w_type = "기타특보"
+                                
+                            reg_keyword = str(w_row['region']).replace("시", "").replace("군", "").replace("구", "")
+                            
+                            for _, f_row in target_df.iterrows():
+                                if reg_keyword in str(f_row['address']):
+                                    if w_type not in warning_to_facilities:
+                                        warning_to_facilities[w_type] = []
+                                    warning_to_facilities[w_type].append(f_row)
+                        
+                        msg = "⚠️ <b>[긴급 점검 요망]</b>\n"
+                        
+                        for w_type, facilities in warning_to_facilities.items():
+                            # 중복 시설 제거 (같은 특보가 인접 지역에 겹쳐서 조회된 경우)
+                            unique_facilities = {f['name']: f for f in facilities}.values()
+                            msg += f" - <b>{w_type}</b>\n"
+                            
+                            # 시설 구분별로 그룹핑
+                            cat_to_names = {}
+                            for f in unique_facilities:
+                                cat = f['시설구분']
+                                if cat not in cat_to_names:
+                                    cat_to_names[cat] = []
+                                cat_to_names[cat].append(f['name'])
+                            
+                            for cat, names in cat_to_names.items():
+                                names_str = ", ".join(names)
+                                msg += f"  - {cat}: {names_str}\n"
+                                
+                        msg += "\n대시보드를 확인하고 현장 안전 점검을 실시해주시기 바랍니다."
+                        
+                        success, res_msg = telegram_utils.send_telegram_alert(bot_token, chat_id, msg)
+                        if success:
+                            st.success("✅ 텔레그램 알림이 발송되었습니다.")
+                        else:
+                            st.error(f"❌ 발송 실패: {res_msg}")
+                    except Exception as e:
+                        import traceback
+                        st.error(f"❌ 알림 발송 중 오류가 발생했습니다.")
+                        st.code(traceback.format_exc())
+                # -----------------------------
 
                 table_html = '<table class="inspection-table"><thead><tr>'
                 for h in ['시설명', '시설구분', '담당자', '주소']:
