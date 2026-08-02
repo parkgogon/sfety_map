@@ -343,22 +343,41 @@ with col_map:
         name="지도", overlay=False, control=True,
     ).add_to(m)
 
-    # ── 특보 색상 ──
+    # ── 특보 색상 및 스마트 Fallback ──
     WARNING_COLORS = {
-        "호우": {"경보": "#1565C0", "주의보": "#90CAF9"},
-        "대설": {"경보": "#4527A0", "주의보": "#B39DDB"},
+        # 열/건조 (Red/Orange)
         "폭염": {"경보": "#D84315", "주의보": "#FFAB91"},
-        "한파": {"경보": "#00695C", "주의보": "#80CBC4"},
-        "강풍": {"경보": "#37474F", "주의보": "#B0BEC5"},
-        "풍랑": {"경보": "#01579B", "주의보": "#81D4FA"},
-        "태풍": {"경보": "#B71C1C", "주의보": "#EF9A9A"},
-        "건조": {"경보": "#E65100", "주의보": "#FFCC80"},
-        "해일": {"경보": "#1A237E", "주의보": "#9FA8DA"},
-        "황사": {"경보": "#F9A825", "주의보": "#FFF59D"},
-        "폭풍해일": {"경보": "#1A237E", "주의보": "#9FA8DA"},
-        "안개": {"경보": "#424242", "주의보": "#E0E0E0"},
+        "열대야": {"경보": "#E65100", "주의보": "#FFCC80"},
+        "건조": {"경보": "#BF360C", "주의보": "#FF8A65"},
+        # 물/바람 (Blue)
+        "호우": {"경보": "#1565C0", "주의보": "#90CAF9"},
+        "태풍": {"경보": "#0D47A1", "주의보": "#64B5F6"},
+        "강풍": {"경보": "#00838F", "주의보": "#80DEEA"},
+        "풍랑": {"경보": "#00695C", "주의보": "#80CBC4"},
+        # 추위 (Purple/Indigo)
+        "대설": {"경보": "#4527A0", "주의보": "#B39DDB"},
+        "한파": {"경보": "#283593", "주의보": "#9FA8DA"},
+        # 특수 (Magenta, Yellow-Green, Dark Grey)
+        "해일": {"경보": "#C2185B", "주의보": "#F48FB1"},
+        "폭풍해일": {"경보": "#880E4F", "주의보": "#F06292"},
+        "지진해일": {"경보": "#4A148C", "주의보": "#CE93D8"},
+        "황사": {"경보": "#AFB42B", "주의보": "#E6EE9C"},
+        "안개": {"경보": "#424242", "주의보": "#BDBDBD"},
     }
-    DEFAULT_COLOR = {"경보": "#D32F2F", "주의보": "#FFCDD2"}
+
+    def get_warning_style(wtype, level):
+        """특보 종류와 단계 문자열을 기반으로 동적 색상과 투명도를 반환합니다."""
+        colors = WARNING_COLORS.get(wtype, {"경보": "#D32F2F", "주의보": "#FFCDD2"})
+        
+        # 키워드 기반 스마트 Fallback
+        if any(k in level for k in ["중대", "심각", "경계"]):
+            return colors.get("경보", "#D32F2F"), 0.65  # 가장 진하고 불투명하게
+        elif "경보" in level:
+            return colors.get("경보", "#D32F2F"), 0.55
+        elif "주의" in level:
+            return colors.get("주의보", "#FFCDD2"), 0.35
+        else:
+            return colors.get("주의보", "#FFCDD2"), 0.35  # 기본값
 
     # ── GeoJSON 로드 ──
     @st.cache_data(show_spinner=False)
@@ -380,17 +399,13 @@ with col_map:
         dg_warn_map = warn_df[warn_df['region_up'].str.contains('대구|경북|경상북도', na=False)]
         for _, row in dg_warn_map.iterrows():
             region, wtype, level = row['region'], row['type'], row['level']
-            color_set = WARNING_COLORS.get(wtype, DEFAULT_COLOR)
-            color = color_set.get(level, color_set.get("주의보", "#FFCDD2"))
-            opacity = 0.55 if level == "경보" else 0.35
+            color, opacity = get_warning_style(wtype, level)
             active_warning_types.add((wtype, level))
             warning_region_style[region] = (color, opacity, f"⚠️ {region} | {wtype} {level}")
 
     if sim_mode:
         for region, (wtype, level) in {"포항시": ("호우", "경보"), "구미시": ("강풍", "주의보"), "달서구": ("폭염", "경보"), "안동시": ("태풍", "경보")}.items():
-            color_set = WARNING_COLORS.get(wtype, DEFAULT_COLOR)
-            color = color_set.get(level, "#D32F2F")
-            opacity = 0.55 if level == "경보" else 0.35
+            color, opacity = get_warning_style(wtype, level)
             active_warning_types.add((wtype, level))
             warning_region_style[region] = (color, opacity, f"🚨 모의: {region} | {wtype} {level}")
 
@@ -413,7 +428,7 @@ with col_map:
     if active_warning_types:
         legend_items = ""
         for wtype, level in sorted(active_warning_types):
-            c = WARNING_COLORS.get(wtype, DEFAULT_COLOR).get(level, "#FFCDD2")
+            c, _ = get_warning_style(wtype, level)
             legend_items += (
                 f'<div style="display:flex;align-items:center;margin:3px 0;">'
                 f'<span style="width:14px;height:14px;border-radius:50%;background:{c};'
@@ -449,20 +464,8 @@ with col_map:
     for _, row in filtered_facility_df.iterrows():
         cat = row.get('시설구분', '')
         facility_name = str(row.get('name', ''))
-        # 측정소의 경우 이름으로 대기/수질 구분
-        if cat == '측정소':
-            if '대기' in facility_name:
-                ic = FACILITY_ICON_MAP['대기측정소']
-                display_cat = '대기측정소'
-            elif '수질' in facility_name:
-                ic = FACILITY_ICON_MAP['수질측정소']
-                display_cat = '수질측정소'
-            else:
-                ic = FACILITY_ICON_MAP['측정소']
-                display_cat = '측정소'
-        else:
-            ic = FACILITY_ICON_MAP.get(cat, DEFAULT_ICON)
-            display_cat = cat
+        ic = FACILITY_ICON_MAP.get(cat, DEFAULT_ICON)
+        display_cat = cat
         popup_html = f"""<div style="font-family:'Noto Sans KR',sans-serif;font-size:13px;min-width:200px;">
             <b style="color:#1565C0;">{facility_name}</b><hr style="margin:4px 0;">
             시설구분: {display_cat}<br>담당: {row.get('부서 담당자','-')}<br>
@@ -571,9 +574,9 @@ with col_panel:
                         msg = "⚠️ <b>[긴급 점검 요망]</b>\n"
                         
                         for w_type, facilities in warning_to_facilities.items():
-                            # 중복 시설 제거 (같은 특보가 인접 지역에 겹쳐서 조회된 경우)
+                            # 중복 시설 제거
                             unique_facilities = {f['name']: f for f in facilities}.values()
-                            msg += f" - <b>{w_type}</b>\n"
+                            msg += f"\n🚨 <b>{w_type}</b> (총 {len(unique_facilities)}개)\n"
                             
                             # 시설 구분별로 그룹핑
                             cat_to_names = {}
@@ -584,8 +587,9 @@ with col_panel:
                                 cat_to_names[cat].append(f['name'])
                             
                             for cat, names in cat_to_names.items():
-                                names_str = ", ".join(names)
-                                msg += f"  - {cat}: {names_str}\n"
+                                msg += f" 📍 <b>{cat}</b> ({len(names)}개)\n"
+                                for name in names:
+                                    msg += f"   • {name}\n"
                                 
                         msg += "\n대시보드를 확인하고 현장 안전 점검을 실시해주시기 바랍니다."
                         

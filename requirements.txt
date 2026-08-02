@@ -1,7 +1,7 @@
-streamlit
-pandas
-folium
-streamlit-folium
-fpdf2
-fonttools
-requests
+streamlit==1.60.0
+pandas==3.0.3
+folium==0.20.0
+streamlit-folium==0.27.3
+fpdf2==2.8.7
+fonttools==4.63.0
+requests==2.34.2

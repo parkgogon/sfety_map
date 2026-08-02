@@ -2,4 +2,4 @@
 trigger: always_on
 ---
 
-a7c780dkQDC3O_NHZOAwuw
+YOUR_KMA_API_KEY

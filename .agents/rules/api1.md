@@ -16,7 +16,7 @@ trigger: always_on
 
 #### 1.1 단기 예보구역
 
-[https://apihub.kma.go.kr/api/typ01/url/fct_shrt_reg.php?tmfc=0&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/fct_shrt_reg.php?tmfc=0&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/fct_shrt_reg.php?tmfc=0&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/fct_shrt_reg.php?tmfc=0&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -54,7 +54,7 @@ trigger: always_on
 
 #### 1.2 단기 개황, disp=1(JSON)
 
-[https://apihub.kma.go.kr/api/typ01/url/fct_afs_ds.php?stn=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/fct_afs_ds.php?stn=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/fct_afs_ds.php?stn=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/fct_afs_ds.php?stn=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -92,7 +92,7 @@ trigger: always_on
 
 #### 1.3 단기 육상예보
 
-[https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -128,7 +128,7 @@ trigger: always_on
 |ST|강수확률(%)|SKY|하늘상태코드 (DB01(맑음),DB02(구름조금),DB03(구름많음),DB04(흐림))|
 |PREP|강수유무코드 (1(비),2(비/눈),4(눈/비),3(눈))|WF|예보|
 
-[https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl2.php?reg=&tmfc1=2020052505&tmfc2=2020052517&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl2.php?reg=&tmfc1=2020052505&tmfc2=2020052517&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl2.php?reg=&tmfc1=2020052505&tmfc2=2020052517&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/fct_afs_dl2.php?reg=&tmfc1=2020052505&tmfc2=2020052517&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -166,7 +166,7 @@ trigger: always_on
 
 #### 1.5 단기 해상예보
 
-[https://apihub.kma.go.kr/api/typ01/url/fct_afs_do.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/fct_afs_do.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/fct_afs_do.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/fct_afs_do.php?reg=&tmfc1=2013121106&tmfc2=2013121118&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -212,7 +212,7 @@ trigger: always_on
 
 #### 2.1 단기예보
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_shrt_grd?tmfc=2024022505&tmef=2024022506&vars=TMP&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_shrt_grd?tmfc=2024022505&tmef=2024022506&vars=TMP&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_shrt_grd?tmfc=2024022505&tmef=2024022506&vars=TMP&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_shrt_grd?tmfc=2024022505&tmef=2024022506&vars=TMP&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -226,7 +226,7 @@ trigger: always_on
 
 #### 2.2 초단기예보
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_vsrt_grd?tmfc=202403011010&tmef=2024030111&vars=T1H&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_vsrt_grd?tmfc=202403011010&tmef=2024030111&vars=T1H&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_vsrt_grd?tmfc=202403011010&tmef=2024030111&vars=T1H&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_vsrt_grd?tmfc=202403011010&tmef=2024030111&vars=T1H&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -240,7 +240,7 @@ trigger: always_on
 
 #### 2.3 실황
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_odam_grd?tmfc=202403051010&vars=T1H&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_odam_grd?tmfc=202403051010&vars=T1H&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_odam_grd?tmfc=202403051010&vars=T1H&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_odam_grd?tmfc=202403051010&vars=T1H&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -253,11 +253,11 @@ trigger: always_on
 
 #### 2.4.1 동네예보 격자 번호 → 위·경도 변환
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?x=60&y=127&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?x=60&y=127&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?x=60&y=127&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?x=60&y=127&help=1&authKey=YOUR_KMA_API_KEY)
 
 #### 2.4.2 임의 위·경도 → 인근 동네예보 격자 번호 변환
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?lon=127.5&lat=36.5&help=0&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?lon=127.5&lat=36.5&help=0&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?lon=127.5&lat=36.5&help=0&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat?lon=127.5&lat=36.5&help=0&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 

@@ -39,5 +39,8 @@ def send_telegram_alert(token: str, chat_id: str, text: str) -> tuple[bool, str]
             return False, f"API 에러: {data.get('description', '알 수 없는 에러')}"
             
     except requests.exceptions.RequestException as e:
-        logging.error(f"Telegram API request failed: {e}")
-        return False, f"네트워크 또는 API 요청 오류: {e}"
+        logging.error(
+            "Telegram API request failed (%s)",
+            type(e).__name__,
+        )
+        return False, "텔레그램 네트워크 또는 API 요청 오류가 발생했습니다."

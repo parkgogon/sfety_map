@@ -11,7 +11,7 @@ trigger: always_on
 
 #### 3.1 기상개황조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getWthrSituation?pageNo=1&numOfRows=10&dataType=XML&stnId=108&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getWthrSituation?pageNo=1&numOfRows=10&dataType=XML&stnId=108&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getWthrSituation?pageNo=1&numOfRows=10&dataType=XML&stnId=108&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getWthrSituation?pageNo=1&numOfRows=10&dataType=XML&stnId=108&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -38,7 +38,7 @@ trigger: always_on
 
 #### 3.2 육상예보조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML®Id=11A00101&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML&regId=11A00101&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML®Id=11A00101&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getLandFcst?pageNo=1&numOfRows=10&dataType=XML&regId=11A00101&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -68,7 +68,7 @@ trigger: always_on
 
 #### 3.3 해상예보조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getSeaFcst?pageNo=1&numOfRows=10&dataType=XML®Id=12A20100&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getSeaFcst?pageNo=1&numOfRows=10&dataType=XML&regId=12A20100&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getSeaFcst?pageNo=1&numOfRows=10&dataType=XML®Id=12A20100&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstMsgService/getSeaFcst?pageNo=1&numOfRows=10&dataType=XML&regId=12A20100&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -105,7 +105,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 4.1 초단기실황조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0600&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0600&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0600&nx=55&ny=127&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0600&nx=55&ny=127&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -135,7 +135,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 4.2 초단기예보조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0630&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0630&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0630&nx=55&ny=127&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0630&nx=55&ny=127&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -166,7 +166,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 4.3 단기예보조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0500&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0500&nx=55&ny=127&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0500&nx=55&ny=127&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst?pageNo=1&numOfRows=1000&dataType=XML&base_date=20210628&base_time=0500&nx=55&ny=127&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -197,7 +197,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 4.4 예보버전조회
 
-[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getFcstVersion?pageNo=1&numOfRows=1000&dataType=XML&ftype=ODAM&basedatetime=202106280800&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getFcstVersion?pageNo=1&numOfRows=1000&dataType=XML&ftype=ODAM&basedatetime=202106280800&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getFcstVersion?pageNo=1&numOfRows=1000&dataType=XML&ftype=ODAM&basedatetime=202106280800&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getFcstVersion?pageNo=1&numOfRows=1000&dataType=XML&ftype=ODAM&basedatetime=202106280800&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -223,7 +223,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 ### 5. (그래픽) 동네예보 분포도
 
-[https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_shrt_ana_5d_test?data0=GEMD&data1=PTY&tm_ef=202212260000&tm_fc=202212221400&dtm=H0&map=G1&mask=M&color=E&size=600&effect=NTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&interval=1&rand=1412&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_shrt_ana_5d_test?data0=GEMD&data1=PTY&tm_ef=202212260000&tm_fc=202212221400&dtm=H0&map=G1&mask=M&color=E&size=600&effect=NTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&interval=1&rand=1412&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_shrt_ana_5d_test?data0=GEMD&data1=PTY&tm_ef=202212260000&tm_fc=202212221400&dtm=H0&map=G1&mask=M&color=E&size=600&effect=NTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&interval=1&rand=1412&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_shrt_ana_5d_test?data0=GEMD&data1=PTY&tm_ef=202212260000&tm_fc=202212221400&dtm=H0&map=G1&mask=M&color=E&size=600&effect=NTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&interval=1&rand=1412&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -250,7 +250,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 ### 6. (그래픽) 초단기예보 분포도
 
-[https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_vsrt_ana2?data0=GEMD&tm_fc=202212221420&data1=SKY&tm_ef=202212221500&dtm=H0&map=G1&mask=M&color=E&size=600&effect=GTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&rand=2937&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_vsrt_ana2?data0=GEMD&tm_fc=202212221420&data1=SKY&tm_ef=202212221500&dtm=H0&map=G1&mask=M&color=E&size=600&effect=GTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&rand=2937&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_vsrt_ana2?data0=GEMD&tm_fc=202212221420&data1=SKY&tm_ef=202212221500&dtm=H0&map=G1&mask=M&color=E&size=600&effect=GTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&rand=2937&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ03/cgi/dfs/nph-dfs_vsrt_ana2?data0=GEMD&tm_fc=202212221420&data1=SKY&tm_ef=202212221500&dtm=H0&map=G1&mask=M&color=E&size=600&effect=GTL&overlay=S&zoom_rate=2&zoom_level=0&zoom_x=0000000&zoom_y=0000000&auto_man=m&mode=I&rand=2937&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -277,7 +277,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 7.1 동네예보 격자데이터 위경도 조회
 
-[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_latlon_api?fct=SHRT&latlon=lon&disp=A&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_latlon_api?fct=SHRT&latlon=lon&disp=A&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_latlon_api?fct=SHRT&latlon=lon&disp=A&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_latlon_api?fct=SHRT&latlon=lon&disp=A&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -298,7 +298,7 @@ API 활용가이드 [참고자료](https://apihub.kma.go.kr/getAttachFile.do?fil
 
 #### 7.2 동네예보 격자데이터 위경도 파일(NetCDF) 다운로드
 
-[https://apihub.kma.go.kr/api/typ01/url/dfs_latlon_file_down.php?fct=SHRT&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/dfs_latlon_file_down.php?fct=SHRT&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/dfs_latlon_file_down.php?fct=SHRT&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/dfs_latlon_file_down.php?fct=SHRT&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 

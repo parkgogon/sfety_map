@@ -10,6 +10,7 @@
 
 import datetime
 import math
+import os
 from typing import Dict, Optional, Tuple
 
 import pandas as pd
@@ -18,11 +19,38 @@ import streamlit as st
 
 from data_providers import BaseWarningProvider
 
-API_KEY = "a7c780dkQDC3O_NHZOAwuw"
-
 # 기본 기준 좌표 (대구·경북 중심부)
 CENTER_LAT = 36.0
 CENTER_LON = 128.5
+
+
+def get_kma_api_key() -> str:
+    """환경변수 또는 Streamlit secrets에서 KMA API 키를 읽습니다."""
+
+    env_key = os.getenv("KMA_API_KEY", "").strip()
+    if env_key:
+        return env_key
+
+    try:
+        return str(st.secrets["kma"]["api_key"]).strip()
+    except (KeyError, TypeError, FileNotFoundError):
+        return ""
+
+
+def _warning_frame(
+    warnings: list[dict],
+    *,
+    status: str,
+    message: str = "",
+) -> pd.DataFrame:
+    df = pd.DataFrame(
+        warnings,
+        columns=["region_up", "region", "type", "level", "source"],
+    )
+    df.attrs["fetch_status"] = status
+    df.attrs["fetch_message"] = message
+    df.attrs["fetched_at"] = datetime.datetime.now().isoformat(timespec="seconds")
+    return df
 
 
 class KMAProvider(BaseWarningProvider):
@@ -37,16 +65,29 @@ class KMAProvider(BaseWarningProvider):
     @st.cache_data(ttl=600)  # 10분마다 갱신
     def _fetch_warnings() -> pd.DataFrame:
         """기상청 특보현황 조회(wrn_now_data_new.php) - 전국 기준"""
+        api_key = get_kma_api_key()
+        if not api_key:
+            return _warning_frame(
+                [],
+                status="error",
+                message="KMA API 키가 설정되지 않았습니다.",
+            )
+
         now = datetime.datetime.now()
         tm = now.strftime("%Y%m%d%H%M")
-        url = (
-            f"https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php"
-            f"?fe=f&tm={tm}&disp=0&help=0&authKey={API_KEY}"
-        )
+        url = "https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php"
+        params = {
+            "fe": "f",
+            "tm": tm,
+            "disp": "0",
+            "help": "0",
+            "authKey": api_key,
+        }
 
         warnings = []
         try:
-            resp = requests.get(url, timeout=5)
+            resp = requests.get(url, params=params, timeout=7)
+            resp.raise_for_status()
             lines = resp.text.split("\n")
             for line in lines:
                 if not line.startswith("#") and "=" in line:
@@ -61,17 +102,20 @@ class KMAProvider(BaseWarningProvider):
                                 "source": "기상청",
                             }
                         )
-        except Exception:
-            pass
-        return pd.DataFrame(
-            warnings,
-            columns=["region_up", "region", "type", "level", "source"],
-        )
+        except (requests.RequestException, ValueError) as exc:
+            return _warning_frame(
+                [],
+                status="error",
+                message=f"기상청 특보 조회 실패: {type(exc).__name__}",
+            )
+        return _warning_frame(warnings, status="ok")
 
     def get_warnings(self, region_filter: Optional[str] = None) -> pd.DataFrame:
         df = self._fetch_warnings()
+        attrs = dict(df.attrs)
         if region_filter and not df.empty:
             df = df[df["region_up"].str.contains(region_filter, na=False)]
+            df.attrs.update(attrs)
         return df
 
     # ──────────────────────────────────────────────
@@ -81,12 +125,15 @@ class KMAProvider(BaseWarningProvider):
     @st.cache_data(ttl=3600)
     def get_grid_coordinates(lon: float, lat: float) -> Tuple[str, str]:
         """위경도를 기상청 동네예보 격자로 변환"""
-        url = (
-            f"https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat"
-            f"?lon={lon}&lat={lat}&help=0&authKey={API_KEY}"
-        )
+        api_key = get_kma_api_key()
+        if not api_key:
+            return "87", "93"
+
+        url = "https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat"
+        params = {"lon": lon, "lat": lat, "help": "0", "authKey": api_key}
         try:
-            resp = requests.get(url, timeout=5)
+            resp = requests.get(url, params=params, timeout=7)
+            resp.raise_for_status()
             for line in resp.text.split("\n"):
                 if not line.startswith("#") and line.strip():
                     parts = [p.strip() for p in line.split(",")]
@@ -99,6 +146,7 @@ class KMAProvider(BaseWarningProvider):
     @staticmethod
     def fetch_ultra_short_weather(nx: str, ny: str) -> Dict[str, str]:
         """초단기 실황조회 (특정 위치 기상 상태 파악)"""
+        api_key = get_kma_api_key()
         now = datetime.datetime.now()
         if now.minute < 30:
             now = now - datetime.timedelta(hours=1)
@@ -107,21 +155,33 @@ class KMAProvider(BaseWarningProvider):
         base_time = now.strftime("%H00")
 
         url = (
-            f"https://apihub.kma.go.kr/api/typ02/openApi/"
-            f"VilageFcstInfoService_2.0/getUltraSrtNcst"
-            f"?pageNo=1&numOfRows=10&dataType=JSON"
-            f"&base_date={base_date}&base_time={base_time}"
-            f"&nx={nx}&ny={ny}&authKey={API_KEY}"
+            "https://apihub.kma.go.kr/api/typ02/openApi/"
+            "VilageFcstInfoService_2.0/getUltraSrtNcst"
         )
+        params = {
+            "pageNo": 1,
+            "numOfRows": 10,
+            "dataType": "JSON",
+            "base_date": base_date,
+            "base_time": base_time,
+            "nx": nx,
+            "ny": ny,
+            "authKey": api_key,
+        }
 
         weather_data = {
             "기온(℃)": "-",
             "1시간강수량(mm)": "-",
             "풍향(deg)": "-",
             "풍속(m/s)": "-",
+            "_status": "error" if not api_key else "ok",
         }
+        if not api_key:
+            return weather_data
+
         try:
-            resp = requests.get(url, timeout=5)
+            resp = requests.get(url, params=params, timeout=7)
+            resp.raise_for_status()
             if resp.status_code == 200:
                 items = (
                     resp.json()
@@ -141,8 +201,8 @@ class KMAProvider(BaseWarningProvider):
                         weather_data["풍향(deg)"] = val
                     elif cat == "WSD":
                         weather_data["풍속(m/s)"] = val
-        except Exception:
-            pass
+        except (requests.RequestException, ValueError):
+            weather_data["_status"] = "error"
         return weather_data
 
     def get_weather_at(self, lat: float, lon: float) -> Dict[str, str]:
@@ -161,11 +221,12 @@ class KMAProvider(BaseWarningProvider):
     ) -> str:
         """기상청 임의지역 특보이미지 URL 생성"""
         now_tm = datetime.datetime.now().strftime("%Y%m%d%H%M")
+        api_key = get_kma_api_key()
         return (
             f"https://apihub.kma.go.kr/api/typ03/cgi/wrn/nph-wrn7"
             f"?out=0&tmef=1&city=1&name=0&tm={now_tm}"
             f"&lon={center_lon}&lat={center_lat}&range={range_km}&size={size_px}"
-            f"&wrn=W,R,C,D,O,V,T,S,Y,H&authKey={API_KEY}"
+            f"&wrn=W,R,C,D,O,V,T,S,Y,H&authKey={api_key}"
         )
 
     @staticmethod

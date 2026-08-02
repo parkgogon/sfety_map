@@ -7,6 +7,7 @@
 """
 
 import datetime
+import html as html_lib
 from typing import Dict, Optional
 
 import pandas as pd
@@ -336,11 +337,19 @@ def generate_html_report(
         html += "</tr>"
         for _, row in warnings_df.iterrows():
             color = "#dc3545" if row.get("level") == "경보" else "#fd7e14"
+            region_text = html_lib.escape(
+                f"{row.get('region_up', '')} {row.get('region', '')}"
+            )
+            warning_type = html_lib.escape(str(row.get("type", "")))
+            warning_level = html_lib.escape(str(row.get("level", "")))
+            warning_source = html_lib.escape(
+                str(row.get("source", "기상청"))
+            )
             html += "<tr>"
-            html += f'<td style="padding:5px; border:1px solid #eee;">{row.get("region_up","")} {row.get("region","")}</td>'
-            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center;">{row.get("type","")}</td>'
-            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center; color:{color}; font-weight:bold;">{row.get("level","")}</td>'
-            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center;">{row.get("source","기상청")}</td>'
+            html += f'<td style="padding:5px; border:1px solid #eee;">{region_text}</td>'
+            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center;">{warning_type}</td>'
+            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center; color:{color}; font-weight:bold;">{warning_level}</td>'
+            html += f'<td style="padding:5px; border:1px solid #eee; text-align:center;">{warning_source}</td>'
             html += "</tr>"
         html += "</table>"
 
@@ -377,13 +386,21 @@ def generate_html_report(
             warnings_text = ""
             if isinstance(matched, list) and matched:
                 warnings_text = ", ".join(f"{w['type']}{w['level']}" for w in matched)
+            facility_name = html_lib.escape(
+                str(row.get("facility_name", ""))
+            )
+            facility_type = html_lib.escape(
+                str(row.get("facility_type", ""))
+            )
+            warnings_text = html_lib.escape(warnings_text)
+            manager = html_lib.escape(str(row.get("manager", "-")))
             html += f"""
                 <tr>
                     <td style="padding:4px; border:1px solid #eee; text-align:center;">{idx}</td>
-                    <td style="padding:4px; border:1px solid #eee;">{row.get('facility_name','')}</td>
-                    <td style="padding:4px; border:1px solid #eee; text-align:center;">{row.get('facility_type','')}</td>
+                    <td style="padding:4px; border:1px solid #eee;">{facility_name}</td>
+                    <td style="padding:4px; border:1px solid #eee; text-align:center;">{facility_type}</td>
                     <td style="padding:4px; border:1px solid #eee; text-align:center; color:{color}; font-weight:bold;">{warnings_text}</td>
-                    <td style="padding:4px; border:1px solid #eee;">{row.get('manager','-')}</td>
+                    <td style="padding:4px; border:1px solid #eee;">{manager}</td>
                 </tr>
             """
         html += "</table></div>"

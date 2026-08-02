@@ -16,7 +16,7 @@ trigger: always_on
 
 #### 1.1 특보구역
 
-[https://apihub.kma.go.kr/api/typ01/url/wrn_reg.php?tmfc=0&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wrn_reg.php?tmfc=0&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wrn_reg.php?tmfc=0&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wrn_reg.php?tmfc=0&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -51,7 +51,7 @@ trigger: always_on
 
 #### 1.2 특보자료
 
-[https://apihub.kma.go.kr/api/typ01/url/wrn_met_data.php?reg=0&wrn=A&tmfc1=201501010000&tmfc2=201502010000&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wrn_met_data.php?reg=0&wrn=A&tmfc1=201501010000&tmfc2=201502010000&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wrn_met_data.php?reg=0&wrn=A&tmfc1=201501010000&tmfc2=201502010000&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wrn_met_data.php?reg=0&wrn=A&tmfc1=201501010000&tmfc2=201502010000&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -86,7 +86,7 @@ trigger: always_on
 
 #### 1.3 기상정보
 
-[https://apihub.kma.go.kr/api/typ01/url/wrn_inf_rpt.php?tmfc1=201505010000&tmfc2=201506010000&stn=0&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wrn_inf_rpt.php?tmfc1=201505010000&tmfc2=201506010000&stn=0&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wrn_inf_rpt.php?tmfc1=201505010000&tmfc2=201506010000&stn=0&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wrn_inf_rpt.php?tmfc1=201505010000&tmfc2=201506010000&stn=0&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -121,7 +121,7 @@ trigger: always_on
 
 #### 1.4 날씨해설
 
-[https://apihub.kma.go.kr/api/typ01/url/wthr_cmt_rpt.php?tmfc1=202004130000&tmfc2=202004140000&stn=0&subcd=0&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wthr_cmt_rpt.php?tmfc1=202004130000&tmfc2=202004140000&stn=0&subcd=0&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wthr_cmt_rpt.php?tmfc1=202004130000&tmfc2=202004140000&stn=0&subcd=0&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wthr_cmt_rpt.php?tmfc1=202004130000&tmfc2=202004140000&stn=0&subcd=0&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -156,7 +156,7 @@ trigger: always_on
 
 ### 2. 특보현황 조회
 
-[https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php?fe=f&tm=&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php?fe=f&tm=&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php?fe=f&tm=&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php?fe=f&tm=&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -179,7 +179,7 @@ trigger: always_on
 |WRN|특보종류|LVL|특보수준|
 |CMD|특보명령|||
 
-[https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php?fe=f&tm=&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php?fe=f&tm=&disp=0&help=1&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php?fe=f&tm=&disp=0&help=1&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php?fe=f&tm=&disp=0&help=1&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 
@@ -206,7 +206,7 @@ trigger: always_on
 
 #### 3.1 임의지역 특보이미지
 
-[https://apihub.kma.go.kr/api/typ03/cgi/wrn/nph-wrn7?out=0&tmef=1&city=1&name=0&tm=201611082300&lon=127.7&lat=36.1&range=300&size=685&wrn=W,R,C,D,O,V,T,S,Y,H,&authKey=a7c780dkQDC3O_NHZOAwuw](https://apihub.kma.go.kr/api/typ03/cgi/wrn/nph-wrn7?out=0&tmef=1&city=1&name=0&tm=201611082300&lon=127.7&lat=36.1&range=300&size=685&wrn=W,R,C,D,O,V,T,S,Y,H,&authKey=a7c780dkQDC3O_NHZOAwuw)
+[https://apihub.kma.go.kr/api/typ03/cgi/wrn/nph-wrn7?out=0&tmef=1&city=1&name=0&tm=201611082300&lon=127.7&lat=36.1&range=300&size=685&wrn=W,R,C,D,O,V,T,S,Y,H,&authKey=YOUR_KMA_API_KEY](https://apihub.kma.go.kr/api/typ03/cgi/wrn/nph-wrn7?out=0&tmef=1&city=1&name=0&tm=201611082300&lon=127.7&lat=36.1&range=300&size=685&wrn=W,R,C,D,O,V,T,S,Y,H,&authKey=YOUR_KMA_API_KEY)
 
 ##### 요청인자
 

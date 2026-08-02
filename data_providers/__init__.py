@@ -81,6 +81,12 @@ _providers: List[BaseWarningProvider] = []
 
 def register_provider(provider: BaseWarningProvider):
     """데이터 제공자를 레지스트리에 등록합니다."""
+    if any(
+        type(existing) is type(provider)
+        and existing.source_name == provider.source_name
+        for existing in _providers
+    ):
+        return
     _providers.append(provider)
 
 
@@ -101,5 +107,11 @@ def get_all_warnings(region_filter: Optional[str] = None) -> pd.DataFrame:
             pass
 
     if all_warnings:
-        return pd.concat(all_warnings, ignore_index=True)
+        return (
+            pd.concat(all_warnings, ignore_index=True)
+            .drop_duplicates(
+                subset=["region_up", "region", "type", "level", "source"]
+            )
+            .reset_index(drop=True)
+        )
     return pd.DataFrame(columns=["region_up", "region", "type", "level", "source"])

@@ -16,6 +16,8 @@
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
+from core.region_resolver import facility_matches_warning
+
 
 # =============================================
 # 1. 특보 종류별 기본 가중치 (Base Risk Score)
@@ -29,6 +31,7 @@ WARNING_TYPE_WEIGHTS: Dict[str, int] = {
     "풍랑": 3,
     "한파": 3,
     "폭염": 2,
+    "열대야": 2,
     "건조": 2,
     "황사": 2,
     "안개": 1,
@@ -38,8 +41,10 @@ WARNING_TYPE_WEIGHTS: Dict[str, int] = {
 # 2. 특보 등급별 배수 (Level Multiplier)
 # =============================================
 WARNING_LEVEL_MULTIPLIER: Dict[str, float] = {
+    "주의": 1.0,
     "주의보": 1.0,
     "경보": 1.5,
+    "중대경보": 2.0,
 }
 
 # =============================================
@@ -122,9 +127,11 @@ def assess_facility_risk(
     if not warnings_df.empty:
         for _, warn_row in warnings_df.iterrows():
             region = str(warn_row.get("region", ""))
-            # "포항시" → "포항", "예천군" → "예천"
-            keyword = region.replace("시", "").replace("군", "").replace("구", "")
-            if keyword and keyword in address:
+            if facility_matches_warning(
+                address,
+                region,
+                warn_row.get("region_up", ""),
+            ):
                 score = calculate_warning_score(
                     warn_row.get("type", ""),
                     warn_row.get("level", ""),
