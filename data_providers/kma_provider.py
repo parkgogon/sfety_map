@@ -9,19 +9,41 @@
 """
 
 import datetime
+import gzip
+import json
 import math
 import os
-from typing import Dict, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import pandas as pd
 import requests
 import streamlit as st
 
 from data_providers import BaseWarningProvider
+from core.region_resolver import (
+    KMA_WARNING_SCOPE_PREFIXES,
+    normalize_warning_zone_data,
+)
 
 # 기본 기준 좌표 (대구·경북 중심부)
 CENTER_LAT = 36.0
 CENTER_LON = 128.5
+KMA_WARNING_ZONE_URL = (
+    "https://www.weather.go.kr/wgis-nuri/js/info/wrnArea.geojson"
+)
+WARNING_COLUMNS = [
+    "region_up_code",
+    "region_code",
+    "region_up",
+    "region",
+    "issued_at",
+    "effective_at",
+    "type",
+    "level",
+    "command",
+    "source",
+]
 
 
 def get_kma_api_key() -> str:
@@ -45,12 +67,66 @@ def _warning_frame(
 ) -> pd.DataFrame:
     df = pd.DataFrame(
         warnings,
-        columns=["region_up", "region", "type", "level", "source"],
+        columns=WARNING_COLUMNS,
     )
     df.attrs["fetch_status"] = status
     df.attrs["fetch_message"] = message
     df.attrs["fetched_at"] = datetime.datetime.now().isoformat(timespec="seconds")
     return df
+
+
+def _parse_kma_datetime(value: object) -> datetime.datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.datetime.strptime(text, "%Y%m%d%H%M")
+    except ValueError:
+        return None
+
+
+def parse_warning_response(text: str) -> list[dict[str, Any]]:
+    """기상청 특보현황 텍스트 응답을 정규화된 레코드로 변환합니다."""
+
+    warnings: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        if line.startswith("#") or "," not in line:
+            continue
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 10:
+            continue
+        warnings.append(
+            {
+                "region_up_code": parts[0],
+                "region_up": parts[1],
+                "region_code": parts[2],
+                "region": parts[3],
+                "issued_at": _parse_kma_datetime(parts[4]),
+                "effective_at": _parse_kma_datetime(parts[5]),
+                "type": parts[6],
+                "level": parts[7],
+                "command": parts[8],
+                "source": "기상청",
+            }
+        )
+    return warnings
+
+
+def filter_warning_scope(
+    warnings: pd.DataFrame,
+    code_prefixes: Sequence[str],
+) -> pd.DataFrame:
+    """상위/세부 코드 중 하나가 소관 코드 계열에 속하는 행만 반환합니다."""
+
+    if warnings.empty:
+        return warnings.copy()
+    prefixes = tuple(str(prefix) for prefix in code_prefixes)
+    mask = warnings["region_up_code"].astype(str).str.startswith(prefixes) | (
+        warnings["region_code"].astype(str).str.startswith(prefixes)
+    )
+    result = warnings[mask].copy()
+    result.attrs.update(warnings.attrs)
+    return result
 
 
 class KMAProvider(BaseWarningProvider):
@@ -88,20 +164,7 @@ class KMAProvider(BaseWarningProvider):
         try:
             resp = requests.get(url, params=params, timeout=7)
             resp.raise_for_status()
-            lines = resp.text.split("\n")
-            for line in lines:
-                if not line.startswith("#") and "=" in line:
-                    parts = [p.strip() for p in line.split(",")]
-                    if len(parts) >= 10:
-                        warnings.append(
-                            {
-                                "region_up": parts[1],
-                                "region": parts[3],
-                                "type": parts[6],
-                                "level": parts[7],
-                                "source": "기상청",
-                            }
-                        )
+            warnings = parse_warning_response(resp.text)
         except (requests.RequestException, ValueError) as exc:
             return _warning_frame(
                 [],
@@ -110,13 +173,54 @@ class KMAProvider(BaseWarningProvider):
             )
         return _warning_frame(warnings, status="ok")
 
-    def get_warnings(self, region_filter: Optional[str] = None) -> pd.DataFrame:
+    def get_warnings(
+        self,
+        region_filter: Optional[str] = None,
+        region_code_prefixes: Optional[Sequence[str]] = None,
+    ) -> pd.DataFrame:
         df = self._fetch_warnings()
         attrs = dict(df.attrs)
-        if region_filter and not df.empty:
+        if region_code_prefixes:
+            df = filter_warning_scope(df, region_code_prefixes)
+        elif region_filter and not df.empty:
             df = df[df["region_up"].str.contains(region_filter, na=False)]
-            df.attrs.update(attrs)
+        df.attrs.update(attrs)
         return df
+
+    @staticmethod
+    @st.cache_data(ttl=86400, show_spinner=False)
+    def _fetch_warning_zones() -> dict[str, Any]:
+        response = requests.get(KMA_WARNING_ZONE_URL, timeout=10)
+        response.raise_for_status()
+        return response.json()
+
+    @classmethod
+    def get_warning_zones(
+        cls,
+        fallback_path: str | Path,
+        code_prefixes: Sequence[str] = KMA_WARNING_SCOPE_PREFIXES,
+    ) -> tuple[dict[str, Any], str, str]:
+        """공식 특보구역을 반환하고 실패 시 내장 스냅샷을 사용합니다."""
+
+        try:
+            live_data = cls._fetch_warning_zones()
+            return (
+                normalize_warning_zone_data(live_data, code_prefixes),
+                "live",
+                "기상청 공식 특보구역 최신본",
+            )
+        except (requests.RequestException, ValueError, json.JSONDecodeError):
+            path = Path(fallback_path)
+            try:
+                with gzip.open(path, "rt", encoding="utf-8") as file:
+                    fallback_data = json.load(file)
+                return (
+                    normalize_warning_zone_data(fallback_data, code_prefixes),
+                    "fallback",
+                    "기상청 특보구역 내장본",
+                )
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                raise ValueError("기상청 특보구역을 불러올 수 없습니다.") from exc
 
     # ──────────────────────────────────────────────
     # 격자 변환 및 초단기 실황
@@ -247,12 +351,53 @@ class KMAProvider(BaseWarningProvider):
 # 시뮬레이션 모드용 데이터
 SIMULATION_WARNINGS = pd.DataFrame(
     [
-        {"region_up": "경상북도", "region": "포항시", "type": "호우", "level": "경보", "source": "기상청"},
-        {"region_up": "경상북도", "region": "구미시", "type": "강풍", "level": "주의보", "source": "기상청"},
-        {"region_up": "대구광역시", "region": "달서구", "type": "폭염", "level": "경보", "source": "기상청"},
-        {"region_up": "경상북도", "region": "안동시", "type": "태풍", "level": "경보", "source": "기상청"},
+        {
+            "region_up_code": "L1070000",
+            "region_code": "L1072400",
+            "region_up": "경상북도",
+            "region": "포항시",
+            "type": "호우",
+            "level": "경보",
+            "command": "발표",
+            "source": "기상청",
+        },
+        {
+            "region_up_code": "L1070000",
+            "region_code": "L1070300",
+            "region_up": "경상북도",
+            "region": "구미시",
+            "type": "강풍",
+            "level": "주의보",
+            "command": "발표",
+            "source": "기상청",
+        },
+        {
+            "region_up_code": "L1140000",
+            "region_code": "L1140100",
+            "region_up": "대구광역시",
+            "region": "대구중부",
+            "type": "폭염",
+            "level": "경보",
+            "command": "발표",
+            "source": "기상청",
+        },
+        {
+            "region_up_code": "L1070000",
+            "region_code": "L1072700",
+            "region_up": "경상북도",
+            "region": "안동시",
+            "type": "태풍",
+            "level": "경보",
+            "command": "발표",
+            "source": "기상청",
+        },
     ]
 )
+SIMULATION_WARNINGS["issued_at"] = datetime.datetime.now().replace(
+    minute=0, second=0, microsecond=0
+)
+SIMULATION_WARNINGS["effective_at"] = SIMULATION_WARNINGS["issued_at"]
+SIMULATION_WARNINGS = SIMULATION_WARNINGS[WARNING_COLUMNS]
 
 SIMULATION_WEATHER = {
     "기온(℃)": "32.5",

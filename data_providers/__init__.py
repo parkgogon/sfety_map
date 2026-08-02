@@ -21,7 +21,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional, Sequence
 import pandas as pd
 
 
@@ -34,16 +34,25 @@ class BaseWarningProvider(ABC):
     source_name: str = "unknown"  # 데이터 소스 표시명
 
     @abstractmethod
-    def get_warnings(self, region_filter: Optional[str] = None) -> pd.DataFrame:
+    def get_warnings(
+        self,
+        region_filter: Optional[str] = None,
+        region_code_prefixes: Optional[Sequence[str]] = None,
+    ) -> pd.DataFrame:
         """
         현재 발효 중인 경보/특보 목록을 반환합니다.
 
         Returns:
             DataFrame with columns:
+                - region_up_code: 상위 특보구역 코드
+                - region_code: 세부 특보구역 코드
                 - region_up: 상위 지역명 (예: 경상북도)
                 - region: 세부 지역명 (예: 포항시)
+                - issued_at: 발표시각
+                - effective_at: 발효시각
                 - type: 경보 유형 (예: 호우, 홍수, 산사태)
                 - level: 등급 (예: 주의보, 경보)
+                - command: 발표/변경 등 특보 명령
                 - source: 데이터 출처 (예: 기상청, 홍수통제소)
         """
         pass
@@ -95,12 +104,18 @@ def get_all_providers() -> List[BaseWarningProvider]:
     return _providers
 
 
-def get_all_warnings(region_filter: Optional[str] = None) -> pd.DataFrame:
+def get_all_warnings(
+    region_filter: Optional[str] = None,
+    region_code_prefixes: Optional[Sequence[str]] = None,
+) -> pd.DataFrame:
     """모든 등록된 데이터 소스로부터 경보를 수집하여 통합 반환합니다."""
     all_warnings = []
     for provider in _providers:
         try:
-            df = provider.get_warnings(region_filter=region_filter)
+            df = provider.get_warnings(
+                region_filter=region_filter,
+                region_code_prefixes=region_code_prefixes,
+            )
             if not df.empty:
                 all_warnings.append(df)
         except Exception:
@@ -110,8 +125,21 @@ def get_all_warnings(region_filter: Optional[str] = None) -> pd.DataFrame:
         return (
             pd.concat(all_warnings, ignore_index=True)
             .drop_duplicates(
-                subset=["region_up", "region", "type", "level", "source"]
+                subset=["region_code", "type", "level", "issued_at", "source"]
             )
             .reset_index(drop=True)
         )
-    return pd.DataFrame(columns=["region_up", "region", "type", "level", "source"])
+    return pd.DataFrame(
+        columns=[
+            "region_up_code",
+            "region_code",
+            "region_up",
+            "region",
+            "issued_at",
+            "effective_at",
+            "type",
+            "level",
+            "command",
+            "source",
+        ]
+    )

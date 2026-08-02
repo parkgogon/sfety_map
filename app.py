@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import gzip
+import json
 import os
 import math
 
@@ -382,11 +384,23 @@ with col_map:
     # ── GeoJSON 로드 ──
     @st.cache_data(show_spinner=False)
     def load_boundary_geojson():
-        boundary_file = os.path.join(os.path.dirname(__file__), "daegu_gyeongbuk_boundaries.json")
+        boundary_file = os.path.join(
+            os.path.dirname(__file__),
+            "data",
+            "kma_warning_zones.geojson.gz",
+        )
         if os.path.exists(boundary_file):
-            import json
-            with open(boundary_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            with gzip.open(boundary_file, 'rt', encoding='utf-8') as f:
+                boundary_data = json.load(f)
+            for feature in boundary_data.get("features", []):
+                properties = feature.setdefault("properties", {})
+                properties.setdefault(
+                    "name",
+                    properties.get("regko_fullname")
+                    or properties.get("regKo")
+                    or properties.get("regid", ""),
+                )
+            return boundary_data
         return None
 
     boundary_data = load_boundary_geojson()
@@ -686,5 +700,4 @@ with col_panel:
                     )
                 else:
                     st.warning("PDF 생성 라이브러리(fpdf2)가 설치되지 않았습니다.")
-
 

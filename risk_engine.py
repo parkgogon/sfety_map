@@ -16,7 +16,7 @@
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
-from core.region_resolver import facility_matches_warning
+from core.region_resolver import WarningZoneIndex, warning_matches_facility
 
 
 # =============================================
@@ -97,6 +97,7 @@ def assess_facility_risk(
     facility_row: pd.Series,
     warnings_df: pd.DataFrame,
     additional_scores: Optional[List[Dict]] = None,
+    zone_index: WarningZoneIndex | None = None,
 ) -> Dict:
     """
     개별 시설물의 위험도를 산정합니다.
@@ -127,11 +128,7 @@ def assess_facility_risk(
     if not warnings_df.empty:
         for _, warn_row in warnings_df.iterrows():
             region = str(warn_row.get("region", ""))
-            if facility_matches_warning(
-                address,
-                region,
-                warn_row.get("region_up", ""),
-            ):
+            if warning_matches_facility(facility_row, warn_row, zone_index):
                 score = calculate_warning_score(
                     warn_row.get("type", ""),
                     warn_row.get("level", ""),
@@ -141,6 +138,9 @@ def assess_facility_risk(
                         "type": warn_row.get("type", ""),
                         "level": warn_row.get("level", ""),
                         "region": region,
+                        "region_code": warn_row.get("region_code", ""),
+                        "issued_at": warn_row.get("issued_at"),
+                        "effective_at": warn_row.get("effective_at"),
                         "score": score,
                         "source": warn_row.get("source", "기상청"),
                     }
@@ -178,6 +178,7 @@ def assess_facility_risk(
 def assess_all_facilities(
     facility_df: pd.DataFrame,
     warnings_df: pd.DataFrame,
+    zone_index: WarningZoneIndex | None = None,
 ) -> Tuple[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     전체 시설물에 대해 위험도를 산정하고 등급별로 그룹핑합니다.
@@ -193,7 +194,11 @@ def assess_all_facilities(
     """
     results = []
     for _, row in facility_df.iterrows():
-        result = assess_facility_risk(row, warnings_df)
+        result = assess_facility_risk(
+            row,
+            warnings_df,
+            zone_index=zone_index,
+        )
         results.append(result)
 
     result_df = pd.DataFrame(results)

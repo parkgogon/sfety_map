@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import datetime as dt
 from collections import defaultdict
 from typing import Any
 
@@ -11,7 +12,6 @@ import pandas as pd
 from folium.plugins import MarkerCluster
 
 from core.region_resolver import (
-    boundary_names_for_warning,
     dominant_warning,
     warning_level_rank,
 )
@@ -47,6 +47,25 @@ def _warning_style(level: object) -> tuple[str, float]:
     return "#e2b84f", 0.24
 
 
+def _format_warning_time(value: object) -> str:
+    if value is None or bool(pd.isna(value)):
+        return "-"
+    if isinstance(value, (dt.datetime, pd.Timestamp)):
+        return value.strftime("%m-%d %H:%M")
+    text = str(value).strip()
+    return text or "-"
+
+
+def _boundary_region_code(feature: dict[str, Any]) -> str:
+    properties = feature.get("properties", {})
+    return str(
+        properties.get("regid")
+        or properties.get("regId")
+        or properties.get("id")
+        or ""
+    ).strip()
+
+
 def build_map(
     facilities: pd.DataFrame,
     warnings: pd.DataFrame,
@@ -73,33 +92,52 @@ def build_map(
     ).add_to(map_obj)
 
     if boundary_data:
-        boundary_names = {
-            feature["properties"]["name"]
+        features_by_code = {
+            _boundary_region_code(feature): feature
             for feature in boundary_data.get("features", [])
+            if _boundary_region_code(feature)
         }
-        warnings_by_boundary: dict[str, list[dict]] = defaultdict(list)
+        warnings_by_boundary: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in warnings.to_dict("records"):
-            for name in boundary_names_for_warning(
-                row.get("region", ""),
-                boundary_names,
-            ):
-                warnings_by_boundary[name].append(row)
+            region_code = str(row.get("region_code", "")).strip()
+            if region_code in features_by_code:
+                warnings_by_boundary[region_code].append(row)
 
-        for feature in boundary_data.get("features", []):
-            name = feature["properties"]["name"]
-            candidates = warnings_by_boundary.get(name, [])
+        rendered_zones = []
+        for region_code, candidates in warnings_by_boundary.items():
             if not candidates:
                 continue
-
             primary = dominant_warning(candidates, WARNING_TYPE_WEIGHTS)
+            rendered_zones.append(
+                (
+                    warning_level_rank(primary.get("level")),
+                    region_code,
+                    candidates,
+                    primary,
+                )
+            )
+
+        for _, region_code, candidates, primary in sorted(rendered_zones):
+            feature = features_by_code[region_code]
+            properties = feature.get("properties", {})
+            name = str(
+                properties.get("regko_fullname")
+                or properties.get("regKo")
+                or primary.get("region")
+                or region_code
+            )
             color, opacity = _warning_style(primary.get("level"))
             warning_labels = sorted(
                 {
-                    f"{item.get('type', '')} {item.get('level', '')}"
+                    (
+                        f"{item.get('type', '')} {item.get('level', '')}"
+                        f" · 발표 {_format_warning_time(item.get('issued_at'))}"
+                        f" · 발효 {_format_warning_time(item.get('effective_at'))}"
+                    )
                     for item in candidates
                 }
             )
-            tooltip = f"{name} · {' / '.join(warning_labels)}"
+            tooltip = html.escape(f"{name} · {' / '.join(warning_labels)}")
             folium.GeoJson(
                 {"type": "FeatureCollection", "features": [feature]},
                 style_function=lambda _, c=color, o=opacity: {
@@ -155,10 +193,10 @@ def build_map(
         background:rgba(255,255,255,.94);border:1px solid #dce3ec;
         border-radius:8px;padding:7px 9px;font:11px sans-serif;color:#344054;">
         <b>특보 단계</b>&nbsp;
+        <span style="color:#9d1414">● 중대경보</span>&nbsp;
         <span style="color:#dc3a2d">● 경보</span>&nbsp;
         <span style="color:#f0a12b">● 주의</span>
     </div>
     """
     map_obj.get_root().html.add_child(folium.Element(legend))
     return map_obj
-

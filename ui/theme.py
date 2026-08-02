@@ -212,6 +212,39 @@ THEME_CSS = """
         margin-top: 0.8rem;
     }
 
+    .facility-metadata {
+        background: #f6f9fd;
+        border: 1px solid #e4eaf2;
+        border-radius: 11px;
+        margin: 0.8rem 0;
+        overflow: hidden;
+    }
+
+    .facility-metadata__row {
+        padding: 0.7rem 0.8rem;
+    }
+
+    .facility-metadata__row + .facility-metadata__row {
+        border-top: 1px solid #e4eaf2;
+    }
+
+    .facility-metadata__label {
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+
+    .facility-metadata__value {
+        color: var(--navy);
+        font-size: 0.92rem;
+        font-weight: 600;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+        white-space: normal;
+    }
+
     .weather-card {
         background: #f6f9fd;
         border: 1px solid #e4eaf2;

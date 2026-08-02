@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import json
 from pathlib import Path
 
 import pandas as pd
@@ -11,7 +10,11 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import telegram_utils
-from core.region_resolver import warning_level_rank
+from core.region_resolver import (
+    KMA_WARNING_SCOPE_PREFIXES,
+    WarningZoneIndex,
+    warning_level_rank,
+)
 from data_providers.kma_provider import (
     KMAProvider,
     SIMULATION_WARNINGS,
@@ -21,7 +24,7 @@ from report_generator import generate_html_report, generate_pdf_report
 from services.dashboard_service import (
     FacilityDataError,
     assess_dashboard,
-    build_telegram_message,
+    build_telegram_messages,
     load_facilities,
     make_warning_snapshot,
     matched_warning_rows,
@@ -29,6 +32,7 @@ from services.dashboard_service import (
 from ui.components import (
     render_action_cards,
     render_alert_summary,
+    render_facility_metadata,
     render_header,
     render_section_heading,
     render_status_cards,
@@ -40,7 +44,7 @@ from ui.theme import THEME_CSS
 
 BASE_DIR = Path(__file__).resolve().parent
 FACILITY_FILE = BASE_DIR / "facilities_info.csv"
-BOUNDARY_FILE = BASE_DIR / "daegu_gyeongbuk_boundaries.json"
+BOUNDARY_FALLBACK_FILE = BASE_DIR / "data" / "kma_warning_zones.geojson.gz"
 
 
 st.set_page_config(
@@ -58,13 +62,6 @@ def load_facility_data(path: str, modified_at: float) -> pd.DataFrame:
     return load_facilities(path)
 
 
-@st.cache_data(show_spinner=False)
-def load_boundaries(path: str, modified_at: float) -> dict:
-    del modified_at
-    with open(path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
 @st.cache_data(ttl=600, show_spinner=False)
 def load_weather(lat: float, lon: float) -> dict[str, str]:
     return KMAProvider().get_weather_at(lat, lon)
@@ -76,20 +73,24 @@ def open_report_panel() -> None:
 
 def clear_live_caches() -> None:
     KMAProvider._fetch_warnings.clear()
+    KMAProvider._fetch_warning_zones.clear()
     KMAProvider.get_grid_coordinates.clear()
     load_weather.clear()
 
+
+kma = KMAProvider()
 
 try:
     facility_df = load_facility_data(
         str(FACILITY_FILE),
         FACILITY_FILE.stat().st_mtime,
     )
-    boundary_data = load_boundaries(
-        str(BOUNDARY_FILE),
-        BOUNDARY_FILE.stat().st_mtime,
+    boundary_data, boundary_status, boundary_note = kma.get_warning_zones(
+        BOUNDARY_FALLBACK_FILE,
+        KMA_WARNING_SCOPE_PREFIXES,
     )
-except (FacilityDataError, OSError, json.JSONDecodeError) as exc:
+    zone_index = WarningZoneIndex.from_geojson(boundary_data)
+except (FacilityDataError, OSError, ValueError) as exc:
     st.error(f"대시보드 초기화 실패: {exc}")
     st.stop()
 
@@ -129,7 +130,6 @@ if refresh_requested:
 
 
 # ── 특보 수집 및 위험도 산정 ───────────────────────────────────────
-kma = KMAProvider()
 if sim_mode:
     warning_df = SIMULATION_WARNINGS.copy()
     warning_df.attrs.update(
@@ -140,12 +140,15 @@ if sim_mode:
         }
     )
 else:
-    warning_df = kma.get_warnings(region_filter="대구|경북|경상북도")
+    warning_df = kma.get_warnings(
+        region_code_prefixes=KMA_WARNING_SCOPE_PREFIXES,
+    )
 
 snapshot = make_warning_snapshot(warning_df)
 _result_df, grade_groups, affected_df = assess_dashboard(
     facility_df,
     snapshot.warnings,
+    zone_index,
 )
 
 highest_level = ""
@@ -258,6 +261,8 @@ with map_column:
         returned_objects=[],
         key="operations_map",
     )
+    if boundary_status == "fallback":
+        st.caption(f"지도 경계: {boundary_note} · 최신본 연결 시 자동 갱신")
 
 with side_column:
     if "side_view" not in st.session_state:
@@ -287,16 +292,16 @@ with side_column:
                 try:
                     token = st.secrets["telegram"]["bot_token"]
                     chat_id = st.secrets["telegram"]["chat_id"]
-                    message = build_telegram_message(affected_df)
-                    success, response_message = telegram_utils.send_telegram_alert(
+                    messages = build_telegram_messages(affected_df)
+                    result = telegram_utils.send_telegram_alert_batch(
                         token,
                         chat_id,
-                        message,
+                        messages,
                     )
-                    if success:
-                        st.success(response_message)
+                    if result.success:
+                        st.success(result.message)
                     else:
-                        st.error(response_message)
+                        st.error(result.message)
                 except (KeyError, TypeError, FileNotFoundError):
                     st.error("텔레그램 설정이 없습니다. secrets.toml을 확인해 주세요.")
 
@@ -335,11 +340,16 @@ with side_column:
 
         st.markdown(f"**{facility['name']}**")
         st.caption(str(facility["address"]))
-        manager_col, type_col = st.columns(2)
-        manager_col.metric("담당자", str(facility.get("부서 담당자", "-")))
-        type_col.metric("시설유형", str(facility.get("시설구분", "-")))
+        render_facility_metadata(
+            facility.get("부서 담당자", "-"),
+            facility.get("시설구분", "-"),
+        )
 
-        facility_warnings = matched_warning_rows(facility, warning_df)
+        facility_warnings = matched_warning_rows(
+            facility,
+            warning_df,
+            zone_index,
+        )
         if facility_warnings.empty:
             st.success("현재 이 시설에 매칭된 특보가 없습니다.")
         else:

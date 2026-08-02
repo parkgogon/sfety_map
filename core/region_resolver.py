@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Iterable, Mapping, Sequence
+
+from shapely.geometry import Point, mapping, shape
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import unary_union
+from shapely.validation import make_valid
 
 
 _ADMIN_SUFFIX = re.compile(r"(특별자치도|특별자치시|광역시|특별시|도|시|군|구)$")
@@ -18,6 +24,158 @@ _DAEGU_BOUNDARIES = (
     "달서구",
     "달성군",
 )
+
+KMA_WARNING_SCOPE_PREFIXES = ("L107", "L108", "L114", "L115", "L116")
+
+
+def _feature_region_code(feature: Mapping[str, Any]) -> str:
+    properties = feature.get("properties", {})
+    return str(
+        properties.get("regid")
+        or properties.get("regId")
+        or properties.get("id")
+        or ""
+    ).strip()
+
+
+def _polygonal_geometry(geometry: BaseGeometry) -> BaseGeometry:
+    """유효한 Polygon/MultiPolygon만 남겨 반환합니다."""
+
+    repaired = geometry if geometry.is_valid else make_valid(geometry)
+    if repaired.geom_type in {"Polygon", "MultiPolygon"}:
+        return repaired
+    if repaired.geom_type == "GeometryCollection":
+        polygon_parts = [
+            part
+            for part in repaired.geoms
+            if part.geom_type in {"Polygon", "MultiPolygon"}
+        ]
+        if polygon_parts:
+            return unary_union(polygon_parts)
+    raise ValueError(f"지원하지 않는 특보구역 도형입니다: {repaired.geom_type}")
+
+
+def normalize_warning_zone_data(
+    boundary_data: Mapping[str, Any],
+    code_prefixes: Sequence[str] = KMA_WARNING_SCOPE_PREFIXES,
+) -> dict[str, Any]:
+    """기상청 GeoJSON을 검증하고 소관 육상 특보구역만 정규화합니다."""
+
+    if boundary_data.get("type") != "FeatureCollection":
+        raise ValueError("특보구역 데이터가 GeoJSON FeatureCollection이 아닙니다.")
+
+    crs_name = str(
+        boundary_data.get("crs", {}).get("properties", {}).get("name", "")
+    )
+    if crs_name and "CRS84" not in crs_name:
+        raise ValueError(f"지원하지 않는 특보구역 좌표계입니다: {crs_name}")
+
+    normalized_features: list[dict[str, Any]] = []
+    seen_codes: set[str] = set()
+    prefixes = tuple(str(prefix) for prefix in code_prefixes)
+
+    for feature in boundary_data.get("features", []):
+        region_code = _feature_region_code(feature)
+        if not region_code.startswith(prefixes):
+            continue
+        if region_code in seen_codes:
+            raise ValueError(f"중복된 특보구역 코드입니다: {region_code}")
+
+        geometry_data = feature.get("geometry")
+        if not geometry_data:
+            raise ValueError(f"특보구역 도형이 없습니다: {region_code}")
+        polygon = _polygonal_geometry(shape(geometry_data))
+
+        properties = dict(feature.get("properties", {}))
+        properties["regid"] = region_code
+        properties.setdefault(
+            "regko_fullname",
+            properties.get("regKo") or properties.get("regko") or region_code,
+        )
+        normalized_features.append(
+            {
+                "type": "Feature",
+                "properties": properties,
+                "geometry": mapping(polygon),
+            }
+        )
+        seen_codes.add(region_code)
+
+    if not normalized_features:
+        raise ValueError("소관 권역의 특보구역 도형을 찾지 못했습니다.")
+
+    return {
+        "type": "FeatureCollection",
+        "name": str(boundary_data.get("name", "KMA warning areas")),
+        "crs": {
+            "type": "name",
+            "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+        },
+        "features": normalized_features,
+    }
+
+
+@dataclass(frozen=True)
+class WarningZoneIndex:
+    """특보구역 코드로 도형과 GeoJSON Feature를 조회하는 불변 인덱스."""
+
+    features: Mapping[str, Mapping[str, Any]]
+    geometries: Mapping[str, BaseGeometry]
+
+    @classmethod
+    def from_geojson(cls, boundary_data: Mapping[str, Any]) -> "WarningZoneIndex":
+        features: dict[str, Mapping[str, Any]] = {}
+        geometries: dict[str, BaseGeometry] = {}
+        for feature in boundary_data.get("features", []):
+            code = _feature_region_code(feature)
+            if not code:
+                continue
+            if code in features:
+                raise ValueError(f"중복된 특보구역 코드입니다: {code}")
+            polygon = _polygonal_geometry(shape(feature.get("geometry")))
+            features[code] = feature
+            geometries[code] = polygon
+        if not features:
+            raise ValueError("특보구역 인덱스를 생성할 수 없습니다.")
+        return cls(features=features, geometries=geometries)
+
+    def has_region(self, region_code: object) -> bool:
+        return str(region_code or "").strip() in self.geometries
+
+    def covers(
+        self,
+        region_code: object,
+        latitude: object,
+        longitude: object,
+    ) -> bool:
+        code = str(region_code or "").strip()
+        geometry = self.geometries.get(code)
+        if geometry is None:
+            return False
+        try:
+            point = Point(float(longitude), float(latitude))
+        except (TypeError, ValueError):
+            return False
+        return bool(geometry.covers(point))
+
+    def feature_for(self, region_code: object) -> Mapping[str, Any] | None:
+        return self.features.get(str(region_code or "").strip())
+
+    def distance(
+        self,
+        region_code: object,
+        latitude: object,
+        longitude: object,
+    ) -> float | None:
+        code = str(region_code or "").strip()
+        geometry = self.geometries.get(code)
+        if geometry is None:
+            return None
+        try:
+            point = Point(float(longitude), float(latitude))
+        except (TypeError, ValueError):
+            return None
+        return float(geometry.distance(point))
 
 
 def _compact(value: object) -> str:
@@ -74,6 +232,44 @@ def facility_matches_warning(
     return True
 
 
+def warning_matches_facility(
+    facility: Mapping[str, object],
+    warning: Mapping[str, object],
+    zone_index: WarningZoneIndex | None = None,
+) -> bool:
+    """시설 좌표를 우선 사용하고, 제한된 해안 오차만 주소로 보정합니다."""
+
+    region_code = warning.get("region_code", "")
+    if zone_index is not None and zone_index.has_region(region_code):
+        if zone_index.covers(
+            region_code,
+            facility.get("latitude"),
+            facility.get("longitude"),
+        ):
+            return True
+        # 부두·항만 시설 좌표가 해안선 밖에 수십~수백 m 찍힌 경우에만
+        # 동일 행정구역 주소를 확인해 좁은 오차 범위 안에서 보정합니다.
+        distance = zone_index.distance(
+            region_code,
+            facility.get("latitude"),
+            facility.get("longitude"),
+        )
+        return bool(
+            distance is not None
+            and distance <= 0.0025
+            and facility_matches_warning(
+                facility.get("address", ""),
+                warning.get("region", ""),
+                warning.get("region_up", ""),
+            )
+        )
+    return facility_matches_warning(
+        facility.get("address", ""),
+        warning.get("region", ""),
+        warning.get("region_up", ""),
+    )
+
+
 def boundary_names_for_warning(
     region: object,
     available_names: Iterable[str],
@@ -125,4 +321,3 @@ def dominant_warning(
             type_weights.get(str(item.get("type", "")), 1),
         ),
     )
-

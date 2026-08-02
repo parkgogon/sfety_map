@@ -36,7 +36,7 @@ def render_status_cards(
     source_value = "정상 수신" if source_status == "ok" else "확인 필요"
     source_class = "ok" if source_status == "ok" else "danger"
     cards = [
-        ("활성 특보", f"{warning_count}건", "대구·경북", "warning"),
+        ("활성 특보구역", f"{warning_count}건", "소관시설 권역", "warning"),
         ("최고 특보 단계", highest_level or "없음", "현재 발효 기준", "danger"),
         (
             "영향 시설",
@@ -61,7 +61,7 @@ def render_status_cards(
 
 def render_alert_summary(warnings: pd.DataFrame) -> None:
     if warnings.empty:
-        st.success("현재 대구·경북 지역에 발효 중인 기상특보가 없습니다.")
+        st.success("현재 소관시설 권역에 발효 중인 기상특보가 없습니다.")
         return
 
     sorted_rows = sorted(
@@ -97,6 +97,25 @@ def render_section_heading(title: str, note: str = "") -> None:
         </div>
         """
     )
+
+
+def render_facility_metadata(manager: object, facility_type: object) -> None:
+    """긴 값도 생략하지 않는 세로형 시설 메타데이터를 표시합니다."""
+
+    rows = [
+        ("담당자", str(manager or "-")),
+        ("시설유형", str(facility_type or "-")),
+    ]
+    markup = ['<div class="facility-metadata">']
+    for label, value in rows:
+        markup.append(
+            '<div class="facility-metadata__row">'
+            f'<div class="facility-metadata__label">{html.escape(label)}</div>'
+            f'<div class="facility-metadata__value">{html.escape(value)}</div>'
+            "</div>"
+        )
+    markup.append("</div>")
+    st.html("".join(markup))
 
 
 def render_action_cards(affected: pd.DataFrame, limit: int = 8) -> None:

@@ -1,5 +1,16 @@
-import requests
 import logging
+from dataclasses import dataclass
+
+import requests
+
+
+@dataclass(frozen=True)
+class TelegramBatchResult:
+    success: bool
+    sent_count: int
+    total_count: int
+    message: str
+
 
 def send_telegram_alert(token: str, chat_id: str, text: str) -> tuple[bool, str]:
     """
@@ -44,3 +55,37 @@ def send_telegram_alert(token: str, chat_id: str, text: str) -> tuple[bool, str]
             type(e).__name__,
         )
         return False, "텔레그램 네트워크 또는 API 요청 오류가 발생했습니다."
+
+
+def send_telegram_alert_batch(
+    token: str,
+    chat_id: str,
+    messages: list[str],
+) -> TelegramBatchResult:
+    """분할된 텔레그램 메시지를 순서대로 발송하고 부분 실패를 보고합니다."""
+
+    total_count = len(messages)
+    if total_count == 0:
+        return TelegramBatchResult(False, 0, 0, "발송할 메시지가 없습니다.")
+
+    sent_count = 0
+    for message in messages:
+        success, response_message = send_telegram_alert(token, chat_id, message)
+        if not success:
+            return TelegramBatchResult(
+                False,
+                sent_count,
+                total_count,
+                (
+                    f"텔레그램 메시지 {sent_count}/{total_count}건 발송 후 실패: "
+                    f"{response_message}"
+                ),
+            )
+        sent_count += 1
+
+    return TelegramBatchResult(
+        True,
+        sent_count,
+        total_count,
+        f"텔레그램 메시지 {sent_count}/{total_count}건을 발송했습니다.",
+    )
