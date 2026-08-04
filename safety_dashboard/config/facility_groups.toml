@@ -1,0 +1,27 @@
+# 화면에서 사용하는 시설 유형 묶음입니다.
+# facility_types에 같은 원본 유형을 두 번 넣으면 앱이 시작되지 않습니다.
+
+[groups.air]
+label = "대기측정소"
+facility_types = ["대기측정소"]
+
+[groups.water]
+label = "수질측정소"
+facility_types = ["수질측정소"]
+
+[groups.farming_collection]
+label = "영농폐기물 수거사업소"
+facility_types = ["영농폐기물 수거사업소"]
+
+[groups.farming_plastic]
+label = "영농폐비닐 재활용시설"
+facility_types = ["영농폐비닐 재활용시설"]
+
+[groups.wastewater]
+label = "공공하수처리시설"
+facility_types = ["공공하수처리시설"]
+
+# 위 그룹에 명시되지 않은 기존·신규 유형은 모두 이 그룹에 포함됩니다.
+[groups.other]
+label = "기타시설"
+fallback = true

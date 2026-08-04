@@ -1,0 +1,41 @@
+:root {
+  --ink: #142746;
+  --muted: #64748b;
+  --line: #dce5ef;
+  --brand: #176b87;
+  --surface: #f6f9fc;
+}
+
+.stApp { background: #f7f9fc; color: var(--ink); }
+[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stSidebar"] { border-right: 1px solid var(--line); }
+.block-container { max-width: 1440px; padding-top: 4.25rem; padding-bottom: 4rem; }
+
+.app-kicker { color: var(--brand); font-size: .78rem; font-weight: 800; letter-spacing: .13em; }
+.app-title { color: var(--ink); font-size: clamp(1.65rem, 3vw, 2.35rem); font-weight: 800; margin: .2rem 0; }
+.app-subtitle { color: var(--muted); margin-bottom: 1rem; }
+.status-strip {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  color: #526277; font-size: .82rem; padding: .7rem 1rem; margin-bottom: .8rem;
+}
+.metric-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(20,39,70,.04); min-height: 105px; padding: 1rem 1.1rem;
+}
+.metric-label { color: var(--muted); font-size: .82rem; font-weight: 700; }
+.metric-value { color: var(--ink); font-size: 2rem; font-weight: 800; line-height: 1.25; }
+.metric-note { color: var(--muted); font-size: .76rem; }
+.detail-card {
+  background:#fff; border:1px solid var(--line); border-radius:12px; padding:1rem 1.1rem;
+}
+.grade-pill { border-radius:999px; color:#fff; display:inline-block; font-weight:800; padding:.18rem .65rem; }
+[data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stButton button, .stDownloadButton button { border-radius: 9px; font-weight: 700; }
+[data-testid="stPills"] [role="button"] { font-weight: 700; }
+
+@media (max-width: 700px) {
+  .block-container { padding: 3.75rem .8rem 3rem; }
+  .app-title { line-height: 1.15; }
+  .metric-card { min-height: 88px; padding: .8rem; }
+  .metric-value { font-size: 1.55rem; }
+}

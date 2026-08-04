@@ -1,0 +1,123 @@
+[policy]
+version = "2026.08-v1"
+description = "공식 내부 기준이 없는 상태에서 사용하는 설명 가능한 초기 정책"
+selection_rule = "highest_grade"
+default_grade = "UNASSESSED"
+
+# rank는 여러 특보가 겹칠 때 우선순위를 정하는 용도로만 사용합니다.
+[grades.HIGH]
+rank = 4
+label = "상"
+meaning = "즉시 확인이 필요한 높은 위험"
+action = "담당자에게 즉시 점검을 요청하고 현장 이상 여부를 확인"
+color = "#D92D20"
+
+[grades.MEDIUM]
+rank = 3
+label = "중"
+meaning = "주의 깊은 확인이 필요한 위험"
+action = "담당자에게 상황 확인을 요청하고 기상 변화를 관찰"
+color = "#E87817"
+
+[grades.LOW]
+rank = 2
+label = "하"
+meaning = "특보 영향권에 포함된 관찰 대상"
+action = "시설 상태를 확인하고 경과를 관찰"
+color = "#B58900"
+
+[grades.UNASSESSED]
+rank = 1
+label = "미판정"
+meaning = "정책에 등록되지 않아 자동 판정할 수 없음"
+action = "관리자가 특보 내용을 확인하고 정책표를 보완"
+color = "#667085"
+
+[grades.NONE]
+rank = 0
+label = "없음"
+meaning = "현재 활성 특보의 영향 없음"
+action = "추가 행동 없음"
+color = "#98A2B3"
+
+# KMA 원본 단계명을 표준 단계로 정규화합니다.
+[level_aliases]
+"주의" = "ADVISORY"
+"주의보" = "ADVISORY"
+"경보" = "WARNING"
+"중대경보" = "CRITICAL"
+"심각" = "CRITICAL"
+"위급" = "CRITICAL"
+
+# 아래 표만 수정하면 특보별 결과를 바꿀 수 있습니다.
+# ADVISORY=주의 단계, WARNING=경보 단계, CRITICAL=중대·심각 단계
+[warning_types."태풍"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."호우"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."대설"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."폭풍해일"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."해일"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."지진해일"]
+ADVISORY = "MEDIUM"
+WARNING = "HIGH"
+CRITICAL = "HIGH"
+
+[warning_types."강풍"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."풍랑"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."한파"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."폭염"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."열대야"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."건조"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."황사"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
+[warning_types."안개"]
+ADVISORY = "LOW"
+WARNING = "MEDIUM"
+CRITICAL = "HIGH"
+
