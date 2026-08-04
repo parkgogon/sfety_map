@@ -6,7 +6,7 @@ import datetime as dt
 from pathlib import Path
 
 from fpdf import FPDF
-from fpdf.enums import XPos, YPos
+from fpdf.enums import MethodReturnValue, WrapMode, XPos, YPos
 
 from safety_dashboard.application.contacts import public_contact
 from safety_dashboard.domain.enums import DataHealth, RiskGrade, WarningLevel
@@ -150,8 +150,8 @@ class PdfReportRenderer:
         pdf.set_y(start_y + 19)
 
     def _assessment_table(self, pdf: FPDF, snapshot: DashboardSnapshot) -> None:
-        widths = (18, 52, 39, 77, 48, 36)
-        labels = ("등급", "시설명", "구분", "주소", "해당 특보", "담당자")
+        widths = (17, 49, 35, 68, 43, 58)
+        labels = ("등급", "시설명", "구분", "주소", "해당 특보", "담당부서 · 담당자")
         ranking = {
             RiskGrade.HIGH: 0,
             RiskGrade.MEDIUM: 1,
@@ -168,10 +168,6 @@ class PdfReportRenderer:
             return
 
         for index, item in enumerate(rows):
-            if pdf.get_y() + 7 > pdf.page_break_trigger:
-                pdf.add_page()
-                self._section(pdf, "2", "영향시설 우선순위", continued=True)
-                self._table_header(pdf, widths, labels)
             warnings = ", ".join(
                 dict.fromkeys(f"{reason.warning_type} {reason.raw_level}" for reason in item.reasons)
             )
@@ -181,11 +177,27 @@ class PdfReportRenderer:
                 item.facility.facility_type,
                 item.facility.address,
                 warnings,
-                public_contact(item.facility),
             )
-            limits = (8, 25, 18, 38, 23, 16)
+            limits = (8, 23, 16, 34, 20)
+            contact = public_contact(item.facility).replace(" · ", "\n", 1)
+            pdf.set_font("Ko", "", 6.8)
+            contact_lines = pdf.multi_cell(
+                widths[-1] - 2,
+                3.5,
+                contact,
+                dry_run=True,
+                output=MethodReturnValue.LINES,
+                wrapmode=WrapMode.CHAR,
+            )
+            row_height = max(7, len(contact_lines) * 3.5 + 1.6)
+            if pdf.get_y() + row_height > pdf.page_break_trigger:
+                pdf.add_page()
+                self._section(pdf, "2", "영향시설 우선순위", continued=True)
+                self._table_header(pdf, widths, labels)
             fill = GRADE_TINT[item.grade] if index % 2 == 0 else WHITE
-            for column, (width, value, limit) in enumerate(zip(widths, values, limits)):
+            for column, (width, value, limit) in enumerate(
+                zip(widths[:-1], values, limits)
+            ):
                 if column == 0:
                     pdf.set_fill_color(*GRADE_COLOR[item.grade])
                     pdf.set_text_color(*WHITE)
@@ -195,8 +207,29 @@ class PdfReportRenderer:
                     pdf.set_text_color(*INK)
                     pdf.set_font("Ko", "", 7.3)
                 pdf.set_draw_color(*LINE)
-                pdf.cell(width, 7, _short(value, limit), border=1, fill=True, align="C")
-            pdf.ln()
+                pdf.cell(
+                    width,
+                    row_height,
+                    _short(value, limit),
+                    border=1,
+                    fill=True,
+                    align="C",
+                )
+
+            contact_x = pdf.get_x()
+            contact_y = pdf.get_y()
+            contact_width = widths[-1]
+            pdf.set_fill_color(*fill)
+            pdf.set_draw_color(*LINE)
+            pdf.rect(contact_x, contact_y, contact_width, row_height, style="DF")
+            pdf.set_font("Ko", "", 6.8)
+            pdf.set_text_color(*INK)
+            text_y = contact_y + (row_height - len(contact_lines) * 3.5) / 2
+            for line in contact_lines:
+                pdf.set_xy(contact_x + 1, text_y)
+                pdf.cell(contact_width - 2, 3.5, line, align="C")
+                text_y += 3.5
+            pdf.set_xy(pdf.l_margin, contact_y + row_height)
 
     def _warning_table(self, pdf: FPDF, snapshot: DashboardSnapshot) -> None:
         widths = (48, 48, 42, 38, 47, 47)
