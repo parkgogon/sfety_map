@@ -8,6 +8,7 @@ from pathlib import Path
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
+from safety_dashboard.application.contacts import public_contact
 from safety_dashboard.domain.enums import DataHealth, RiskGrade, WarningLevel
 from safety_dashboard.domain.models import DashboardSnapshot
 
@@ -180,7 +181,7 @@ class PdfReportRenderer:
                 item.facility.facility_type,
                 item.facility.address,
                 warnings,
-                item.facility.manager,
+                public_contact(item.facility),
             )
             limits = (8, 25, 18, 38, 23, 16)
             fill = GRADE_TINT[item.grade] if index % 2 == 0 else WHITE

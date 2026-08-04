@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Protocol, Sequence
 
-from safety_dashboard.domain.models import Facility, WarningFeed
+from safety_dashboard.domain.models import (
+    CctvFeed,
+    DisasterMessageFeed,
+    Facility,
+    FacilityRegion,
+    GeoPoint,
+    OutgoingTelegramMessage,
+    WarningFeed,
+)
 
 
 class FacilityRepository(Protocol):
@@ -20,7 +29,27 @@ class WarningMatcher(Protocol):
 
 
 class Notifier(Protocol):
-    def send_batch(self, messages: Sequence[str]) -> object: ...
+    def send_batch(
+        self,
+        messages: Sequence[OutgoingTelegramMessage | str],
+    ) -> object: ...
+
+
+class DisasterMessageProvider(Protocol):
+    def fetch_recent(
+        self,
+        region: FacilityRegion,
+        since: dt.datetime,
+    ) -> DisasterMessageFeed: ...
+
+
+class CctvProvider(Protocol):
+    def fetch_nearby(
+        self,
+        location: GeoPoint,
+        radius_km: float = 20,
+        limit: int = 5,
+    ) -> CctvFeed: ...
 
 
 class ReportRenderer(Protocol):

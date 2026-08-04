@@ -8,7 +8,8 @@ import streamlit as st
 
 from safety_dashboard.adapters.pdf_report import PdfReportRenderer
 from safety_dashboard.adapters.telegram import TelegramNotifier
-from safety_dashboard.application.notifications import build_telegram_messages
+from safety_dashboard.application.deep_links import dashboard_home_url
+from safety_dashboard.application.notifications import build_telegram_payloads
 from safety_dashboard.domain.models import DashboardSnapshot
 
 
@@ -28,18 +29,31 @@ def telegram_dialog(
     bot_token: str,
     chat_id: str,
     temporary_policy: bool = False,
+    dashboard_base_url: str = "",
 ) -> None:
     _render_summary(selected_snapshot)
     st.caption(f"조회 범위 · {scope_label}")
-    messages = build_telegram_messages(
-        selected_snapshot.assessments,
-        simulation=simulation,
+    messages = build_telegram_payloads(
+        selected_snapshot,
         scope_label=scope_label,
+        mode="모의훈련" if simulation else "실시간",
+        dashboard_base_url=dashboard_base_url,
         temporary_policy=temporary_policy,
     )
+    if not dashboard_home_url(dashboard_base_url):
+        st.warning(
+            "유효한 HTTPS 대시보드 주소가 없어 이번 메시지에서는 "
+            "시설 딥링크를 생략합니다. 발송은 계속할 수 있습니다."
+        )
+    preview = []
+    for index, message in enumerate(messages, start=1):
+        delivery = "무음" if message.silent else "일반 알림"
+        preview.append(
+            f"[{index}/{len(messages)} · {delivery}]\n{message.text}"
+        )
     st.text_area(
         "메시지 미리보기",
-        value="\n\n--- 다음 메시지 ---\n\n".join(messages),
+        value="\n\n--- 다음 메시지 ---\n\n".join(preview),
         height=340,
         disabled=True,
     )

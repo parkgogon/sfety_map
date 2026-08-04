@@ -44,6 +44,8 @@ Adapters(KMA, CSV, Telegram, PDF)
 - `FacilityRepository`
 - `Notifier`
 - `ReportRenderer`
+- `DisasterMessageProvider` (핵심 snapshot과 독립된 현장 참고정보)
+- `CctvProvider` (선택 시설 좌표 기준의 인근 도로 CCTV 참고정보)
 
 ### Adapters
 
@@ -51,6 +53,7 @@ Adapters(KMA, CSV, Telegram, PDF)
 - CSV 또는 DB 시설 저장소
 - Telegram API
 - PDF 렌더러
+- ITS CCTV HTTP·JSON·XML 어댑터
 - Streamlit 캐시와 session state
 
 ### UI
@@ -155,6 +158,9 @@ DashboardSnapshot
 KMA_API_KEY
 TELEGRAM_BOT_TOKEN
 TELEGRAM_CHAT_ID
+DASHBOARD_BASE_URL
+SAFETY_DATA_API_KEY
+SAFETY_DATA_API_URL
 WARNING_CACHE_SECONDS
 RISK_POLICY_PATH
 FACILITY_GROUPS_PATH

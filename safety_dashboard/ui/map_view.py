@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import html
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import Any
 
 import folium
 from folium.plugins import MarkerCluster
 
 from safety_dashboard.domain.enums import RiskGrade, WarningLevel
-from safety_dashboard.domain.models import DashboardSnapshot
+from safety_dashboard.domain.models import DashboardSnapshot, NearbyCctv
 
 
 COLORS = {
@@ -25,8 +26,29 @@ COLORS = {
 def build_monitoring_map(
     snapshot: DashboardSnapshot,
     boundary_data: dict[str, Any] | None,
+    focus_facility_id: str = "",
+    nearby_cctvs: Sequence[NearbyCctv] = (),
+    cctv_focus_facility_id: str = "",
 ) -> folium.Map:
-    map_obj = folium.Map(location=[36.0, 128.5], zoom_start=7, tiles=None, control_scale=True)
+    focus_facility = next(
+        (
+            item
+            for item in snapshot.facilities
+            if item.id == str(focus_facility_id)
+        ),
+        None,
+    )
+    location = (
+        [focus_facility.location.latitude, focus_facility.location.longitude]
+        if focus_facility
+        else [36.0, 128.5]
+    )
+    map_obj = folium.Map(
+        location=location,
+        zoom_start=13 if focus_facility else 7,
+        tiles=None,
+        control_scale=True,
+    )
     folium.TileLayer(
         "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         attr="&copy; OpenStreetMap &copy; CARTO",
@@ -61,8 +83,73 @@ def build_monitoring_map(
             tooltip=f"{facility.name} · {_grade_label(assessment.grade)}",
             popup=folium.Popup(popup, max_width=320),
         ).add_to(cluster)
+    cctv_focus = next(
+        (
+            item
+            for item in snapshot.facilities
+            if item.id == str(cctv_focus_facility_id)
+        ),
+        None,
+    )
+    if nearby_cctvs:
+        _add_cctv_markers(map_obj, nearby_cctvs)
+        if cctv_focus:
+            folium.CircleMarker(
+                [cctv_focus.location.latitude, cctv_focus.location.longitude],
+                radius=11,
+                color="#142746",
+                weight=3,
+                fill=False,
+                tooltip=f"CCTV 기준 시설 · {html.escape(cctv_focus.name)}",
+            ).add_to(map_obj)
+            map_obj.fit_bounds(
+                [
+                    [cctv_focus.location.latitude, cctv_focus.location.longitude],
+                    *[
+                        [item.location.latitude, item.location.longitude]
+                        for item in nearby_cctvs
+                    ],
+                ],
+                padding=(28, 28),
+                max_zoom=12,
+            )
+    if focus_facility:
+        folium.CircleMarker(
+            [focus_facility.location.latitude, focus_facility.location.longitude],
+            radius=13,
+            color="#142746",
+            weight=4,
+            fill=False,
+            tooltip=f"선택 시설 · {focus_facility.name}",
+        ).add_to(map_obj)
     folium.LayerControl(collapsed=True).add_to(map_obj)
     return map_obj
+
+
+def _add_cctv_markers(
+    map_obj: folium.Map,
+    cctvs: Sequence[NearbyCctv],
+) -> None:
+    layer = folium.FeatureGroup(name="인근 교통 CCTV", show=True).add_to(map_obj)
+    for cctv in cctvs:
+        popup = (
+            '<div style="font-family:sans-serif;min-width:210px;line-height:1.5">'
+            f"<b>{html.escape(cctv.name)}</b><br>"
+            f"{html.escape(cctv.road_type)} · 시설에서 {cctv.distance_km:.1f}km<br>"
+            "<small>마커를 누르면 큰 영상 작업창이 열립니다.</small></div>"
+        )
+        folium.Marker(
+            [cctv.location.latitude, cctv.location.longitude],
+            tooltip=(
+                f"CCTV · {html.escape(cctv.name)} · {cctv.distance_km:.1f}km"
+            ),
+            popup=folium.Popup(popup, max_width=300),
+            icon=folium.Icon(
+                color="cadetblue",
+                icon="video-camera",
+                prefix="fa",
+            ),
+        ).add_to(layer)
 
 
 def _add_warning_zones(

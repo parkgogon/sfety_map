@@ -13,6 +13,14 @@ class DataHealth(str, Enum):
     SIMULATION = "SIMULATION"
 
 
+class ContextStatus(str, Enum):
+    """핵심 관제와 독립적으로 로드되는 현장 참고정보의 상태."""
+
+    LIVE = "LIVE"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    ERROR = "ERROR"
+
+
 class WarningLevel(str, Enum):
     ADVISORY = "ADVISORY"
     WARNING = "WARNING"
@@ -26,4 +34,3 @@ class RiskGrade(str, Enum):
     LOW = "LOW"
     UNASSESSED = "UNASSESSED"
     NONE = "NONE"
-

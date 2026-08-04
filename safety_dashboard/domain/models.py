@@ -6,7 +6,12 @@ import datetime as dt
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
-from safety_dashboard.domain.enums import DataHealth, RiskGrade, WarningLevel
+from safety_dashboard.domain.enums import (
+    ContextStatus,
+    DataHealth,
+    RiskGrade,
+    WarningLevel,
+)
 
 
 @dataclass(frozen=True)
@@ -102,3 +107,55 @@ class DashboardSnapshot:
     policy_version: str
     notices: tuple[str, ...] = ()
 
+
+@dataclass(frozen=True)
+class OutgoingTelegramMessage:
+    text: str
+    silent: bool = False
+    action_label: str = ""
+    action_url: str = ""
+
+
+@dataclass(frozen=True)
+class FacilityRegion:
+    province: str
+    district: str
+    query_name: str
+
+
+@dataclass(frozen=True)
+class DisasterMessage:
+    id: str
+    created_at: dt.datetime
+    emergency_step: str
+    disaster_type: str
+    content: str
+    regions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DisasterMessageFeed:
+    status: ContextStatus
+    messages: tuple[DisasterMessage, ...]
+    fetched_at: dt.datetime
+    detail: str = ""
+
+
+@dataclass(frozen=True)
+class NearbyCctv:
+    id: str
+    name: str
+    location: GeoPoint
+    distance_km: float
+    road_type: str
+    video_url: str
+    video_format: str = "MP4"
+    updated_at: dt.datetime | None = None
+
+
+@dataclass(frozen=True)
+class CctvFeed:
+    status: ContextStatus
+    cctvs: tuple[NearbyCctv, ...]
+    fetched_at: dt.datetime
+    detail: str = ""

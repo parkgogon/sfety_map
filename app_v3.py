@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import html
 import os
 from pathlib import Path
@@ -11,6 +12,14 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 from core.region_resolver import WarningZoneIndex
+from safety_dashboard.adapters.cctv import (
+    DEFAULT_API_URL as CCTV_API_URL,
+    ItsCctvProvider,
+)
+from safety_dashboard.adapters.disaster_messages import (
+    DEFAULT_API_URL as DISASTER_API_URL,
+    SafetyDataDisasterMessageProvider,
+)
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 from safety_dashboard.adapters.kma import (
     FeedWarningProvider,
@@ -21,11 +30,22 @@ from safety_dashboard.adapters.kma import (
 )
 from safety_dashboard.adapters.region_matcher import OfficialZoneMatcher
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
+from safety_dashboard.application.contacts import public_contact
+from safety_dashboard.application.context_info import (
+    KST,
+    build_news_search_url,
+    find_clicked_cctv,
+    resolve_facility_region,
+)
+from safety_dashboard.application.deep_links import expand_scope_for_facility
 from safety_dashboard.application.monitoring import MonitoringService
 from safety_dashboard.application.selection import action_snapshot, filter_snapshot
 from safety_dashboard.domain.enums import DataHealth, RiskGrade
+from safety_dashboard.domain.models import FacilityRegion, GeoPoint
 from safety_dashboard.domain.risk_policy import RiskPolicy
 from safety_dashboard.ui.dialogs import report_dialog, telegram_dialog
+from safety_dashboard.ui.context_panel import render_facility_context
+from safety_dashboard.ui.cctv_viewer import cctv_viewer_dialog
 from safety_dashboard.ui.map_view import COLORS, build_monitoring_map
 from safety_dashboard.ui.policy_editor import effective_policy, policy_editor_dialog
 from safety_dashboard.ui.workflow import (
@@ -69,6 +89,19 @@ def secret(section: str, key: str, env_name: str) -> str:
         return ""
 
 
+def _query_value(name: str) -> str:
+    value = st.query_params.get(name, "")
+    if isinstance(value, list):
+        value = value[-1] if value else ""
+    return str(value or "").strip()[:128]
+
+
+def _clear_facility_focus() -> None:
+    if "facility_id" in st.query_params:
+        del st.query_params["facility_id"]
+    st.session_state.pop("handled_deep_link_revision", None)
+
+
 @st.cache_resource
 def load_policy(modified_at: float) -> RiskPolicy:
     del modified_at
@@ -90,6 +123,44 @@ def load_zones() -> tuple[dict, DataHealth, str]:
 def load_live_feed(api_key: str, policy_modified_at: float):
     policy = RiskPolicy.load(POLICY_PATH)
     return KmaWarningProvider(api_key, policy).fetch_active()
+
+
+@st.cache_data(ttl=180, show_spinner=False)
+def load_disaster_feed(
+    api_key: str,
+    api_url: str,
+    province: str,
+    district: str,
+    query_name: str,
+    reference_bucket: str,
+):
+    reference = dt.datetime.fromisoformat(reference_bucket)
+    region = FacilityRegion(province, district, query_name)
+    return SafetyDataDisasterMessageProvider(
+        api_key,
+        api_url=api_url or DISASTER_API_URL,
+        timeout=7,
+    ).fetch_recent(region, reference - dt.timedelta(hours=6))
+
+
+@st.cache_data(ttl=180, show_spinner=False)
+def load_cctv_feed(
+    api_key: str,
+    api_url: str,
+    latitude: float,
+    longitude: float,
+    reference_bucket: str,
+):
+    del reference_bucket
+    return ItsCctvProvider(
+        api_key,
+        api_url=api_url or CCTV_API_URL,
+        timeout=7,
+    ).fetch_nearby(
+        location=GeoPoint(latitude=latitude, longitude=longitude),
+        radius_km=20,
+        limit=5,
+    )
 
 
 def make_snapshot(simulation: bool, policy: RiskPolicy):
@@ -172,6 +243,87 @@ if temporary_policy:
         "지도·지표·Telegram·PDF에만 반영됩니다."
     )
 
+valid_group_ids = set(catalog.ids)
+applied_group_ids = [
+    item
+    for item in st.session_state.get("applied_facility_groups", catalog.ids)
+    if item in valid_group_ids
+]
+valid_grades = set(GRADE_ORDER)
+applied_grades = [
+    item
+    for item in st.session_state.get("applied_risk_grades", GRADE_ORDER)
+    if item in valid_grades
+]
+st.session_state["applied_facility_groups"] = applied_group_ids
+st.session_state["applied_risk_grades"] = applied_grades
+
+requested_facility_id = _query_value("facility_id")
+focus_facility_id = ""
+deep_link_new = False
+deep_link_error = ""
+if requested_facility_id:
+    deep_link_scope = expand_scope_for_facility(
+        snapshot,
+        catalog,
+        applied_group_ids,
+        applied_grades,
+        requested_facility_id,
+    )
+    if deep_link_scope is None:
+        deep_link_error = (
+            "요청한 시설 ID를 찾을 수 없어 일반 대시보드를 표시합니다."
+        )
+    else:
+        focus_facility_id = deep_link_scope.facility_id
+        revision = "|".join(
+            (
+                focus_facility_id,
+                snapshot.policy_version,
+                *(sorted(item.id for item in snapshot.warning_feed.warnings)),
+            )
+        )
+        deep_link_new = (
+            st.session_state.get("handled_deep_link_revision") != revision
+        )
+        expanded_groups = list(deep_link_scope.group_ids)
+        expanded_grades = list(deep_link_scope.grades)
+        if (
+            expanded_groups != applied_group_ids
+            or expanded_grades != applied_grades
+        ):
+            st.session_state["applied_facility_groups"] = expanded_groups
+            st.session_state["applied_risk_grades"] = expanded_grades
+            st.session_state["facility-group-filter-draft"] = expanded_groups
+            st.session_state["risk-grade-filter-draft"] = expanded_grades
+            applied_group_ids = expanded_groups
+            applied_grades = expanded_grades
+        st.session_state["handled_deep_link_revision"] = revision
+else:
+    st.session_state.pop("handled_deep_link_revision", None)
+
+if deep_link_error:
+    error_column, clear_column = st.columns((5, 1))
+    error_column.warning(deep_link_error)
+    clear_column.button(
+        "링크 지우기",
+        on_click=_clear_facility_focus,
+        width="stretch",
+        key="clear-invalid-facility-link",
+    )
+elif focus_facility_id:
+    focus_name = next(
+        item.name for item in snapshot.facilities if item.id == focus_facility_id
+    )
+    focus_column, clear_column = st.columns((5, 1))
+    focus_column.info(f"Telegram 링크로 '{focus_name}' 시설을 표시 중입니다.")
+    clear_column.button(
+        "초점 해제",
+        on_click=_clear_facility_focus,
+        width="stretch",
+        key="clear-facility-focus",
+    )
+
 group_counts = catalog.counts(snapshot.facilities)
 with st.container(border=True):
     heading_column, policy_column = st.columns((5, 1.35), vertical_alignment="center")
@@ -187,41 +339,36 @@ with st.container(border=True):
             snapshot.warning_feed.warnings,
         )
 
-    valid_group_ids = set(catalog.ids)
-    applied_group_ids = [
-        item
-        for item in st.session_state.get("applied_facility_groups", catalog.ids)
-        if item in valid_group_ids
-    ]
-    valid_grades = set(GRADE_ORDER)
-    applied_grades = [
-        item
-        for item in st.session_state.get("applied_risk_grades", GRADE_ORDER)
-        if item in valid_grades
-    ]
-    st.session_state["applied_facility_groups"] = applied_group_ids
-    st.session_state["applied_risk_grades"] = applied_grades
-
     with st.form("scope-filter-form", border=False):
+        group_default = (
+            {}
+            if "facility-group-filter-draft" in st.session_state
+            else {"default": applied_group_ids}
+        )
         draft_group_ids = st.pills(
             "시설 유형",
             options=list(catalog.ids),
-            default=applied_group_ids,
             selection_mode="multi",
             format_func=lambda value: (
                 f"{catalog.definition(value).label} {group_counts[value]}"
             ),
             key="facility-group-filter-draft",
             width="stretch",
+            **group_default,
+        )
+        grade_default = (
+            {}
+            if "risk-grade-filter-draft" in st.session_state
+            else {"default": applied_grades}
         )
         draft_grades = st.pills(
             "지도 표시 등급",
             options=list(GRADE_ORDER),
-            default=applied_grades,
             selection_mode="multi",
             format_func=grade_label,
             key="risk-grade-filter-draft",
             width="stretch",
+            **grade_default,
         )
         apply_scope = st.form_submit_button(
             "조회 범위 적용",
@@ -292,22 +439,94 @@ filtered_affected = sorted(
     ),
     key=lambda item: (GRADE_RANK[item.grade], item.facility.name),
 )
+detail_items = list(filtered_affected)
+if focus_facility_id and not any(
+    item.facility.id == focus_facility_id for item in detail_items
+):
+    focused_assessment = next(
+        (
+            item
+            for item in filtered_snapshot.assessments
+            if item.facility.id == focus_facility_id
+        ),
+        None,
+    )
+    if focused_assessment is not None:
+        detail_items.insert(0, focused_assessment)
 
+detail_key = f"facility-detail-{scope_key}"
+detail_options = [item.facility.id for item in detail_items]
+detail = None
+cctv_feed = None
+reference = dt.datetime.now(KST)
+reference = reference.replace(
+    minute=(reference.minute // 3) * 3,
+    second=0,
+    microsecond=0,
+)
+if detail_options:
+    if focus_facility_id in detail_options and (
+        deep_link_new
+        or st.session_state.get(detail_key) not in detail_options
+    ):
+        st.session_state[detail_key] = focus_facility_id
+    if st.session_state.get(detail_key) not in detail_options:
+        st.session_state[detail_key] = detail_options[0]
+    selected_detail_id = st.session_state[detail_key]
+    detail = next(
+        item for item in detail_items if item.facility.id == selected_detail_id
+    )
+    cctv_feed = load_cctv_feed(
+        secret("its_cctv", "api_key", "ITS_CCTV_API_KEY"),
+        secret("its_cctv", "api_url", "ITS_CCTV_API_URL") or CCTV_API_URL,
+        detail.facility.location.latitude,
+        detail.facility.location.longitude,
+        reference.isoformat(),
+    )
+
+nearby_cctvs = cctv_feed.cctvs if cctv_feed else ()
+cctv_focus_id = detail.facility.id if detail and nearby_cctvs else ""
+map_component_key = (
+    f"monitoring-map-{scope_key}-{focus_facility_id or 'all'}-"
+    f"{cctv_focus_id or 'no-cctv'}"
+)
 map_column, detail_column = st.columns((1.65, 1), gap="large")
 with map_column:
     st.markdown("#### 특보와 시설 위치")
     st.caption(f"현재 범위 · {scope_label}")
-    st_folium(
-        build_monitoring_map(filtered_snapshot, zone_data),
+    map_state = st_folium(
+        build_monitoring_map(
+            filtered_snapshot,
+            zone_data,
+            focus_facility_id=focus_facility_id,
+            nearby_cctvs=nearby_cctvs,
+            cctv_focus_facility_id=cctv_focus_id,
+        ),
         use_container_width=True,
         height=620,
-        returned_objects=[],
-        key=f"monitoring-map-{scope_key}",
+        returned_objects=(
+            ["last_object_clicked", "last_object_clicked_count"]
+            if nearby_cctvs
+            else []
+        ),
+        key=map_component_key,
+    ) or {}
+    clicked_cctv = find_clicked_cctv(
+        nearby_cctvs,
+        map_state.get("last_object_clicked"),
     )
+    click_count = map_state.get("last_object_clicked_count")
+    if clicked_cctv is not None and click_count is not None:
+        click_fingerprint = (
+            f"{map_component_key}:{click_count}:{clicked_cctv.id}"
+        )
+        if st.session_state.get("handled_cctv_click") != click_fingerprint:
+            st.session_state["handled_cctv_click"] = click_fingerprint
+            cctv_viewer_dialog(clicked_cctv)
 
 with detail_column:
     st.markdown("#### 확인 우선순위")
-    if not filtered_affected:
+    if not detail_items:
         if feed_failed:
             st.error("KMA 조회 실패로 확인 우선순위를 계산하지 못했습니다.")
         else:
@@ -315,17 +534,17 @@ with detail_column:
     else:
         detail_id = st.selectbox(
             "상세 시설",
-            options=[item.facility.id for item in filtered_affected],
+            options=detail_options,
             format_func=lambda value: next(
                 f"[{grade_label(item.grade)}] {item.facility.name}"
-                for item in filtered_affected
+                for item in detail_items
                 if item.facility.id == value
             ),
             label_visibility="collapsed",
-            key=f"facility-detail-{scope_key}",
+            key=detail_key,
         )
         detail = next(
-            item for item in filtered_affected if item.facility.id == detail_id
+            item for item in detail_items if item.facility.id == detail_id
         )
         definition = policy.definition(detail.grade)
         reasons = html.escape(
@@ -343,9 +562,32 @@ with detail_column:
             f'<b>{html.escape(detail.facility.name)}</b><br><br>'
             f'<b>판정 근거</b><br>{reasons}<br><br>'
             f'<b>권장 행동</b><br>{html.escape(definition.action)}<br><br>'
-            f'<b>담당</b> {html.escape(detail.facility.manager)}<br>'
+            f'<b>담당</b> {html.escape(public_contact(detail.facility))}<br>'
             f'<b>주소</b> {html.escape(detail.facility.address)}</div>',
             unsafe_allow_html=True,
+        )
+        facility_region = resolve_facility_region(detail.facility.address)
+        disaster_feed = None
+        if facility_region is not None:
+            disaster_feed = load_disaster_feed(
+                secret("safety_data", "api_key", "SAFETY_DATA_API_KEY"),
+                secret("safety_data", "api_url", "SAFETY_DATA_API_URL")
+                or DISASTER_API_URL,
+                facility_region.province,
+                facility_region.district,
+                facility_region.query_name,
+                reference.isoformat(),
+            )
+        news_url = build_news_search_url(
+            detail.facility,
+            facility_region,
+            (item.warning_type for item in detail.reasons),
+        )
+        render_facility_context(
+            facility_region,
+            disaster_feed,
+            news_url,
+            cctv_feed=cctv_feed,
         )
 
 st.markdown("#### 후속 작업 대상")
@@ -414,7 +656,7 @@ else:
                     "시설": item.facility.name,
                     "유형": catalog.group_for_type(item.facility.facility_type).label,
                     "특보": warning_text(item),
-                    "담당자": item.facility.manager,
+                    "담당자": public_contact(item.facility),
                 }
                 for item in filtered_affected
             ]
@@ -499,6 +741,11 @@ else:
                     secret("telegram", "bot_token", "TELEGRAM_BOT_TOKEN"),
                     secret("telegram", "chat_id", "TELEGRAM_CHAT_ID"),
                     temporary_policy=temporary_policy,
+                    dashboard_base_url=secret(
+                        "dashboard",
+                        "base_url",
+                        "DASHBOARD_BASE_URL",
+                    ),
                 )
             else:
                 report_dialog(
