@@ -9,7 +9,11 @@ from safety_dashboard.adapters.cctv import (
     ItsCctvProvider,
     parse_cctv_response,
 )
-from safety_dashboard.application.context_info import KST, find_clicked_cctv
+from safety_dashboard.application.context_info import (
+    KST,
+    describe_cctv_timing,
+    find_clicked_cctv,
+)
 from safety_dashboard.domain import ContextStatus, GeoPoint, NearbyCctv
 
 
@@ -91,6 +95,41 @@ class CctvParsingTests(unittest.TestCase):
             find_clicked_cctv((cctv,), {"lat": 36.1, "lng": 129.1})
         )
         self.assertIsNone(find_clicked_cctv((cctv,), None))
+
+    def test_timing_distinguishes_source_time_from_api_fetch_time(self):
+        fetched_at = dt.datetime(2026, 8, 6, 6, 10, 30, tzinfo=KST)
+        now = dt.datetime(2026, 8, 6, 6, 12, 0, tzinfo=KST)
+        cctv = NearbyCctv(
+            "one",
+            "인근 CCTV",
+            GeoPoint(36.01, 129.01),
+            1.4,
+            "국도",
+            "https://video.example/one.mp4",
+            updated_at=dt.datetime(2026, 8, 6, 6, 9, 0, tzinfo=KST),
+        )
+        source, fetched, known = describe_cctv_timing(cctv, fetched_at, now)
+        self.assertTrue(known)
+        self.assertIn("06:09:00", source)
+        self.assertIn("약 3분 전", source)
+        self.assertIn("06:10:30", fetched)
+        self.assertIn("약 1분 전", fetched)
+
+        missing_source, fetched, known = describe_cctv_timing(
+            NearbyCctv(
+                "two",
+                "시각 없는 CCTV",
+                GeoPoint(36.02, 129.02),
+                2.0,
+                "국도",
+                "https://video.example/two.mp4",
+            ),
+            fetched_at,
+            now,
+        )
+        self.assertFalse(known)
+        self.assertIn("ITS 미제공", missing_source)
+        self.assertIn("영상 주소 조회", fetched)
 
 
 class CctvProviderTests(unittest.TestCase):

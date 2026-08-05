@@ -1,4 +1,4 @@
-"""선택 시설 관할의 재난문자·뉴스 참고정보를 만듭니다."""
+"""선택 시설 관할의 재난문자·뉴스·CCTV 참고정보를 만듭니다."""
 
 from __future__ import annotations
 
@@ -205,6 +205,31 @@ def find_clicked_cctv(
     )
 
 
+def describe_cctv_timing(
+    cctv: NearbyCctv,
+    feed_fetched_at: dt.datetime,
+    now: dt.datetime | None = None,
+) -> tuple[str, str, bool]:
+    """영상 생성 시각과 영상 주소 조회 시각을 혼동 없이 설명합니다."""
+
+    reference = _aware_kst(now or dt.datetime.now(KST))
+    fetched_at = _aware_kst(feed_fetched_at)
+    fetched_label = (
+        f"ITS 영상 주소 조회 {fetched_at:%m-%d %H:%M:%S}"
+        f" · {_relative_age(fetched_at, reference)}"
+    )
+    if cctv.updated_at is None:
+        return "영상 파일 생성 시각 · ITS 미제공", fetched_label, False
+
+    updated_at = _aware_kst(cctv.updated_at)
+    return (
+        f"영상 파일 생성 {updated_at:%m-%d %H:%M:%S}"
+        f" · {_relative_age(updated_at, reference)}",
+        fetched_label,
+        True,
+    )
+
+
 def _news_location(region: FacilityRegion) -> str:
     metropolitan_name = _METROPOLITAN_NEWS_NAMES.get(region.province)
     if metropolitan_name:
@@ -224,6 +249,19 @@ def _aware_kst(value: dt.datetime) -> dt.datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=KST)
     return value.astimezone(KST)
+
+
+def _relative_age(value: dt.datetime, reference: dt.datetime) -> str:
+    seconds = max(0, int((reference - value).total_seconds()))
+    if seconds < 60:
+        return "1분 이내"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"약 {minutes}분 전"
+    hours = minutes // 60
+    if hours < 24:
+        return f"약 {hours}시간 전"
+    return f"약 {hours // 24}일 전"
 
 
 def _matches_local_district(

@@ -9,6 +9,7 @@ from safety_dashboard.adapters.cctv import (
     SOURCE_PAGE_URL as CCTV_SOURCE_URL,
 )
 from safety_dashboard.adapters.disaster_messages import SOURCE_PAGE_URL
+from safety_dashboard.application.context_info import describe_cctv_timing
 from safety_dashboard.domain.enums import ContextStatus
 from safety_dashboard.domain.models import CctvFeed, DisasterMessageFeed, FacilityRegion
 
@@ -81,13 +82,24 @@ def _render_cctv_status(feed: CctvFeed | None) -> None:
             if "실패" in feed.detail:
                 st.warning(feed.detail)
             else:
-                st.caption(f"{feed.detail} · {feed.fetched_at:%H:%M} 조회")
+                st.caption(
+                    f"{feed.detail} · {feed.fetched_at:%m-%d %H:%M:%S} "
+                    "영상 주소 조회 · 최대 1분 캐시"
+                )
             for item in feed.cctvs:
+                source_timing, _, source_time_known = describe_cctv_timing(
+                    item,
+                    feed.fetched_at,
+                )
                 st.write(
                     f"🎥 **{item.name}**  \n"
-                    f"{item.road_type} · 직선거리 {item.distance_km:.1f}km"
+                    f"{item.road_type} · 직선거리 {item.distance_km:.1f}km  \n"
+                    f"{'🕒' if source_time_known else '⚠️'} {source_timing}"
                 )
-            st.caption("지도의 카메라 마커를 누르면 큰 영상 작업창이 열립니다.")
+            st.caption(
+                "지도의 카메라 마커를 누르면 큰 영상 작업창이 열립니다. "
+                "작업창에서 1분 캐시를 우회해 즉시 다시 요청할 수 있습니다."
+            )
         st.caption(
             "시설 자체·하천 CCTV가 아닌 인근 고속도로·국도 영상입니다."
         )

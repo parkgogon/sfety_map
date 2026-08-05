@@ -143,15 +143,16 @@ def load_disaster_feed(
     ).fetch_recent(region, reference - dt.timedelta(hours=6))
 
 
-@st.cache_data(ttl=180, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def load_cctv_feed(
     api_key: str,
     api_url: str,
     latitude: float,
     longitude: float,
     reference_bucket: str,
+    refresh_token: str,
 ):
-    del reference_bucket
+    del reference_bucket, refresh_token
     return ItsCctvProvider(
         api_key,
         api_url=api_url or CCTV_API_URL,
@@ -458,9 +459,9 @@ detail_key = f"facility-detail-{scope_key}"
 detail_options = [item.facility.id for item in detail_items]
 detail = None
 cctv_feed = None
+cctv_refresh_state_key = ""
 reference = dt.datetime.now(KST)
 reference = reference.replace(
-    minute=(reference.minute // 3) * 3,
     second=0,
     microsecond=0,
 )
@@ -476,19 +477,24 @@ if detail_options:
     detail = next(
         item for item in detail_items if item.facility.id == selected_detail_id
     )
+    cctv_refresh_state_key = f"cctv-refresh-{detail.facility.id}"
     cctv_feed = load_cctv_feed(
         secret("its_cctv", "api_key", "ITS_CCTV_API_KEY"),
         secret("its_cctv", "api_url", "ITS_CCTV_API_URL") or CCTV_API_URL,
         detail.facility.location.latitude,
         detail.facility.location.longitude,
         reference.isoformat(),
+        str(st.session_state.get(cctv_refresh_state_key, "initial")),
     )
 
 nearby_cctvs = cctv_feed.cctvs if cctv_feed else ()
 cctv_focus_id = detail.facility.id if detail and nearby_cctvs else ""
+cctv_feed_revision = (
+    cctv_feed.fetched_at.strftime("%Y%m%d%H%M%S") if cctv_feed else "none"
+)
 map_component_key = (
     f"monitoring-map-{scope_key}-{focus_facility_id or 'all'}-"
-    f"{cctv_focus_id or 'no-cctv'}"
+    f"{cctv_focus_id or 'no-cctv'}-{cctv_feed_revision}"
 )
 map_column, detail_column = st.columns((1.65, 1), gap="large")
 with map_column:
@@ -516,13 +522,28 @@ with map_column:
         map_state.get("last_object_clicked"),
     )
     click_count = map_state.get("last_object_clicked_count")
-    if clicked_cctv is not None and click_count is not None:
+    reopen_cctv_id = str(st.session_state.pop("reopen_cctv_id", ""))
+    reopened_cctv = next(
+        (item for item in nearby_cctvs if item.id == reopen_cctv_id),
+        None,
+    )
+    if reopened_cctv is not None and cctv_feed is not None:
+        cctv_viewer_dialog(
+            reopened_cctv,
+            cctv_feed.fetched_at,
+            cctv_refresh_state_key,
+        )
+    elif clicked_cctv is not None and click_count is not None:
         click_fingerprint = (
             f"{map_component_key}:{click_count}:{clicked_cctv.id}"
         )
         if st.session_state.get("handled_cctv_click") != click_fingerprint:
             st.session_state["handled_cctv_click"] = click_fingerprint
-            cctv_viewer_dialog(clicked_cctv)
+            cctv_viewer_dialog(
+                clicked_cctv,
+                cctv_feed.fetched_at,
+                cctv_refresh_state_key,
+            )
 
 with detail_column:
     st.markdown("#### 확인 우선순위")
