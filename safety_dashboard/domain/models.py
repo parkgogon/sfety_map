@@ -151,6 +151,9 @@ class NearbyCctv:
     video_url: str
     video_format: str = "MP4"
     updated_at: dt.datetime | None = None
+    bearing_deg: float | None = None
+    direction_verified_on: dt.date | None = None
+    direction_source: str = ""
 
 
 @dataclass(frozen=True)

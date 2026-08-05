@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 import streamlit as st
 
 from safety_dashboard.adapters.cctv import OFFICIAL_MAP_URL, SOURCE_PAGE_URL
+from safety_dashboard.application.cctv_directions import describe_cctv_direction
 from safety_dashboard.application.context_info import describe_cctv_timing
 from safety_dashboard.domain.models import NearbyCctv
 
@@ -23,6 +24,14 @@ def cctv_viewer_dialog(
         f"{cctv.road_type} · 선택 시설에서 직선거리 "
         f"{cctv.distance_km:.1f}km"
     )
+    if cctv.bearing_deg is None:
+        st.caption("촬영방향 · 미확인 (ITS API 미제공)")
+    else:
+        st.info(
+            f"{describe_cctv_direction(cctv)} · 북쪽 0° 기준",
+            icon=":material/explore:",
+        )
+        st.caption(f"방향 검증 근거 · {cctv.direction_source}")
     source_timing, fetched_timing, source_time_known = describe_cctv_timing(
         cctv,
         feed_fetched_at,

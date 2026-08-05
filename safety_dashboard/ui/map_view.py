@@ -10,6 +10,9 @@ from typing import Any
 import folium
 from folium.plugins import MarkerCluster
 
+from safety_dashboard.application.cctv_directions import (
+    describe_cctv_direction,
+)
 from safety_dashboard.domain.enums import RiskGrade, WarningLevel
 from safety_dashboard.domain.models import DashboardSnapshot, NearbyCctv
 
@@ -132,24 +135,50 @@ def _add_cctv_markers(
 ) -> None:
     layer = folium.FeatureGroup(name="인근 교통 CCTV", show=True).add_to(map_obj)
     for cctv in cctvs:
-        popup = (
-            '<div style="font-family:sans-serif;min-width:210px;line-height:1.5">'
-            f"<b>{html.escape(cctv.name)}</b><br>"
-            f"{html.escape(cctv.road_type)} · 시설에서 {cctv.distance_km:.1f}km<br>"
-            "<small>마커를 누르면 큰 영상 작업창이 열립니다.</small></div>"
-        )
+        direction_text = describe_cctv_direction(cctv)
         folium.Marker(
             [cctv.location.latitude, cctv.location.longitude],
             tooltip=(
-                f"CCTV · {html.escape(cctv.name)} · {cctv.distance_km:.1f}km"
+                f"CCTV · {html.escape(cctv.name)} · "
+                f"{cctv.distance_km:.1f}km · {html.escape(direction_text)}"
             ),
-            popup=folium.Popup(popup, max_width=300),
-            icon=folium.Icon(
-                color="cadetblue",
-                icon="video-camera",
-                prefix="fa",
+            icon=(
+                _verified_cctv_icon(cctv.bearing_deg)
+                if cctv.bearing_deg is not None
+                else folium.Icon(
+                    color="cadetblue",
+                    icon="video-camera",
+                    prefix="fa",
+                )
             ),
         ).add_to(layer)
+
+
+def _verified_cctv_icon(bearing_deg: float) -> folium.DivIcon:
+    """검증된 고정 방향만 카메라 배지와 화살표로 표시합니다."""
+
+    bearing = f"{bearing_deg:.1f}"
+    marker_html = (
+        f'<div class="cctv-direction-marker" data-bearing="{bearing}" '
+        'style="position:relative;width:42px;height:42px;">'
+        '<div class="cctv-direction-arrow" '
+        'style="position:absolute;left:19px;top:1px;width:4px;height:20px;'
+        'background:#0e7490;border-radius:3px;transform-origin:2px 20px;'
+        f'transform:rotate({bearing}deg);box-shadow:0 1px 2px rgba(0,0,0,.3);">'
+        '<span style="position:absolute;left:-4px;top:-5px;width:0;height:0;'
+        'border-left:6px solid transparent;border-right:6px solid transparent;'
+        'border-bottom:9px solid #0e7490;"></span></div>'
+        '<div style="position:absolute;left:7px;top:13px;width:28px;height:28px;'
+        'display:flex;align-items:center;justify-content:center;border-radius:50%;'
+        'background:#0e7490;color:#fff;border:2px solid #fff;'
+        'box-shadow:0 1px 4px rgba(0,0,0,.4);">'
+        '<i class="fa fa-video-camera" aria-hidden="true"></i></div></div>'
+    )
+    return folium.DivIcon(
+        html=marker_html,
+        icon_size=(42, 42),
+        icon_anchor=(21, 21),
+    )
 
 
 def _add_warning_zones(

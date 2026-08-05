@@ -9,6 +9,7 @@ from safety_dashboard.adapters.cctv import (
     SOURCE_PAGE_URL as CCTV_SOURCE_URL,
 )
 from safety_dashboard.adapters.disaster_messages import SOURCE_PAGE_URL
+from safety_dashboard.application.cctv_directions import describe_cctv_direction
 from safety_dashboard.application.context_info import describe_cctv_timing
 from safety_dashboard.domain.enums import ContextStatus
 from safety_dashboard.domain.models import CctvFeed, DisasterMessageFeed, FacilityRegion
@@ -19,8 +20,9 @@ def render_facility_context(
     feed: DisasterMessageFeed | None,
     news_url: str,
     cctv_feed: CctvFeed | None = None,
+    cctv_direction_warning: str = "",
 ) -> None:
-    _render_cctv_status(cctv_feed)
+    _render_cctv_status(cctv_feed, cctv_direction_warning)
     count = len(feed.messages) if feed else 0
     with st.expander(
         f"관련 재난문자 {count}건",
@@ -64,9 +66,22 @@ def render_facility_context(
     st.caption("뉴스는 외부 참고정보이며 위험도·발송·보고서에 반영되지 않습니다.")
 
 
-def _render_cctv_status(feed: CctvFeed | None) -> None:
+def _render_cctv_status(
+    feed: CctvFeed | None,
+    direction_warning: str = "",
+) -> None:
     count = len(feed.cctvs) if feed and feed.status is ContextStatus.LIVE else 0
-    with st.expander(f"인근 교통 CCTV {count}곳", expanded=False):
+    warning_label = " · 방향 설정 확인" if direction_warning else ""
+    with st.expander(
+        f"인근 교통 CCTV {count}곳{warning_label}",
+        expanded=False,
+    ):
+        if direction_warning:
+            st.warning(
+                "CCTV 방향 설정을 적용하지 못했습니다. "
+                "방향 화살표만 비활성화됩니다."
+            )
+            st.caption(direction_warning)
         if feed is None or feed.status is ContextStatus.NOT_CONFIGURED:
             st.info(
                 "ITS CCTV API 연동 준비 중입니다. "
@@ -94,8 +109,11 @@ def _render_cctv_status(feed: CctvFeed | None) -> None:
                 st.write(
                     f"🎥 **{item.name}**  \n"
                     f"{item.road_type} · 직선거리 {item.distance_km:.1f}km  \n"
+                    f"🧭 {describe_cctv_direction(item)}  \n"
                     f"{'🕒' if source_time_known else '⚠️'} {source_timing}"
                 )
+                if item.direction_source:
+                    st.caption(f"방향 검증 근거 · {item.direction_source}")
             st.caption(
                 "지도의 카메라 마커를 누르면 큰 영상 작업창이 열립니다. "
                 "작업창에서 1분 캐시를 우회해 즉시 다시 요청할 수 있습니다."

@@ -221,7 +221,7 @@ class TelegramPayloadTests(unittest.TestCase):
         self.assertIn("선택 시설", map_obj.get_root().render())
 
     def test_map_adds_distinct_cctv_layer_marker_and_focus_bounds(self):
-        cctv = NearbyCctv(
+        unknown_cctv = NearbyCctv(
             "cctv-one",
             "포항 교차로 CCTV",
             GeoPoint(36.02, 129.02),
@@ -230,10 +230,22 @@ class TelegramPayloadTests(unittest.TestCase):
             "https://video.example/cctv.mp4",
             "MP4",
         )
+        verified_cctv = NearbyCctv(
+            "cctv-two",
+            "포항 해안로 CCTV",
+            GeoPoint(36.03, 129.03),
+            3.7,
+            "고속도로",
+            "https://video.example/cctv-two.mp4",
+            "MP4",
+            bearing_deg=135.0,
+            direction_verified_on=dt.date(2026, 8, 6),
+            direction_source="현장 영상 검증",
+        )
         map_obj = build_monitoring_map(
             situation_snapshot(),
             None,
-            nearby_cctvs=(cctv,),
+            nearby_cctvs=(unknown_cctv, verified_cctv),
             cctv_focus_facility_id="air & 1",
         )
         markup = map_obj.get_root().render()
@@ -246,7 +258,12 @@ class TelegramPayloadTests(unittest.TestCase):
             ],
         )
         self.assertIn("포항 교차로 CCTV", markup)
-        self.assertIn("마커를 누르면", markup)
+        self.assertIn("촬영방향 미확인", markup)
+        self.assertIn("포항 해안로 CCTV", markup)
+        self.assertIn("촬영방향 남동 135°", markup)
+        self.assertIn("rotate(135.0deg)", markup)
+        self.assertEqual(markup.count("cctv-direction-marker"), 1)
+        self.assertNotIn("마커를 누르면 큰 영상 작업창이 열립니다", markup)
         self.assertIn("video-camera", markup)
         self.assertIn("fitBounds", markup)
 

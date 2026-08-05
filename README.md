@@ -73,6 +73,13 @@ ITS CCTV 목록과 영상 주소는 최대 1분 동안 캐시하며 영상 작�
 `최신 영상 다시 요청`으로 즉시 재조회할 수 있습니다. ITS가
 `filecreatetime`을 제공하면 영상 파일 생성 시각을 표시하고, 값이 없으면
 촬영 시각을 추정하지 않고 영상 주소 조회 시각과 구분해 안내합니다.
+ITS API에는 촬영 방위각이 없으므로 방향을 자동 추정하지 않습니다.
+검증된 고정형 CCTV 방향만
+[`safety_dashboard/config/cctv_directions.toml`](safety_dashboard/config/cctv_directions.toml)에
+등록하면 지도 화살표와 CCTV 목록·영상 작업창에 표시됩니다. 초기 설정은
+비어 있으며, 항목을 추가할 때는 `directions = []` 줄을 지우고 파일의
+`[[directions]]` 예시 형식을 사용합니다. CCTV명과 위·경도가 소수점 5자리까지
+모두 일치해야 적용되고, PTZ·가변 카메라는 등록하지 않습니다.
 
 화면의 6개 시설 유형 그룹은
 [`safety_dashboard/config/facility_groups.toml`](safety_dashboard/config/facility_groups.toml)에서

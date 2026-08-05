@@ -31,6 +31,10 @@ from safety_dashboard.adapters.kma import (
 from safety_dashboard.adapters.region_matcher import OfficialZoneMatcher
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
 from safety_dashboard.application.contacts import public_contact
+from safety_dashboard.application.cctv_directions import (
+    CctvDirectionCatalog,
+    load_cctv_direction_catalog,
+)
 from safety_dashboard.application.context_info import (
     KST,
     build_news_search_url,
@@ -63,6 +67,7 @@ from safety_dashboard.ui.workflow import (
 ROOT = Path(__file__).resolve().parent
 POLICY_PATH = ROOT / "safety_dashboard" / "config" / "risk_policy.toml"
 GROUP_PATH = ROOT / "safety_dashboard" / "config" / "facility_groups.toml"
+DIRECTION_PATH = ROOT / "safety_dashboard" / "config" / "cctv_directions.toml"
 FACILITY_PATH = ROOT / "facilities_info.csv"
 ZONE_FALLBACK_PATH = ROOT / "data" / "kma_warning_zones.geojson.gz"
 FONT_PATH = ROOT / "fonts" / "NotoSansKR.ttf"
@@ -112,6 +117,14 @@ def load_policy(modified_at: float) -> RiskPolicy:
 def load_facility_groups(modified_at: float) -> FacilityGroupCatalog:
     del modified_at
     return FacilityGroupCatalog.load(GROUP_PATH)
+
+
+@st.cache_resource
+def load_cctv_directions(
+    modified_at: float,
+) -> tuple[CctvDirectionCatalog, str]:
+    del modified_at
+    return load_cctv_direction_catalog(DIRECTION_PATH)
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -206,6 +219,16 @@ try:
 except Exception as exc:
     st.error(f"대시보드를 구성할 수 없습니다: {exc}")
     st.stop()
+
+try:
+    direction_revision = str(DIRECTION_PATH.stat().st_mtime_ns)
+    cctv_direction_catalog, cctv_direction_warning = load_cctv_directions(
+        DIRECTION_PATH.stat().st_mtime
+    )
+except OSError as exc:
+    direction_revision = "invalid"
+    cctv_direction_catalog = CctvDirectionCatalog.empty()
+    cctv_direction_warning = str(exc)
 
 mode_label = "모의훈련" if simulation else "실시간"
 feed_label = {
@@ -486,6 +509,7 @@ if detail_options:
         reference.isoformat(),
         str(st.session_state.get(cctv_refresh_state_key, "initial")),
     )
+    cctv_feed = cctv_direction_catalog.enrich_feed(cctv_feed)
 
 nearby_cctvs = cctv_feed.cctvs if cctv_feed else ()
 cctv_focus_id = detail.facility.id if detail and nearby_cctvs else ""
@@ -494,7 +518,7 @@ cctv_feed_revision = (
 )
 map_component_key = (
     f"monitoring-map-{scope_key}-{focus_facility_id or 'all'}-"
-    f"{cctv_focus_id or 'no-cctv'}-{cctv_feed_revision}"
+    f"{cctv_focus_id or 'no-cctv'}-{cctv_feed_revision}-{direction_revision}"
 )
 map_column, detail_column = st.columns((1.65, 1), gap="large")
 with map_column:
@@ -587,6 +611,7 @@ with detail_column:
             f'<b>주소</b> {html.escape(detail.facility.address)}</div>',
             unsafe_allow_html=True,
         )
+        st.space("small")
         facility_region = resolve_facility_region(detail.facility.address)
         disaster_feed = None
         if facility_region is not None:
@@ -609,6 +634,7 @@ with detail_column:
             disaster_feed,
             news_url,
             cctv_feed=cctv_feed,
+            cctv_direction_warning=cctv_direction_warning,
         )
 
 st.markdown("#### 후속 작업 대상")

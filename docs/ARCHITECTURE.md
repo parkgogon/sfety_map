@@ -54,6 +54,8 @@ Adapters(KMA, CSV, Telegram, PDF)
 - Telegram API
 - PDF 렌더러
 - ITS CCTV HTTP·JSON·XML 어댑터
+- ITS 조회 결과에 사람이 검증한 `cctv_directions.toml` 고정 방향만
+  이름·좌표로 안전하게 결합하는 application catalog
 - Streamlit 캐시와 session state
 
 ### UI
@@ -66,6 +68,7 @@ Adapters(KMA, CSV, Telegram, PDF)
 ```text
 safety_dashboard/
 ├── config/
+│   ├── cctv_directions.toml
 │   ├── risk_policy.toml
 │   └── facility_groups.toml
 ├── domain/

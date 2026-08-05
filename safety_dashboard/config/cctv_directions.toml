@@ -1,0 +1,14 @@
+# ITS API는 CCTV 촬영 방위각을 제공하지 않습니다.
+# 영상이나 공식 자료로 직접 검증한 고정형 CCTV만 등록하세요.
+# 이름과 좌표(소수점 5자리)가 ITS 조회 결과와 모두 같아야 적용됩니다.
+# 방위각은 북 0°, 동 90°, 남 180°, 서 270° 기준입니다.
+#
+# [[directions]]
+# name = "ITS에서 반환된 CCTV명"
+# latitude = 36.12345
+# longitude = 128.12345
+# bearing_deg = 135.0
+# verified_on = 2026-08-06
+# source = "현장 영상과 도로 배치도 대조"
+
+directions = []
