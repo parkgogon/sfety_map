@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import folium
+from branca.element import MacroElement, Template
 from folium.plugins import MarkerCluster
 
 from safety_dashboard.application.cctv_directions import (
@@ -24,6 +25,120 @@ COLORS = {
     RiskGrade.UNASSESSED: "#667085",
     RiskGrade.NONE: "#247BA0",
 }
+
+
+class _MobileMapInteractionControl(MacroElement):
+    """모바일에서 페이지 스크롤을 우선하는 Leaflet 제어입니다."""
+
+    _template = Template(
+        """
+        {% macro header(this, kwargs) %}
+        <style>
+          .mobile-map-interaction-control {
+            background: #ffffff;
+            border: 1px solid rgba(20, 39, 70, .28);
+            border-radius: 7px;
+            box-shadow: 0 1px 5px rgba(20, 39, 70, .22);
+          }
+          .mobile-map-interaction-control button {
+            align-items: center;
+            background: #ffffff;
+            border: 0;
+            border-radius: 7px;
+            color: #142746;
+            cursor: pointer;
+            display: flex;
+            font: 700 13px/1.2 sans-serif;
+            gap: 5px;
+            min-height: 42px;
+            padding: 8px 10px;
+            white-space: nowrap;
+          }
+          .mobile-map-interaction-control button[data-locked="false"] {
+            background: #142746;
+            color: #ffffff;
+          }
+        </style>
+        {% endmacro %}
+        {% macro script(this, kwargs) %}
+        (function () {
+          const map = {{ this._parent.get_name() }};
+          let viewportWidth = window.innerWidth;
+          try {
+            if (window.top && window.top !== window) {
+              viewportWidth = window.top.innerWidth;
+            }
+          } catch (error) {
+            // 다른 origin으로 호스팅되는 경우 iframe 폭을 안전하게 사용한다.
+          }
+          const isMobile = viewportWidth <= 700;
+          if (!isMobile) return;
+
+          const container = map.getContainer();
+          const handlers = [
+            map.dragging,
+            map.touchZoom,
+            map.doubleClickZoom,
+            map.boxZoom,
+            map.keyboard,
+            map.scrollWheelZoom
+          ].filter(Boolean).map((handler) => ({
+            handler: handler,
+            initiallyEnabled: handler.enabled()
+          }));
+          let locked = true;
+          let button;
+
+          function setLocked(nextLocked) {
+            locked = nextLocked;
+            handlers.forEach(({handler, initiallyEnabled}) => {
+              if (locked) handler.disable();
+              else if (initiallyEnabled) handler.enable();
+            });
+            container.style.touchAction = locked ? 'pan-y' : 'none';
+            container.dataset.mobileInteraction = locked ? 'locked' : 'active';
+            if (button) {
+              button.dataset.locked = String(locked);
+              button.setAttribute('aria-pressed', String(!locked));
+              button.setAttribute(
+                'aria-label',
+                locked ? '지도 조작 켜기' : '페이지 스크롤 우선'
+              );
+              button.innerHTML = locked
+                ? '<span aria-hidden="true">🔒</span><span>지도 조작 켜기</span>'
+                : '<span aria-hidden="true">🔓</span><span>페이지 스크롤 우선</span>';
+            }
+          }
+
+          const MobileControl = L.Control.extend({
+            options: {position: 'topright'},
+            onAdd: function () {
+              const wrapper = L.DomUtil.create(
+                'div',
+                'mobile-map-interaction-control leaflet-control'
+              );
+              button = L.DomUtil.create('button', '', wrapper);
+              button.type = 'button';
+              L.DomEvent.disableClickPropagation(wrapper);
+              L.DomEvent.disableScrollPropagation(wrapper);
+              L.DomEvent.on(button, 'click', function (event) {
+                L.DomEvent.stop(event);
+                setLocked(!locked);
+              });
+              return wrapper;
+            }
+          });
+
+          map.addControl(new MobileControl());
+          setLocked(true);
+        })();
+        {% endmacro %}
+        """
+    )
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = "MobileMapInteractionControl"
 
 
 def build_monitoring_map(
@@ -52,6 +167,7 @@ def build_monitoring_map(
         tiles=None,
         control_scale=True,
     )
+    _MobileMapInteractionControl().add_to(map_obj)
     folium.TileLayer(
         "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         attr="&copy; OpenStreetMap &copy; CARTO",

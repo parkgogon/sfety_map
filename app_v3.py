@@ -58,7 +58,7 @@ from safety_dashboard.ui.workflow import (
     action_fingerprint,
     grade_label,
     make_scope_label,
-    render_metric,
+    render_metric_grid,
     scope_fingerprint,
     warning_text,
 )
@@ -230,6 +230,21 @@ except OSError as exc:
     cctv_direction_catalog = CctvDirectionCatalog.empty()
     cctv_direction_warning = str(exc)
 
+with st.sidebar:
+    st.divider()
+    st.markdown("### 고급 설정")
+    if st.button(
+        "위험도 기준 설정",
+        width="stretch",
+        key="open-risk-policy-editor",
+    ):
+        policy_editor_dialog(
+            base_policy,
+            policy,
+            snapshot.warning_feed.warnings,
+        )
+    st.caption(f"현재 정책 · {policy.version}")
+
 mode_label = "모의훈련" if simulation else "실시간"
 feed_label = {
     DataHealth.LIVE: "정상",
@@ -250,8 +265,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    f'<div class="status-strip">{mode_label} · KMA {feed_label} · 경계 {zone_message} · '
-    f'{snapshot.generated_at:%Y-%m-%d %H:%M} 기준 · 정책 {policy.version}</div>',
+    f'<div class="status-strip"><span class="status-primary">'
+    f'{html.escape(mode_label)} · KMA {html.escape(feed_label)}</span>'
+    f'<span class="status-time-full"> · {snapshot.generated_at:%Y-%m-%d %H:%M} 기준</span>'
+    f'<span class="status-time-mobile"> · {snapshot.generated_at:%m-%d %H:%M} 기준</span>'
+    f'<span class="status-secondary"> · 경계 {html.escape(zone_message)} '
+    f'· 정책 {html.escape(policy.version)}</span></div>',
     unsafe_allow_html=True,
 )
 if feed_failed:
@@ -349,60 +368,70 @@ elif focus_facility_id:
     )
 
 group_counts = catalog.counts(snapshot.facilities)
-with st.container(border=True):
-    heading_column, policy_column = st.columns((5, 1.35), vertical_alignment="center")
-    heading_column.markdown("#### 조회 범위")
-    if policy_column.button(
-        "위험도 기준 설정",
-        width="stretch",
-        key="open-risk-policy-editor",
-    ):
-        policy_editor_dialog(
-            base_policy,
-            policy,
-            snapshot.warning_feed.warnings,
-        )
-
-    with st.form("scope-filter-form", border=False):
-        group_default = (
-            {}
-            if "facility-group-filter-draft" in st.session_state
-            else {"default": applied_group_ids}
-        )
-        draft_group_ids = st.pills(
-            "시설 유형",
-            options=list(catalog.ids),
-            selection_mode="multi",
-            format_func=lambda value: (
-                f"{catalog.definition(value).label} {group_counts[value]}"
-            ),
-            key="facility-group-filter-draft",
+applied_scope_label = make_scope_label(catalog, applied_group_ids, applied_grades)
+with st.container(border=True, key="scope-summary"):
+    scope_text_column, scope_button_column = st.columns(
+        (2.4, 1),
+        vertical_alignment="center",
+    )
+    scope_text_column.markdown(
+        '<div class="scope-summary-label">현재 조회 범위</div>'
+        f'<div class="scope-summary-value" title="{html.escape(applied_scope_label)}">'
+        f'{html.escape(applied_scope_label)}</div>',
+        unsafe_allow_html=True,
+    )
+    with scope_button_column:
+        with st.popover(
+            "조회 범위 변경",
+            icon=":material/filter_alt:",
             width="stretch",
-            **group_default,
-        )
-        grade_default = (
-            {}
-            if "risk-grade-filter-draft" in st.session_state
-            else {"default": applied_grades}
-        )
-        draft_grades = st.pills(
-            "지도 표시 등급",
-            options=list(GRADE_ORDER),
-            selection_mode="multi",
-            format_func=grade_label,
-            key="risk-grade-filter-draft",
-            width="stretch",
-            **grade_default,
-        )
-        apply_scope = st.form_submit_button(
-            "조회 범위 적용",
-            type="primary",
-            width="stretch",
-        )
-    if apply_scope:
-        st.session_state["applied_facility_groups"] = list(draft_group_ids or [])
-        st.session_state["applied_risk_grades"] = list(draft_grades or [])
-        st.rerun()
+        ):
+            st.markdown("#### 조회 범위")
+            st.caption("여러 항목을 바꾼 뒤 적용하면 결과를 한 번에 갱신합니다.")
+            with st.form("scope-filter-form", border=False):
+                group_default = (
+                    {}
+                    if "facility-group-filter-draft" in st.session_state
+                    else {"default": applied_group_ids}
+                )
+                draft_group_ids = st.pills(
+                    "시설 유형",
+                    options=list(catalog.ids),
+                    selection_mode="multi",
+                    format_func=lambda value: (
+                        f"{catalog.definition(value).label} {group_counts[value]}"
+                    ),
+                    key="facility-group-filter-draft",
+                    width="stretch",
+                    **group_default,
+                )
+                grade_default = (
+                    {}
+                    if "risk-grade-filter-draft" in st.session_state
+                    else {"default": applied_grades}
+                )
+                draft_grades = st.pills(
+                    "지도 표시 등급",
+                    options=list(GRADE_ORDER),
+                    selection_mode="multi",
+                    format_func=grade_label,
+                    key="risk-grade-filter-draft",
+                    width="stretch",
+                    **grade_default,
+                )
+                apply_scope = st.form_submit_button(
+                    "조회 범위 적용",
+                    type="primary",
+                    width="stretch",
+                )
+            if apply_scope:
+                st.session_state["applied_facility_groups"] = list(
+                    draft_group_ids or []
+                )
+                st.session_state["applied_risk_grades"] = list(
+                    draft_grades or []
+                )
+                st.rerun()
 
 selected_group_ids = list(st.session_state["applied_facility_groups"])
 selected_grades = list(st.session_state["applied_risk_grades"])
@@ -430,30 +459,34 @@ if st.session_state.get("active_scope_key") != scope_key:
     st.session_state.pop("report_name", None)
     st.session_state.pop("report_fingerprint", None)
 
-metric_columns = st.columns(3)
-with metric_columns[0]:
-    render_metric(
-        "영향 특보",
-        "—" if feed_failed else filtered_snapshot.summary.active_warning_count,
-        "조회 실패" if feed_failed else "현재 표시 시설에 연결",
+note = (
+    f"미판정 {filtered_snapshot.summary.unassessed_count}개"
+    if filtered_snapshot.summary.unassessed_count
+    else "즉시 확인 우선순위"
+)
+render_metric_grid(
+    (
+        (
+            "영향 특보",
+            "—" if feed_failed else filtered_snapshot.summary.active_warning_count,
+            "조회 실패" if feed_failed else "현재 표시 시설에 연결",
+        ),
+        (
+            "영향 시설",
+            "—" if feed_failed else filtered_snapshot.summary.affected_facility_count,
+            (
+                "판정 중단"
+                if feed_failed
+                else f"표시 시설 {len(filtered_snapshot.facilities)}개 중"
+            ),
+        ),
+        (
+            "상 위험",
+            "—" if feed_failed else filtered_snapshot.summary.high_risk_count,
+            "판정 중단" if feed_failed else note,
+        ),
     )
-with metric_columns[1]:
-    render_metric(
-        "영향 시설",
-        "—" if feed_failed else filtered_snapshot.summary.affected_facility_count,
-        "판정 중단" if feed_failed else f"표시 시설 {len(filtered_snapshot.facilities)}개 중",
-    )
-with metric_columns[2]:
-    note = (
-        f"미판정 {filtered_snapshot.summary.unassessed_count}개"
-        if filtered_snapshot.summary.unassessed_count
-        else "즉시 확인 우선순위"
-    )
-    render_metric(
-        "상 위험",
-        "—" if feed_failed else filtered_snapshot.summary.high_risk_count,
-        "판정 중단" if feed_failed else note,
-    )
+)
 
 filtered_affected = sorted(
     (
@@ -524,23 +557,30 @@ map_column, detail_column = st.columns((1.65, 1), gap="large")
 with map_column:
     st.markdown("#### 특보와 시설 위치")
     st.caption(f"현재 범위 · {scope_label}")
-    map_state = st_folium(
-        build_monitoring_map(
-            filtered_snapshot,
-            zone_data,
-            focus_facility_id=focus_facility_id,
-            nearby_cctvs=nearby_cctvs,
-            cctv_focus_facility_id=cctv_focus_id,
-        ),
-        use_container_width=True,
-        height=620,
-        returned_objects=(
-            ["last_object_clicked", "last_object_clicked_count"]
-            if nearby_cctvs
-            else []
-        ),
-        key=map_component_key,
-    ) or {}
+    st.markdown(
+        '<div class="mobile-only mobile-map-help">'
+        '한 손가락은 페이지 스크롤입니다. '
+        '지도를 움직이려면 지도 안의 조작 버튼을 누르세요.</div>',
+        unsafe_allow_html=True,
+    )
+    with st.container(key="monitoring-map"):
+        map_state = st_folium(
+            build_monitoring_map(
+                filtered_snapshot,
+                zone_data,
+                focus_facility_id=focus_facility_id,
+                nearby_cctvs=nearby_cctvs,
+                cctv_focus_facility_id=cctv_focus_id,
+            ),
+            use_container_width=True,
+            height=620,
+            returned_objects=(
+                ["last_object_clicked", "last_object_clicked_count"]
+                if nearby_cctvs
+                else []
+            ),
+            key=map_component_key,
+        ) or {}
     clicked_cctv = find_clicked_cctv(
         nearby_cctvs,
         map_state.get("last_object_clicked"),
@@ -648,28 +688,31 @@ if not filtered_affected:
     else:
         st.success("현재 조회 범위에서 선택할 영향 시설이 없습니다.")
     with st.form(f"empty-target-form-{scope_key}", border=False):
-        empty_action_columns = st.columns(4)
-        empty_action_columns[0].form_submit_button(
-            "전체 선택",
-            disabled=True,
-            width="stretch",
-        )
-        empty_action_columns[1].form_submit_button(
-            "전체 해제",
-            disabled=True,
-            width="stretch",
-        )
-        empty_telegram = empty_action_columns[2].form_submit_button(
-            "Telegram 발송",
-            type="primary",
-            disabled=feed_failed,
-            width="stretch",
-        )
-        empty_report = empty_action_columns[3].form_submit_button(
-            "PDF 보고서",
-            disabled=feed_failed,
-            width="stretch",
-        )
+        with st.container(key="target-selection-controls"):
+            empty_selection_columns = st.columns(2)
+            empty_selection_columns[0].form_submit_button(
+                "전체 선택",
+                disabled=True,
+                width="stretch",
+            )
+            empty_selection_columns[1].form_submit_button(
+                "전체 해제",
+                disabled=True,
+                width="stretch",
+            )
+        with st.container(key="target-action-controls"):
+            empty_action_columns = st.columns(2)
+            empty_telegram = empty_action_columns[0].form_submit_button(
+                "Telegram 발송",
+                type="primary",
+                disabled=feed_failed,
+                width="stretch",
+            )
+            empty_report = empty_action_columns[1].form_submit_button(
+                "PDF 보고서",
+                disabled=feed_failed,
+                width="stretch",
+            )
     if feed_failed:
         st.caption("KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다.")
     elif empty_telegram or empty_report:
@@ -708,6 +751,12 @@ else:
                 for item in filtered_affected
             ]
         )
+        st.markdown(
+            '<div class="mobile-only mobile-table-help">'
+            '포함·등급·시설을 먼저 확인하고, '
+            '나머지 열은 표를 좌우로 밀어 확인하세요.</div>',
+            unsafe_allow_html=True,
+        )
         edited_targets = st.data_editor(
             target_rows,
             hide_index=True,
@@ -725,26 +774,29 @@ else:
             disabled=("시설 ID", "등급", "시설", "유형", "특보", "담당자"),
             key=f"target-editor-{scope_key}-{target_revision}",
         )
-        action_columns = st.columns(4)
-        select_all_clicked = action_columns[0].form_submit_button(
-            "전체 선택",
-            width="stretch",
-        )
-        select_none_clicked = action_columns[1].form_submit_button(
-            "전체 해제",
-            width="stretch",
-        )
-        telegram_clicked = action_columns[2].form_submit_button(
-            "Telegram 발송",
-            type="primary",
-            disabled=feed_failed,
-            width="stretch",
-        )
-        report_clicked = action_columns[3].form_submit_button(
-            "PDF 보고서",
-            disabled=feed_failed,
-            width="stretch",
-        )
+        with st.container(key="target-selection-controls"):
+            selection_columns = st.columns(2)
+            select_all_clicked = selection_columns[0].form_submit_button(
+                "전체 선택",
+                width="stretch",
+            )
+            select_none_clicked = selection_columns[1].form_submit_button(
+                "전체 해제",
+                width="stretch",
+            )
+        with st.container(key="target-action-controls"):
+            action_columns = st.columns(2)
+            telegram_clicked = action_columns[0].form_submit_button(
+                "Telegram 발송",
+                type="primary",
+                disabled=feed_failed,
+                width="stretch",
+            )
+            report_clicked = action_columns[1].form_submit_button(
+                "PDF 보고서",
+                disabled=feed_failed,
+                width="stretch",
+            )
 
     if feed_failed:
         st.caption("KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다.")

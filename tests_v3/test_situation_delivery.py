@@ -218,7 +218,16 @@ class TelegramPayloadTests(unittest.TestCase):
         )
         self.assertEqual(map_obj.location, [36.0, 129.0])
         self.assertEqual(map_obj.options["zoom"], 13)
-        self.assertIn("선택 시설", map_obj.get_root().render())
+        markup = map_obj.get_root().render()
+        self.assertIn("선택 시설", markup)
+        self.assertIn("mobile-map-interaction-control", markup)
+        self.assertIn("지도 조작 켜기", markup)
+        self.assertIn("페이지 스크롤 우선", markup)
+        self.assertIn("map.dragging", markup)
+        self.assertIn("window.top.innerWidth", markup)
+        self.assertIn("viewportWidth <= 700", markup)
+        self.assertIn("container.style.touchAction", markup)
+        self.assertIn("disableClickPropagation", markup)
 
     def test_map_adds_distinct_cctv_layer_marker_and_focus_bounds(self):
         unknown_cctv = NearbyCctv(

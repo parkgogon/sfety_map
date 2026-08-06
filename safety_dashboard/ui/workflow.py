@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import html
+from collections.abc import Sequence
 
 import streamlit as st
 
@@ -37,10 +39,21 @@ def grade_label(grade: RiskGrade) -> str:
     }[grade]
 
 
-def render_metric(label: str, value: int | str, note: str) -> None:
+def render_metric_grid(
+    items: Sequence[tuple[str, int | str, str]],
+) -> None:
+    """핵심 지표를 모바일에서도 한 줄로 빠르게 스캔하게 표시합니다."""
+
+    cards = "".join(
+        '<div class="metric-card">'
+        f'<div class="metric-label">{html.escape(str(label))}</div>'
+        f'<div class="metric-value">{html.escape(str(value))}</div>'
+        f'<div class="metric-note">{html.escape(str(note))}</div>'
+        "</div>"
+        for label, value, note in items
+    )
     st.markdown(
-        f'<div class="metric-card"><div class="metric-label">{label}</div>'
-        f'<div class="metric-value">{value}</div><div class="metric-note">{note}</div></div>',
+        f'<div class="metric-grid">{cards}</div>',
         unsafe_allow_html=True,
     )
 
