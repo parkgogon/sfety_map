@@ -9,8 +9,7 @@ Streamlit 대시보드입니다.
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .streamlit/secrets.example.toml .streamlit/secrets.toml
-.venv/bin/streamlit run app_v3.py
+.venv/bin/streamlit run app.py
 ```
 
 `.streamlit/secrets.toml`에 KMA API 키와 텔레그램 설정을 입력해야 합니다.
@@ -44,11 +43,13 @@ safety_dashboard/application/  조회 snapshot과 Telegram 메시지 유스케�
 safety_dashboard/adapters/     KMA·CSV·특보구역·Telegram·PDF 연동
 safety_dashboard/ui/           지도와 외부 CSS
 safety_dashboard/config/       사람이 수정하는 위험도 기준표
-app_v3.py                      얇은 Streamlit 화면 조립
+app.py                         Streamlit Cloud용 고정 진입점
+app_v3.py                      실제 Streamlit 화면 조립
 tests_v3/                      v3 핵심 규칙 테스트
 ```
 
-기존 `app.py`, `app_v2.py`와 기존 모듈은 비교와 복구를 위해 당분간 유지합니다.
+`app.py`는 배포 설정을 안정적으로 유지하는 얇은 진입점이며 실제 화면은
+`app_v3.py`와 `safety_dashboard/`에서 관리합니다.
 
 제품 목표, 업무 규칙과 구조는 [`docs/`](docs/README.md)에 정리되어 있습니다.
 
@@ -99,7 +100,7 @@ ITS API에는 촬영 방위각이 없으므로 방향을 자동 추정하지 않
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s tests_v3 -v
-.venv/bin/python -m compileall -q app_v3.py safety_dashboard
+.venv/bin/python -m compileall -q app.py app_v3.py safety_dashboard
 ```
 
 운영 배포 전에는 코드 저장소 이력에 존재했던 기존 KMA 키를 재발급하여
