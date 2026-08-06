@@ -462,7 +462,7 @@ if st.session_state.get("active_scope_key") != scope_key:
 note = (
     f"미판정 {filtered_snapshot.summary.unassessed_count}개"
     if filtered_snapshot.summary.unassessed_count
-    else "즉시 확인 우선순위"
+    else "점검 우선순위"
 )
 render_metric_grid(
     (
@@ -610,10 +610,10 @@ with map_column:
             )
 
 with detail_column:
-    st.markdown("#### 확인 우선순위")
+    st.markdown("#### 점검 우선순위 목록")
     if not detail_items:
         if feed_failed:
-            st.error("KMA 조회 실패로 확인 우선순위를 계산하지 못했습니다.")
+            st.error("KMA 조회 실패로 점검 우선순위 목록을 계산하지 못했습니다.")
         else:
             st.success("현재 조회 범위에 특보 영향 시설이 없습니다.")
     else:
@@ -641,16 +641,17 @@ with detail_column:
             )
             or "정책 확인 필요"
         )
-        st.markdown(
-            f'<div class="detail-card"><span class="grade-pill" '
-            f'style="background:{COLORS[detail.grade]}">{html.escape(definition.label)}</span> '
-            f'<b>{html.escape(detail.facility.name)}</b><br><br>'
-            f'<b>판정 근거</b><br>{reasons}<br><br>'
-            f'<b>권장 행동</b><br>{html.escape(definition.action)}<br><br>'
-            f'<b>담당</b> {html.escape(public_contact(detail.facility))}<br>'
-            f'<b>주소</b> {html.escape(detail.facility.address)}</div>',
-            unsafe_allow_html=True,
-        )
+        with st.expander("시설 상세 정보", expanded=False):
+            st.markdown(
+                f'<div class="detail-card"><span class="grade-pill" '
+                f'style="background:{COLORS[detail.grade]}">{html.escape(definition.label)}</span> '
+                f'<b>{html.escape(detail.facility.name)}</b><br><br>'
+                f'<b>판정 근거</b><br>{reasons}<br><br>'
+                f'<b>권장 행동</b><br>{html.escape(definition.action)}<br><br>'
+                f'<b>담당</b> {html.escape(public_contact(detail.facility))}<br>'
+                f'<b>주소</b> {html.escape(detail.facility.address)}</div>',
+                unsafe_allow_html=True,
+            )
         st.space("small")
         facility_region = resolve_facility_region(detail.facility.address)
         disaster_feed = None
@@ -677,17 +678,20 @@ with detail_column:
             cctv_direction_warning=cctv_direction_warning,
         )
 
-st.markdown("#### 후속 작업 대상")
-st.caption(
+targets_expander = st.expander(
+    f"후속 작업 대상 · {len(filtered_affected)}개",
+    expanded=False,
+)
+targets_expander.caption(
     "포함 여부를 여러 개 수정한 뒤 작업 버튼을 누르면 한 번에 반영됩니다. "
     "Telegram과 PDF는 이 표에서 체크한 시설과 연결 특보만 사용합니다."
 )
 if not filtered_affected:
     if feed_failed:
-        st.error("KMA 조회 실패로 후속 작업 대상 선정을 중단했습니다.")
+        targets_expander.error("KMA 조회 실패로 후속 작업 대상 선정을 중단했습니다.")
     else:
-        st.success("현재 조회 범위에서 선택할 영향 시설이 없습니다.")
-    with st.form(f"empty-target-form-{scope_key}", border=False):
+        targets_expander.success("현재 조회 범위에서 선택할 영향 시설이 없습니다.")
+    with targets_expander.form(f"empty-target-form-{scope_key}", border=False):
         with st.container(key="target-selection-controls"):
             empty_selection_columns = st.columns(2)
             empty_selection_columns[0].form_submit_button(
@@ -714,9 +718,11 @@ if not filtered_affected:
                 width="stretch",
             )
     if feed_failed:
-        st.caption("KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다.")
+        targets_expander.caption(
+            "KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다."
+        )
     elif empty_telegram or empty_report:
-        st.warning(
+        targets_expander.warning(
             "작업 대상이 없습니다. 영향 시설이 있는 조회 범위를 "
             "적용한 뒤 다시 실행해 주세요."
         )
@@ -736,7 +742,10 @@ else:
     target_revision = int(st.session_state.get(target_revision_key, 0))
     stored_target_ids = set(st.session_state[target_state_key])
 
-    with st.form(f"target-form-{scope_key}-{target_revision}", border=False):
+    with targets_expander.form(
+        f"target-form-{scope_key}-{target_revision}",
+        border=False,
+    ):
         target_rows = pd.DataFrame(
             [
                 {
@@ -799,7 +808,9 @@ else:
             )
 
     if feed_failed:
-        st.caption("KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다.")
+        targets_expander.caption(
+            "KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다."
+        )
     if select_all_clicked or select_none_clicked:
         st.session_state[target_state_key] = (
             available_target_ids if select_all_clicked else []
@@ -814,7 +825,7 @@ else:
         )
         st.session_state[target_state_key] = selected_target_ids
         if not selected_target_ids:
-            st.warning(
+            targets_expander.warning(
                 "작업 대상이 없습니다. 시설을 하나 이상 체크한 뒤 "
                 "다시 실행해 주세요."
             )

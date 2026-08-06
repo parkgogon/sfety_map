@@ -42,6 +42,18 @@
 [data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .stButton button, .stDownloadButton button { border-radius: 9px; font-weight: 700; }
 [data-testid="stPills"] [role="button"] { font-weight: 700; }
+.st-key-news-actions div[data-testid="stHorizontalBlock"] {
+  align-items: center !important; flex-wrap: nowrap !important; gap: .45rem !important;
+}
+.st-key-news-actions div[data-testid="stColumn"]:first-child {
+  flex: 1 1 auto !important; min-width: 0 !important; width: auto !important;
+}
+.st-key-news-actions div[data-testid="stColumn"]:last-child {
+  flex: 0 0 44px !important; min-width: 44px !important; width: 44px !important;
+}
+.st-key-news-actions div[data-testid="stColumn"]:last-child button {
+  min-height: 44px; padding-left: 0; padding-right: 0; width: 100%;
+}
 .mobile-only { display: none; }
 
 @media (max-width: 700px) {

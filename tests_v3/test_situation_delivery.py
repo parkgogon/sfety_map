@@ -228,6 +228,7 @@ class TelegramPayloadTests(unittest.TestCase):
         self.assertIn("viewportWidth <= 700", markup)
         self.assertIn("container.style.touchAction", markup)
         self.assertIn("disableClickPropagation", markup)
+        self.assertNotIn("L.control.layers", markup)
 
     def test_map_adds_distinct_cctv_layer_marker_and_focus_bounds(self):
         unknown_cctv = NearbyCctv(

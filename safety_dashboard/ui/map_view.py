@@ -241,7 +241,6 @@ def build_monitoring_map(
             fill=False,
             tooltip=f"선택 시설 · {focus_facility.name}",
         ).add_to(map_obj)
-    folium.LayerControl(collapsed=True).add_to(map_obj)
     return map_obj
 
 

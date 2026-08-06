@@ -56,14 +56,33 @@ def render_facility_context(
                     st.caption("수신지역 · " + " · ".join(message.regions))
         st.markdown(f"[출처 · 행정안전부 재난안전데이터]({SOURCE_PAGE_URL})")
 
-    st.link_button(
-        "Google 뉴스에서 최근 기사 확인",
-        news_url,
-        help="지역 필수 · 특보 중 하나 이상 · 최근 7일",
-        on_click="ignore",
-        width="stretch",
-    )
-    st.caption("뉴스는 외부 참고정보이며 위험도·발송·보고서에 반영되지 않습니다.")
+    _render_news_link(news_url)
+
+
+def _render_news_link(news_url: str) -> None:
+    with st.container(key="news-actions"):
+        link_column, help_column = st.columns(
+            (1, 0.12),
+            gap="small",
+            vertical_alignment="center",
+        )
+        link_column.link_button(
+            "Google 뉴스에서 최근 기사 확인",
+            news_url,
+            on_click="ignore",
+            width="stretch",
+        )
+        with help_column.popover(
+            "?",
+            help="Google 뉴스 안내",
+            width="stretch",
+        ):
+            st.markdown("**검색 기준**")
+            st.write("시설 관할 지역 · 적용 특보 · 최근 7일")
+            st.caption(
+                "뉴스는 외부 참고정보이며 위험도·발송·보고서에 "
+                "반영되지 않습니다."
+            )
 
 
 def _render_cctv_status(
