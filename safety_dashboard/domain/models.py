@@ -10,6 +10,7 @@ from safety_dashboard.domain.enums import (
     ContextStatus,
     DataHealth,
     RiskGrade,
+    WeatherLayerKind,
     WarningLevel,
 )
 
@@ -66,6 +67,31 @@ class WeatherObservation:
     rainfall_1h_mm: float | None = None
     wind_speed_ms: float | None = None
     wind_direction_deg: float | None = None
+    message: str = ""
+
+
+@dataclass(frozen=True)
+class WeatherGridPoint:
+    """KMA 동네예보 격자 한 지점의 실황값."""
+
+    grid_x: int
+    grid_y: int
+    location: GeoPoint
+    value: float | None = None
+    u_ms: float | None = None
+    v_ms: float | None = None
+    speed_ms: float | None = None
+    direction_to_deg: float | None = None
+
+
+@dataclass(frozen=True)
+class WeatherLayerFeed:
+    kind: WeatherLayerKind
+    health: DataHealth
+    observed_at: dt.datetime
+    fetched_at: dt.datetime
+    unit: str
+    points: tuple[WeatherGridPoint, ...]
     message: str = ""
 
 

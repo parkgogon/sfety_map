@@ -21,6 +21,14 @@ class ContextStatus(str, Enum):
     ERROR = "ERROR"
 
 
+class WeatherLayerKind(str, Enum):
+    """사용자 지도에 한 번에 표시할 실황 기상 레이어."""
+
+    TEMPERATURE = "temperature"
+    RAINFALL = "rainfall"
+    WIND = "wind"
+
+
 class WarningLevel(str, Enum):
     ADVISORY = "ADVISORY"
     WARNING = "WARNING"

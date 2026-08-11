@@ -1,6 +1,12 @@
 """외부 API와 UI에 의존하지 않는 도메인 계층."""
 
-from safety_dashboard.domain.enums import ContextStatus, DataHealth, RiskGrade, WarningLevel
+from safety_dashboard.domain.enums import (
+    ContextStatus,
+    DataHealth,
+    RiskGrade,
+    WeatherLayerKind,
+    WarningLevel,
+)
 from safety_dashboard.domain.models import (
     CctvFeed,
     DashboardSnapshot,
@@ -16,6 +22,8 @@ from safety_dashboard.domain.models import (
     RiskReason,
     Warning,
     WarningFeed,
+    WeatherGridPoint,
+    WeatherLayerFeed,
     WeatherObservation,
 )
 
@@ -38,5 +46,8 @@ __all__ = [
     "Warning",
     "WarningFeed",
     "WarningLevel",
+    "WeatherGridPoint",
+    "WeatherLayerFeed",
+    "WeatherLayerKind",
     "WeatherObservation",
 ]

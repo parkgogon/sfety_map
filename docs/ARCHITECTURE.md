@@ -175,6 +175,9 @@ GET /api/v1/facilities/{facility_id}/weather
 
 GET /api/v1/facilities/{facility_id}/cctv
     → 20km 이내 도로 CCTV 최대 5개와 상태
+
+GET /api/v1/weather/layers/{temperature|rainfall|wind}
+    → 5개 관제 권역의 KMA 격자 실황과 상태
 ```
 
 `monitoring` 응답만으로 검색·필터·지도·시설 기본 상세를 렌더링할 수 있어야
@@ -192,6 +195,8 @@ GET /api/v1/facilities/{facility_id}/cctv
 - 갱신 실패 시 마지막 정상 자료를 유지하면서 기준 시각과 실패 상태를 함께
   표시한다. 오류를 정상 0건으로 바꾸지 않는다.
 - 현재 기상은 시설 선택 후 자동 조회하고 격자별 10분 캐시한다.
+- 지도 기상 레이어는 첫 화면에서 조회하지 않고, 선택한 종류만 10분
+  캐시한다. 지연 시 마지막 정상 격자와 기준 시각을 함께 제공한다.
 - CCTV는 사용자가 요청할 때만 조회하고 시설별 1분 캐시한다.
 - 오류 결과는 30초 후 재시도할 수 있게 하며 위험도·Telegram·PDF에는 반영하지 않는다.
 

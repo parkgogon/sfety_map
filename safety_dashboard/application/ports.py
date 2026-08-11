@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Protocol, Sequence
 
+from safety_dashboard.domain.enums import WeatherLayerKind
 from safety_dashboard.domain.models import (
     CctvFeed,
     DisasterMessageFeed,
@@ -13,6 +14,7 @@ from safety_dashboard.domain.models import (
     GeoPoint,
     OutgoingTelegramMessage,
     WarningFeed,
+    WeatherLayerFeed,
     WeatherObservation,
 )
 
@@ -59,6 +61,14 @@ class CurrentWeatherProvider(Protocol):
         location: GeoPoint,
         now: dt.datetime | None = None,
     ) -> WeatherObservation: ...
+
+
+class WeatherLayerProvider(Protocol):
+    def fetch(
+        self,
+        kind: WeatherLayerKind,
+        now: dt.datetime | None = None,
+    ) -> WeatherLayerFeed: ...
 
 
 class ReportRenderer(Protocol):

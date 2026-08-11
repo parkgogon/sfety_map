@@ -1,6 +1,7 @@
 export type DataHealth = "LIVE" | "FALLBACK" | "STALE" | "ERROR" | "SIMULATION";
 export type ContextStatus = "LIVE" | "NOT_CONFIGURED" | "ERROR";
 export type MonitoringMode = "live" | "simulation";
+export type WeatherLayerKind = "temperature" | "rainfall" | "wind";
 export type RiskGrade =
   | "HIGH"
   | "MEDIUM"
@@ -52,6 +53,32 @@ export interface WeatherResponse {
   wind_direction_deg: number | null;
   detail: string;
   source: string;
+  actual_data: true;
+}
+
+export interface WeatherLayerPoint {
+  grid_x: number;
+  grid_y: number;
+  latitude: number;
+  longitude: number;
+  value?: number;
+  u_ms?: number;
+  v_ms?: number;
+  speed_ms?: number;
+  direction_to_deg?: number;
+}
+
+export interface WeatherLayerResponse {
+  api_version: "v1";
+  layer: WeatherLayerKind;
+  status: "LIVE" | "STALE" | "ERROR";
+  observed_at: string;
+  fetched_at: string;
+  unit: string;
+  points: WeatherLayerPoint[];
+  detail: string;
+  source: string;
+  scope: string;
   actual_data: true;
 }
 

@@ -6,8 +6,11 @@ import {
   formatReferenceTime,
   requestedFacilityId,
   requestedMonitoringMode,
+  rainfallColor,
   shouldZoomForSelection,
+  temperatureColor,
   weatherSummary,
+  windSpeedColor,
   windDirectionLabel,
 } from "./utils";
 
@@ -106,5 +109,13 @@ describe("현장 지도 필터", () => {
     };
     expect(cctvDirectionText(cctv)).toBe("촬영방향 동 90° · 2026-08-01 검증");
     expect(cctvDirectionText({ ...cctv, bearing_deg: null })).toBe("촬영방향 미확인");
+  });
+
+  it("기상 레이어는 고정 범례와 무강수 투명 색을 사용한다", () => {
+    expect(rainfallColor(0)).toBe("rgba(0,0,0,0)");
+    expect(rainfallColor(5)).toMatch(/^rgba\(/);
+    expect(temperatureColor(30, 0.4)).toContain(",0.4)");
+    expect(windSpeedColor(12)).toMatch(/^rgba\(/);
+    expect(temperatureColor(-100)).not.toContain("NaN");
   });
 });

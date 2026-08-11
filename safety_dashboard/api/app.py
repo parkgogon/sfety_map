@@ -7,6 +7,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 from safety_dashboard.api.context_service import (
     FacilityContextService,
@@ -14,6 +15,8 @@ from safety_dashboard.api.context_service import (
 )
 from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.settings import ApiSettings
+from safety_dashboard.api.weather_layer_service import WeatherLayerService
+from safety_dashboard.domain.enums import WeatherLayerKind
 
 
 LOGGER = logging.getLogger("safety_dashboard.api")
@@ -22,16 +25,19 @@ LOGGER = logging.getLogger("safety_dashboard.api")
 def create_app(
     service: MonitoringApiService | None = None,
     context_service: FacilityContextService | None = None,
+    weather_layer_service: WeatherLayerService | None = None,
 ) -> FastAPI:
     settings = ApiSettings.from_environment()
     monitoring_service = service or MonitoringApiService(settings)
     facility_context = context_service or FacilityContextService(settings)
+    weather_layers = weather_layer_service or WeatherLayerService(settings)
     application = FastAPI(
         title="K-ECO Safety Monitoring API",
         version="1.0.0",
         docs_url=None,
         redoc_url=None,
     )
+    application.add_middleware(GZipMiddleware, minimum_size=1000)
 
     @application.get("/api/v1/health")
     def health() -> dict[str, str]:
@@ -70,6 +76,14 @@ def create_app(
                 status_code=404,
                 detail="시설을 찾을 수 없습니다.",
             ) from exc
+
+    @application.get("/api/v1/weather/layers/{layer}")
+    def weather_layer(
+        layer: WeatherLayerKind,
+        response: Response,
+    ) -> dict:
+        response.headers["Cache-Control"] = "private, no-store"
+        return weather_layers.layer(layer)
 
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:

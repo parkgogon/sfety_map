@@ -4,6 +4,7 @@ import type {
   NearbyCctv,
   RiskGrade,
   WeatherResponse,
+  WeatherLayerKind,
 } from "./types";
 
 export type FacilitySelectionSource =
@@ -38,6 +39,93 @@ export const GRADE_COLORS: Record<RiskGrade, string> = {
   NONE: "#247ba0",
   UNAVAILABLE: "#667085",
 };
+
+export const WEATHER_LAYER_LABELS: Record<WeatherLayerKind, string> = {
+  rainfall: "강수",
+  wind: "바람",
+  temperature: "기온",
+};
+
+type ColorStop = readonly [number, string, string];
+
+const TEMPERATURE_STOPS: readonly ColorStop[] = [
+  [-20, "--color-weather-temp-cold", "#2563eb"],
+  [0, "--color-weather-temp-cool", "#06b6d4"],
+  [15, "--color-weather-temp-mild", "#22c55e"],
+  [25, "--color-weather-temp-warm", "#facc15"],
+  [32, "--color-weather-temp-hot", "#f97316"],
+  [40, "--color-weather-temp-extreme", "#dc2626"],
+];
+const RAINFALL_STOPS: readonly ColorStop[] = [
+  [0.1, "--color-weather-rain-trace", "#60a5fa"],
+  [1, "--color-weather-rain-light", "#2563eb"],
+  [5, "--color-weather-rain-moderate", "#4f46e5"],
+  [15, "--color-weather-rain-heavy", "#7e22ce"],
+  [30, "--color-weather-rain-severe", "#be123c"],
+  [60, "--color-weather-rain-extreme", "#7f1d1d"],
+];
+const WIND_STOPS: readonly ColorStop[] = [
+  [0, "--color-weather-wind-calm", "#38bdf8"],
+  [4, "--color-weather-wind-gentle", "#14b8a6"],
+  [8, "--color-weather-wind-strong", "#eab308"],
+  [14, "--color-weather-wind-gale", "#f97316"],
+  [25, "--color-weather-wind-severe", "#dc2626"],
+];
+
+const DESIGN_COLOR_CACHE = new Map<string, string>();
+
+function designColor(token: string, fallback: string): string {
+  const cached = DESIGN_COLOR_CACHE.get(token);
+  if (cached) return cached;
+  if (typeof document === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  const result = /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+  DESIGN_COLOR_CACHE.set(token, result);
+  return result;
+}
+
+function hexRgb(value: string): [number, number, number] {
+  const normalized = value.replace("#", "");
+  return [
+    Number.parseInt(normalized.slice(0, 2), 16),
+    Number.parseInt(normalized.slice(2, 4), 16),
+    Number.parseInt(normalized.slice(4, 6), 16),
+  ];
+}
+
+function scaleColor(value: number, stops: readonly ColorStop[], alpha: number): string {
+  const finite = Number.isFinite(value) ? value : stops[0][0];
+  let lower = stops[0];
+  let upper = stops[stops.length - 1];
+  for (let index = 1; index < stops.length; index += 1) {
+    if (finite <= stops[index][0]) {
+      upper = stops[index];
+      lower = stops[index - 1];
+      break;
+    }
+    lower = stops[index];
+  }
+  const span = Math.max(0.0001, upper[0] - lower[0]);
+  const ratio = Math.min(1, Math.max(0, (finite - lower[0]) / span));
+  const left = hexRgb(designColor(lower[1], lower[2]));
+  const right = hexRgb(designColor(upper[1], upper[2]));
+  const channels = left.map((channel, index) =>
+    Math.round(channel + (right[index] - channel) * ratio));
+  return `rgba(${channels[0]},${channels[1]},${channels[2]},${alpha})`;
+}
+
+export function temperatureColor(value: number, alpha = 1): string {
+  return scaleColor(value, TEMPERATURE_STOPS, alpha);
+}
+
+export function rainfallColor(value: number, alpha = 1): string {
+  if (!Number.isFinite(value) || value <= 0) return "rgba(0,0,0,0)";
+  return scaleColor(value, RAINFALL_STOPS, alpha);
+}
+
+export function windSpeedColor(value: number, alpha = 1): string {
+  return scaleColor(value, WIND_STOPS, alpha);
+}
 
 export function normalizeSearch(value: string): string {
   return value.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");

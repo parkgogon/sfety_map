@@ -4,12 +4,15 @@ import { useFacilityCctv, useFacilityWeather } from "./contextApi";
 import { CctvModal } from "./CctvModal";
 import { FacilitySheet } from "./FacilitySheet";
 import { KakaoMap } from "./KakaoMap";
+import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
+import { useWeatherLayer } from "./weatherLayerApi";
 import type {
   Facility,
   MapFocusRequest,
   MonitoringMode,
   NearbyCctv,
   RiskGrade,
+  WeatherLayerKind,
 } from "./types";
 import {
   type FacilitySelectionSource,
@@ -22,6 +25,7 @@ import {
   requestedMonitoringMode,
   shouldZoomForSelection,
   uniqueWarningText,
+  WEATHER_LAYER_LABELS,
 } from "./utils";
 
 function setFacilityQuery(facilityId: string) {
@@ -53,6 +57,8 @@ export default function App() {
   const [deepLinkNotice, setDeepLinkNotice] = useState("");
   const [focusRequest, setFocusRequest] = useState<MapFocusRequest | null>(null);
   const [selectedCctvId, setSelectedCctvId] = useState("");
+  const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
+  const [weatherLayerOpen, setWeatherLayerOpen] = useState(false);
   const initializedGroups = useRef(false);
   const handledDeepLink = useRef(false);
   const focusRevision = useRef(0);
@@ -109,6 +115,7 @@ export default function App() {
   );
   const selectedFacility = data?.facilities.find((item) => item.id === selectedId) ?? null;
   const weather = useFacilityWeather(selectedFacility?.id ?? "");
+  const weatherLayer = useWeatherLayer(weatherLayerKind);
   const cctv = useFacilityCctv(selectedFacility?.id ?? "");
   const cctvItems = cctvEnabled ? cctv.data?.cctvs ?? [] : [];
   const selectedCctv = cctvItems.find((item) => item.id === selectedCctvId) ?? null;
@@ -226,6 +233,9 @@ export default function App() {
           cctvs={cctvItems}
           selectedCctvId={selectedCctvId}
           focusRequest={focusRequest}
+          weatherLayer={
+            weatherLayer.data?.status !== "ERROR" ? weatherLayer.data : null
+          }
           onSelect={selectFacility}
           onSelectGroup={setSameLocation}
           onSelectCctv={selectCctv}
@@ -259,6 +269,27 @@ export default function App() {
             </div>
           )}
         </div>
+
+        <button
+          className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
+          type="button"
+          onClick={() => setWeatherLayerOpen(true)}
+          aria-label="기상 실황 레이어 선택"
+        >
+          <span aria-hidden="true">☁</span>
+          <b>{weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : "기상"}</b>
+        </button>
+
+        {weatherLayerKind && (
+          <WeatherLayerLegend
+            kind={weatherLayerKind}
+            data={weatherLayer.data}
+            loading={weatherLayer.loading}
+            error={weatherLayer.error}
+            simulation={simulation}
+            onRetry={weatherLayer.retry}
+          />
+        )}
 
         <div className="grade-legend" aria-label="위험등급 지도 표시 설정">
           {GRADE_ORDER.map((grade) => (
@@ -302,6 +333,17 @@ export default function App() {
         onRefresh={cctv.load}
         onClose={() => setSelectedCctvId("")}
       />
+
+      {weatherLayerOpen && (
+        <WeatherLayerSheet
+          active={weatherLayerKind}
+          onSelect={(kind) => {
+            setWeatherLayerKind(kind);
+            setWeatherLayerOpen(false);
+          }}
+          onClose={() => setWeatherLayerOpen(false)}
+        />
+      )}
 
       {filterOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setFilterOpen(false)}>

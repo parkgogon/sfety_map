@@ -36,6 +36,25 @@
   --color-status-error: #d92d20;
   --color-status-simulation: #6941c6;
 
+  /* Weather layers: fixed scales, separate from risk-grade colors. */
+  --color-weather-temp-cold: #2563eb;
+  --color-weather-temp-cool: #06b6d4;
+  --color-weather-temp-mild: #22c55e;
+  --color-weather-temp-warm: #facc15;
+  --color-weather-temp-hot: #f97316;
+  --color-weather-temp-extreme: #dc2626;
+  --color-weather-rain-trace: #60a5fa;
+  --color-weather-rain-light: #2563eb;
+  --color-weather-rain-moderate: #4f46e5;
+  --color-weather-rain-heavy: #7e22ce;
+  --color-weather-rain-severe: #be123c;
+  --color-weather-rain-extreme: #7f1d1d;
+  --color-weather-wind-calm: #38bdf8;
+  --color-weather-wind-gentle: #14b8a6;
+  --color-weather-wind-strong: #eab308;
+  --color-weather-wind-gale: #f97316;
+  --color-weather-wind-severe: #dc2626;
+
   /* Spacing: 4px base scale */
   --space-1: .25rem;
   --space-2: .5rem;

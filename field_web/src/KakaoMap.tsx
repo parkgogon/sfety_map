@@ -5,9 +5,17 @@ import type {
   MapFocusRequest,
   NearbyCctv,
   RiskGrade,
+  WeatherLayerPoint,
+  WeatherLayerResponse,
   WarningZoneFeature,
 } from "./types";
-import { cctvDirectionText, GRADE_ORDER } from "./utils";
+import {
+  cctvDirectionText,
+  GRADE_ORDER,
+  rainfallColor,
+  temperatureColor,
+  windSpeedColor,
+} from "./utils";
 
 interface KakaoMapProps {
   facilities: Facility[];
@@ -16,9 +24,226 @@ interface KakaoMapProps {
   cctvs: NearbyCctv[];
   selectedCctvId: string;
   focusRequest: MapFocusRequest | null;
+  weatherLayer: WeatherLayerResponse | null;
   onSelect: (facility: Facility) => void;
   onSelectGroup: (facilities: Facility[]) => void;
   onSelectCctv: (cctv: NearbyCctv) => void;
+}
+
+interface ScreenWeatherPoint {
+  source: WeatherLayerPoint;
+  x: number;
+  y: number;
+}
+
+function median(values: number[]): number {
+  if (!values.length) return 12;
+  const ordered = [...values].sort((left, right) => left - right);
+  return ordered[Math.floor(ordered.length / 2)];
+}
+
+function projectedWeatherPoints(
+  kakao: any,
+  map: any,
+  points: WeatherLayerPoint[],
+): ScreenWeatherPoint[] {
+  const projection = map.getProjection();
+  return points.map((source) => {
+    const pixel = projection.containerPointFromCoords(
+      new kakao.maps.LatLng(source.latitude, source.longitude),
+    );
+    return { source, x: pixel.x, y: pixel.y };
+  });
+}
+
+function scalarCellRadius(points: ScreenWeatherPoint[]): number {
+  const byGrid = new Map(points.map((point) => [
+    `${point.source.grid_x}:${point.source.grid_y}`,
+    point,
+  ]));
+  const distances: number[] = [];
+  for (const point of points) {
+    const neighbor = byGrid.get(`${point.source.grid_x + 1}:${point.source.grid_y}`)
+      ?? byGrid.get(`${point.source.grid_x}:${point.source.grid_y + 1}`);
+    if (!neighbor) continue;
+    distances.push(Math.hypot(point.x - neighbor.x, point.y - neighbor.y));
+    if (distances.length >= 80) break;
+  }
+  return Math.min(110, Math.max(6, median(distances) * 0.78));
+}
+
+function drawScalarLayer(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  points: ScreenWeatherPoint[],
+  layer: WeatherLayerResponse,
+) {
+  const radius = scalarCellRadius(points);
+  const visible = points.filter((point) =>
+    point.x >= -radius && point.x <= width + radius
+    && point.y >= -radius && point.y <= height + radius);
+  visible.forEach((point) => {
+    const value = point.source.value;
+    if (value === undefined || !Number.isFinite(value)) return;
+    if (layer.layer === "rainfall" && value <= 0) return;
+    const color = layer.layer === "temperature"
+      ? temperatureColor(value, 0.48)
+      : rainfallColor(value, 0.62);
+    const gradient = context.createRadialGradient(
+      point.x,
+      point.y,
+      0,
+      point.x,
+      point.y,
+      radius,
+    );
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.68, color);
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = gradient;
+    context.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+  });
+}
+
+function drawWindArrow(
+  context: CanvasRenderingContext2D,
+  point: ScreenWeatherPoint,
+) {
+  const speed = point.source.speed_ms;
+  const direction = point.source.direction_to_deg;
+  if (speed === undefined || direction === undefined) return;
+  const length = Math.min(34, Math.max(15, 15 + speed * 0.9));
+  const radians = direction * Math.PI / 180;
+  context.save();
+  context.translate(point.x, point.y);
+  context.rotate(radians);
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(0, length / 2);
+  context.lineTo(0, -length / 2);
+  context.lineTo(-4.5, -length / 2 + 6);
+  context.moveTo(0, -length / 2);
+  context.lineTo(4.5, -length / 2 + 6);
+  context.strokeStyle = "rgba(255,255,255,.92)";
+  context.lineWidth = 5;
+  context.stroke();
+  context.strokeStyle = windSpeedColor(speed, 0.96);
+  context.lineWidth = 2.2;
+  context.stroke();
+  context.restore();
+}
+
+function drawWindLayer(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  points: ScreenWeatherPoint[],
+  mapLevel: number,
+) {
+  const spacing = mapLevel >= 9 ? 54 : mapLevel >= 7 ? 48 : 42;
+  const occupied = new Set<string>();
+  points.forEach((point) => {
+    if (point.x < -20 || point.x > width + 20 || point.y < -20 || point.y > height + 20) return;
+    const cell = `${Math.floor(point.x / spacing)}:${Math.floor(point.y / spacing)}`;
+    if (occupied.has(cell)) return;
+    occupied.add(cell);
+    drawWindArrow(context, point);
+  });
+}
+
+function clearAroundFacilities(
+  context: CanvasRenderingContext2D,
+  kakao: any,
+  map: any,
+  facilities: Facility[],
+  selectedFacilityId: string,
+) {
+  const projection = map.getProjection();
+  context.save();
+  context.globalCompositeOperation = "destination-out";
+  facilities.forEach((facility) => {
+    const point = projection.containerPointFromCoords(
+      new kakao.maps.LatLng(facility.latitude, facility.longitude),
+    );
+    context.beginPath();
+    context.arc(
+      point.x,
+      point.y,
+      facility.id === selectedFacilityId ? 28 : 23,
+      0,
+      Math.PI * 2,
+    );
+    context.fill();
+  });
+  context.restore();
+}
+
+function drawWarningOutlines(
+  context: CanvasRenderingContext2D,
+  kakao: any,
+  map: any,
+  warningZones: WarningZoneFeature[],
+) {
+  const projection = map.getProjection();
+  warningZones.forEach((feature) => {
+    const polygons = feature.geometry.type === "Polygon"
+      ? [feature.geometry.coordinates]
+      : feature.geometry.coordinates;
+    (polygons as number[][][][]).forEach((polygon) => {
+      polygon.forEach((ring) => {
+        context.beginPath();
+        ring.forEach(([longitude, latitude], index) => {
+          const point = projection.containerPointFromCoords(
+            new kakao.maps.LatLng(latitude, longitude),
+          );
+          if (index === 0) context.moveTo(point.x, point.y);
+          else context.lineTo(point.x, point.y);
+        });
+        context.closePath();
+        context.strokeStyle = feature.properties.color;
+        context.lineWidth = 2;
+        context.stroke();
+      });
+    });
+  });
+}
+
+function renderWeatherCanvas(
+  canvas: HTMLCanvasElement,
+  element: HTMLDivElement,
+  kakao: any,
+  map: any,
+  layer: WeatherLayerResponse | null,
+  facilities: Facility[],
+  selectedFacilityId: string,
+  warningZones: WarningZoneFeature[],
+) {
+  const width = element.clientWidth;
+  const height = element.clientHeight;
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.max(1, Math.round(width * ratio));
+  canvas.height = Math.max(1, Math.round(height * ratio));
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  context.clearRect(0, 0, width, height);
+  if (!layer || !layer.points.length) {
+    canvas.style.opacity = "0";
+    return;
+  }
+  const points = projectedWeatherPoints(kakao, map, layer.points);
+  if (layer.layer === "wind") {
+    drawWindLayer(context, width, height, points, map.getLevel());
+  } else {
+    drawScalarLayer(context, width, height, points, layer);
+  }
+  clearAroundFacilities(context, kakao, map, facilities, selectedFacilityId);
+  drawWarningOutlines(context, kakao, map, warningZones);
+  canvas.style.opacity = "1";
 }
 
 const GRADE_RANK = new Map<RiskGrade, number>(
@@ -109,11 +334,13 @@ export function KakaoMap({
   cctvs,
   selectedCctvId,
   focusRequest,
+  weatherLayer,
   onSelect,
   onSelectGroup,
   onSelectCctv,
 }: KakaoMapProps) {
   const elementRef = useRef<HTMLDivElement>(null);
+  const weatherCanvasRef = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<any>(null);
   const kakaoRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
@@ -274,9 +501,57 @@ export function KakaoMap({
     return () => window.removeEventListener("keco-map-ready", render);
   }, [warningZones]);
 
+  useEffect(() => {
+    let frame = 0;
+    const draw = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const canvas = weatherCanvasRef.current;
+        const element = elementRef.current;
+        const kakao = kakaoRef.current;
+        const map = mapRef.current;
+        if (!canvas || !element || !kakao || !map) return;
+        renderWeatherCanvas(
+          canvas,
+          element,
+          kakao,
+          map,
+          weatherLayer,
+          facilities,
+          selectedFacilityId,
+          warningZones,
+        );
+      });
+    };
+    const hide = () => {
+      if (weatherCanvasRef.current) weatherCanvasRef.current.style.opacity = "0";
+    };
+    const kakao = kakaoRef.current;
+    const map = mapRef.current;
+    if (kakao && map) {
+      kakao.maps.event.addListener(map, "dragstart", hide);
+      kakao.maps.event.addListener(map, "zoom_start", hide);
+      kakao.maps.event.addListener(map, "idle", draw);
+    }
+    draw();
+    window.addEventListener("resize", draw);
+    window.addEventListener("keco-map-ready", draw);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", draw);
+      window.removeEventListener("keco-map-ready", draw);
+      if (kakao && map) {
+        kakao.maps.event.removeListener(map, "dragstart", hide);
+        kakao.maps.event.removeListener(map, "zoom_start", hide);
+        kakao.maps.event.removeListener(map, "idle", draw);
+      }
+    };
+  }, [facilities, selectedFacilityId, warningZones, weatherLayer]);
+
   return (
     <div className="map-frame" aria-label="시설 위치 지도">
       <div ref={elementRef} className="map-canvas" />
+      <canvas ref={weatherCanvasRef} className="weather-map-canvas" aria-hidden="true" />
       {error && (
         <div className="map-error" role="alert">
           <strong>지도를 표시할 수 없습니다.</strong>

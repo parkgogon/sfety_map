@@ -16,6 +16,7 @@ from safety_dashboard.domain.models import (
     CctvFeed,
     DashboardSnapshot,
     Warning,
+    WeatherLayerFeed,
     WeatherObservation,
 )
 from safety_dashboard.domain.risk_policy import RiskPolicy
@@ -50,6 +51,44 @@ def serialize_weather(
         "wind_direction_deg": observation.wind_direction_deg,
         "detail": observation.message,
         "source": "기상청 초단기실황",
+        "actual_data": True,
+    }
+
+
+def serialize_weather_layer(feed: WeatherLayerFeed) -> dict[str, Any]:
+    """관제 권역 실황 격자를 React 지도용 응답으로 변환합니다."""
+
+    points = []
+    for item in feed.points:
+        base = {
+            "grid_x": item.grid_x,
+            "grid_y": item.grid_y,
+            "latitude": round(item.location.latitude, 6),
+            "longitude": round(item.location.longitude, 6),
+        }
+        if feed.kind.value == "wind":
+            base.update(
+                {
+                    "u_ms": item.u_ms,
+                    "v_ms": item.v_ms,
+                    "speed_ms": item.speed_ms,
+                    "direction_to_deg": item.direction_to_deg,
+                }
+            )
+        else:
+            base["value"] = item.value
+        points.append(base)
+    return {
+        "api_version": "v1",
+        "layer": feed.kind.value,
+        "status": feed.health.value,
+        "observed_at": _iso(feed.observed_at),
+        "fetched_at": _iso(feed.fetched_at),
+        "unit": feed.unit,
+        "points": points,
+        "detail": feed.message,
+        "source": "기상청 동네예보 격자 실황",
+        "scope": "대구·경북·부산·울산·경남",
         "actual_data": True,
     }
 

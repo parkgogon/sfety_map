@@ -37,11 +37,13 @@ Streamlit secrets를 읽는다.
 - `GET /api/v1/monitoring?refresh=true`: 수동 강제 갱신
 - `GET /api/v1/facilities/{facility_id}/weather`: 시설 KMA 격자의 초단기실황
 - `GET /api/v1/facilities/{facility_id}/cctv`: 반경 20km 이내 도로 CCTV 최대 5개
+- `GET /api/v1/weather/layers/{temperature|rainfall|wind}`: 관제 5개 권역 KMA 격자 실황
 
 전화번호와 KMA 인증키는 응답에 포함하지 않는다. KMA 조회 실패 시 시설 등급을
 `영향 없음`이 아닌 `조회 불가`로 반환한다. 기상과 CCTV는 독립 상태를
 반환하므로 한 제공자의 장애가 핵심 관제 지도를 중단하지 않는다. 재난문자는
 React 현장 지도의 이번 범위에 포함하지 않는다.
+기상 격자 레이어는 기본으로 꺼져 있고 사용자가 선택한 경우에만 조회한다.
 
 ## Google Cloud 최초 준비
 
