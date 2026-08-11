@@ -153,6 +153,7 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertIsNone(payload["summary"])
         self.assertTrue(all(item["grade"] == "UNAVAILABLE" for item in payload["facilities"]))
         self.assertTrue(all(item["grade_label"] == "조회 불가" for item in payload["facilities"]))
+        self.assertTrue(all(item["grade_color"] == "#667085" for item in payload["facilities"]))
 
     def test_http_route_forwards_manual_refresh_without_http_cache(self):
         service = _ApiService()

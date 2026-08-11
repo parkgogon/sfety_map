@@ -23,7 +23,7 @@ COLORS = {
     RiskGrade.HIGH: "#D92D20",
     RiskGrade.MEDIUM: "#E87817",
     RiskGrade.LOW: "#B58900",
-    RiskGrade.UNASSESSED: "#667085",
+    RiskGrade.UNASSESSED: "#7C3AED",
     RiskGrade.NONE: "#247BA0",
 }
 

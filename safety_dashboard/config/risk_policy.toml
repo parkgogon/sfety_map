@@ -31,7 +31,7 @@ rank = 1
 label = "미판정"
 meaning = "정책에 등록되지 않아 자동 판정할 수 없음"
 action = "관리자가 특보 내용을 확인하고 정책표를 보완"
-color = "#667085"
+color = "#7C3AED"
 
 [grades.NONE]
 rank = 0
@@ -120,4 +120,3 @@ CRITICAL = "HIGH"
 ADVISORY = "LOW"
 WARNING = "MEDIUM"
 CRITICAL = "HIGH"
-

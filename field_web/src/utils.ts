@@ -35,7 +35,7 @@ export const GRADE_COLORS: Record<RiskGrade, string> = {
   HIGH: "#d92d20",
   MEDIUM: "#e87817",
   LOW: "#b58900",
-  UNASSESSED: "#667085",
+  UNASSESSED: "#7c3aed",
   NONE: "#247ba0",
   UNAVAILABLE: "#667085",
 };

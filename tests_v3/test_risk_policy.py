@@ -68,6 +68,10 @@ class RiskPolicyTests(unittest.TestCase):
             [warning("새로운특보", "발표", WarningLevel.UNKNOWN)],
         )
         self.assertEqual(assessment.grade, RiskGrade.UNASSESSED)
+        self.assertEqual(
+            self.policy.definition(RiskGrade.UNASSESSED).color,
+            "#7C3AED",
+        )
 
     def test_no_warning_is_none(self):
         self.assertEqual(
@@ -78,4 +82,3 @@ class RiskPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

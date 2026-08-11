@@ -27,7 +27,8 @@
   --color-risk-high: #d92d20;
   --color-risk-medium: #e87817;
   --color-risk-low: #b58900;
-  --color-risk-unassessed: #667085;
+  --color-risk-unassessed: #7c3aed;
+  --color-risk-unavailable: #667085;
   --color-risk-none: #247ba0;
 
   /* Operational states */

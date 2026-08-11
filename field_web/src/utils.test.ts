@@ -4,6 +4,7 @@ import {
   cctvDirectionText,
   filterFacilities,
   formatReferenceTime,
+  GRADE_COLORS,
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
@@ -117,5 +118,11 @@ describe("현장 지도 필터", () => {
     expect(temperatureColor(30, 0.4)).toContain(",0.4)");
     expect(windSpeedColor(12)).toMatch(/^rgba\(/);
     expect(temperatureColor(-100)).not.toContain("NaN");
+  });
+
+  it("미판정과 조회 불가를 서로 다른 색으로 표시한다", () => {
+    expect(GRADE_COLORS.UNASSESSED).toBe("#7c3aed");
+    expect(GRADE_COLORS.UNAVAILABLE).toBe("#667085");
+    expect(GRADE_COLORS.UNASSESSED).not.toBe(GRADE_COLORS.UNAVAILABLE);
   });
 });
