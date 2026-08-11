@@ -84,7 +84,6 @@ Repository secrets:
 GCP_WORKLOAD_IDENTITY_PROVIDER=<Workload Identity Provider 전체 이름>
 GCP_SERVICE_ACCOUNT=<배포 서비스 계정 이메일>
 KAKAO_MAP_APP_KEY=<카카오 JavaScript 키>
-ITS_CCTV_API_KEY=<ITS CCTV 인증키·최초 Secret Manager 등록용>
 ```
 
 `GCP_PROJECT_ID` 변수가 없으면 자동 테스트만 실행하고 배포 작업은 안전하게

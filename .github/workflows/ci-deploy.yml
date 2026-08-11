@@ -61,29 +61,6 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
-      - name: Ensure ITS CCTV runtime secret
-        env:
-          ITS_CCTV_API_KEY: ${{ secrets.ITS_CCTV_API_KEY }}
-        run: |
-          if ! gcloud secrets describe ITS_CCTV_API_KEY --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
-            test -n "$ITS_CCTV_API_KEY"
-            gcloud secrets create ITS_CCTV_API_KEY \
-              --project "$GCP_PROJECT_ID" \
-              --replication-policy automatic \
-              --quiet
-          fi
-          if ! gcloud secrets versions describe 1 --secret ITS_CCTV_API_KEY --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
-            test -n "$ITS_CCTV_API_KEY"
-            printf '%s' "$ITS_CCTV_API_KEY" | gcloud secrets versions add ITS_CCTV_API_KEY \
-              --project "$GCP_PROJECT_ID" \
-              --data-file=- \
-              --quiet
-          fi
-          gcloud secrets add-iam-policy-binding ITS_CCTV_API_KEY \
-            --project "$GCP_PROJECT_ID" \
-            --member "serviceAccount:safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
-            --role roles/secretmanager.secretAccessor \
-            --quiet >/dev/null
       - name: Build and push API image
         run: |
           IMAGE="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$ARTIFACT_REPOSITORY/api:$GITHUB_SHA"
