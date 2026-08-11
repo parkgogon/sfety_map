@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import threading
+import time
 from typing import Any
 
 import requests
@@ -28,10 +30,18 @@ class CurrentWeatherProvider:
         *,
         timeout: float = 7,
         session: Any = requests,
+        cache_seconds: int = 600,
     ) -> None:
         self.api_key = str(api_key or "").strip()
         self.timeout = timeout
         self.session = session
+        self.cache_seconds = max(0, cache_seconds)
+        self._grid_cache: dict[tuple[float, float], tuple[str, str]] = {}
+        self._observation_cache: dict[
+            tuple[str, str], tuple[float, WeatherObservation]
+        ] = {}
+        self._grid_lock = threading.Lock()
+        self._observation_lock = threading.Lock()
 
     def fetch(
         self,
@@ -46,6 +56,9 @@ class CurrentWeatherProvider:
 
         try:
             nx, ny = self._grid_for(location)
+            cached = self._cached_observation(nx, ny)
+            if cached is not None:
+                return cached
             base = reference.astimezone(KST)
             if base.minute < 40:
                 base -= dt.timedelta(hours=1)
@@ -82,7 +95,7 @@ class CurrentWeatherProvider:
             }
             if not values:
                 raise ValueError("관측 항목이 없습니다.")
-            return WeatherObservation(
+            observation = WeatherObservation(
                 observed_at=_observation_time(items, base),
                 health=DataHealth.LIVE,
                 temperature_c=_number(values.get("T1H")),
@@ -91,10 +104,20 @@ class CurrentWeatherProvider:
                 wind_direction_deg=_number(values.get("VEC")),
                 message="기상청 초단기실황",
             )
+            self._store_observation(nx, ny, observation)
+            return observation
         except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
             return self._error(reference, f"현재 기상 조회 실패: {type(exc).__name__}")
 
     def _grid_for(self, location: GeoPoint) -> tuple[str, str]:
+        cache_key = (
+            round(location.latitude, 6),
+            round(location.longitude, 6),
+        )
+        with self._grid_lock:
+            cached = self._grid_cache.get(cache_key)
+        if cached is not None:
+            return cached
         response = self.session.get(
             GRID_URL,
             params={
@@ -111,8 +134,36 @@ class CurrentWeatherProvider:
                 continue
             parts = [part.strip() for part in line.split(",")]
             if len(parts) >= 4 and parts[2] and parts[3]:
-                return parts[2], parts[3]
+                result = (parts[2], parts[3])
+                with self._grid_lock:
+                    self._grid_cache[cache_key] = result
+                return result
         raise ValueError("시설 위치의 기상청 격자를 확인할 수 없습니다.")
+
+    def _cached_observation(
+        self,
+        nx: str,
+        ny: str,
+    ) -> WeatherObservation | None:
+        with self._observation_lock:
+            cached = self._observation_cache.get((nx, ny))
+        if cached is None or time.monotonic() >= cached[0]:
+            return None
+        return cached[1]
+
+    def _store_observation(
+        self,
+        nx: str,
+        ny: str,
+        observation: WeatherObservation,
+    ) -> None:
+        if self.cache_seconds <= 0:
+            return
+        with self._observation_lock:
+            self._observation_cache[(nx, ny)] = (
+                time.monotonic() + self.cache_seconds,
+                observation,
+            )
 
     @staticmethod
     def _error(reference: dt.datetime, message: str) -> WeatherObservation:

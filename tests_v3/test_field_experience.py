@@ -85,6 +85,41 @@ class CurrentWeatherTests(unittest.TestCase):
         self.assertIs(observation.health, DataHealth.ERROR)
         self.assertEqual(session.get.call_count, 1)
 
+    def test_grid_lookup_is_cached_for_the_same_facility_location(self):
+        observation_payload = {
+            "response": {
+                "header": {"resultCode": "00"},
+                "body": {
+                    "items": {
+                        "item": [
+                            {
+                                "category": "T1H",
+                                "obsrValue": "27",
+                                "baseDate": "20260812",
+                                "baseTime": "0600",
+                            }
+                        ]
+                    }
+                },
+            }
+        }
+        session = Mock()
+        session.get.side_effect = [
+            _Response(text="128.0,36.0,87,93\n"),
+            _Response(payload=observation_payload),
+            _Response(payload=observation_payload),
+        ]
+        provider = CurrentWeatherProvider("key", session=session)
+        point = GeoPoint(36.0, 128.0)
+        provider.fetch(point)
+        provider.fetch(point)
+
+        self.assertEqual(session.get.call_count, 2)
+        self.assertEqual(
+            sum("dfs_xy_lonlat" in call.args[0] for call in session.get.call_args_list),
+            1,
+        )
+
 
 class FieldMapSelectionTests(unittest.TestCase):
     @classmethod

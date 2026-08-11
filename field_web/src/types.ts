@@ -1,4 +1,5 @@
 export type DataHealth = "LIVE" | "FALLBACK" | "STALE" | "ERROR" | "SIMULATION";
+export type ContextStatus = "LIVE" | "NOT_CONFIGURED" | "ERROR";
 export type MonitoringMode = "live" | "simulation";
 export type RiskGrade =
   | "HIGH"
@@ -38,6 +39,60 @@ export interface FacilityGroup {
   id: string;
   label: string;
   count: number;
+}
+
+export interface WeatherResponse {
+  api_version: "v1";
+  facility_id: string;
+  status: "LIVE" | "ERROR";
+  observed_at: string;
+  temperature_c: number | null;
+  rainfall_1h_mm: number | null;
+  wind_speed_ms: number | null;
+  wind_direction_deg: number | null;
+  detail: string;
+  source: string;
+  actual_data: true;
+}
+
+export interface NearbyCctv {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+  road_type: string;
+  video_url: string;
+  video_format: string;
+  embed_allowed: boolean;
+  updated_at: string | null;
+  bearing_deg: number | null;
+  direction_label: string;
+  direction_verified_on: string | null;
+  direction_source: string;
+}
+
+export interface CctvResponse {
+  api_version: "v1";
+  facility_id: string;
+  status: ContextStatus;
+  fetched_at: string;
+  detail: string;
+  direction_warning: string;
+  radius_km: number;
+  limit: number;
+  cctvs: NearbyCctv[];
+  source: string;
+  source_url: string;
+  official_map_url: string;
+  actual_data: true;
+}
+
+export interface MapFocusRequest {
+  latitude: number;
+  longitude: number;
+  zoom: boolean;
+  revision: number;
 }
 
 export interface WarningZoneFeature {

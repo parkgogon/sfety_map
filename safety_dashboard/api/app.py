@@ -5,9 +5,13 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from fastapi import FastAPI, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
+from safety_dashboard.api.context_service import (
+    FacilityContextService,
+    FacilityNotFoundError,
+)
 from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.settings import ApiSettings
 
@@ -15,8 +19,13 @@ from safety_dashboard.api.settings import ApiSettings
 LOGGER = logging.getLogger("safety_dashboard.api")
 
 
-def create_app(service: MonitoringApiService | None = None) -> FastAPI:
-    monitoring_service = service or MonitoringApiService(ApiSettings.from_environment())
+def create_app(
+    service: MonitoringApiService | None = None,
+    context_service: FacilityContextService | None = None,
+) -> FastAPI:
+    settings = ApiSettings.from_environment()
+    monitoring_service = service or MonitoringApiService(settings)
+    facility_context = context_service or FacilityContextService(settings)
     application = FastAPI(
         title="K-ECO Safety Monitoring API",
         version="1.0.0",
@@ -40,11 +49,33 @@ def create_app(service: MonitoringApiService | None = None) -> FastAPI:
             simulation=mode == "simulation",
         )
 
+    @application.get("/api/v1/facilities/{facility_id}/weather")
+    def facility_weather(facility_id: str, response: Response) -> dict:
+        response.headers["Cache-Control"] = "private, no-store"
+        try:
+            return facility_context.weather(facility_id)
+        except FacilityNotFoundError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail="시설을 찾을 수 없습니다.",
+            ) from exc
+
+    @application.get("/api/v1/facilities/{facility_id}/cctv")
+    def facility_cctv(facility_id: str, response: Response) -> dict:
+        response.headers["Cache-Control"] = "private, no-store"
+        try:
+            return facility_context.cctv(facility_id)
+        except FacilityNotFoundError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail="시설을 찾을 수 없습니다.",
+            ) from exc
+
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:
         # 외부 응답에 내부 경로, API 키 또는 원본 예외 메시지를 노출하지 않는다.
         LOGGER.error(
-            "monitoring_request_failed",
+            "api_request_failed",
             exc_info=(type(error), error, error.__traceback__),
         )
         return JSONResponse(

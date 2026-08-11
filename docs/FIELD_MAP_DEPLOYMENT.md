@@ -35,10 +35,13 @@ Streamlit secrets를 읽는다.
 - `GET /api/v1/health`: Cloud Run 프로세스 상태
 - `GET /api/v1/monitoring`: 시설 103개, KMA 상태·특보·위험도·현재 특보 경계
 - `GET /api/v1/monitoring?refresh=true`: 수동 강제 갱신
+- `GET /api/v1/facilities/{facility_id}/weather`: 시설 KMA 격자의 초단기실황
+- `GET /api/v1/facilities/{facility_id}/cctv`: 반경 20km 이내 도로 CCTV 최대 5개
 
 전화번호와 KMA 인증키는 응답에 포함하지 않는다. KMA 조회 실패 시 시설 등급을
-`영향 없음`이 아닌 `조회 불가`로 반환한다. 날씨·재난문자·CCTV를 제공하는
-`/api/v1/facilities/{facility_id}/context`는 2차 구현 범위다.
+`영향 없음`이 아닌 `조회 불가`로 반환한다. 기상과 CCTV는 독립 상태를
+반환하므로 한 제공자의 장애가 핵심 관제 지도를 중단하지 않는다. 재난문자는
+React 현장 지도의 이번 범위에 포함하지 않는다.
 
 ## Google Cloud 최초 준비
 
@@ -47,11 +50,11 @@ Streamlit secrets를 읽는다.
 1. 결제 계정을 연결하고 Cloud Run, Artifact Registry, Secret Manager API를
    활성화한다.
 2. 서울 리전에 Docker 저장소 `safety-dashboard`를 만든다.
-3. Secret Manager에 `KMA_API_KEY`를 만들고 최신 KMA 키를 저장한다.
+3. Secret Manager에 `KMA_API_KEY`와 `ITS_CCTV_API_KEY`를 만들고 각 키를 저장한다.
    최초 배포는 비밀 버전 `1`을 명시적으로 사용한다. 키를 교체하면 새 버전을
    추가하고 배포 설정의 버전 번호도 함께 올린다.
 4. Cloud Run 실행 전용 서비스 계정 `safety-dashboard-runtime`을 만들고
-   `KMA_API_KEY` 비밀 하나에만 Secret Accessor 권한을 부여한다.
+   두 비밀에만 Secret Accessor 권한을 부여한다.
 5. Firebase Hosting을 활성화한다. 1차 주소는
    `https://keco-safety-map.web.app`을 사용한다.
 6. 카카오 개발자 콘솔에 실제 `.web.app` 주소를 추가한다.
@@ -81,6 +84,7 @@ Repository secrets:
 GCP_WORKLOAD_IDENTITY_PROVIDER=<Workload Identity Provider 전체 이름>
 GCP_SERVICE_ACCOUNT=<배포 서비스 계정 이메일>
 KAKAO_MAP_APP_KEY=<카카오 JavaScript 키>
+ITS_CCTV_API_KEY=<ITS CCTV 인증키·최초 Secret Manager 등록용>
 ```
 
 `GCP_PROJECT_ID` 변수가 없으면 자동 테스트만 실행하고 배포 작업은 안전하게
@@ -99,3 +103,5 @@ cd field_web && npm test && npm run build
 시설 CSV 검증은 시설 ID 중복, 필수값 누락, 좌표 범위와 시설 그룹별 개수를
 확인한다. 배포 후에는 390px 스마트폰에서 검색·필터·동일 좌표 시설 선택과
 `?facility_id=...` 딥링크를 확인한다.
+추가로 Cloud Run 서울 리전에서 실제 기상과 CCTV endpoint를 호출해
+국내 출구 IP의 ITS 응답과 HTTPS MP4 재생 가능 여부도 확인한다.

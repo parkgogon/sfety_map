@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMonitoringData } from "./api";
+import { useFacilityCctv, useFacilityWeather } from "./contextApi";
+import { CctvModal } from "./CctvModal";
 import { FacilitySheet } from "./FacilitySheet";
 import { KakaoMap } from "./KakaoMap";
-import type { Facility, MonitoringMode, RiskGrade } from "./types";
+import type {
+  Facility,
+  MapFocusRequest,
+  MonitoringMode,
+  NearbyCctv,
+  RiskGrade,
+} from "./types";
 import {
+  type FacilitySelectionSource,
   filterFacilities,
   formatReferenceTime,
   GRADE_COLORS,
@@ -11,6 +20,7 @@ import {
   GRADE_ORDER,
   requestedFacilityId,
   requestedMonitoringMode,
+  shouldZoomForSelection,
   uniqueWarningText,
 } from "./utils";
 
@@ -40,8 +50,29 @@ export default function App() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sameLocation, setSameLocation] = useState<Facility[]>([]);
   const [deepLinkNotice, setDeepLinkNotice] = useState("");
+  const [focusRequest, setFocusRequest] = useState<MapFocusRequest | null>(null);
+  const [selectedCctvId, setSelectedCctvId] = useState("");
   const initializedGroups = useRef(false);
   const handledDeepLink = useRef(false);
+  const focusRevision = useRef(0);
+
+  const selectFacility = useCallback((
+    facility: Facility,
+    source: FacilitySelectionSource = "marker",
+  ) => {
+    setSelectedId(facility.id);
+    setSearch("");
+    setSameLocation([]);
+    setSelectedCctvId("");
+    setFacilityQuery(facility.id);
+    focusRevision.current += 1;
+    setFocusRequest({
+      latitude: facility.latitude,
+      longitude: facility.longitude,
+      zoom: shouldZoomForSelection(source),
+      revision: focusRevision.current,
+    });
+  }, []);
 
   useEffect(() => {
     if (!data || initializedGroups.current) return;
@@ -60,10 +91,10 @@ export default function App() {
       setFacilityQuery("");
       return;
     }
-    setSelectedId(facility.id);
     setSelectedGroups((current) => new Set([...current, facility.group_id]));
     setSelectedGrades((current) => new Set([...current, facility.grade]));
-  }, [data]);
+    selectFacility(facility, "deep_link");
+  }, [data, selectFacility]);
 
   const visibleFacilities = useMemo(
     () => data ? filterFacilities(data.facilities, selectedGroups, selectedGrades, "") : [],
@@ -76,16 +107,18 @@ export default function App() {
     [data, search, selectedGroups, selectedGrades],
   );
   const selectedFacility = data?.facilities.find((item) => item.id === selectedId) ?? null;
+  const weather = useFacilityWeather(selectedFacility?.id ?? "");
+  const cctv = useFacilityCctv(selectedFacility?.id ?? "");
+  const cctvItems = cctv.data?.cctvs ?? [];
+  const selectedCctv = cctvItems.find((item) => item.id === selectedCctvId) ?? null;
 
-  const selectFacility = useCallback((facility: Facility) => {
-    setSelectedId(facility.id);
-    setSearch("");
-    setSameLocation([]);
-    setFacilityQuery(facility.id);
+  const selectCctv = useCallback((item: NearbyCctv) => {
+    setSelectedCctvId(item.id);
   }, []);
 
   const clearFacility = useCallback(() => {
     setSelectedId("");
+    setSelectedCctvId("");
     setFacilityQuery("");
   }, []);
 
@@ -184,13 +217,17 @@ export default function App() {
         </div>
       )}
 
-      <main className="map-stage">
+      <main className={`map-stage ${selectedFacility ? "has-selection" : ""}`}>
         <KakaoMap
           facilities={visibleFacilities}
           warningZones={data.warning_zones.features}
           selectedFacilityId={selectedId}
+          cctvs={cctvItems}
+          selectedCctvId={selectedCctvId}
+          focusRequest={focusRequest}
           onSelect={selectFacility}
           onSelectGroup={setSameLocation}
+          onSelectCctv={selectCctv}
         />
 
         <div className="map-search-panel">
@@ -213,7 +250,7 @@ export default function App() {
           {search.trim() && (
             <div className="search-results">
               {searchResults.length ? searchResults.map((facility) => (
-                <button type="button" key={facility.id} onClick={() => selectFacility(facility)}>
+                <button type="button" key={facility.id} onClick={() => selectFacility(facility, "search")}>
                   <span className="result-grade" style={{ backgroundColor: facility.grade_color }}>{facility.grade_label}</span>
                   <span><b>{facility.name}</b><small>{facility.address}</small></span>
                 </button>
@@ -237,8 +274,32 @@ export default function App() {
           ))}
         </div>
 
-        <FacilitySheet facility={selectedFacility} onClose={clearFacility} />
+        <FacilitySheet
+          facility={selectedFacility}
+          simulation={simulation}
+          weather={weather.data}
+          weatherLoading={weather.loading}
+          weatherError={weather.error}
+          onRetryWeather={weather.retry}
+          cctv={cctv.data}
+          cctvLoading={cctv.loading}
+          cctvError={cctv.error}
+          cctvCooldownUntil={cctv.cooldownUntil}
+          onLoadCctv={cctv.load}
+          onSelectCctv={selectCctv}
+          onClose={clearFacility}
+        />
       </main>
+
+      <CctvModal
+        cctv={selectedCctv}
+        feed={cctv.data}
+        simulation={simulation}
+        loading={cctv.loading}
+        cooldownUntil={cctv.cooldownUntil}
+        onRefresh={cctv.load}
+        onClose={() => setSelectedCctvId("")}
+      />
 
       {filterOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setFilterOpen(false)}>
@@ -294,7 +355,7 @@ export default function App() {
             </div>
             <div className="same-location-options">
               {sameLocation.map((facility) => (
-                <button type="button" key={facility.id} onClick={() => selectFacility(facility)}>
+                <button type="button" key={facility.id} onClick={() => selectFacility(facility, "same_location")}>
                   <span className="grade-badge" style={{ backgroundColor: facility.grade_color }}>{facility.grade_label}</span>
                   <span><b>{facility.name}</b><small>{facility.type} · {uniqueWarningText(facility)}</small></span>
                 </button>

@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./kakao";
-import type { Facility, RiskGrade, WarningZoneFeature } from "./types";
-import { GRADE_ORDER } from "./utils";
+import type {
+  Facility,
+  MapFocusRequest,
+  NearbyCctv,
+  RiskGrade,
+  WarningZoneFeature,
+} from "./types";
+import { cctvDirectionText, GRADE_ORDER } from "./utils";
 
 interface KakaoMapProps {
   facilities: Facility[];
   warningZones: WarningZoneFeature[];
   selectedFacilityId: string;
+  cctvs: NearbyCctv[];
+  selectedCctvId: string;
+  focusRequest: MapFocusRequest | null;
   onSelect: (facility: Facility) => void;
   onSelectGroup: (facilities: Facility[]) => void;
+  onSelectCctv: (cctv: NearbyCctv) => void;
 }
 
 const GRADE_RANK = new Map<RiskGrade, number>(
@@ -54,6 +64,33 @@ function coordinateGroups(facilities: Facility[]): Facility[][] {
   return [...groups.values()];
 }
 
+function cctvMarkerImage(kakao: any, cctv: NearbyCctv, selected: boolean): any {
+  const size = selected ? 50 : 44;
+  const center = size / 2;
+  const bearing = cctv.bearing_deg;
+  const arrow = bearing === null ? "" : `
+    <path d="M ${center} 2 L ${center - 4.5} 12 L ${center + 4.5} 12 Z"
+      fill="#0f766e" stroke="white" stroke-width="1.5"
+      transform="rotate(${bearing} ${center} ${center})"/>`;
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+      ${arrow}
+      <circle cx="${center}" cy="${center}" r="15" fill="white"
+        stroke="${selected ? "#142746" : "rgba(20,39,70,.22)"}"
+        stroke-width="${selected ? 3 : 1.5}"/>
+      <rect x="${center - 9}" y="${center - 6}" width="14" height="12" rx="2.5"
+        fill="#142746"/>
+      <path d="M ${center + 5} ${center - 3} L ${center + 11} ${center - 7}
+        L ${center + 11} ${center + 7} L ${center + 5} ${center + 3} Z" fill="#142746"/>
+      <circle cx="${center - 3}" cy="${center}" r="2.5" fill="#7dd3fc"/>
+    </svg>`;
+  return new kakao.maps.MarkerImage(
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    new kakao.maps.Size(size, size),
+    { offset: new kakao.maps.Point(center, center) },
+  );
+}
+
 function polygonPaths(kakao: any, feature: WarningZoneFeature): any[][][] {
   const polygons = feature.geometry.type === "Polygon"
     ? [feature.geometry.coordinates]
@@ -69,14 +106,19 @@ export function KakaoMap({
   facilities,
   warningZones,
   selectedFacilityId,
+  cctvs,
+  selectedCctvId,
+  focusRequest,
   onSelect,
   onSelectGroup,
+  onSelectCctv,
 }: KakaoMapProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const kakaoRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
   const polygonRef = useRef<any[]>([]);
+  const cctvMarkerRef = useRef<any[]>([]);
   const [error, setError] = useState("");
   const appKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY?.trim() ?? "";
 
@@ -156,11 +198,8 @@ export function KakaoMap({
       });
       clusterer.addMarkers(markers);
 
-      const selected = facilities.find((item) => item.id === selectedFacilityId);
-      if (selected) {
-        map.panTo(new kakao.maps.LatLng(selected.latitude, selected.longitude));
-        if (map.getLevel() > 5) map.setLevel(5);
-      } else if (facilities.length) {
+      const selectedIsVisible = facilities.some((item) => item.id === selectedFacilityId);
+      if (!selectedIsVisible && facilities.length) {
         map.setBounds(bounds, 48, 48, 120, 48);
       }
     };
@@ -168,6 +207,45 @@ export function KakaoMap({
     window.addEventListener("keco-map-ready", render);
     return () => window.removeEventListener("keco-map-ready", render);
   }, [facilities, onSelect, onSelectGroup, selectedFacilityId]);
+
+  useEffect(() => {
+    const focus = () => {
+      const kakao = kakaoRef.current;
+      const map = mapRef.current;
+      if (!kakao || !map || !focusRequest) return;
+      map.panTo(new kakao.maps.LatLng(
+        focusRequest.latitude,
+        focusRequest.longitude,
+      ));
+      if (focusRequest.zoom && map.getLevel() > 5) map.setLevel(5);
+    };
+    focus();
+    window.addEventListener("keco-map-ready", focus);
+    return () => window.removeEventListener("keco-map-ready", focus);
+  }, [focusRequest]);
+
+  useEffect(() => {
+    const render = () => {
+      const kakao = kakaoRef.current;
+      const map = mapRef.current;
+      if (!kakao || !map) return;
+      cctvMarkerRef.current.forEach((marker) => marker.setMap(null));
+      cctvMarkerRef.current = cctvs.map((cctv) => {
+        const marker = new kakao.maps.Marker({
+          map,
+          position: new kakao.maps.LatLng(cctv.latitude, cctv.longitude),
+          title: `${cctv.name} · ${cctv.distance_km.toFixed(1)}km · ${cctvDirectionText(cctv)}`,
+          image: cctvMarkerImage(kakao, cctv, cctv.id === selectedCctvId),
+          zIndex: 20,
+        });
+        kakao.maps.event.addListener(marker, "click", () => onSelectCctv(cctv));
+        return marker;
+      });
+    };
+    render();
+    window.addEventListener("keco-map-ready", render);
+    return () => window.removeEventListener("keco-map-ready", render);
+  }, [cctvs, onSelectCctv, selectedCctvId]);
 
   useEffect(() => {
     const render = () => {

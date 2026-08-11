@@ -5,11 +5,19 @@ from __future__ import annotations
 import datetime as dt
 from collections import defaultdict
 from typing import Any, Mapping
+from urllib.parse import urlsplit
 
+from safety_dashboard.adapters.cctv import OFFICIAL_MAP_URL, SOURCE_PAGE_URL
 from safety_dashboard.application.contacts import public_contact
+from safety_dashboard.application.cctv_directions import direction_label
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
 from safety_dashboard.domain.enums import DataHealth, RiskGrade, WarningLevel
-from safety_dashboard.domain.models import DashboardSnapshot, Warning
+from safety_dashboard.domain.models import (
+    CctvFeed,
+    DashboardSnapshot,
+    Warning,
+    WeatherObservation,
+)
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
 
@@ -23,6 +31,83 @@ def _iso(value: dt.datetime | None) -> str | None:
     if value.tzinfo is None:
         value = value.replace(tzinfo=KST)
     return value.isoformat()
+
+
+def serialize_weather(
+    facility_id: str,
+    observation: WeatherObservation,
+) -> dict[str, Any]:
+    """시설 위치 격자의 실제 KMA 초단기실황을 공개 응답으로 변환합니다."""
+
+    return {
+        "api_version": "v1",
+        "facility_id": facility_id,
+        "status": observation.health.value,
+        "observed_at": _iso(observation.observed_at),
+        "temperature_c": observation.temperature_c,
+        "rainfall_1h_mm": observation.rainfall_1h_mm,
+        "wind_speed_ms": observation.wind_speed_ms,
+        "wind_direction_deg": observation.wind_direction_deg,
+        "detail": observation.message,
+        "source": "기상청 초단기실황",
+        "actual_data": True,
+    }
+
+
+def serialize_cctv(
+    facility_id: str,
+    feed: CctvFeed,
+    *,
+    direction_warning: str = "",
+) -> dict[str, Any]:
+    """ITS 영상 주소와 검증된 방향 정보만 React에 전달합니다."""
+
+    cctvs = []
+    for item in feed.cctvs:
+        scheme = urlsplit(item.video_url).scheme.lower()
+        cctvs.append(
+            {
+                "id": item.id,
+                "name": item.name,
+                "latitude": item.location.latitude,
+                "longitude": item.location.longitude,
+                "distance_km": round(item.distance_km, 3),
+                "road_type": item.road_type,
+                "video_url": item.video_url,
+                "video_format": item.video_format,
+                "embed_allowed": (
+                    scheme == "https" and "MP4" in item.video_format.upper()
+                ),
+                "updated_at": _iso(item.updated_at),
+                "bearing_deg": item.bearing_deg,
+                "direction_label": (
+                    direction_label(item.bearing_deg)
+                    if item.bearing_deg is not None
+                    else ""
+                ),
+                "direction_verified_on": (
+                    item.direction_verified_on.isoformat()
+                    if item.direction_verified_on is not None
+                    else None
+                ),
+                "direction_source": item.direction_source,
+            }
+        )
+    return {
+        "api_version": "v1",
+        "facility_id": facility_id,
+        "status": feed.status.value,
+        "fetched_at": _iso(feed.fetched_at),
+        "detail": feed.detail,
+        "direction_warning": direction_warning,
+        "radius_km": 20,
+        "limit": 5,
+        "cctvs": cctvs,
+        "source": "ITS 국가교통정보센터 도로 CCTV",
+        "source_url": SOURCE_PAGE_URL,
+        "official_map_url": OFFICIAL_MAP_URL,
+        "actual_data": True,
+    }
 
 
 def _level_rank(level: WarningLevel) -> int:

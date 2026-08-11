@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { Facility } from "./types";
+import type { Facility, NearbyCctv, WeatherResponse } from "./types";
 import {
+  cctvDirectionText,
   filterFacilities,
   formatReferenceTime,
   requestedFacilityId,
   requestedMonitoringMode,
+  shouldZoomForSelection,
+  weatherSummary,
+  windDirectionLabel,
 } from "./utils";
 
 const facility = (overrides: Partial<Facility>): Facility => ({
@@ -56,5 +60,51 @@ describe("현장 지도 필터", () => {
   it("API 기준 시각을 한국식 월일 시각으로 표시한다", () => {
     expect(formatReferenceTime("2026-08-11T09:05:00+09:00")).toContain("08. 11.");
     expect(formatReferenceTime("invalid")).toBe("시각 미확인");
+  });
+
+  it("단일 마커는 배율을 유지하고 검색·딥링크만 확대한다", () => {
+    expect(shouldZoomForSelection("marker")).toBe(false);
+    expect(shouldZoomForSelection("same_location")).toBe(false);
+    expect(shouldZoomForSelection("search")).toBe(true);
+    expect(shouldZoomForSelection("deep_link")).toBe(true);
+  });
+
+  it("기온·강수·풍향·풍속을 한 줄로 표시한다", () => {
+    const weather: WeatherResponse = {
+      api_version: "v1",
+      facility_id: "F-1",
+      status: "LIVE",
+      observed_at: "2026-08-12T06:00:00+09:00",
+      temperature_c: 28.5,
+      rainfall_1h_mm: 0,
+      wind_speed_ms: 2.4,
+      wind_direction_deg: 225,
+      detail: "",
+      source: "기상청 초단기실황",
+      actual_data: true,
+    };
+    expect(weatherSummary(weather)).toBe("28.5℃ · 강수 0mm · 남서 225° 2.4m/s");
+    expect(windDirectionLabel(-90)).toBe("서 270°");
+  });
+
+  it("검증된 CCTV 방향만 각도와 검증일을 표시한다", () => {
+    const cctv: NearbyCctv = {
+      id: "C-1",
+      name: "교차로",
+      latitude: 36,
+      longitude: 128,
+      distance_km: 1.2,
+      road_type: "국도",
+      video_url: "https://example.com/video.mp4",
+      video_format: "MP4",
+      embed_allowed: true,
+      updated_at: null,
+      bearing_deg: 90,
+      direction_label: "동",
+      direction_verified_on: "2026-08-01",
+      direction_source: "현장 확인",
+    };
+    expect(cctvDirectionText(cctv)).toBe("촬영방향 동 90° · 2026-08-01 검증");
+    expect(cctvDirectionText({ ...cctv, bearing_deg: null })).toBe("촬영방향 미확인");
   });
 });

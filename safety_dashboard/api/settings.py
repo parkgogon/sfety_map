@@ -37,12 +37,20 @@ def _secret(env_name: str, section: str, key: str) -> str:
 @dataclass(frozen=True)
 class ApiSettings:
     kma_api_key: str
+    its_cctv_api_key: str = ""
+    its_cctv_api_url: str = "https://openapi.its.go.kr:9443/cctvInfo"
     facility_path: Path = ROOT / "facilities_info.csv"
     policy_path: Path = ROOT / "safety_dashboard" / "config" / "risk_policy.toml"
     group_path: Path = ROOT / "safety_dashboard" / "config" / "facility_groups.toml"
     zone_fallback_path: Path = ROOT / "data" / "kma_warning_zones.geojson.gz"
+    cctv_direction_path: Path = (
+        ROOT / "safety_dashboard" / "config" / "cctv_directions.toml"
+    )
     monitoring_cache_seconds: int = 300
     zone_cache_seconds: int = 86400
+    weather_cache_seconds: int = 600
+    cctv_cache_seconds: int = 60
+    context_error_cache_seconds: int = 30
 
     @classmethod
     def from_environment(cls) -> "ApiSettings":
@@ -54,6 +62,14 @@ class ApiSettings:
 
         return cls(
             kma_api_key=_secret("KMA_API_KEY", "kma", "api_key"),
+            its_cctv_api_key=_secret(
+                "ITS_CCTV_API_KEY", "its_cctv", "api_key"
+            ),
+            its_cctv_api_url=(
+                os.getenv("ITS_CCTV_API_URL", "").strip()
+                or _secret("ITS_CCTV_API_URL", "its_cctv", "api_url")
+                or cls.its_cctv_api_url
+            ),
             facility_path=Path(
                 os.getenv("FACILITY_DATA_PATH", str(cls.facility_path))
             ),
@@ -66,6 +82,17 @@ class ApiSettings:
             zone_fallback_path=Path(
                 os.getenv("WARNING_ZONE_PATH", str(cls.zone_fallback_path))
             ),
+            cctv_direction_path=Path(
+                os.getenv(
+                    "CCTV_DIRECTION_PATH",
+                    str(cls.cctv_direction_path),
+                )
+            ),
             monitoring_cache_seconds=seconds("MONITORING_CACHE_SECONDS", 300, 30),
             zone_cache_seconds=seconds("WARNING_ZONE_CACHE_SECONDS", 86400, 300),
+            weather_cache_seconds=seconds("WEATHER_CACHE_SECONDS", 600, 60),
+            cctv_cache_seconds=seconds("CCTV_CACHE_SECONDS", 60, 30),
+            context_error_cache_seconds=seconds(
+                "CONTEXT_ERROR_CACHE_SECONDS", 30, 10
+            ),
         )

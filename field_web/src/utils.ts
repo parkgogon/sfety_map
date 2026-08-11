@@ -1,4 +1,16 @@
-import type { Facility, MonitoringMode, RiskGrade } from "./types";
+import type {
+  Facility,
+  MonitoringMode,
+  NearbyCctv,
+  RiskGrade,
+  WeatherResponse,
+} from "./types";
+
+export type FacilitySelectionSource =
+  | "marker"
+  | "same_location"
+  | "search"
+  | "deep_link";
 
 export const GRADE_ORDER: RiskGrade[] = [
   "HIGH",
@@ -65,6 +77,56 @@ export function formatReferenceTime(value: string): string {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+export function formatObservationTime(value: string | null): string {
+  if (!value) return "시각 미확인";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "시각 미확인";
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+export function windDirectionLabel(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "풍향 —";
+  const labels = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"];
+  const normalized = ((value % 360) + 360) % 360;
+  const degrees = Number.isInteger(normalized)
+    ? String(normalized)
+    : normalized.toFixed(1).replace(/\.0$/, "");
+  return `${labels[Math.floor((normalized + 22.5) / 45) % 8]} ${degrees}°`;
+}
+
+export function weatherSummary(weather: WeatherResponse): string {
+  const measurement = (value: number | null, unit: string) =>
+    value === null ? "—" : `${value}${unit}`;
+  const wind = [
+    windDirectionLabel(weather.wind_direction_deg).replace("풍향 ", ""),
+    measurement(weather.wind_speed_ms, "m/s"),
+  ].join(" ");
+  return [
+    measurement(weather.temperature_c, "℃"),
+    `강수 ${measurement(weather.rainfall_1h_mm, "mm")}`,
+    wind,
+  ].join(" · ");
+}
+
+export function shouldZoomForSelection(source: FacilitySelectionSource): boolean {
+  return source === "search" || source === "deep_link";
+}
+
+export function cctvDirectionText(cctv: NearbyCctv): string {
+  if (cctv.bearing_deg === null) return "촬영방향 미확인";
+  const verified = cctv.direction_verified_on
+    ? `${cctv.direction_verified_on} 검증`
+    : "검증일 미확인";
+  return `촬영방향 ${cctv.direction_label} ${cctv.bearing_deg}° · ${verified}`;
 }
 
 export function uniqueWarningText(facility: Facility): string {
