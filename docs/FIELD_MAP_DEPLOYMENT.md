@@ -104,3 +104,9 @@ cd field_web && npm test && npm run build
 `?facility_id=...` 딥링크를 확인한다.
 추가로 Cloud Run 서울 리전에서 실제 기상과 CCTV endpoint를 호출해
 국내 출구 IP의 ITS 응답과 HTTPS MP4 재생 가능 여부도 확인한다.
+
+2026-08-12 시범 배포에서는 서울 Cloud Run에서도 ITS API가 7초 내에
+응답하지 않아 CCTV를 보류했다. 운영 워크플로에는
+`CCTV_ENABLED=false`, `VITE_CCTV_ENABLED=false`를 설정해 외부 호출과 화면 버튼을
+모두 비활성화한다. 향후 고정 국내 출구 IP 또는 중계가 준비되면
+두 플래그를 `true`로 바꾸고 실사용 검증한다.

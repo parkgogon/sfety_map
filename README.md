@@ -39,6 +39,10 @@ api_url = "https://openapi.its.go.kr:9443/cctvInfo"
 
 `ITS_CCTV_API_KEY`, `ITS_CCTV_API_URL` 환경변수도 지원하며 환경변수가
 secrets보다 우선합니다. 키가 없어도 나머지 관제 기능은 정상 동작합니다.
+React 운영 화면의 CCTV는 Cloud Run에서 ITS로의 연결 제한이 확인되어
+현재 `CCTV_ENABLED=false`, `VITE_CCTV_ENABLED=false`로 보류한 상태입니다.
+고정 출구 IP 또는 국내 중계 경로가 준비되면 코드 변경 없이 두 설정을
+`true`로 바꾸어 다시 활성화할 수 있습니다.
 
 ## v3 주요 구조
 

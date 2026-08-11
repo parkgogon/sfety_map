@@ -1,6 +1,7 @@
 import datetime as dt
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -181,6 +182,20 @@ class FacilityContextServiceTests(unittest.TestCase):
         with self.assertRaises(FacilityNotFoundError):
             service.cctv("missing")
         self.assertEqual((weather.calls, cctv.calls), (0, 0))
+
+    def test_disabled_cctv_returns_immediately_without_provider_call(self):
+        cctv = _CctvProvider()
+        service = FacilityContextService(
+            replace(self.settings, cctv_enabled=False),
+            weather_provider=_WeatherProvider(),
+            cctv_provider=cctv,
+            direction_catalog=CctvDirectionCatalog.empty(),
+            monotonic=_Clock(),
+        )
+        payload = service.cctv("F-1")
+        self.assertEqual(payload["status"], ContextStatus.NOT_CONFIGURED.value)
+        self.assertIn("보류", payload["detail"])
+        self.assertEqual(cctv.calls, 0)
 
 
 class FacilityContextRouteTests(unittest.TestCase):

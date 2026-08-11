@@ -11,6 +11,7 @@ import {
 interface FacilitySheetProps {
   facility: Facility | null;
   simulation: boolean;
+  cctvEnabled: boolean;
   weather: WeatherResponse | null;
   weatherLoading: boolean;
   weatherError: string;
@@ -32,6 +33,7 @@ function ActualDataBadge({ simulation }: { simulation: boolean }) {
 export function FacilitySheet({
   facility,
   simulation,
+  cctvEnabled,
   weather,
   weatherLoading,
   weatherError,
@@ -132,7 +134,7 @@ export function FacilitySheet({
         <small>현장 센서가 아닌, 시설 위치가 속한 KMA 격자의 초단기실황입니다.</small>
       </section>
 
-      <section className="cctv-context" aria-label="인근 도로 CCTV" aria-busy={cctvLoading}>
+      {cctvEnabled && <section className="cctv-context" aria-label="인근 도로 CCTV" aria-busy={cctvLoading}>
         <div className="context-title-row">
           <strong>인근 도로 CCTV</strong>
           <ActualDataBadge simulation={simulation} />
@@ -181,7 +183,7 @@ export function FacilitySheet({
           </>
         )}
         <small>CCTV는 시설 자체가 아닌 인근 도로 현황 참고용입니다.</small>
-      </section>
+      </section>}
 
       {expanded && (
         <div className="facility-details">

@@ -139,6 +139,17 @@ class FacilityContextService:
         return serialize_weather(facility.id, observation)
 
     def _cctv_payload(self, facility: Facility) -> dict[str, Any]:
+        if not self.settings.cctv_enabled:
+            return serialize_cctv(
+                facility.id,
+                CctvFeed(
+                    status=ContextStatus.NOT_CONFIGURED,
+                    cctvs=(),
+                    fetched_at=dt.datetime.now(KST),
+                    detail="현재 배포에서 CCTV 연동을 보류했습니다.",
+                ),
+                direction_warning=self._direction_warning,
+            )
         try:
             feed = self._cctv_provider.fetch_nearby(
                 facility.location,

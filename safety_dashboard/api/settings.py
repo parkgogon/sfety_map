@@ -37,6 +37,7 @@ def _secret(env_name: str, section: str, key: str) -> str:
 @dataclass(frozen=True)
 class ApiSettings:
     kma_api_key: str
+    cctv_enabled: bool = True
     its_cctv_api_key: str = ""
     its_cctv_api_url: str = "https://openapi.its.go.kr:9443/cctvInfo"
     facility_path: Path = ROOT / "facilities_info.csv"
@@ -54,6 +55,12 @@ class ApiSettings:
 
     @classmethod
     def from_environment(cls) -> "ApiSettings":
+        def enabled(name: str, default: bool) -> bool:
+            raw = os.getenv(name)
+            if raw is None:
+                return default
+            return raw.strip().casefold() in {"1", "true", "yes", "on"}
+
         def seconds(name: str, default: int, minimum: int) -> int:
             try:
                 return max(minimum, int(os.getenv(name, str(default))))
@@ -62,6 +69,7 @@ class ApiSettings:
 
         return cls(
             kma_api_key=_secret("KMA_API_KEY", "kma", "api_key"),
+            cctv_enabled=enabled("CCTV_ENABLED", True),
             its_cctv_api_key=_secret(
                 "ITS_CCTV_API_KEY", "its_cctv", "api_key"
             ),

@@ -83,8 +83,8 @@ jobs:
             --concurrency 40 \
             --min-instances 0 \
             --max-instances 3 \
-            --set-env-vars MONITORING_CACHE_SECONDS=300,TZ=Asia/Seoul \
-            --set-secrets KMA_API_KEY=KMA_API_KEY:1,ITS_CCTV_API_KEY=ITS_CCTV_API_KEY:1 \
+            --set-env-vars MONITORING_CACHE_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul \
+            --set-secrets KMA_API_KEY=KMA_API_KEY:1 \
             --quiet
 
   deploy-web:
@@ -109,6 +109,7 @@ jobs:
         working-directory: field_web
         env:
           VITE_KAKAO_MAP_APP_KEY: ${{ secrets.KAKAO_MAP_APP_KEY }}
+          VITE_CCTV_ENABLED: "false"
         run: |
           npm ci
           npm run build

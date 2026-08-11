@@ -39,6 +39,7 @@ function setModeQuery(mode: MonitoringMode) {
 }
 
 export default function App() {
+  const cctvEnabled = import.meta.env.VITE_CCTV_ENABLED !== "false";
   const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
     requestedMonitoringMode(window.location.search),
   );
@@ -109,7 +110,7 @@ export default function App() {
   const selectedFacility = data?.facilities.find((item) => item.id === selectedId) ?? null;
   const weather = useFacilityWeather(selectedFacility?.id ?? "");
   const cctv = useFacilityCctv(selectedFacility?.id ?? "");
-  const cctvItems = cctv.data?.cctvs ?? [];
+  const cctvItems = cctvEnabled ? cctv.data?.cctvs ?? [] : [];
   const selectedCctv = cctvItems.find((item) => item.id === selectedCctvId) ?? null;
 
   const selectCctv = useCallback((item: NearbyCctv) => {
@@ -277,6 +278,7 @@ export default function App() {
         <FacilitySheet
           facility={selectedFacility}
           simulation={simulation}
+          cctvEnabled={cctvEnabled}
           weather={weather.data}
           weatherLoading={weather.loading}
           weatherError={weather.error}
