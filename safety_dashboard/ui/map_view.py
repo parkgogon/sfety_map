@@ -14,6 +14,7 @@ from folium.plugins import MarkerCluster
 from safety_dashboard.application.cctv_directions import (
     describe_cctv_direction,
 )
+from safety_dashboard.application.map_selection import FACILITY_TOKEN
 from safety_dashboard.domain.enums import RiskGrade, WarningLevel
 from safety_dashboard.domain.models import DashboardSnapshot, NearbyCctv
 
@@ -86,7 +87,8 @@ class _MobileMapInteractionControl(MacroElement):
             handler: handler,
             initiallyEnabled: handler.enabled()
           }));
-          let locked = true;
+          const initialLocked = {{ 'true' if this.initially_locked else 'false' }};
+          let locked = initialLocked;
           let button;
 
           function setLocked(nextLocked) {
@@ -130,15 +132,16 @@ class _MobileMapInteractionControl(MacroElement):
           });
 
           map.addControl(new MobileControl());
-          setLocked(true);
+          setLocked(initialLocked);
         })();
         {% endmacro %}
         """
     )
 
-    def __init__(self) -> None:
+    def __init__(self, initially_locked: bool = True) -> None:
         super().__init__()
         self._name = "MobileMapInteractionControl"
+        self.initially_locked = initially_locked
 
 
 def build_monitoring_map(
@@ -147,6 +150,9 @@ def build_monitoring_map(
     focus_facility_id: str = "",
     nearby_cctvs: Sequence[NearbyCctv] = (),
     cctv_focus_facility_id: str = "",
+    selected_facility_id: str = "",
+    mobile_initially_locked: bool = True,
+    grade_layers: bool = False,
 ) -> folium.Map:
     focus_facility = next(
         (
@@ -167,7 +173,7 @@ def build_monitoring_map(
         tiles=None,
         control_scale=True,
     )
-    _MobileMapInteractionControl().add_to(map_obj)
+    _MobileMapInteractionControl(mobile_initially_locked).add_to(map_obj)
     folium.TileLayer(
         "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         attr="&copy; OpenStreetMap &copy; CARTO",
@@ -175,10 +181,22 @@ def build_monitoring_map(
     ).add_to(map_obj)
     _add_warning_zones(map_obj, snapshot, boundary_data)
 
-    cluster = MarkerCluster(
-        name="소관 시설",
-        options={"showCoverageOnHover": False, "maxClusterRadius": 38},
-    ).add_to(map_obj)
+    clusters: dict[RiskGrade, MarkerCluster] = {}
+    if grade_layers:
+        for grade in RiskGrade:
+            group = folium.FeatureGroup(
+                name=f"등급 · {_grade_label(grade)}",
+                show=True,
+                overlay=True,
+            ).add_to(map_obj)
+            clusters[grade] = MarkerCluster(
+                options={"showCoverageOnHover": False, "maxClusterRadius": 38},
+            ).add_to(group)
+    else:
+        cluster = MarkerCluster(
+            name="소관 시설",
+            options={"showCoverageOnHover": False, "maxClusterRadius": 38},
+        ).add_to(map_obj)
     assessments = {item.facility.id: item for item in snapshot.assessments}
     for facility in snapshot.facilities:
         assessment = assessments[facility.id]
@@ -189,7 +207,8 @@ def build_monitoring_map(
             '<div style="font-family:sans-serif;min-width:220px;line-height:1.5">'
             f"<b>{html.escape(facility.name)}</b> · {_grade_label(assessment.grade)}<br>"
             f"{html.escape(facility.facility_type)}<hr style='margin:6px 0'>"
-            f"{html.escape(reasons)}<br><small>{html.escape(facility.address)}</small></div>"
+            f"{html.escape(reasons)}<br><small>{html.escape(facility.address)}</small>"
+            f"<br><small>{FACILITY_TOKEN}{html.escape(facility.id)}</small></div>"
         )
         folium.CircleMarker(
             [facility.location.latitude, facility.location.longitude],
@@ -199,9 +218,18 @@ def build_monitoring_map(
             fill=True,
             fill_color=COLORS[assessment.grade],
             fill_opacity=0.95,
-            tooltip=f"{facility.name} · {_grade_label(assessment.grade)}",
+            tooltip=(
+                f"시설 · {facility.name} · {_grade_label(assessment.grade)} · "
+                f"{FACILITY_TOKEN}{facility.id}"
+            ),
             popup=folium.Popup(popup, max_width=320),
-        ).add_to(cluster)
+        ).add_to(clusters[assessment.grade] if grade_layers else cluster)
+    if grade_layers:
+        folium.LayerControl(
+            position="bottomright",
+            collapsed=True,
+            autoZIndex=False,
+        ).add_to(map_obj)
     cctv_focus = next(
         (
             item
@@ -240,6 +268,26 @@ def build_monitoring_map(
             weight=4,
             fill=False,
             tooltip=f"선택 시설 · {focus_facility.name}",
+        ).add_to(map_obj)
+    selected_facility = next(
+        (
+            item
+            for item in snapshot.facilities
+            if item.id == str(selected_facility_id)
+        ),
+        None,
+    )
+    if selected_facility and selected_facility.id != str(focus_facility_id):
+        folium.CircleMarker(
+            [
+                selected_facility.location.latitude,
+                selected_facility.location.longitude,
+            ],
+            radius=12,
+            color="#142746",
+            weight=3,
+            fill=False,
+            tooltip=f"선택 시설 · {selected_facility.name}",
         ).add_to(map_obj)
     return map_obj
 

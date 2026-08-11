@@ -11,8 +11,13 @@ from safety_dashboard.adapters.cctv import (
 from safety_dashboard.adapters.disaster_messages import SOURCE_PAGE_URL
 from safety_dashboard.application.cctv_directions import describe_cctv_direction
 from safety_dashboard.application.context_info import describe_cctv_timing
-from safety_dashboard.domain.enums import ContextStatus
-from safety_dashboard.domain.models import CctvFeed, DisasterMessageFeed, FacilityRegion
+from safety_dashboard.domain.enums import ContextStatus, DataHealth
+from safety_dashboard.domain.models import (
+    CctvFeed,
+    DisasterMessageFeed,
+    FacilityRegion,
+    WeatherObservation,
+)
 
 
 def render_facility_context(
@@ -21,7 +26,10 @@ def render_facility_context(
     news_url: str,
     cctv_feed: CctvFeed | None = None,
     cctv_direction_warning: str = "",
+    weather: WeatherObservation | None = None,
 ) -> None:
+    if weather is not None:
+        _render_weather(weather)
     _render_cctv_status(cctv_feed, cctv_direction_warning)
     count = len(feed.messages) if feed else 0
     with st.expander(
@@ -57,6 +65,43 @@ def render_facility_context(
         st.markdown(f"[출처 · 행정안전부 재난안전데이터]({SOURCE_PAGE_URL})")
 
     _render_news_link(news_url)
+
+
+def _render_weather(weather: WeatherObservation) -> None:
+    with st.expander("현재 기상 실황", expanded=True):
+        if weather.health is DataHealth.ERROR:
+            st.warning(weather.message or "현재 기상을 조회하지 못했습니다.")
+            st.caption("기상 실황 오류는 특보·위험도 계산에 영향을 주지 않습니다.")
+            return
+        temperature = _measurement(weather.temperature_c, "℃")
+        rainfall = _measurement(weather.rainfall_1h_mm, "mm")
+        wind_speed = _measurement(weather.wind_speed_ms, "m/s")
+        direction = _wind_direction(weather.wind_direction_deg)
+        st.markdown(
+            '<div class="weather-grid">'
+            f'<div><span>기온</span><b>{temperature}</b></div>'
+            f'<div><span>1시간 강수</span><b>{rainfall}</b></div>'
+            f'<div><span>풍속</span><b>{wind_speed}</b></div>'
+            f'<div><span>풍향</span><b>{direction}</b></div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            f"관측 기준 · {weather.observed_at:%Y-%m-%d %H:%M} · "
+            f"{weather.message or '기상청 초단기실황'}"
+        )
+
+
+def _measurement(value: float | None, unit: str) -> str:
+    return "—" if value is None else f"{value:g}{unit}"
+
+
+def _wind_direction(value: float | None) -> str:
+    if value is None:
+        return "—"
+    labels = ("북", "북동", "동", "남동", "남", "남서", "서", "북서")
+    label = labels[int((value % 360 + 22.5) // 45) % 8]
+    return f"{label} {value:g}°"
 
 
 def _render_news_link(news_url: str) -> None:

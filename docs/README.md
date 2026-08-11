@@ -10,7 +10,9 @@
 2. [FEATURE_INVENTORY.md](FEATURE_INVENTORY.md) — 무엇을 유지·변경·제외할 것인가
 3. [DOMAIN_RULES.md](DOMAIN_RULES.md) — 같은 입력이 항상 같은 결과를 내도록 하는 규칙
 4. [UI_FLOW.md](UI_FLOW.md) — 정보가 어디에 한 번만 나타나고 사용자가 어떻게 행동하는가
-5. [ARCHITECTURE.md](ARCHITECTURE.md) — 위 내용을 변경하기 쉬운 코드로 만드는 방법
+5. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — 역할별 화면을 하나의 제품으로 유지하는 표현 규칙
+6. [ARCHITECTURE.md](ARCHITECTURE.md) — 위 내용을 변경하기 쉬운 코드로 만드는 방법
+7. [FIELD_MAP_DEPLOYMENT.md](FIELD_MAP_DEPLOYMENT.md) — React 현장 지도와 서울 API 실행·배포
 
 ## 문서 상태 표기
 

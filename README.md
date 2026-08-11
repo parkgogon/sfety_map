@@ -15,6 +15,11 @@ python -m venv .venv
 `.streamlit/secrets.toml`에 KMA API 키와 텔레그램 설정을 입력해야 합니다.
 실제 비밀정보 파일은 Git에서 제외됩니다.
 
+시설담당자용 React 현장 지도 1차 화면은 `field_web/`, 같은 위험도 계산을
+제공하는 Cloud Run API는 `safety_dashboard/api/`에 있습니다. 기존 Streamlit
+화면과 병행 검증하며 로컬 실행·Firebase/Cloud Run 자동 배포 준비는
+[`docs/FIELD_MAP_DEPLOYMENT.md`](docs/FIELD_MAP_DEPLOYMENT.md)를 따릅니다.
+
 Telegram 시설 딥링크를 사용하려면 `[dashboard].base_url`에 운영 중인
 HTTPS 대시보드 주소를 설정합니다. 행정안전부 재난문자는
 재난안전데이터공유플랫폼에서 `행정안전부_긴급재난문자`를 활용 신청한 뒤
@@ -41,30 +46,39 @@ secrets보다 우선합니다. 키가 없어도 나머지 관제 기능은 정�
 safety_dashboard/domain/       외부 기술에 독립적인 모델과 위험도 정책
 safety_dashboard/application/  조회 snapshot과 Telegram 메시지 유스케이스
 safety_dashboard/adapters/     KMA·CSV·특보구역·Telegram·PDF 연동
-safety_dashboard/ui/           지도와 외부 CSS
+safety_dashboard/ui/pages/     현장 지도·중앙 관제·설정 페이지
+safety_dashboard/ui/           공통 컨텍스트·지도·디자인 토큰·외부 CSS
 safety_dashboard/config/       사람이 수정하는 위험도 기준표
-app.py                         Streamlit Cloud용 고정 진입점
-app_v3.py                      실제 Streamlit 화면 조립
+safety_dashboard/api/          React용 `/api/v1` HTTP API
+field_web/                      카카오 지도 기반 모바일 React 현장 화면
+app.py                         Streamlit Cloud용 3페이지 라우터
 tests_v3/                      v3 핵심 규칙 테스트
 ```
 
-`app.py`는 배포 설정을 안정적으로 유지하는 얇은 진입점이며 실제 화면은
-`app_v3.py`와 `safety_dashboard/`에서 관리합니다.
+`app.py`는 배포 설정을 유지하면서 `현장 지도`, `중앙 관제`, `설정`을
+상단 메뉴로 연결합니다. 선택한 페이지만 실행되며 공통 관제 입력은 캐시를 공유합니다.
 
 제품 목표, 업무 규칙과 구조는 [`docs/`](docs/README.md)에 정리되어 있습니다.
+색상·간격·컴포넌트·역할별 화면 기준은
+[`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)와
+[`safety_dashboard/ui/design_tokens.css`](safety_dashboard/ui/design_tokens.css)를 단일 기준으로 사용합니다.
 
 기본 위험도 기준은
 [`safety_dashboard/config/risk_policy.toml`](safety_dashboard/config/risk_policy.toml)에서
 특보별 `ADVISORY`, `WARNING`, `CRITICAL` 값을 수정합니다. 값을 바꾸면 반드시
 `policy.version`도 함께 올려 보고서가 어떤 기준을 사용했는지 식별할 수 있게 합니다.
-화면의 `위험도 기준 설정`에서도 전체 특보 행렬을 편집할 수 있으며,
+상단 `설정` 메뉴에서도 전체 특보 행렬을 편집할 수 있으며,
 이 경우는 파일을 바꾸지 않고 현재 브라우저 세션에만 적용됩니다.
 
-시설 유형·지도 표시 등급은 `조회 범위 변경` popover에서 여러 개를 바꾼 뒤
+`현장 지도`는 전체 시설을 지도 중심으로 보여주며 시설명·주소 검색과 유형 필터를
+제공합니다. 시설을 선택한 뒤 요청할 때만 현재 기상·재난문자·CCTV를 조회합니다.
+모바일 현장 지도는 기본 조작 가능하며 지도 안의 `페이지 스크롤 우선`으로 전환합니다.
+
+`중앙 관제`의 시설 유형·지도 표시 등급은 `조회 범위 변경` popover에서 여러 개를 바꾼 뒤
 `조회 범위 적용`을
 눌러야 지도와 지표에 반영됩니다. 후속 작업 표의 체크 변경도
 Telegram 또는 PDF 버튼을 누를 때 한 번에 확정됩니다.
-모바일에서는 점검 우선순위 목록을 지도보다 먼저 표시하고, 지도를 기본
+중앙관제 모바일에서는 점검 우선순위 목록을 지도보다 먼저 표시하고, 지도를 기본
 잠금해 한 손가락 페이지 스크롤을 유지합니다. 지도 내부의 `지도 조작 켜기`로
 필요할 때만 이동·확대를 활성화합니다.
 시설 상세 정보와 후속 작업 대상은 PC·모바일 모두 기본으로 접혀 있으며,
@@ -103,7 +117,8 @@ ITS API에는 촬영 방위각이 없으므로 방향을 자동 추정하지 않
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s tests_v3 -v
-.venv/bin/python -m compileall -q app.py app_v3.py safety_dashboard
+.venv/bin/python -m compileall -q app.py safety_dashboard
+cd field_web && npm test && npm run build
 ```
 
 운영 배포 전에는 코드 저장소 이력에 존재했던 기존 KMA 키를 재발급하여

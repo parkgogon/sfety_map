@@ -46,10 +46,10 @@ def _clear_outputs() -> None:
     st.session_state.pop("report_pdf", None)
     st.session_state.pop("report_name", None)
     st.session_state.pop("report_fingerprint", None)
+    st.session_state.pop("control_active_scope_key", None)
 
 
-@st.dialog("위험도 기준 설정", width="large")
-def policy_editor_dialog(
+def render_policy_editor(
     base_policy: RiskPolicy,
     current_policy: RiskPolicy,
     warnings: Sequence[Warning],
@@ -175,3 +175,14 @@ def policy_editor_dialog(
         st.session_state.pop(SESSION_BASE_VERSION_KEY, None)
         _clear_outputs()
         st.rerun()
+
+
+@st.dialog("위험도 기준 설정", width="large")
+def policy_editor_dialog(
+    base_policy: RiskPolicy,
+    current_policy: RiskPolicy,
+    warnings: Sequence[Warning],
+) -> None:
+    """기존 호출과의 호환을 위한 작업창 래퍼."""
+
+    render_policy_editor(base_policy, current_policy, warnings)

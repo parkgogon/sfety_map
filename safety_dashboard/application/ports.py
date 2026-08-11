@@ -13,6 +13,7 @@ from safety_dashboard.domain.models import (
     GeoPoint,
     OutgoingTelegramMessage,
     WarningFeed,
+    WeatherObservation,
 )
 
 
@@ -50,6 +51,14 @@ class CctvProvider(Protocol):
         radius_km: float = 20,
         limit: int = 5,
     ) -> CctvFeed: ...
+
+
+class CurrentWeatherProvider(Protocol):
+    def fetch(
+        self,
+        location: GeoPoint,
+        now: dt.datetime | None = None,
+    ) -> WeatherObservation: ...
 
 
 class ReportRenderer(Protocol):

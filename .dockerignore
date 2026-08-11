@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.streamlit
+field_web/node_modules
+field_web/dist
+tests
+tests_v3
+docs
+facilities_info
+*.pdf
+*.kmz
+*.kml

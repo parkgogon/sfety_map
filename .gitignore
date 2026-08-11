@@ -3,4 +3,7 @@ __pycache__/
 *.pyc
 .streamlit/secrets.toml
 .DS_Store
-\n# Streamlit secrets\n.streamlit/secrets.toml
+field_web/node_modules/
+field_web/dist/
+field_web/.env.local
+field_web/*.tsbuildinfo

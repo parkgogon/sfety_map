@@ -1,24 +1,49 @@
-:root {
-  --ink: #142746;
-  --muted: #64748b;
-  --line: #dce5ef;
-  --brand: #176b87;
-  --surface: #f6f9fc;
+.stApp {
+  background: var(--color-bg-canvas); color: var(--ink);
+  font-family: var(--font-sans); line-height: var(--line-height-body);
 }
-
-.stApp { background: #f7f9fc; color: var(--ink); }
 [data-testid="stHeader"] { background: transparent !important; }
 [data-testid="stSidebar"] { border-right: 1px solid var(--line); }
-.block-container { max-width: 1440px; padding-top: 4.25rem; padding-bottom: 4rem; }
+.block-container {
+  max-width: var(--layout-max-width); padding-top: 4.25rem; padding-bottom: 4rem;
+}
+.st-key-role-navigation {
+  background: var(--color-nav-sticky); border-bottom: 1px solid var(--line);
+  margin: -1rem 0 1.15rem; padding: .35rem 0 .7rem; position: sticky;
+  top: 2.75rem; z-index: 900;
+}
+.st-key-role-navigation div[data-testid="stHorizontalBlock"] {
+  flex-wrap: nowrap !important; gap: .45rem !important;
+}
+.st-key-role-navigation div[data-testid="stColumn"] {
+  flex: 1 1 0 !important; min-width: 0 !important; width: auto !important;
+}
+.st-key-role-navigation a {
+  align-items: center; background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); display: flex; font-weight: 800; justify-content: center;
+  min-height: 42px; padding: .45rem .7rem; text-decoration: none;
+}
+.st-key-role-navigation a[aria-current="page"],
+.st-key-role-navigation a[href=""] {
+  background: var(--ink); border-color: var(--ink); color: var(--color-on-strong) !important;
+}
+.st-key-role-navigation a[aria-current="page"] span,
+.st-key-role-navigation a[href=""] span,
+.st-key-role-navigation a[aria-current="page"] svg,
+.st-key-role-navigation a[href=""] svg {
+  color: var(--color-on-strong) !important; fill: currentColor !important;
+}
 
 .app-kicker { color: var(--brand); font-size: .78rem; font-weight: 800; letter-spacing: .13em; }
 .app-title { color: var(--ink); font-size: clamp(1.65rem, 3vw, 2.35rem); font-weight: 800; margin: .2rem 0; }
 .app-subtitle { color: var(--muted); margin-bottom: 1rem; }
 .status-strip {
-  background: #fff; border: 1px solid var(--line); border-radius: 12px;
-  color: #526277; font-size: .82rem; padding: .7rem 1rem; margin-bottom: .8rem;
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); color: var(--color-text-secondary);
+  font-size: .82rem; padding: .7rem 1rem; margin-bottom: .8rem;
 }
 .status-time-mobile { display: none; }
+.field-status-mobile { display: none; }
 .scope-summary-label { color: var(--ink); font-size: .9rem; font-weight: 800; }
 .scope-summary-value {
   color: var(--muted); font-size: .8rem; overflow: hidden;
@@ -29,18 +54,50 @@
   margin-bottom: 1rem;
 }
 .metric-card {
-  background: #fff; border: 1px solid var(--line); border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(20,39,70,.04); min-height: 105px; padding: 1rem 1.1rem;
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+  min-height: 105px; padding: 1rem 1.1rem;
 }
 .metric-label { color: var(--muted); font-size: .82rem; font-weight: 700; }
 .metric-value { color: var(--ink); font-size: 2rem; font-weight: 800; line-height: 1.25; }
 .metric-note { color: var(--muted); font-size: .76rem; }
 .detail-card {
-  background:#fff; border:1px solid var(--line); border-radius:12px; padding:1rem 1.1rem;
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: 1rem 1.1rem;
 }
-.grade-pill { border-radius:999px; color:#fff; display:inline-block; font-weight:800; padding:.18rem .65rem; }
-[data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.stButton button, .stDownloadButton button { border-radius: 9px; font-weight: 700; }
+.field-detail-card, .settings-policy-summary {
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 1rem 1.1rem;
+  margin-bottom: .8rem;
+}
+.field-detail-heading { align-items: center; display: flex; gap: .65rem; margin-bottom: .9rem; }
+.field-detail-heading b { font-size: 1.15rem; }
+.field-detail-grid {
+  display: grid; gap: .75rem 1.1rem; grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.field-detail-grid div { display: flex; flex-direction: column; gap: .18rem; }
+.field-detail-grid span, .weather-grid span { color: var(--muted); font-size: .76rem; font-weight: 700; }
+.field-detail-grid b { font-size: .9rem; line-height: 1.55; }
+.field-detail-grid .field-address { grid-column: 1 / -1; }
+.weather-grid {
+  display: grid; gap: .55rem; grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.weather-grid div {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; gap: .15rem; padding: .7rem;
+}
+.weather-grid b { color: var(--ink); font-size: 1rem; }
+.grade-pill {
+  border-radius: var(--radius-pill); color: var(--color-on-strong);
+  display: inline-block; font-weight: 800; padding: .18rem .65rem;
+}
+[data-testid="stDataFrame"] {
+  border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden;
+}
+.stButton button, .stDownloadButton button {
+  border-radius: var(--radius-sm); font-weight: 700;
+}
 [data-testid="stPills"] [role="button"] { font-weight: 700; }
 .st-key-news-actions div[data-testid="stHorizontalBlock"] {
   align-items: center !important; flex-wrap: nowrap !important; gap: .45rem !important;
@@ -52,15 +109,27 @@
   flex: 0 0 44px !important; min-width: 44px !important; width: 44px !important;
 }
 .st-key-news-actions div[data-testid="stColumn"]:last-child button {
-  min-height: 44px; padding-left: 0; padding-right: 0; width: 100%;
+  min-height: var(--touch-target-min); padding-left: 0; padding-right: 0; width: 100%;
 }
 .mobile-only { display: none; }
 
 @media (max-width: 700px) {
   .block-container { padding: 3.75rem .8rem 3rem; }
+  .st-key-role-navigation { margin-top: -.65rem; top: 2.4rem; }
+  .st-key-role-navigation a {
+    font-size: .78rem; min-height: var(--touch-target-min); padding: .4rem .25rem;
+  }
   .app-title { line-height: 1.15; }
   .app-subtitle { font-size: .88rem; margin-bottom: .7rem; }
+  .field-intro { display: none; }
+  .field-status-strip {
+    background: transparent; border: 0; border-radius: 0; font-size: .76rem;
+    font-weight: 700; margin: .15rem 0 .65rem; padding: 0;
+  }
+  .field-status-desktop { display: none; }
+  .field-status-mobile { display: inline; }
   .status-strip { font-size: .76rem; padding: .62rem .75rem; }
+  .status-strip.field-status-strip { padding: 0; }
   .status-secondary, .status-time-full { display: none; }
   .status-time-mobile { display: inline; }
   .metric-grid { gap: .45rem; margin-bottom: .7rem; }
@@ -72,6 +141,24 @@
   .mobile-map-help, .mobile-table-help {
     color: var(--muted); font-size: .75rem; margin: -.1rem 0 .45rem;
   }
+  .st-key-field-map-caption,
+  .st-key-field-detail-title,
+  .st-key-field-empty-desktop { display: none; }
+  div[data-testid="stLayoutWrapper"]:has(> .st-key-field-map-caption),
+  div[data-testid="stLayoutWrapper"]:has(> .st-key-field-detail-title),
+  div[data-testid="stLayoutWrapper"]:has(> .st-key-field-empty-desktop) {
+    display: none;
+  }
+  .st-key-field-monitoring-map iframe[title="streamlit_folium.st_folium"] {
+    height: calc(100vw - 1.6rem) !important;
+  }
+  .field-empty-state {
+    color: var(--muted); font-size: .82rem; margin: .5rem .15rem .2rem;
+  }
+  .field-detail-grid { grid-template-columns: 1fr; }
+  .field-detail-grid .field-address { grid-column: auto; }
+  .weather-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .st-key-field-monitoring-map + div { margin-top: .35rem; }
   .st-key-scope-summary div[data-testid="stHorizontalBlock"] {
     align-items: center !important; flex-wrap: nowrap !important; gap: .55rem !important;
   }
@@ -101,5 +188,5 @@
     width: calc(50% - .275rem) !important;
   }
   .st-key-target-selection-controls button,
-  .st-key-target-action-controls button { min-height: 44px; }
+  .st-key-target-action-controls button { min-height: var(--touch-target-min); }
 }
