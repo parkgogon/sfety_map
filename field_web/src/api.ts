@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MonitoringResponse } from "./types";
+import type { MonitoringMode, MonitoringResponse } from "./types";
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -11,7 +11,7 @@ export interface MonitoringState {
   refresh: () => Promise<void>;
 }
 
-export function useMonitoringData(): MonitoringState {
+export function useMonitoringData(mode: MonitoringMode): MonitoringState {
   const [data, setData] = useState<MonitoringResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,7 +24,11 @@ export function useMonitoringData(): MonitoringState {
     running.current = controller;
     setRefreshing(true);
     try {
-      const response = await fetch(`/api/v1/monitoring${force ? "?refresh=true" : ""}`, {
+      const query = new URLSearchParams();
+      if (mode === "simulation") query.set("mode", "simulation");
+      if (force) query.set("refresh", "true");
+      const suffix = query.size ? `?${query.toString()}` : "";
+      const response = await fetch(`/api/v1/monitoring${suffix}`, {
         cache: "no-store",
         signal: controller.signal,
         headers: { Accept: "application/json" },
@@ -46,9 +50,12 @@ export function useMonitoringData(): MonitoringState {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
+    setData(null);
+    setLoading(true);
+    setError("");
     void load();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();

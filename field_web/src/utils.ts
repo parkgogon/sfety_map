@@ -1,4 +1,4 @@
-import type { Facility, RiskGrade } from "./types";
+import type { Facility, MonitoringMode, RiskGrade } from "./types";
 
 export const GRADE_ORDER: RiskGrade[] = [
   "HIGH",
@@ -47,6 +47,12 @@ export function filterFacilities(
 
 export function requestedFacilityId(search: string): string {
   return new URLSearchParams(search).get("facility_id")?.trim().slice(0, 128) ?? "";
+}
+
+export function requestedMonitoringMode(search: string): MonitoringMode {
+  return new URLSearchParams(search).get("mode") === "simulation"
+    ? "simulation"
+    : "live";
 }
 
 export function formatReferenceTime(value: string): string {

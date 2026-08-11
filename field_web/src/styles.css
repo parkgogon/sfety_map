@@ -126,6 +126,50 @@ input:focus-visible {
   background: var(--color-status-error);
 }
 
+.status-line.simulation .status-dot {
+  background: var(--color-status-simulation);
+}
+
+.simulation-banner {
+  align-items: center;
+  background: #f4ebff;
+  border-bottom: 1px solid #d6bbfb;
+  color: #5925a9;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 5px var(--space-4);
+  z-index: 36;
+}
+
+.simulation-banner > div {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.simulation-banner strong {
+  font-size: var(--font-size-md);
+}
+
+.simulation-banner span {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.simulation-banner button {
+  background: #6941c6;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+}
+
 .notice-stack {
   background: var(--color-bg-canvas);
   display: grid;
@@ -604,6 +648,46 @@ input:focus-visible {
   color: var(--color-text-secondary);
 }
 
+.training-option {
+  align-items: center;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+}
+
+.training-option.active {
+  background: #f4ebff;
+  border-color: #d6bbfb;
+}
+
+.training-option > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.training-option span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.training-option button {
+  background: var(--color-bg-surface);
+  border: 1px solid #6941c6;
+  border-radius: var(--radius-md);
+  color: #5925a9;
+  flex: none;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+}
+
 .filter-actions {
   display: grid;
   gap: var(--space-2);
@@ -714,6 +798,21 @@ input:focus-visible {
   .status-line {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
+  }
+
+  .simulation-banner {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .simulation-banner > div {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .training-option {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .facility-count {

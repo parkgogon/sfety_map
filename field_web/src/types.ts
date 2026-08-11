@@ -1,4 +1,5 @@
 export type DataHealth = "LIVE" | "FALLBACK" | "STALE" | "ERROR" | "SIMULATION";
+export type MonitoringMode = "live" | "simulation";
 export type RiskGrade =
   | "HIGH"
   | "MEDIUM"

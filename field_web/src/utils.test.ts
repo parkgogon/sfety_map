@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Facility } from "./types";
-import { filterFacilities, formatReferenceTime, requestedFacilityId } from "./utils";
+import {
+  filterFacilities,
+  formatReferenceTime,
+  requestedFacilityId,
+  requestedMonitoringMode,
+} from "./utils";
 
 const facility = (overrides: Partial<Facility>): Facility => ({
   id: "F-1",
@@ -40,6 +45,12 @@ describe("현장 지도 필터", () => {
   it("딥링크는 facility_id만 읽고 길이를 제한한다", () => {
     expect(requestedFacilityId("?region=구미&facility_id=F-1")).toBe("F-1");
     expect(requestedFacilityId(`?facility_id=${"x".repeat(200)}`)).toHaveLength(128);
+  });
+
+  it("모의훈련 주소만 simulation 모드로 인정한다", () => {
+    expect(requestedMonitoringMode("?mode=simulation")).toBe("simulation");
+    expect(requestedMonitoringMode("?mode=live")).toBe("live");
+    expect(requestedMonitoringMode("?mode=unknown")).toBe("live");
   });
 
   it("API 기준 시각을 한국식 월일 시각으로 표시한다", () => {

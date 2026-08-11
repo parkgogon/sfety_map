@@ -2,10 +2,13 @@ import datetime as dt
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from safety_dashboard.api.app import create_app
+from safety_dashboard.api.service import MonitoringApiService
+from safety_dashboard.api.settings import ApiSettings
 from safety_dashboard.api.serialization import serialize_monitoring
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository, FacilityDataError
 from safety_dashboard.application.facility_groups import FacilityGroup, FacilityGroupCatalog
@@ -47,10 +50,10 @@ class _Matcher:
 
 class _ApiService:
     def __init__(self):
-        self.refresh_values = []
+        self.calls = []
 
-    def monitoring(self, force_refresh=False):
-        self.refresh_values.append(force_refresh)
+    def monitoring(self, force_refresh=False, simulation=False):
+        self.calls.append((force_refresh, simulation))
         return {"api_version": "v1", "facilities": []}
 
 
@@ -158,8 +161,49 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["api_version"], "v1")
         self.assertEqual(response.headers["cache-control"], "private, no-store")
-        self.assertEqual(service.refresh_values, [True])
+        self.assertEqual(service.calls, [(True, False)])
+        simulation = client.get("/api/v1/monitoring?mode=simulation")
+        self.assertEqual(simulation.status_code, 200)
+        self.assertEqual(service.calls[-1], (False, True))
+        self.assertEqual(
+            client.get("/api/v1/monitoring?mode=unknown").status_code,
+            422,
+        )
         self.assertEqual(client.get("/api/v1/health").json()["status"], "ok")
+
+    def test_simulation_uses_existing_scenario_without_calling_kma(self):
+        service = MonitoringApiService(ApiSettings(kma_api_key=""))
+        service._zones = lambda _: (  # type: ignore[method-assign]
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"regid": "L1070300", "regko": "구미시"},
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [
+                                [[127.0, 35.0], [130.0, 35.0], [130.0, 37.0],
+                                 [127.0, 37.0], [127.0, 35.0]]
+                            ],
+                        },
+                    }
+                ],
+            },
+            DataHealth.LIVE,
+            "테스트 경계",
+        )
+        with patch(
+            "safety_dashboard.api.service.KmaWarningProvider",
+            side_effect=AssertionError("모의훈련에서 KMA를 호출하면 안 됩니다."),
+        ):
+            payload = service.monitoring(simulation=True)
+
+        self.assertEqual(payload["status"]["health"], DataHealth.SIMULATION.value)
+        self.assertEqual(len(payload["warnings"]), 4)
+        self.assertTrue(
+            all(item["source"] == "모의훈련" for item in payload["warnings"])
+        )
 
 
 class FacilityCsvValidationTests(unittest.TestCase):

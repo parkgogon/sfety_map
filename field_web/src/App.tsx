@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMonitoringData } from "./api";
 import { FacilitySheet } from "./FacilitySheet";
 import { KakaoMap } from "./KakaoMap";
-import type { Facility, RiskGrade } from "./types";
+import type { Facility, MonitoringMode, RiskGrade } from "./types";
 import {
   filterFacilities,
   formatReferenceTime,
@@ -10,6 +10,7 @@ import {
   GRADE_LABELS,
   GRADE_ORDER,
   requestedFacilityId,
+  requestedMonitoringMode,
   uniqueWarningText,
 } from "./utils";
 
@@ -20,8 +21,18 @@ function setFacilityQuery(facilityId: string) {
   window.history.replaceState({}, "", url);
 }
 
+function setModeQuery(mode: MonitoringMode) {
+  const url = new URL(window.location.href);
+  if (mode === "simulation") url.searchParams.set("mode", "simulation");
+  else url.searchParams.delete("mode");
+  window.history.replaceState({}, "", url);
+}
+
 export default function App() {
-  const { data, loading, refreshing, error, refresh } = useMonitoringData();
+  const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
+    requestedMonitoringMode(window.location.search),
+  );
+  const { data, loading, refreshing, error, refresh } = useMonitoringData(monitoringMode);
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [selectedGrades, setSelectedGrades] = useState<Set<RiskGrade>>(new Set(GRADE_ORDER));
   const [selectedId, setSelectedId] = useState("");
@@ -94,6 +105,11 @@ export default function App() {
       return next;
     });
   };
+  const changeMonitoringMode = (mode: MonitoringMode) => {
+    setModeQuery(mode);
+    setMonitoringMode(mode);
+    setFilterOpen(false);
+  };
 
   if (loading && !data) {
     return (
@@ -116,7 +132,9 @@ export default function App() {
     );
   }
 
+  const simulation = data.status.health === "SIMULATION";
   const live = data.status.health === "LIVE";
+  const feedAvailable = live || simulation;
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -135,17 +153,32 @@ export default function App() {
         </button>
       </header>
 
-      <div className={`status-line ${live ? "live" : "problem"}`} role="status">
+      <div
+        className={`status-line ${simulation ? "simulation" : live ? "live" : "problem"}`}
+        role="status"
+      >
         <span className="status-dot" aria-hidden="true" />
-        <b>KMA {live ? "정상" : "조회 불가"}</b>
+        <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : "조회 불가"}`}</b>
         <span>· {formatReferenceTime(data.generated_at)} 기준</span>
         <span className="facility-count">· 시설 {visibleFacilities.length}개 표시</span>
       </div>
 
-      {(error || !live || data.status.zone_health === "FALLBACK" || deepLinkNotice) && (
+      {monitoringMode === "simulation" && (
+        <div className="simulation-banner" role="alert">
+          <div>
+            <strong>모의훈련</strong>
+            <span>실제 상황이 아닙니다</span>
+          </div>
+          <button type="button" onClick={() => changeMonitoringMode("live")}>
+            실시간으로 돌아가기
+          </button>
+        </div>
+      )}
+
+      {(error || !feedAvailable || data.status.zone_health === "FALLBACK" || deepLinkNotice) && (
         <div className="notice-stack" aria-live="polite">
           {error && <div className="notice warning">{error}</div>}
-          {!live && <div className="notice error">{data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다."}</div>}
+          {!feedAvailable && <div className="notice error">{data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다."}</div>}
           {data.status.zone_health === "FALLBACK" && <div className="notice info">최신 특보 경계 대신 검증된 내장 경계를 사용 중입니다.</div>}
           {deepLinkNotice && <div className="notice info">{deepLinkNotice}</div>}
         </div>
@@ -222,6 +255,26 @@ export default function App() {
                   <span>{group.label}</span><b>{group.count}</b>
                 </label>
               ))}
+            </div>
+            <div className={`training-option ${monitoringMode === "simulation" ? "active" : ""}`}>
+              <div>
+                <strong>화면 확인</strong>
+                <span>
+                  {monitoringMode === "simulation"
+                    ? "현재 고정된 훈련 특보를 표시하고 있습니다."
+                    : "특보 발생 시 화면을 미리 확인합니다."}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => changeMonitoringMode(
+                  monitoringMode === "simulation" ? "live" : "simulation",
+                )}
+              >
+                {monitoringMode === "simulation"
+                  ? "실시간 화면으로 돌아가기"
+                  : "모의훈련 화면 보기"}
+              </button>
             </div>
             <div className="filter-actions">
               <button type="button" onClick={() => setSelectedGroups(new Set(data.groups.map((group) => group.id)))}>전체 선택</button>

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 from fastapi import FastAPI, Query, Response
 from fastapi.responses import JSONResponse
@@ -31,9 +32,13 @@ def create_app(service: MonitoringApiService | None = None) -> FastAPI:
     def monitoring(
         response: Response,
         refresh: bool = Query(False),
+        mode: Literal["live", "simulation"] = Query("live"),
     ) -> dict:
         response.headers["Cache-Control"] = "private, no-store"
-        return monitoring_service.monitoring(force_refresh=refresh)
+        return monitoring_service.monitoring(
+            force_refresh=refresh,
+            simulation=mode == "simulation",
+        )
 
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:
