@@ -24,6 +24,12 @@ class SolapiNotifier:
         self.api_secret = api_secret.strip()
         self.sender_number = "".join(filter(str.isdigit, sender_number))
         self._service = service
+        self._request_type = getattr(service, "request_type", None)
+        self._request_config_type = getattr(
+            service,
+            "request_config_type",
+            None,
+        )
 
     def send(self, message: OutgoingSmsMessage) -> SmsDeliveryResult:
         return self.send_many((message,))[0]
@@ -41,7 +47,7 @@ class SolapiNotifier:
             )
             return tuple(result for _ in messages)
         try:
-            service, request_type = self._client()
+            service, request_type, request_config_type = self._client()
             requests = [
                 request_type(
                     from_=self.sender_number,
@@ -54,7 +60,17 @@ class SolapiNotifier:
                 )
                 for item in messages
             ]
-            response = service.send(requests[0] if len(requests) == 1 else requests)
+            payload = requests[0] if len(requests) == 1 else requests
+            if request_config_type is None:
+                response = service.send(payload)
+            else:
+                # SOLAPI는 이 옵션이 없으면 정상 접수여도 messageList를
+                # 생략한다. 메시지 ID가 있어야 웹훅 결과를 내부 발송 건과
+                # 안전하게 연결할 수 있다.
+                response = service.send(
+                    payload,
+                    request_config_type(show_message_list=True),
+                )
         except Exception as exc:
             if type(exc).__name__ == "MessageNotReceivedError":
                 failed_messages = getattr(exc, "failed_messages", ()) or ()
@@ -104,20 +120,23 @@ class SolapiNotifier:
         )
         return tuple(results.get(item.id, unknown) for item in messages)
 
-    def _client(self) -> tuple[Any, Any]:
+    def _client(self) -> tuple[Any, Any, Any]:
         if self._service is not None:
-            request_type = getattr(self._service, "request_type", None)
-            if request_type is None:
-                request_type = _FallbackRequestMessage
-            return self._service, request_type
+            return (
+                self._service,
+                self._request_type or _FallbackRequestMessage,
+                self._request_config_type,
+            )
         from solapi import SolapiMessageService
-        from solapi.model import RequestMessage
+        from solapi.model import RequestMessage, SendRequestConfig
 
         self._service = SolapiMessageService(
             api_key=self.api_key,
             api_secret=self.api_secret,
         )
-        return self._service, RequestMessage
+        self._request_type = RequestMessage
+        self._request_config_type = SendRequestConfig
+        return self._service, self._request_type, self._request_config_type
 
 
 class _FallbackRequestMessage:

@@ -450,6 +450,40 @@ class ContactAndProviderTests(unittest.TestCase):
         self.assertEqual(result.provider_message_id, "M-1")
         self.assertEqual(service.request.values["customFields"]["deliveryId"], "delivery")
 
+    def test_solapi_requests_message_list_for_delivery_tracking(self):
+        class Request:
+            def __init__(self, **values):
+                self.values = values
+
+        class RequestConfig:
+            def __init__(self, *, show_message_list=False):
+                self.show_message_list = show_message_list
+
+        class Service:
+            request_type = Request
+            request_config_type = RequestConfig
+
+            def send(self, request, request_config):
+                self.request = request
+                self.request_config = request_config
+                return {
+                    "groupInfo": {"groupId": "G-1"},
+                    "messageList": [{"messageId": "M-1"}],
+                }
+
+        service = Service()
+        notifier = SolapiNotifier("key", "secret", "02-123-4567", service=service)
+        from safety_dashboard.alerts.domain import OutgoingSmsMessage
+        message = OutgoingSmsMessage(
+            "delivery", "batch", "hash", "01012345678", "테스트",
+            ("F-1",), ("T-1",),
+        )
+
+        result = notifier.send(message)
+
+        self.assertEqual(result.status, SmsDeliveryStatus.ACCEPTED)
+        self.assertTrue(service.request_config.show_message_list)
+
     def test_solapi_registration_failure_is_not_treated_as_unknown(self):
         class Request:
             def __init__(self, **values):
