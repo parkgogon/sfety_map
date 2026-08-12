@@ -73,9 +73,9 @@ jobs:
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
       - name: Deploy API to Cloud Run Seoul
         run: |-
-          SECRET_BINDINGS="KMA_API_KEY=KMA_API_KEY:1"
+          SECRET_BINDINGS="KMA_API_KEY=KMA_API_KEY:1,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1"
           if [[ "$ALERT_AUTOMATION_ENABLED" == "true" ]]; then
-            SECRET_BINDINGS="$SECRET_BINDINGS,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1,ALERT_ADMIN_TOKEN=ALERT_ADMIN_TOKEN:1"
+            SECRET_BINDINGS="$SECRET_BINDINGS,ALERT_ADMIN_TOKEN=ALERT_ADMIN_TOKEN:1"
           fi
           gcloud run deploy "$SERVICE_NAME" \
             --image "$IMAGE" \
