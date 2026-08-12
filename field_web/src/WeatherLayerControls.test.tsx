@@ -30,7 +30,7 @@ describe("기상 실황 범례", () => {
       />,
     );
     expect(markup).toContain("기온 실황");
-    expect(markup).toContain("13:10");
+    expect(markup).toContain("08. 12.");
     expect(markup).toContain('class="weather-scale-row"');
     expect(markup).toContain("-10");
     expect(markup).toContain("40℃");
