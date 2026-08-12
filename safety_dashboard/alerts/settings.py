@@ -24,8 +24,8 @@ class AlertSettings:
     admin_token: str = ""
     test_phone: str = ""
     project_id: str = ""
-    daily_cap: int = 500
-    cap_warning: int = 400
+    daily_cap: int = 50
+    cap_warning: int = 40
     pending_seconds: int = 1800
 
     @classmethod
@@ -40,10 +40,10 @@ class AlertSettings:
             except ValueError:
                 return default
 
-        daily_cap = integer("ALERT_DAILY_CAP", 500, 1)
+        daily_cap = integer("ALERT_DAILY_CAP", 50, 1)
         cap_warning = min(
             daily_cap,
-            integer("ALERT_CAP_WARNING", 400, 1),
+            integer("ALERT_CAP_WARNING", 40, 1),
         )
         return cls(
             automation_mode=mode,

@@ -90,7 +90,7 @@ def render_alert_metrics() -> None:
         st.caption(
             f"운영 상태 · {mode} · 최근 결과 {status.get('last_result', '-')} · "
             f"정책 {status.get('policy_version', '-')} · "
-            f"일일 상한 {status.get('daily_cap', 500)}건"
+            f"일일 상한 {status.get('daily_cap', 50)}건"
         )
         totals = metrics.get("totals", {})
         if not isinstance(totals, dict):

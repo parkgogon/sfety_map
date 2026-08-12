@@ -152,8 +152,8 @@ class AutomaticAlertTests(unittest.TestCase):
             automation_mode="live",
             recipient_hmac_secret="test-hmac-secret",
             dashboard_base_url="https://keco-safety-map.web.app",
-            daily_cap=500,
-            cap_warning=400,
+            daily_cap=50,
+            cap_warning=40,
             pending_seconds=1800,
         )
         defaults.update(values)
