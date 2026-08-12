@@ -21,6 +21,7 @@ from safety_dashboard.api.settings import ApiSettings
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
 from safety_dashboard.application.monitoring import MonitoringService
 from safety_dashboard.domain.enums import DataHealth
+from safety_dashboard.domain.models import DashboardSnapshot
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
 
@@ -78,6 +79,41 @@ class MonitoringApiService:
         *,
         simulation: bool = False,
     ) -> dict[str, Any]:
+        snapshot, catalog, policy, zone_data, zone_health, zone_detail = (
+            self._build_snapshot(monotonic_now, simulation=simulation)
+        )
+        return serialize_monitoring(
+            snapshot,
+            catalog,
+            policy,
+            zone_data,
+            zone_health,
+            zone_detail,
+        )
+
+    def snapshot(self, *, simulation: bool = False) -> DashboardSnapshot:
+        """자동 작업자가 직렬화 이전의 동일 관제 결과를 사용하게 합니다."""
+
+        with self._lock:
+            snapshot, _, _, _, _, _ = self._build_snapshot(
+                self._monotonic(),
+                simulation=simulation,
+            )
+            return snapshot
+
+    def _build_snapshot(
+        self,
+        monotonic_now: float,
+        *,
+        simulation: bool,
+    ) -> tuple[
+        DashboardSnapshot,
+        FacilityGroupCatalog,
+        RiskPolicy,
+        dict[str, Any],
+        DataHealth,
+        str,
+    ]:
         policy = RiskPolicy.load(self.settings.policy_path)
         catalog = FacilityGroupCatalog.load(self.settings.group_path)
         facilities = CsvFacilityRepository(self.settings.facility_path)
@@ -94,14 +130,7 @@ class MonitoringApiService:
             OfficialZoneMatcher(zone_index),
             policy,
         ).get_snapshot(now=dt.datetime.now(KST))
-        return serialize_monitoring(
-            snapshot,
-            catalog,
-            policy,
-            zone_data,
-            zone_health,
-            zone_detail,
-        )
+        return snapshot, catalog, policy, zone_data, zone_health, zone_detail
 
     def _zones(self, monotonic_now: float) -> tuple[dict[str, Any], DataHealth, str]:
         if self._zone_data is None or monotonic_now >= self._zone_expires_at:

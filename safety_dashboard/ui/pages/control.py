@@ -12,6 +12,7 @@ from safety_dashboard.application.contacts import public_contact
 from safety_dashboard.application.selection import action_snapshot, filter_snapshot
 from safety_dashboard.domain.enums import DataHealth, RiskGrade
 from safety_dashboard.ui.dialogs import report_dialog, telegram_dialog
+from safety_dashboard.ui.alert_metrics import render_alert_metrics
 from safety_dashboard.ui.map_view import COLORS, build_monitoring_map
 from safety_dashboard.ui.app_context import (
     FONT_PATH,
@@ -536,6 +537,8 @@ else:
                     FONT_PATH,
                     temporary_policy=temporary_policy,
                 )
+
+render_alert_metrics()
 
 with st.expander("현재 조회 범위의 특보 원문"):
     warning_rows = [

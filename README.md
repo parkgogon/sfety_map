@@ -31,6 +31,14 @@ ITS 인근 도로 CCTV는 [국가교통정보센터 CCTV Open API](https://its.g
 인증키를 발급받은 뒤 아래 설정을 추가하면 활성화됩니다.
 현재 `.streamlit/secrets.toml`은 자동으로 수정하지 않습니다.
 
+## 자동 재난특보 문자 알림
+
+공식 KMA 특보의 발효·격상·해제를 5분마다 감지해 Google Sheet의 시설별
+담당자에게 SOLAPI 문자로 전달하고 관리자 Telegram방에 처리 요약을 보낼 수 있다.
+전화번호는 Git이나 공개 API에 넣지 않으며 초기 상태는 실제 발송이 없는
+`preview`다. 계정·권한·연락처 형식과 운영 전환 순서는
+[`docs/AUTOMATIC_ALERTS.md`](docs/AUTOMATIC_ALERTS.md)를 참고한다.
+
 ```toml
 [its_cctv]
 api_key = "YOUR_ITS_CCTV_API_KEY"

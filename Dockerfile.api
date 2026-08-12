@@ -17,4 +17,4 @@ COPY facilities_info.csv ./facilities_info.csv
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn safety_dashboard.api.app:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uvicorn ${APP_MODULE:-safety_dashboard.api.app:app} --host 0.0.0.0 --port ${PORT}"]

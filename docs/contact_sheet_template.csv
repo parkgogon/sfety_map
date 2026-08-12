@@ -1,0 +1,2 @@
+facility_id,recipient_name,phone,active,note
+FACILITY_CODE,홍길동,01012345678,TRUE,예시 행은 삭제 후 사용

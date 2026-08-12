@@ -54,6 +54,9 @@ jobs:
       GCP_REGION: asia-northeast3
       ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY || 'safety-dashboard' }}
       SERVICE_NAME: safety-dashboard-api
+      ALERT_AUTOMATION_ENABLED: ${{ vars.ALERT_AUTOMATION_ENABLED || 'false' }}
+      ALERT_AUTOMATION_MODE: ${{ vars.ALERT_AUTOMATION_MODE || 'preview' }}
+      DASHBOARD_BASE_URL: ${{ vars.DASHBOARD_BASE_URL || 'https://keco-safety-map.web.app' }}
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v3
@@ -69,7 +72,11 @@ jobs:
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
       - name: Deploy API to Cloud Run Seoul
-        run: |
+        run: |-
+          SECRET_BINDINGS="KMA_API_KEY=KMA_API_KEY:1"
+          if [[ "$ALERT_AUTOMATION_ENABLED" == "true" ]]; then
+            SECRET_BINDINGS="$SECRET_BINDINGS,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1,ALERT_ADMIN_TOKEN=ALERT_ADMIN_TOKEN:1"
+          fi
           gcloud run deploy "$SERVICE_NAME" \
             --image "$IMAGE" \
             --project "$GCP_PROJECT_ID" \
@@ -83,8 +90,55 @@ jobs:
             --concurrency 40 \
             --min-instances 0 \
             --max-instances 3 \
-            --set-env-vars MONITORING_CACHE_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul \
-            --set-secrets KMA_API_KEY=KMA_API_KEY:1 \
+            --set-env-vars MONITORING_CACHE_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID \
+            --set-secrets "$SECRET_BINDINGS" \
+            --quiet
+      - name: Deploy private automatic alert worker
+        if: env.ALERT_AUTOMATION_ENABLED == 'true'
+        run: |-
+          gcloud run deploy safety-alert-worker \
+            --image "$IMAGE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --no-allow-unauthenticated \
+            --service-account safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com \
+            --port 8080 \
+            --cpu 1 \
+            --memory 512Mi \
+            --concurrency 1 \
+            --timeout 90 \
+            --min-instances 0 \
+            --max-instances 1 \
+            --set-env-vars APP_MODULE=safety_dashboard.alerts.worker_app:app,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,TZ=Asia/Seoul,ALERT_AUTOMATION_MODE=$ALERT_AUTOMATION_MODE,ALERT_DAILY_CAP=500,ALERT_CAP_WARNING=400,ALERT_PENDING_SECONDS=1800,CONTACT_SHEET_RANGE=Recipients!A:E,DASHBOARD_BASE_URL=$DASHBOARD_BASE_URL \
+            --set-secrets KMA_API_KEY=KMA_API_KEY:1,SOLAPI_API_KEY=SOLAPI_API_KEY:1,SOLAPI_API_SECRET=SOLAPI_API_SECRET:1,SOLAPI_SENDER_NUMBER=SOLAPI_SENDER_NUMBER:1,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1,CONTACT_SHEET_ID=CONTACT_SHEET_ID:1,ALERT_HMAC_SECRET=ALERT_HMAC_SECRET:1,ALERT_TEST_PHONE=ALERT_TEST_PHONE:1,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:1,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:1 \
+            --quiet
+      - name: Configure five-minute alert schedule
+        if: env.ALERT_AUTOMATION_ENABLED == 'true'
+        run: |-
+          SCHEDULER_ACCOUNT="safety-alert-scheduler@$GCP_PROJECT_ID.iam.gserviceaccount.com"
+          WORKER_URL="$(gcloud run services describe safety-alert-worker --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.url)')"
+          gcloud run services add-iam-policy-binding safety-alert-worker \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --member="serviceAccount:$SCHEDULER_ACCOUNT" \
+            --role="roles/run.invoker" \
+            --quiet
+          if gcloud scheduler jobs describe safety-alert-dispatch --project "$GCP_PROJECT_ID" --location "$GCP_REGION" >/dev/null 2>&1; then
+            ACTION=update
+          else
+            ACTION=create
+          fi
+          gcloud scheduler jobs "$ACTION" http safety-alert-dispatch \
+            --project "$GCP_PROJECT_ID" \
+            --location "$GCP_REGION" \
+            --schedule="*/5 * * * *" \
+            --time-zone="Asia/Seoul" \
+            --uri="$WORKER_URL/internal/v1/dispatch" \
+            --http-method=POST \
+            --oidc-service-account-email="$SCHEDULER_ACCOUNT" \
+            --oidc-token-audience="$WORKER_URL" \
+            --attempt-deadline=90s \
             --quiet
 
   deploy-web:

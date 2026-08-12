@@ -1,0 +1,141 @@
+"""자동 특보 알림의 순수 도메인 모델."""
+
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+from dataclasses import dataclass
+from enum import Enum
+from typing import Iterable
+
+from safety_dashboard.domain.enums import RiskGrade, WarningLevel
+
+
+class AlertTransitionKind(str, Enum):
+    ACTIVATED = "ACTIVATED"
+    ESCALATED = "ESCALATED"
+    CLEARED = "CLEARED"
+
+    @property
+    def label(self) -> str:
+        return {
+            AlertTransitionKind.ACTIVATED: "발효",
+            AlertTransitionKind.ESCALATED: "격상",
+            AlertTransitionKind.CLEARED: "해제",
+        }[self]
+
+
+class SmsDeliveryStatus(str, Enum):
+    RESERVED = "RESERVED"
+    ACCEPTED = "ACCEPTED"
+    DELIVERED = "DELIVERED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+    PREVIEW = "PREVIEW"
+    BLOCKED_CAP = "BLOCKED_CAP"
+
+
+@dataclass(frozen=True)
+class FacilityRecipient:
+    facility_id: str
+    recipient_name: str
+    phone: str
+    note: str = ""
+
+
+@dataclass(frozen=True)
+class ContactDirectory:
+    recipients: tuple[FacilityRecipient, ...]
+    revision: str
+    fetched_at: dt.datetime
+
+    def for_facility(self, facility_id: str) -> tuple[FacilityRecipient, ...]:
+        return tuple(
+            item for item in self.recipients if item.facility_id == facility_id
+        )
+
+    @property
+    def unique_phone_count(self) -> int:
+        return len({item.phone for item in self.recipients})
+
+
+@dataclass(frozen=True)
+class FacilityImpact:
+    """시설과 활성 특보 하나의 연결 상태."""
+
+    key: str
+    facility_id: str
+    facility_name: str
+    warning_key: str
+    warning_id: str
+    region_code: str
+    region: str
+    warning_type: str
+    raw_level: str
+    warning_level: WarningLevel
+    risk_grade: RiskGrade
+    issued_at: dt.datetime | None
+    effective_at: dt.datetime | None
+    recommended_action: str
+
+    @property
+    def fingerprint(self) -> str:
+        values = (
+            self.key,
+            self.warning_id,
+            self.raw_level,
+            self.warning_level.value,
+            self.risk_grade.value,
+            self.issued_at.isoformat() if self.issued_at else "",
+        )
+        return hashlib.sha256("|".join(values).encode("utf-8")).hexdigest()[:20]
+
+
+@dataclass(frozen=True)
+class AlertTransition:
+    id: str
+    kind: AlertTransitionKind
+    detected_at: dt.datetime
+    previous: FacilityImpact | None
+    current: FacilityImpact | None
+    delayed: bool = False
+
+    @property
+    def impact(self) -> FacilityImpact:
+        value = self.current or self.previous
+        if value is None:  # pragma: no cover - 생성자 오용 방어
+            raise ValueError("알림 변화에는 이전 또는 현재 영향 상태가 필요합니다.")
+        return value
+
+
+@dataclass(frozen=True)
+class AlertBatch:
+    id: str
+    created_at: dt.datetime
+    transitions: tuple[AlertTransition, ...]
+    mode: str
+    policy_version: str = ""
+
+
+@dataclass(frozen=True)
+class OutgoingSmsMessage:
+    id: str
+    batch_id: str
+    recipient_hash: str
+    phone: str
+    text: str
+    facility_ids: tuple[str, ...]
+    transition_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SmsDeliveryResult:
+    status: SmsDeliveryStatus
+    provider_message_id: str = ""
+    provider_group_id: str = ""
+    detail: str = ""
+
+
+def make_batch_id(transitions: Iterable[AlertTransition]) -> str:
+    identity = "|".join(sorted(item.id for item in transitions))
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
