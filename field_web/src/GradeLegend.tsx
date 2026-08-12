@@ -24,6 +24,7 @@ export const GRADE_HELP_FOOTER = "영향 없음은 절대적인 안전을 의미
 export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const helpButtonRef = useRef<HTMLButtonElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mouseHover, setMouseHover] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -52,24 +53,64 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
     };
   }, [helpVisible]);
 
+  const collapseLegend = () => {
+    setHelpOpen(false);
+    setMouseHover(false);
+    setFocusWithin(false);
+    helpButtonRef.current?.blur();
+    setCollapsed(true);
+  };
+
+  if (collapsed) {
+    return (
+      <div
+        ref={rootRef}
+        className="grade-legend grade-legend-collapsed"
+        aria-label="위험등급 지도 표시 설정"
+      >
+        <button
+          className="grade-legend-expand"
+          type="button"
+          aria-expanded="false"
+          aria-controls="grade-legend-options"
+          onClick={() => setCollapsed(false)}
+        >
+          등급 <span aria-hidden="true">›</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={rootRef}
       className={`grade-legend ${helpVisible ? "help-visible" : ""}`}
       aria-label="위험등급 지도 표시 설정"
     >
-      {GRADE_DISPLAY_ORDER.map((grade) => (
-        <button
-          type="button"
-          key={grade}
-          className={selectedGrades.has(grade) ? "active" : ""}
-          onClick={() => onToggle(grade)}
-          aria-pressed={selectedGrades.has(grade)}
-        >
-          <span style={{ backgroundColor: GRADE_COLORS[grade] }} />
-          {GRADE_LABELS[grade]}
-        </button>
-      ))}
+      <button
+        className="grade-legend-collapse"
+        type="button"
+        aria-label="위험등급 범례 접기"
+        aria-expanded="true"
+        aria-controls="grade-legend-options"
+        onClick={collapseLegend}
+      >
+        <span aria-hidden="true">‹</span>
+      </button>
+      <div id="grade-legend-options" className="grade-options">
+        {GRADE_DISPLAY_ORDER.map((grade) => (
+          <button
+            type="button"
+            key={grade}
+            className={selectedGrades.has(grade) ? "active" : ""}
+            onClick={() => onToggle(grade)}
+            aria-pressed={selectedGrades.has(grade)}
+          >
+            <span style={{ backgroundColor: GRADE_COLORS[grade] }} />
+            {GRADE_LABELS[grade]}
+          </button>
+        ))}
+      </div>
       <div
         className="grade-help"
         onPointerEnter={(event) => {

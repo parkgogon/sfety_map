@@ -304,7 +304,8 @@ input:focus-visible {
   min-width: 28px;
 }
 
-.filter-button {
+.filter-button,
+.weather-map-button {
   align-items: center;
   background: var(--color-bg-surface);
   border: 1px solid rgba(20, 39, 70, .12);
@@ -314,40 +315,21 @@ input:focus-visible {
   flex-direction: column;
   font-size: .68rem;
   font-weight: 700;
+  gap: 1px;
   justify-content: center;
   min-height: 48px;
   min-width: 54px;
   padding: 2px 8px;
 }
 
-.filter-button span:first-child {
+.filter-button span:first-child,
+.weather-map-button > span {
   font-size: 1.1rem;
   line-height: 1;
-}
-
-.weather-map-button {
-  align-items: center;
-  background: rgba(255, 255, 255, .96);
-  border: 1px solid rgba(20, 39, 70, .14);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(20, 39, 70, .14);
-  display: inline-flex;
-  flex-direction: column;
-  font-size: .68rem;
-  gap: 1px;
-  left: var(--space-3);
-  min-height: 48px;
-  min-width: 58px;
-  padding: 3px 8px;
-  position: absolute;
-  top: 72px;
-  z-index: 10;
 }
 
 .weather-map-button > span {
   color: var(--color-brand-700);
-  font-size: 1.1rem;
-  line-height: 1;
 }
 
 .weather-map-button.active {
@@ -365,12 +347,9 @@ input:focus-visible {
   border: 1px solid rgba(20, 39, 70, .14);
   border-radius: var(--radius-md);
   box-shadow: 0 4px 16px rgba(20, 39, 70, .14);
-  left: 80px;
-  max-width: min(280px, calc(100% - 92px));
+  margin-top: var(--space-2);
+  max-width: min(280px, 100%);
   padding: 7px 9px;
-  position: absolute;
-  top: 72px;
-  z-index: 9;
 }
 
 .weather-layer-legend.stale {
@@ -518,14 +497,15 @@ input:focus-visible {
 }
 
 .grade-legend {
+  align-items: center;
   background: rgba(255, 255, 255, .94);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   bottom: 118px;
   box-shadow: 0 3px 12px rgba(20, 39, 70, .12);
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
+  flex-wrap: nowrap;
+  gap: 0;
   max-width: calc(100% - 24px);
   padding: 4px;
   position: absolute;
@@ -537,7 +517,14 @@ input:focus-visible {
   z-index: 30;
 }
 
-.grade-legend button {
+.grade-options {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.grade-options > button {
   align-items: center;
   background: transparent;
   border: 0;
@@ -551,16 +538,64 @@ input:focus-visible {
   padding: 3px 7px;
 }
 
-.grade-legend button.active {
+.grade-options > button.active {
   background: var(--color-bg-subtle);
   color: var(--color-text-primary);
   opacity: 1;
 }
 
-.grade-legend button > span {
+.grade-options > button > span {
   border-radius: 50%;
   height: 8px;
   width: 8px;
+}
+
+.grade-legend .grade-legend-collapse,
+.grade-legend .grade-legend-expand {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: .72rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 30px;
+  opacity: 1;
+}
+
+.grade-legend .grade-legend-collapse {
+  flex: none;
+  padding: 0 5px;
+}
+
+.grade-legend .grade-legend-collapse > span {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.grade-legend .grade-legend-expand {
+  gap: 3px;
+  padding: 0 9px;
+}
+
+.grade-legend .grade-legend-expand > span {
+  font-size: .95rem;
+}
+
+.grade-legend .grade-legend-collapse:hover,
+.grade-legend .grade-legend-expand:hover,
+.grade-legend .grade-legend-collapse:focus-visible,
+.grade-legend .grade-legend-expand:focus-visible {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.grade-legend-collapsed {
+  max-width: none;
+  padding: 3px;
 }
 
 .grade-help {
@@ -571,25 +606,27 @@ input:focus-visible {
 
 .grade-legend .grade-help-button {
   align-items: center;
-  background: var(--color-brand-900);
-  border: 0;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: 50%;
-  color: var(--color-on-strong);
+  color: var(--color-text-muted);
   display: inline-flex;
   font-size: .72rem;
   font-weight: 900;
-  height: 24px;
+  height: 22px;
   justify-content: center;
-  min-height: 24px;
+  min-height: 22px;
   opacity: 1;
   padding: 0;
-  width: 24px;
+  width: 22px;
 }
 
 .grade-legend .grade-help-button:hover,
 .grade-legend .grade-help-button:focus-visible,
 .grade-legend .grade-help-button[aria-expanded="true"] {
-  background: var(--color-brand-700);
+  background: var(--color-bg-subtle);
+  border-color: #b8c7d8;
+  color: var(--color-text-primary);
   outline: none;
 }
 
@@ -1421,14 +1458,6 @@ input:focus-visible {
     width: calc(100% - 48px);
   }
 
-  .weather-map-button {
-    left: var(--space-5);
-  }
-
-  .weather-layer-legend {
-    left: 92px;
-  }
-
   .facility-sheet {
     border-radius: var(--radius-lg);
     bottom: var(--space-5);
@@ -1448,11 +1477,39 @@ input:focus-visible {
     right: auto;
   }
 
+  .grade-legend.grade-legend-collapsed {
+    left: auto;
+    right: var(--space-5);
+  }
+
   .filter-sheet,
   .same-location-sheet,
   .weather-layer-sheet {
     border-radius: var(--radius-lg);
     margin: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .grade-legend:not(.grade-legend-collapsed) {
+    left: var(--space-3);
+    max-width: none;
+    right: var(--space-3);
+  }
+
+  .grade-options {
+    justify-content: space-around;
+  }
+
+  .grade-options > button {
+    font-size: .64rem;
+    gap: 3px;
+    padding: 3px 4px;
+  }
+
+  .grade-legend.grade-legend-collapsed {
+    left: auto;
+    right: var(--space-3);
   }
 }
 
@@ -1490,10 +1547,6 @@ input:focus-visible {
   .notice-stack {
     max-height: 94px;
     overflow: auto;
-  }
-
-  .grade-legend {
-    justify-content: flex-end;
   }
 
   .facility-sheet {

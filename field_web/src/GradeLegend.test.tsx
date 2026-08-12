@@ -15,6 +15,8 @@ describe("위험등급 범례", () => {
       return index;
     }, -1);
     expect(markup).toContain('aria-label="위험등급 설명"');
+    expect(markup).toContain('aria-label="위험등급 범례 접기"');
+    expect(markup).toContain('aria-expanded="true"');
   });
 
   it("모든 등급의 설명과 영향 없음 주의 문구를 제공한다", () => {

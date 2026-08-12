@@ -258,6 +258,15 @@ export default function App() {
               <span aria-hidden="true">☷</span>
               <span>필터</span>
             </button>
+            <button
+              className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
+              type="button"
+              onClick={() => setWeatherLayerOpen(true)}
+              aria-label="기상 실황 레이어 선택"
+            >
+              <span aria-hidden="true">☁</span>
+              <b>{weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : "기상"}</b>
+            </button>
           </div>
           {search.trim() && (
             <div className="search-results">
@@ -269,28 +278,17 @@ export default function App() {
               )) : <p>현재 필터에서 일치하는 시설이 없습니다.</p>}
             </div>
           )}
+          {weatherLayerKind && (
+            <WeatherLayerLegend
+              kind={weatherLayerKind}
+              data={weatherLayer.data}
+              loading={weatherLayer.loading}
+              error={weatherLayer.error}
+              simulation={simulation}
+              onRetry={weatherLayer.retry}
+            />
+          )}
         </div>
-
-        <button
-          className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
-          type="button"
-          onClick={() => setWeatherLayerOpen(true)}
-          aria-label="기상 실황 레이어 선택"
-        >
-          <span aria-hidden="true">☁</span>
-          <b>{weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : "기상"}</b>
-        </button>
-
-        {weatherLayerKind && (
-          <WeatherLayerLegend
-            kind={weatherLayerKind}
-            data={weatherLayer.data}
-            loading={weatherLayer.loading}
-            error={weatherLayer.error}
-            simulation={simulation}
-            onRetry={weatherLayer.retry}
-          />
-        )}
 
         <GradeLegend selectedGrades={selectedGrades} onToggle={toggleGrade} />
 

@@ -11,6 +11,7 @@ import {
   requestedMonitoringMode,
   rainfallColor,
   shouldZoomForSelection,
+  shouldShowMapZoomControl,
   temperatureColor,
   weatherSummary,
   windSpeedColor,
@@ -73,6 +74,13 @@ describe("현장 지도 필터", () => {
     expect(shouldZoomForSelection("same_location")).toBe(false);
     expect(shouldZoomForSelection("search")).toBe(true);
     expect(shouldZoomForSelection("deep_link")).toBe(true);
+  });
+
+  it("카카오 확대 컨트롤은 700px보다 넓은 화면에만 표시한다", () => {
+    expect(shouldShowMapZoomControl(390)).toBe(false);
+    expect(shouldShowMapZoomControl(700)).toBe(false);
+    expect(shouldShowMapZoomControl(701)).toBe(true);
+    expect(shouldShowMapZoomControl(1280)).toBe(true);
   });
 
   it("기온·강수·풍향·풍속을 한 줄로 표시한다", () => {

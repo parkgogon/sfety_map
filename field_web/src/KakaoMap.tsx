@@ -13,6 +13,7 @@ import {
   cctvDirectionText,
   GRADE_PRIORITY_ORDER,
   rainfallColor,
+  shouldShowMapZoomControl,
   temperatureColor,
   windSpeedColor,
 } from "./utils";
@@ -362,7 +363,9 @@ export function KakaoMap({
           center: new kakao.maps.LatLng(36.0, 128.55),
           level: 10,
         });
-        map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+        if (shouldShowMapZoomControl(window.innerWidth)) {
+          map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+        }
         mapRef.current = map;
         setError("");
         window.dispatchEvent(new Event("keco-map-ready"));
