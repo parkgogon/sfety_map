@@ -104,11 +104,20 @@ export function WeatherLayerLegend({
   const noRain = kind === "rainfall"
     && data?.status !== "ERROR"
     && data?.points.every((point) => (point.value ?? 0) <= 0);
+  const values = legendValues(kind);
   return (
     <aside className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""}`} aria-live="polite">
       <div className="weather-layer-legend-title">
-        <b>{WEATHER_LAYER_LABELS[kind]} 실황</b>
-        {simulation && <span>실제 현재 정보</span>}
+        <div>
+          <b>{WEATHER_LAYER_LABELS[kind]} 실황</b>
+          {simulation && <span>실제 현재 정보</span>}
+        </div>
+        {data && (
+          <small>
+            {data.status === "STALE" ? "지연 · " : ""}
+            {formatReferenceTime(data.observed_at)}
+          </small>
+        )}
       </div>
       {loading && !data && <p>기상 격자를 불러오는 중…</p>}
       {failed && !data?.points.length ? (
@@ -118,19 +127,15 @@ export function WeatherLayerLegend({
         </div>
       ) : data ? (
         <>
-          <div className="weather-color-scale" aria-label={`${WEATHER_LAYER_LABELS[kind]} 범례`}>
-            {legendValues(kind).map((value) => (
-              <span key={value} style={{ backgroundColor: colorFor(kind, value) }} />
-            ))}
+          <div className="weather-scale-row" aria-label={`${WEATHER_LAYER_LABELS[kind]} 범례`}>
+            <span>{values[0]}</span>
+            <div className="weather-color-scale">
+              {values.map((value) => (
+                <span key={value} style={{ backgroundColor: colorFor(kind, value) }} />
+              ))}
+            </div>
+            <span>{values.at(-1)}{data.unit}</span>
           </div>
-          <div className="weather-scale-labels">
-            <span>{legendValues(kind)[0]}</span>
-            <span>{legendValues(kind).at(-1)}{data.unit}</span>
-          </div>
-          <small>
-            {data.status === "STALE" ? "지연 자료 · " : ""}
-            {formatReferenceTime(data.observed_at)} 기준
-          </small>
           {failed && data.points.length > 0 && (
             <p>갱신 실패 · 이전 정상 자료를 표시하고 있습니다.</p>
           )}

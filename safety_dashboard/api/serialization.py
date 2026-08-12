@@ -245,7 +245,7 @@ def serialize_monitoring(
             grade = UNAVAILABLE_GRADE
             grade_label = "조회 불가"
             color = "#667085"
-            meaning = "KMA 자료를 확인하지 못해 현재 영향을 판정할 수 없음"
+            meaning = "기상청 데이터 미수신으로 위험등급 판정불가"
             action = "새로고침 후 KMA 상태를 다시 확인"
         else:
             definition = policy.definition(assessment.grade)

@@ -142,6 +142,7 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(first["public_contact"], "환경서비스처 대기관리부 · 홍길동 대리")
         self.assertNotIn("010", str(payload))
         self.assertEqual(second["group_id"], "other")
+        self.assertEqual(second["meaning"], "특보의 영향권에 들지 않음")
         self.assertEqual(payload["warning_zones"]["features"][0]["properties"]["label"], "호우 경보")
         self.assertNotIn("internal", str(payload["warning_zones"]))
 
@@ -154,6 +155,10 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertTrue(all(item["grade"] == "UNAVAILABLE" for item in payload["facilities"]))
         self.assertTrue(all(item["grade_label"] == "조회 불가" for item in payload["facilities"]))
         self.assertTrue(all(item["grade_color"] == "#667085" for item in payload["facilities"]))
+        self.assertTrue(all(
+            item["meaning"] == "기상청 데이터 미수신으로 위험등급 판정불가"
+            for item in payload["facilities"]
+        ))
 
     def test_http_route_forwards_manual_refresh_without_http_cache(self):
         service = _ApiService()

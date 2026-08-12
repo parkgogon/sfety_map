@@ -53,7 +53,8 @@ export function useMonitoringData(mode: MonitoringMode): MonitoringState {
   }, [mode]);
 
   useEffect(() => {
-    setData(null);
+    // 모드 전환 중에도 마지막 화면을 유지해 KakaoMap과 사용자가 잡은 뷰포트를
+    // 언마운트하지 않습니다. 최초 진입만 data가 null인 로딩 화면을 사용합니다.
     setLoading(true);
     setError("");
     void load();

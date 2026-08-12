@@ -13,6 +13,7 @@ import {
   cctvDirectionText,
   GRADE_PRIORITY_ORDER,
   rainfallColor,
+  shouldFitInitialFacilities,
   shouldShowMapZoomControl,
   temperatureColor,
   windSpeedColor,
@@ -348,6 +349,7 @@ export function KakaoMap({
   const mapRef = useRef<any>(null);
   const kakaoRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
+  const initialBoundsFittedRef = useRef(false);
   const polygonRef = useRef<any[]>([]);
   const cctvMarkerRef = useRef<any[]>([]);
   const [error, setError] = useState("");
@@ -431,9 +433,12 @@ export function KakaoMap({
       });
       clusterer.addMarkers(markers);
 
-      const selectedIsVisible = facilities.some((item) => item.id === selectedFacilityId);
-      if (!selectedIsVisible && facilities.length) {
+      if (shouldFitInitialFacilities(
+        initialBoundsFittedRef.current,
+        facilities.length,
+      )) {
         map.setBounds(bounds, 48, 48, 120, 48);
+        initialBoundsFittedRef.current = true;
       }
     };
     render();

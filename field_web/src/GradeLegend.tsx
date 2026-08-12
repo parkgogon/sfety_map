@@ -15,9 +15,9 @@ export const GRADE_HELP: Record<RiskGrade, string> = {
   HIGH: "즉시 확인이 필요한 높은 위험",
   MEDIUM: "주의 깊은 확인이 필요한 위험",
   LOW: "특보 영향권에 포함된 관찰 대상",
-  NONE: "현재 활성 특보와 연결되지 않음",
-  UNASSESSED: "특보는 연결됐지만 기준 미등록으로 자동 판정 불가",
-  UNAVAILABLE: "KMA 자료를 받지 못해 현재 등급 판정 불가",
+  NONE: "특보의 영향권에 들지 않음",
+  UNASSESSED: "기준 미등록 특보로 위험등급 판정불가",
+  UNAVAILABLE: "기상청 데이터 미수신으로 위험등급 판정불가",
 };
 export const GRADE_HELP_FOOTER = "영향 없음은 절대적인 안전을 의미하지 않습니다.";
 

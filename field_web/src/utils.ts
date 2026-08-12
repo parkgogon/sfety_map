@@ -224,6 +224,13 @@ export function shouldShowMapZoomControl(viewportWidth: number): boolean {
   return viewportWidth > 700;
 }
 
+export function shouldFitInitialFacilities(
+  initialBoundsFitted: boolean,
+  facilityCount: number,
+): boolean {
+  return !initialBoundsFitted && facilityCount > 0;
+}
+
 export function cctvDirectionText(cctv: NearbyCctv): string {
   if (cctv.bearing_deg === null) return "촬영방향 미확인";
   const verified = cctv.direction_verified_on

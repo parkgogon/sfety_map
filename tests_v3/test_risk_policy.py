@@ -80,6 +80,14 @@ class RiskPolicyTests(unittest.TestCase):
             self.policy.assess(self.facility, []).grade,
             RiskGrade.NONE,
         )
+        self.assertEqual(
+            self.policy.definition(RiskGrade.NONE).meaning,
+            "특보의 영향권에 들지 않음",
+        )
+        self.assertEqual(
+            self.policy.definition(RiskGrade.UNASSESSED).meaning,
+            "기준 미등록 특보로 위험등급 판정불가",
+        )
 
     def test_product_palette_matches_policy_map_css_and_pdf(self):
         expected_hex = {

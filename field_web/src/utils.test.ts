@@ -10,6 +10,7 @@ import {
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
+  shouldFitInitialFacilities,
   shouldZoomForSelection,
   shouldShowMapZoomControl,
   temperatureColor,
@@ -81,6 +82,13 @@ describe("현장 지도 필터", () => {
     expect(shouldShowMapZoomControl(700)).toBe(false);
     expect(shouldShowMapZoomControl(701)).toBe(true);
     expect(shouldShowMapZoomControl(1280)).toBe(true);
+  });
+
+  it("시설 전체 맞춤은 최초로 시설이 준비됐을 때 한 번만 수행한다", () => {
+    expect(shouldFitInitialFacilities(false, 0)).toBe(false);
+    expect(shouldFitInitialFacilities(false, 103)).toBe(true);
+    expect(shouldFitInitialFacilities(true, 103)).toBe(false);
+    expect(shouldFitInitialFacilities(true, 3)).toBe(false);
   });
 
   it("기온·강수·풍향·풍속을 한 줄로 표시한다", () => {
