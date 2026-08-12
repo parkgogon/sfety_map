@@ -21,10 +21,10 @@ from safety_dashboard.domain.models import DashboardSnapshot, NearbyCctv
 
 COLORS = {
     RiskGrade.HIGH: "#D92D20",
-    RiskGrade.MEDIUM: "#E87817",
-    RiskGrade.LOW: "#B58900",
+    RiskGrade.MEDIUM: "#C2410C",
+    RiskGrade.LOW: "#8A6D00",
     RiskGrade.UNASSESSED: "#7C3AED",
-    RiskGrade.NONE: "#247BA0",
+    RiskGrade.NONE: "#176B87",
 }
 
 

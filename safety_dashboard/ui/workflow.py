@@ -17,8 +17,8 @@ GRADE_ORDER = (
     RiskGrade.HIGH,
     RiskGrade.MEDIUM,
     RiskGrade.LOW,
-    RiskGrade.UNASSESSED,
     RiskGrade.NONE,
+    RiskGrade.UNASSESSED,
 )
 GRADE_RANK = {
     RiskGrade.HIGH: 0,

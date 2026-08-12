@@ -17,14 +17,14 @@ rank = 3
 label = "중"
 meaning = "주의 깊은 확인이 필요한 위험"
 action = "담당자에게 상황 확인을 요청하고 기상 변화를 관찰"
-color = "#E87817"
+color = "#C2410C"
 
 [grades.LOW]
 rank = 2
 label = "하"
 meaning = "특보 영향권에 포함된 관찰 대상"
 action = "시설 상태를 확인하고 경과를 관찰"
-color = "#B58900"
+color = "#8A6D00"
 
 [grades.UNASSESSED]
 rank = 1
@@ -38,7 +38,7 @@ rank = 0
 label = "없음"
 meaning = "현재 활성 특보의 영향 없음"
 action = "추가 행동 없음"
-color = "#98A2B3"
+color = "#176B87"
 
 # KMA 원본 단계명을 표준 단계로 정규화합니다.
 [level_aliases]

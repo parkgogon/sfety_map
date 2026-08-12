@@ -30,6 +30,46 @@ function ActualDataBadge({ simulation }: { simulation: boolean }) {
   return <span className="actual-data-badge">실제 현재 참고정보</span>;
 }
 
+export function FacilityWeather({
+  weather,
+  expanded,
+}: {
+  weather: WeatherResponse;
+  expanded: boolean;
+}) {
+  if (!expanded) {
+    return (
+      <div className="weather-summary">
+        <b>{weatherSummary(weather)}</b>
+        <span>{formatObservationTime(weather.observed_at)} 관측</span>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="weather-details">
+        <div><span>기온</span><b>{weather.temperature_c ?? "—"}℃</b></div>
+        <div><span>1시간 강수</span><b>{weather.rainfall_1h_mm ?? "—"}mm</b></div>
+        <div className="wind-detail">
+          <span>풍향</span>
+          <b>
+            <i
+              className="wind-arrow"
+              style={{ transform: `rotate(${weather.wind_direction_deg ?? 0}deg)` }}
+              aria-hidden="true"
+            >↑</i>
+            {windDirectionLabel(weather.wind_direction_deg)}
+          </b>
+        </div>
+        <div><span>풍속</span><b>{weather.wind_speed_ms ?? "—"}m/s</b></div>
+      </div>
+      <div className="weather-observation-time">
+        {formatObservationTime(weather.observed_at)} 관측
+      </div>
+    </>
+  );
+}
+
 export function FacilitySheet({
   facility,
   simulation,
@@ -100,30 +140,7 @@ export function FacilitySheet({
         </div>
         {weatherLoading && <div className="weather-loading">시설 위치의 기상을 확인 중입니다…</div>}
         {!weatherLoading && weatherLive && weather && (
-          <>
-            <div className="weather-summary">
-              <b>{weatherSummary(weather)}</b>
-              <span>{formatObservationTime(weather.observed_at)} 관측</span>
-            </div>
-            {expanded && (
-              <div className="weather-details">
-                <div><span>기온</span><b>{weather.temperature_c ?? "—"}℃</b></div>
-                <div><span>1시간 강수</span><b>{weather.rainfall_1h_mm ?? "—"}mm</b></div>
-                <div className="wind-detail">
-                  <span>풍향</span>
-                  <b>
-                    <i
-                      className="wind-arrow"
-                      style={{ transform: `rotate(${weather.wind_direction_deg ?? 0}deg)` }}
-                      aria-hidden="true"
-                    >↑</i>
-                    {windDirectionLabel(weather.wind_direction_deg)}
-                  </b>
-                </div>
-                <div><span>풍속</span><b>{weather.wind_speed_ms ?? "—"}m/s</b></div>
-              </div>
-            )}
-          </>
+          <FacilityWeather weather={weather} expanded={expanded} />
         )}
         {!weatherLoading && (weatherError || (weather && !weatherLive)) && (
           <div className="context-error">

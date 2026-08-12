@@ -3,6 +3,7 @@ import { useMonitoringData } from "./api";
 import { useFacilityCctv, useFacilityWeather } from "./contextApi";
 import { CctvModal } from "./CctvModal";
 import { FacilitySheet } from "./FacilitySheet";
+import { GradeLegend } from "./GradeLegend";
 import { KakaoMap } from "./KakaoMap";
 import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
@@ -18,9 +19,7 @@ import {
   type FacilitySelectionSource,
   filterFacilities,
   formatReferenceTime,
-  GRADE_COLORS,
-  GRADE_LABELS,
-  GRADE_ORDER,
+  GRADE_DISPLAY_ORDER,
   requestedFacilityId,
   requestedMonitoringMode,
   shouldZoomForSelection,
@@ -49,7 +48,9 @@ export default function App() {
   );
   const { data, loading, refreshing, error, refresh } = useMonitoringData(monitoringMode);
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
-  const [selectedGrades, setSelectedGrades] = useState<Set<RiskGrade>>(new Set(GRADE_ORDER));
+  const [selectedGrades, setSelectedGrades] = useState<Set<RiskGrade>>(
+    new Set(GRADE_DISPLAY_ORDER),
+  );
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -291,20 +292,7 @@ export default function App() {
           />
         )}
 
-        <div className="grade-legend" aria-label="위험등급 지도 표시 설정">
-          {GRADE_ORDER.map((grade) => (
-            <button
-              type="button"
-              key={grade}
-              className={selectedGrades.has(grade) ? "active" : ""}
-              onClick={() => toggleGrade(grade)}
-              aria-pressed={selectedGrades.has(grade)}
-            >
-              <span style={{ backgroundColor: GRADE_COLORS[grade] }} />
-              {GRADE_LABELS[grade]}
-            </button>
-          ))}
-        </div>
+        <GradeLegend selectedGrades={selectedGrades} onToggle={toggleGrade} />
 
         <FacilitySheet
           facility={selectedFacility}

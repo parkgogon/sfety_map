@@ -2,10 +2,24 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from safety_dashboard.ui.context_panel import _render_news_link
-from safety_dashboard.ui.workflow import render_metric_grid
+from safety_dashboard.domain.enums import RiskGrade
+from safety_dashboard.ui.workflow import GRADE_ORDER, GRADE_RANK, render_metric_grid
 
 
 class MetricGridTests(unittest.TestCase):
+    def test_display_order_does_not_change_operational_priority(self):
+        self.assertEqual(
+            GRADE_ORDER,
+            (
+                RiskGrade.HIGH,
+                RiskGrade.MEDIUM,
+                RiskGrade.LOW,
+                RiskGrade.NONE,
+                RiskGrade.UNASSESSED,
+            ),
+        )
+        self.assertLess(GRADE_RANK[RiskGrade.UNASSESSED], GRADE_RANK[RiskGrade.NONE])
+
     @patch("safety_dashboard.ui.workflow.st.markdown")
     def test_three_metrics_share_one_responsive_grid(self, markdown):
         render_metric_grid(

@@ -11,7 +11,7 @@ import type {
 } from "./types";
 import {
   cctvDirectionText,
-  GRADE_ORDER,
+  GRADE_PRIORITY_ORDER,
   rainfallColor,
   temperatureColor,
   windSpeedColor,
@@ -247,7 +247,10 @@ function renderWeatherCanvas(
 }
 
 const GRADE_RANK = new Map<RiskGrade, number>(
-  GRADE_ORDER.map((grade, index) => [grade, GRADE_ORDER.length - index]),
+  GRADE_PRIORITY_ORDER.map((grade, index) => [
+    grade,
+    GRADE_PRIORITY_ORDER.length - index,
+  ]),
 );
 
 function strongest(facilities: Facility[]): Facility {

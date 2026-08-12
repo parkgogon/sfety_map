@@ -5,6 +5,8 @@ import {
   filterFacilities,
   formatReferenceTime,
   GRADE_COLORS,
+  GRADE_DISPLAY_ORDER,
+  GRADE_PRIORITY_ORDER,
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
@@ -27,7 +29,7 @@ const facility = (overrides: Partial<Facility>): Facility => ({
   public_contact: "환경서비스처 · 홍길동 대리",
   grade: "MEDIUM",
   grade_label: "중",
-  grade_color: "#e87817",
+  grade_color: "#c2410c",
   meaning: "확인 필요",
   recommended_action: "현장 확인",
   reasons: [],
@@ -120,9 +122,25 @@ describe("현장 지도 필터", () => {
     expect(temperatureColor(-100)).not.toContain("NaN");
   });
 
-  it("미판정과 조회 불가를 서로 다른 색으로 표시한다", () => {
-    expect(GRADE_COLORS.UNASSESSED).toBe("#7c3aed");
-    expect(GRADE_COLORS.UNAVAILABLE).toBe("#667085");
-    expect(GRADE_COLORS.UNASSESSED).not.toBe(GRADE_COLORS.UNAVAILABLE);
+  it("범례 표시 순서와 운영 우선순위를 독립적으로 유지한다", () => {
+    expect(GRADE_DISPLAY_ORDER).toEqual([
+      "HIGH", "MEDIUM", "LOW", "NONE", "UNASSESSED", "UNAVAILABLE",
+    ]);
+    expect(GRADE_PRIORITY_ORDER).toEqual([
+      "HIGH", "UNAVAILABLE", "UNASSESSED", "MEDIUM", "LOW", "NONE",
+    ]);
+    expect(GRADE_DISPLAY_ORDER).not.toEqual(GRADE_PRIORITY_ORDER);
+  });
+
+  it("여섯 등급이 각각 하나의 공통 CSS 색상 토큰을 사용한다", () => {
+    expect(GRADE_COLORS).toEqual({
+      HIGH: "var(--color-risk-high)",
+      MEDIUM: "var(--color-risk-medium)",
+      LOW: "var(--color-risk-low)",
+      UNASSESSED: "var(--color-risk-unassessed)",
+      NONE: "var(--color-risk-none)",
+      UNAVAILABLE: "var(--color-risk-unavailable)",
+    });
+    expect(new Set(Object.values(GRADE_COLORS))).toHaveLength(6);
   });
 });

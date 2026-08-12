@@ -13,7 +13,18 @@ export type FacilitySelectionSource =
   | "search"
   | "deep_link";
 
-export const GRADE_ORDER: RiskGrade[] = [
+/** 화면 범례 순서. 위험 우선순위 계산에는 사용하지 않습니다. */
+export const GRADE_DISPLAY_ORDER: RiskGrade[] = [
+  "HIGH",
+  "MEDIUM",
+  "LOW",
+  "NONE",
+  "UNASSESSED",
+  "UNAVAILABLE",
+];
+
+/** 클러스터 대표 시설 등 운영 판단에 사용하는 기존 우선순위. */
+export const GRADE_PRIORITY_ORDER: RiskGrade[] = [
   "HIGH",
   "UNAVAILABLE",
   "UNASSESSED",
@@ -32,12 +43,12 @@ export const GRADE_LABELS: Record<RiskGrade, string> = {
 };
 
 export const GRADE_COLORS: Record<RiskGrade, string> = {
-  HIGH: "#d92d20",
-  MEDIUM: "#e87817",
-  LOW: "#b58900",
-  UNASSESSED: "#7c3aed",
-  NONE: "#247ba0",
-  UNAVAILABLE: "#667085",
+  HIGH: "var(--color-risk-high)",
+  MEDIUM: "var(--color-risk-medium)",
+  LOW: "var(--color-risk-low)",
+  UNASSESSED: "var(--color-risk-unassessed)",
+  NONE: "var(--color-risk-none)",
+  UNAVAILABLE: "var(--color-risk-unavailable)",
 };
 
 export const WEATHER_LAYER_LABELS: Record<WeatherLayerKind, string> = {

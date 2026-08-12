@@ -215,6 +215,11 @@ class FieldMobileLayoutTests(unittest.TestCase):
             self.app_source.index('safety_dashboard/ui/style.css'),
         )
         self.assertIn("--color-risk-high: #d92d20;", self.tokens)
+        self.assertIn("--color-risk-medium: #c2410c;", self.tokens)
+        self.assertIn("--color-risk-low: #8a6d00;", self.tokens)
+        self.assertIn("--color-risk-none: #176b87;", self.tokens)
+        self.assertIn("--color-risk-unassessed: #7c3aed;", self.tokens)
+        self.assertIn("--color-risk-unavailable: #667085;", self.tokens)
         self.assertIn("--touch-target-min: 44px;", self.tokens)
 
 

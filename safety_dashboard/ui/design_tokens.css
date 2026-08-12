@@ -25,11 +25,11 @@
 
   /* Risk colors: keep aligned with risk_policy.toml and map rendering. */
   --color-risk-high: #d92d20;
-  --color-risk-medium: #e87817;
-  --color-risk-low: #b58900;
+  --color-risk-medium: #c2410c;
+  --color-risk-low: #8a6d00;
   --color-risk-unassessed: #7c3aed;
   --color-risk-unavailable: #667085;
-  --color-risk-none: #247ba0;
+  --color-risk-none: #176b87;
 
   /* Operational states */
   --color-status-live: #137a5c;

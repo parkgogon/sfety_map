@@ -21,18 +21,18 @@ LINE = (208, 219, 229)
 WHITE = (255, 255, 255)
 
 GRADE_COLOR = {
-    RiskGrade.HIGH: (211, 54, 48),
-    RiskGrade.MEDIUM: (232, 137, 28),
-    RiskGrade.LOW: (48, 135, 92),
-    RiskGrade.UNASSESSED: (104, 117, 133),
-    RiskGrade.NONE: (128, 142, 155),
+    RiskGrade.HIGH: (217, 45, 32),
+    RiskGrade.MEDIUM: (194, 65, 12),
+    RiskGrade.LOW: (138, 109, 0),
+    RiskGrade.UNASSESSED: (124, 58, 237),
+    RiskGrade.NONE: (23, 107, 135),
 }
 GRADE_TINT = {
     RiskGrade.HIGH: (253, 239, 237),
-    RiskGrade.MEDIUM: (254, 246, 232),
-    RiskGrade.LOW: (237, 248, 242),
-    RiskGrade.UNASSESSED: (242, 245, 248),
-    RiskGrade.NONE: (246, 248, 250),
+    RiskGrade.MEDIUM: (255, 244, 235),
+    RiskGrade.LOW: (251, 247, 225),
+    RiskGrade.UNASSESSED: (245, 243, 255),
+    RiskGrade.NONE: (238, 248, 251),
 }
 LEVEL_COLOR = {
     WarningLevel.CRITICAL: (177, 42, 38),
@@ -125,8 +125,18 @@ class PdfReportRenderer:
         cards = (
             ("활성 특보", summary.active_warning_count, (236, 247, 248), TEAL),
             ("영향 시설", summary.affected_facility_count, (237, 243, 250), NAVY),
-            ("상 위험", summary.high_risk_count, (253, 239, 237), GRADE_COLOR[RiskGrade.HIGH]),
-            ("미판정", summary.unassessed_count, (242, 245, 248), GRADE_COLOR[RiskGrade.UNASSESSED]),
+            (
+                "상 위험",
+                summary.high_risk_count,
+                GRADE_TINT[RiskGrade.HIGH],
+                GRADE_COLOR[RiskGrade.HIGH],
+            ),
+            (
+                "미판정",
+                summary.unassessed_count,
+                GRADE_TINT[RiskGrade.UNASSESSED],
+                GRADE_COLOR[RiskGrade.UNASSESSED],
+            ),
         )
         card_width = 64
         gap = 5

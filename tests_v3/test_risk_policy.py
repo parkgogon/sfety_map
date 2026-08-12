@@ -2,8 +2,10 @@ import datetime as dt
 import unittest
 from pathlib import Path
 
+from safety_dashboard.adapters.pdf_report import GRADE_COLOR
 from safety_dashboard.domain import Facility, GeoPoint, RiskGrade, Warning, WarningLevel
 from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.ui.map_view import COLORS
 
 
 POLICY_PATH = (
@@ -78,6 +80,35 @@ class RiskPolicyTests(unittest.TestCase):
             self.policy.assess(self.facility, []).grade,
             RiskGrade.NONE,
         )
+
+    def test_product_palette_matches_policy_map_css_and_pdf(self):
+        expected_hex = {
+            RiskGrade.HIGH: "#D92D20",
+            RiskGrade.MEDIUM: "#C2410C",
+            RiskGrade.LOW: "#8A6D00",
+            RiskGrade.NONE: "#176B87",
+            RiskGrade.UNASSESSED: "#7C3AED",
+        }
+        expected_rgb = {
+            grade: tuple(bytes.fromhex(color.removeprefix("#")))
+            for grade, color in expected_hex.items()
+        }
+        self.assertEqual(
+            {grade: self.policy.definition(grade).color for grade in expected_hex},
+            expected_hex,
+        )
+        self.assertEqual(COLORS, expected_hex)
+        self.assertEqual(GRADE_COLOR, expected_rgb)
+
+        tokens = (
+            Path(__file__).parents[1]
+            / "safety_dashboard"
+            / "ui"
+            / "design_tokens.css"
+        ).read_text(encoding="utf-8")
+        for color in (*expected_hex.values(), "#667085"):
+            self.assertIn(color.lower(), tokens)
+        self.assertEqual(len({*expected_hex.values(), "#667085"}), 6)
 
 
 if __name__ == "__main__":
