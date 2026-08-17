@@ -443,6 +443,29 @@ class AutomaticAlertTests(unittest.TestCase):
         self.assertFalse(high_payloads[0].silent)
         self.assertTrue(all(item.silent for item in high_payloads[1:]))
 
+    def test_user_clear_payload_separates_current_and_previous_state(self):
+        previous = impacts_from_snapshot(self.snapshot("경보"), self.policy)
+        transitions = detect_transitions(previous, (), self.now)
+        batch = AlertBatch(
+            "cleared", self.now, transitions, "live", self.policy.version
+        )
+
+        payloads = build_alert_batch_telegram_payloads(
+            batch, "https://keco-safety-map.web.app"
+        )
+        summary = payloads[0].text
+        details = "\n".join(item.text for item in payloads[1:])
+
+        self.assertIn("[K-ECO 재난안전][해제]", summary)
+        self.assertIn("등급 현황 · 영향 종료", summary)
+        self.assertIn("🔵", details)
+        self.assertIn("[특보 영향 종료]", details)
+        self.assertIn("해제된 특보:", details)
+        self.assertIn("해제 전 등급: 중", details)
+        self.assertIn("시설 이상 유무를 확인", details)
+        self.assertNotIn("🔴", details)
+        self.assertNotIn("[상]", details)
+
     def test_delayed_escalation_is_discarded_after_warning_downgrade(self):
         store = InMemoryAlertStore()
         sms = _Sms()

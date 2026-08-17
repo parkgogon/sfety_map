@@ -185,14 +185,52 @@ def build_alert_batch_telegram_payloads(
             if facility_url
             else escaped_name
         )
+        active_transitions = tuple(
+            item for item in transitions if item.current is not None
+        )
+        cleared_transitions = tuple(
+            item for item in transitions if item.kind is AlertTransitionKind.CLEARED
+        )
+        if not active_transitions:
+            cleared_warnings = " / ".join(dict.fromkeys(
+                f"{item.impact.region} {item.impact.warning_type} "
+                f"{item.impact.raw_level}"
+                for item in cleared_transitions
+            ))
+            previous_grades = " · ".join(dict.fromkeys(
+                _GRADE_LABEL[item.impact.risk_grade]
+                for item in sorted(
+                    cleared_transitions,
+                    key=lambda value: -_GRADE_RANK[value.impact.risk_grade],
+                )
+            ))
+            blocks.append(
+                f"🔵 <b>{name}</b> [특보 영향 종료]\n"
+                f"  · 해제된 특보: {html.escape(cleared_warnings)}\n"
+                f"  · 해제 전 등급: {html.escape(previous_grades)}\n"
+                "  · 조치: 특보 해제 여부와 시설 이상 유무를 확인하고, "
+                "이상이 없으면 정상 관리로 전환"
+            )
+            continue
+
         warnings = " / ".join(dict.fromkeys(
             f"{item.impact.region} {item.impact.warning_type} {item.impact.raw_level}"
-            for item in transitions
+            for item in active_transitions
         ))
+        cleared_line = ""
+        if cleared_transitions:
+            cleared_warnings = " / ".join(dict.fromkeys(
+                f"{item.impact.region} {item.impact.warning_type} "
+                f"{item.impact.raw_level}"
+                for item in cleared_transitions
+            ))
+            cleared_line = (
+                f"\n  · 함께 해제된 특보: {html.escape(cleared_warnings)}"
+            )
         blocks.append(
             f"{_GRADE_EMOJI[impact.risk_grade]} <b>{name}</b> "
             f"[{_GRADE_LABEL[impact.risk_grade]}]\n"
-            f"  · 특보: {html.escape(warnings)}\n"
+            f"  · 특보: {html.escape(warnings)}{cleared_line}\n"
             f"  · 조치: {html.escape(impact.recommended_action)}"
         )
     payloads.extend(
