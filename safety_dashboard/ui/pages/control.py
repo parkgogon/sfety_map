@@ -13,6 +13,7 @@ from safety_dashboard.application.selection import action_snapshot, filter_snaps
 from safety_dashboard.domain.enums import DataHealth, RiskGrade
 from safety_dashboard.ui.dialogs import report_dialog, telegram_dialog
 from safety_dashboard.ui.alert_metrics import render_alert_metrics
+from safety_dashboard.ui.control_overview import render_control_overview
 from safety_dashboard.ui.map_view import COLORS, build_monitoring_map
 from safety_dashboard.ui.app_context import (
     FONT_PATH,
@@ -32,6 +33,38 @@ from safety_dashboard.ui.workflow import (
     scope_fingerprint,
     warning_text,
 )
+
+
+_WORKSPACE_DESCRIPTIONS = {
+    "운영 상황": "자동 관제 경로와 현재 특보 영향을 한눈에 확인합니다.",
+    "대상 분석·전파": "영향시설을 분석하고 PDF 또는 감사형 수동 상황전파를 수행합니다.",
+    "실적·이력": "자동·수동 전파 실적과 처리 이력을 분리해 확인합니다.",
+}
+st.markdown(
+    '<div class="app-kicker">K-ECO SAFETY MONITORING</div>',
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="app-title">중앙 관제</div>', unsafe_allow_html=True)
+with st.container(key="control-workspace-navigation"):
+    workspace = st.segmented_control(
+        "중앙 관제 작업 화면",
+        options=tuple(_WORKSPACE_DESCRIPTIONS),
+        default="운영 상황",
+        key="control-workspace",
+        label_visibility="collapsed",
+        width="stretch",
+    ) or "운영 상황"
+st.markdown(
+    f'<div class="app-subtitle">{html.escape(_WORKSPACE_DESCRIPTIONS[workspace])}</div>',
+    unsafe_allow_html=True,
+)
+
+if workspace == "운영 상황":
+    render_control_overview()
+    st.stop()
+if workspace == "실적·이력":
+    render_alert_metrics(standalone=True)
+    st.stop()
 
 
 with st.sidebar:
@@ -84,15 +117,6 @@ feed_label = {
 }[snapshot.warning_feed.health]
 feed_failed = snapshot.warning_feed.health is DataHealth.ERROR
 
-st.markdown(
-    '<div class="app-kicker">K-ECO SAFETY MONITORING</div>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="app-title">중앙 관제</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="app-subtitle">위험시설을 일괄 분석하고 같은 대상으로 알림과 보고서를 만듭니다.</div>',
-    unsafe_allow_html=True,
-)
 st.markdown(
     f'<div class="status-strip"><span class="status-primary">'
     f'{html.escape(mode_label)} · KMA {html.escape(feed_label)}</span>'
@@ -379,7 +403,7 @@ if not filtered_affected:
         with st.container(key="target-action-controls"):
             empty_action_columns = st.columns(2)
             empty_telegram = empty_action_columns[0].form_submit_button(
-                "Telegram 발송",
+                "사용자 채널 수동 전파",
                 type="primary",
                 disabled=feed_failed,
                 width="stretch",
@@ -468,7 +492,7 @@ else:
         with st.container(key="target-action-controls"):
             action_columns = st.columns(2)
             telegram_clicked = action_columns[0].form_submit_button(
-                "Telegram 발송",
+                "사용자 채널 수동 전파",
                 type="primary",
                 disabled=feed_failed,
                 width="stretch",
@@ -520,12 +544,8 @@ else:
                     scope_label,
                     fingerprint,
                     simulation,
-                    secret("telegram", "bot_token", "TELEGRAM_BOT_TOKEN"),
-                    secret(
-                        "telegram",
-                        "user_chat_id",
-                        "TELEGRAM_USER_CHAT_ID",
-                    ),
+                    secret("alerting", "admin_api_url", "ALERT_ADMIN_API_URL"),
+                    secret("alerting", "admin_token", "ALERT_ADMIN_TOKEN"),
                     temporary_policy=temporary_policy,
                     dashboard_base_url=secret(
                         "dashboard",
@@ -541,8 +561,6 @@ else:
                     FONT_PATH,
                     temporary_policy=temporary_policy,
                 )
-
-render_alert_metrics()
 
 with st.expander("현재 조회 범위의 특보 원문"):
     warning_rows = [

@@ -13,6 +13,7 @@ from safety_dashboard.application.deep_links import (
     dashboard_home_url,
 )
 from safety_dashboard.domain.enums import RiskGrade
+from safety_dashboard.alerts.domain import ManualTelegramCategory
 from safety_dashboard.domain.models import (
     DashboardSnapshot,
     OutgoingTelegramMessage,
@@ -113,6 +114,54 @@ def build_telegram_payloads(
             OutgoingTelegramMessage(text=page, silent=True) for page in pages
         )
     return payloads
+
+
+def build_manual_telegram_payloads(
+    snapshot: DashboardSnapshot,
+    category: ManualTelegramCategory,
+    note: str = "",
+    scope_label: str = "",
+    mode: str = "실시간",
+    dashboard_base_url: str = "",
+    temporary_policy: bool = False,
+    max_length: int = MAX_MESSAGE_LENGTH,
+) -> list[OutgoingTelegramMessage]:
+    """관리자 수동 전파임을 모든 메시지에 명확히 표시한다."""
+
+    is_drill = category is ManualTelegramCategory.DRILL
+    base = build_telegram_payloads(
+        snapshot,
+        scope_label=scope_label,
+        mode="모의훈련" if is_drill else mode,
+        dashboard_base_url=dashboard_base_url,
+        temporary_policy=temporary_policy,
+        max_length=max_length - 520,
+    )
+    escaped_note = html.escape(note.strip())
+    if is_drill:
+        heading = (
+            "🎓 <b>[모의훈련][수동 상황전파][훈련]</b>\n"
+            "⚠️ <b>실제 재난 알림이 아닙니다.</b>"
+        )
+        closing = "\n\n⚠️ 모의훈련 메시지이며 실제 재난 알림이 아닙니다."
+    else:
+        heading = f"📣 <b>[수동 상황전파][{category.label}]</b>"
+        closing = ""
+    metadata = "\n발송자 · 중앙관제 관리자"
+    if escaped_note:
+        metadata += f"\n관리자 안내 · {escaped_note}"
+    messages = [
+        OutgoingTelegramMessage(
+            text=f"{heading}{metadata}\n\n{item.text}{closing}",
+            silent=item.silent,
+            action_label=item.action_label,
+            action_url=item.action_url,
+        )
+        for item in base
+    ]
+    if any(len(item.text) > max_length for item in messages):
+        raise ValueError("수동 Telegram 메시지가 길이 제한을 초과했습니다.")
+    return messages
 
 
 def build_telegram_messages(

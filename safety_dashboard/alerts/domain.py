@@ -54,6 +54,30 @@ class TelegramPurpose(str, Enum):
     DAILY_DIGEST = "daily_digest"
     TEST = "test"
     HEARTBEAT = "heartbeat"
+    MANUAL = "manual"
+
+
+class ManualTelegramCategory(str, Enum):
+    REMINDER = "REMINDER"
+    CORRECTION = "CORRECTION"
+    ADDITIONAL = "ADDITIONAL"
+    DRILL = "DRILL"
+
+    @property
+    def label(self) -> str:
+        return {
+            ManualTelegramCategory.REMINDER: "재공지",
+            ManualTelegramCategory.CORRECTION: "정정",
+            ManualTelegramCategory.ADDITIONAL: "추가안내",
+            ManualTelegramCategory.DRILL: "훈련",
+        }[self]
+
+
+class ManualDispatchStatus(str, Enum):
+    PENDING = "PENDING"
+    SENT = "SENT"
+    RETRY_QUEUED = "RETRY_QUEUED"
+    FAILED = "FAILED"
 
 
 @dataclass(frozen=True)
@@ -199,6 +223,59 @@ class TelegramOutboxItem:
     messages: tuple[OutgoingTelegramMessage, ...] = ()
     metric_scope: str = "operational"
     attempt_count: int = 0
+
+
+@dataclass(frozen=True)
+class ManualTelegramDispatch:
+    id: str
+    created_at: dt.datetime
+    category: ManualTelegramCategory
+    operator_label: str
+    note: str
+    mode: str
+    facility_ids: tuple[str, ...]
+    warning_keys: tuple[str, ...]
+    messages: tuple[OutgoingTelegramMessage, ...]
+    policy_version: str = ""
+    temporary_policy: bool = False
+
+    @property
+    def fingerprint(self) -> str:
+        identity = "|".join((
+            ",".join(sorted(set(self.facility_ids))),
+            ",".join(sorted(set(self.warning_keys))),
+        ))
+        return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+
+
+@dataclass(frozen=True)
+class NotificationEvent:
+    id: str
+    occurred_at: dt.datetime
+    source: str
+    event: str
+    status: str
+    channel: str
+    facility_count: int
+    warning_count: int
+    detail: str = ""
+    category: str = ""
+    operator_label: str = ""
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "id": self.id,
+            "occurred_at": self.occurred_at.isoformat(),
+            "source": self.source,
+            "event": self.event,
+            "status": self.status,
+            "channel": self.channel,
+            "facility_count": self.facility_count,
+            "warning_count": self.warning_count,
+            "detail": self.detail,
+            "category": self.category,
+            "operator_label": self.operator_label,
+        }
 
 
 def make_batch_id(transitions: Iterable[AlertTransition]) -> str:

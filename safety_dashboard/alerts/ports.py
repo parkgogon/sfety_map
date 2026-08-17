@@ -10,6 +10,8 @@ from safety_dashboard.alerts.domain import (
     AlertTransition,
     ContactDirectory,
     FacilityImpact,
+    ManualTelegramDispatch,
+    NotificationEvent,
     OutgoingSmsMessage,
     OperationalHealthReport,
     SmsDeliveryResult,
@@ -126,3 +128,27 @@ class AlertStateStore(Protocol):
     def notification_metrics(
         self, start: dt.date, end: dt.date
     ) -> Mapping[str, object]: ...
+
+    def create_manual_dispatch(self, value: ManualTelegramDispatch) -> bool: ...
+
+    def manual_dispatch(self, dispatch_id: str) -> Mapping[str, object] | None: ...
+
+    def update_manual_dispatch(
+        self, dispatch_id: str, values: Mapping[str, object]
+    ) -> None: ...
+
+    def recent_duplicate(
+        self,
+        fingerprint: str,
+        since: dt.datetime,
+    ) -> NotificationEvent | None: ...
+
+    def notification_events(
+        self,
+        start: dt.datetime,
+        end: dt.datetime,
+        *,
+        source: str = "all",
+        status: str = "all",
+        limit: int = 100,
+    ) -> tuple[NotificationEvent, ...]: ...

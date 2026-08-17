@@ -53,6 +53,36 @@
   display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
+.metric-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.st-key-control-workspace-navigation [data-testid="stSegmentedControl"] {
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: .25rem;
+}
+.st-key-control-workspace-navigation [role="radiogroup"] { width: 100%; }
+.st-key-control-workspace-navigation [role="radio"] {
+  flex: 1 1 0; justify-content: center; min-height: 42px;
+}
+.ops-status-grid {
+  display: grid; gap: .65rem;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  margin-bottom: .65rem;
+}
+.ops-status-card {
+  background: var(--color-bg-surface); border: 1px solid var(--line);
+  border-radius: var(--radius-md); display: grid;
+  grid-template-columns: auto 1fr; padding: .72rem .8rem;
+}
+.ops-status-dot {
+  align-self: center; background: var(--color-status-error); border-radius: 50%;
+  height: .5rem; margin-right: .4rem; width: .5rem;
+}
+.ops-status-dot.ok { background: var(--color-status-live); }
+.ops-status-label { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.ops-status-card strong { grid-column: 1 / -1; margin-top: .12rem; }
+.ops-status-card small {
+  color: var(--muted); font-size: .68rem; grid-column: 1 / -1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .metric-card {
   background: var(--color-bg-surface); border: 1px solid var(--line);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
@@ -133,6 +163,7 @@
   .status-secondary, .status-time-full { display: none; }
   .status-time-mobile { display: inline; }
   .metric-grid { gap: .45rem; margin-bottom: .7rem; }
+  .metric-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric-card { min-height: 78px; padding: .65rem .58rem; }
   .metric-label { font-size: .72rem; white-space: nowrap; }
   .metric-value { font-size: 1.45rem; }
@@ -189,4 +220,12 @@
   }
   .st-key-target-selection-controls button,
   .st-key-target-action-controls button { min-height: var(--touch-target-min); }
+  .st-key-control-workspace-navigation [role="radiogroup"] {
+    display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .st-key-control-workspace-navigation [role="radio"] {
+    font-size: .74rem; min-height: var(--touch-target-min); padding: .35rem .2rem;
+  }
+  .ops-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ops-status-card:last-child { grid-column: 1 / -1; }
 }

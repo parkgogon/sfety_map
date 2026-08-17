@@ -222,11 +222,23 @@ DashboardSnapshot
 전체 DashboardSnapshot
   → 시설 그룹·위험도 filter_snapshot
   → 체크된 시설 action_snapshot
-  → Telegram / PDF
+  → 사용자 채널 수동 전파 API / PDF
 ```
 
 지도와 상단 지표는 적용 버튼으로 확정한 filter snapshot을, 두 출력물은
 대상 표의 제출 시점에 확정한 동일 action snapshot을 사용합니다.
+
+중앙 관제는 세 작업 화면을 선택 실행합니다.
+
+```text
+운영 상황       → 경량 관리자 overview + 현재 snapshot 요약
+대상 분석·전파  → filter/action snapshot + PDF + 감사형 수동 전파
+실적·이력       → 자동·수동 metrics/events + 비식별 CSV
+```
+
+수동 전파는 Streamlit이 Telegram 토큰을 가지지 않고
+`POST /internal/v1/notifications/manual`을 호출합니다. API는 사용자 채널로
+즉시 전송하고 실패한 미전송 메시지만 Firestore outbox에 넣습니다.
 
 화면에서 편집한 위험도 행렬은 `risk_configuration` service가 기본
 정책을 복제해 세션 정책으로 만듭니다. 파일이나 다른 세션은 변경하지
@@ -248,6 +260,8 @@ TELEGRAM_BOT_TOKEN
 TELEGRAM_ADMIN_CHAT_ID
 TELEGRAM_USER_CHAT_ID
 # TELEGRAM_ADMIN_CHAT_ID 미설정 시 기존 TELEGRAM_CHAT_ID 호환
+ALERT_ADMIN_TOKEN
+ALERT_ADMIN_API_URL  # Streamlit에서 사용하는 API 주소
 ALERT_USER_DELIVERY_MODE=telegram
 DASHBOARD_BASE_URL
 SAFETY_DATA_API_KEY

@@ -36,15 +36,17 @@ TELEGRAM_USER_CHAT_ID
 GitHub Repository variable `TELEGRAM_ADMIN_SECRET_NAME`을
 `TELEGRAM_ADMIN_CHAT_ID`로 설정한다.
 
-중앙 관제에서 수동 발송하는 Telegram도 사용자 채널로 보내므로,
-Streamlit secrets에도 다음을 설정한다.
+중앙 관제의 수동 상황전파는 브라우저에서 봇을 직접 호출하지 않고 공개 API의
+토큰 보호 관리자 경로를 사용한다. Streamlit에는 관리자 API 연결값만 둔다.
 
 ```toml
-[telegram]
-bot_token = "<기존 봇 토큰>"
-admin_chat_id = "<관리자방 chat_id>"
-user_chat_id = "<사용자 채널 chat_id>"
+[alerting]
+admin_api_url = "https://<safety-dashboard-api Cloud Run 주소>"
+admin_token = "<ALERT_ADMIN_TOKEN과 같은 값>"
 ```
+
+봇 토큰과 두 `chat_id`는 API·작업자 Cloud Run에만 Secret Manager로 연결하며
+Streamlit 브라우저 응답이나 수동 전파 API 응답에는 포함하지 않는다.
 
 ## 2. 배포 변수와 발송 경로
 
@@ -184,15 +186,19 @@ SMS 성공 접수 시에는 사용자 채널에 같은 사건을 중복 게시�
   `Cloud Run 외부통신`, `응답 형식`, `원인 미확정`으로 추정 분류한다.
   분류는 단정이 아니며 이전 특보 상태는 계속 보존한다.
 - 무변화 정상 조회는 Telegram으로 보내지 않는다.
-- `preview`, 지정 시험번호, 시험 Telegram, 수동 Telegram은 운영 실적에서
-  제외한다.
+- `preview`, 지정 시험번호, 시험 Telegram과 수동 **훈련**은 운영 실적에서
+  제외한다. 운영 수동 전파는 자동 알림과 합치지 않고 별도 수동 실적으로 집계한다.
 - Firestore와 CSV에는 전화번호 대신 HMAC 수신자 코드만 저장한다.
 - SOLAPI `수신 완료`는 통신사 결과이며 담당자의 실제 열람을 의미하지
   않는다.
 
-Streamlit `자동 알림 실적`에서 현재 전달 모드, 일·월 SMS 사용량,
-잔액·포인트, SMS 접수·수신·실패·대기, 사용자 Telegram 주경로·대체·실패
-수를 확인한다.
+중앙 관제는 `운영 상황 / 대상 분석·전파 / 실적·이력`으로 나뉜다. 수동 전파는
+`재공지·정정·추가안내·훈련` 중 하나로 사용자 채널에 보내며, 최근 30분 내
+같은 시설·특보 구성은 재확인을 요구한다. 요청·메모·대상·메시지·결과는
+Firestore에 감사 기록으로 남고 실패 시 5분 간격으로 최대 30분 재시도한다.
+
+`실적·이력`에서 자동 관제와 수동 상황전파를 분리해 확인한다. SMS 수치는
+SMS 모드이거나 선택 기간에 문자 이력이 있을 때만 표시한다.
 
 즉시 운영 보고 시험은 Cloud Scheduler 실행 계정으로 다음 보호 경로를
 호출한다. 시험 보고는 실적에 포함되지 않는다.

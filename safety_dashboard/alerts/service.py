@@ -990,7 +990,11 @@ class AlertDispatcher:
         route = (
             "SMS 대체 전파"
             if item.purpose is TelegramPurpose.SMS_FALLBACK
-            else "주경로 전파"
+            else (
+                "관리자 수동 전파"
+                if item.purpose is TelegramPurpose.MANUAL
+                else "주경로 전파"
+            )
         )
         state = "성공" if success else "30분 재시도 후 실패"
         text = (

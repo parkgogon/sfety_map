@@ -52,8 +52,11 @@ def render_metric_grid(
         "</div>"
         for label, value, note in items
     )
+    class_name = (
+        "metric-grid" if len(items) == 3 else f"metric-grid metric-grid-{len(items)}"
+    )
     st.markdown(
-        f'<div class="metric-grid">{cards}</div>',
+        f'<div class="{class_name}">{cards}</div>',
         unsafe_allow_html=True,
     )
 

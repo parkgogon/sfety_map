@@ -10,6 +10,10 @@ from safety_dashboard.alerts.domain import (
     AlertBatch,
     AlertTransition,
     FacilityImpact,
+    ManualDispatchStatus,
+    ManualTelegramCategory,
+    ManualTelegramDispatch,
+    NotificationEvent,
     OutgoingSmsMessage,
     SmsDeliveryResult,
     SmsDeliveryStatus,
@@ -34,6 +38,7 @@ class InMemoryAlertStore:
         self.status: dict[str, object] = {}
         self.notices: dict[str, dt.datetime] = {}
         self.telegram_jobs: dict[str, dict[str, object]] = {}
+        self.manual_dispatches: dict[str, dict[str, object]] = {}
 
     def acquire_lock(self, run_id: str, now: dt.datetime) -> bool:
         if self.lock_expires and self.lock_expires > now:
@@ -176,6 +181,24 @@ class InMemoryAlertStore:
                 continue
             if item.expires_at < now:
                 values["status"] = "EXPIRED"
+                if item.purpose is TelegramPurpose.MANUAL and item.batch_id:
+                    self.update_manual_dispatch(item.batch_id, {
+                        "status": ManualDispatchStatus.FAILED.value,
+                        "completed_at": now,
+                        "last_detail": "Telegram 재시도 시간이 만료됐습니다.",
+                    })
+                    counter = (
+                        "manual_drill_failed"
+                        if item.metric_scope == "drill"
+                        else "telegram_manual_failed"
+                    )
+                    self.record_run(now.date(), {counter: 1})
+                elif item.audience is TelegramAudience.USER and item.batch_id:
+                    self.update_batch_delivery(item.batch_id, {
+                        "telegram_status": "FAILED",
+                        "telegram_detail": "Telegram 재시도 시간이 만료됐습니다.",
+                        "telegram_completed_at": now,
+                    })
                 if item.metric_scope == "operational":
                     counter = (
                         "telegram_admin_failed"
@@ -212,6 +235,48 @@ class InMemoryAlertStore:
                 }
             )
             values.update({"item": replacement, "detail": detail})
+        if item.purpose is TelegramPurpose.MANUAL and item.batch_id:
+            terminal = success or values["status"] == "EXPIRED"
+            self.update_manual_dispatch(item.batch_id, {
+                "status": (
+                    ManualDispatchStatus.SENT.value
+                    if success
+                    else (
+                        ManualDispatchStatus.FAILED.value
+                        if terminal
+                        else ManualDispatchStatus.RETRY_QUEUED.value
+                    )
+                ),
+                "last_detail": detail,
+                "last_attempt_at": now,
+                **({"completed_at": now} if terminal else {}),
+            })
+            if success:
+                counter = (
+                    "manual_drill_sent"
+                    if item.metric_scope == "drill"
+                    else "telegram_manual_sent"
+                )
+                self.record_run(now.date(), {counter: 1})
+            elif terminal:
+                counter = (
+                    "manual_drill_failed"
+                    if item.metric_scope == "drill"
+                    else "telegram_manual_failed"
+                )
+                self.record_run(now.date(), {counter: 1})
+            return
+        if item.audience is TelegramAudience.USER and item.batch_id:
+            self.update_batch_delivery(item.batch_id, {
+                "telegram_status": (
+                    "SENT"
+                    if success
+                    else ("FAILED" if values["status"] == "EXPIRED" else "RETRY_QUEUED")
+                ),
+                "telegram_detail": detail,
+                "telegram_attempt_count": attempts,
+                **({"telegram_completed_at": now} if success or values["status"] == "EXPIRED" else {}),
+            })
         if item.metric_scope != "operational":
             return
         counter = ""
@@ -338,3 +403,141 @@ class InMemoryAlertStore:
             "totals": totals,
             "delivery_success_rate": delivered / terminal * 100 if terminal else None,
         }
+
+    def create_manual_dispatch(self, value: ManualTelegramDispatch) -> bool:
+        if value.id in self.manual_dispatches:
+            return False
+        self.manual_dispatches[value.id] = {
+            "dispatch": value,
+            "created_at": value.created_at,
+            "fingerprint": value.fingerprint,
+            "status": ManualDispatchStatus.PENDING.value,
+        }
+        return True
+
+    def manual_dispatch(self, dispatch_id: str) -> Mapping[str, object] | None:
+        value = self.manual_dispatches.get(dispatch_id)
+        return dict(value) if value else None
+
+    def update_manual_dispatch(
+        self, dispatch_id: str, values: Mapping[str, object]
+    ) -> None:
+        self.manual_dispatches.setdefault(dispatch_id, {}).update(values)
+
+    def recent_duplicate(
+        self, fingerprint: str, since: dt.datetime
+    ) -> NotificationEvent | None:
+        for dispatch_id, values in self.manual_dispatches.items():
+            dispatch = values.get("dispatch")
+            if not isinstance(dispatch, ManualTelegramDispatch):
+                continue
+            if dispatch.created_at >= since and dispatch.fingerprint == fingerprint:
+                return _manual_event(dispatch_id, values)
+        for batch_id, (batch, batch_status) in self.batches.items():
+            if batch.mode != "live" or batch.created_at < since:
+                continue
+            automatic_fingerprint = _automatic_fingerprint(batch)
+            if automatic_fingerprint == fingerprint:
+                return _automatic_event(
+                    batch_id,
+                    batch,
+                    batch_status,
+                    self.batch_delivery.get(batch_id, {}),
+                )
+        return None
+
+    def notification_events(
+        self,
+        start: dt.datetime,
+        end: dt.datetime,
+        *,
+        source: str = "all",
+        status: str = "all",
+        limit: int = 100,
+    ) -> tuple[NotificationEvent, ...]:
+        events: list[NotificationEvent] = []
+        if source in {"all", "automatic"}:
+            for batch_id, (batch, batch_status) in self.batches.items():
+                if batch.mode == "live" and start <= batch.created_at < end:
+                    events.append(_automatic_event(
+                        batch_id,
+                        batch,
+                        batch_status,
+                        self.batch_delivery.get(batch_id, {}),
+                    ))
+        if source in {"all", "manual"}:
+            for dispatch_id, values in self.manual_dispatches.items():
+                dispatch = values.get("dispatch")
+                if (
+                    isinstance(dispatch, ManualTelegramDispatch)
+                    and start <= dispatch.created_at < end
+                ):
+                    events.append(_manual_event(dispatch_id, values))
+        if status != "all":
+            events = [item for item in events if item.status == status]
+        events.sort(key=lambda item: item.occurred_at, reverse=True)
+        return tuple(events[:limit])
+
+
+def _automatic_fingerprint(batch: AlertBatch) -> str:
+    value = ManualTelegramDispatch(
+        id="fingerprint",
+        created_at=batch.created_at,
+        category=ManualTelegramCategory.REMINDER,
+        operator_label="",
+        note="",
+        mode=batch.mode,
+        facility_ids=tuple(item.impact.facility_id for item in batch.transitions),
+        warning_keys=tuple(item.impact.warning_key for item in batch.transitions),
+        messages=(),
+    )
+    return value.fingerprint
+
+
+def _automatic_event(
+    batch_id: str,
+    batch: AlertBatch,
+    status: str,
+    delivery: Mapping[str, object] | None = None,
+) -> NotificationEvent:
+    kinds = {item.kind.label for item in batch.transitions}
+    route = str((delivery or {}).get("delivery_route", "telegram"))
+    event_status = str((delivery or {}).get("telegram_status", ""))
+    if not event_status:
+        event_status = (
+            "PREVIEW"
+            if status == "PREVIEW"
+            else ("PENDING" if route == "telegram" else status)
+        )
+    return NotificationEvent(
+        id=batch_id,
+        occurred_at=batch.created_at,
+        source="automatic",
+        event=next(iter(kinds)) if len(kinds) == 1 else "상황변경",
+        status=event_status,
+        channel="사용자 Telegram" if route != "sms" else "SOLAPI 문자",
+        facility_count=len({item.impact.facility_id for item in batch.transitions}),
+        warning_count=len({item.impact.warning_key for item in batch.transitions}),
+        detail=str((delivery or {}).get("telegram_detail", "")),
+    )
+
+
+def _manual_event(
+    dispatch_id: str, values: Mapping[str, object]
+) -> NotificationEvent:
+    dispatch = values.get("dispatch")
+    if not isinstance(dispatch, ManualTelegramDispatch):
+        raise ValueError("수동 전파 기록 형식이 올바르지 않습니다.")
+    return NotificationEvent(
+        id=dispatch_id,
+        occurred_at=dispatch.created_at,
+        source="manual",
+        event=dispatch.category.label,
+        status=str(values.get("status", ManualDispatchStatus.PENDING.value)),
+        channel="사용자 Telegram",
+        facility_count=len(set(dispatch.facility_ids)),
+        warning_count=len(set(dispatch.warning_keys)),
+        detail=str(values.get("last_detail", "")),
+        category=dispatch.category.value,
+        operator_label=dispatch.operator_label,
+    )
