@@ -12,6 +12,7 @@ from safety_dashboard.ui.app_context import secret
 
 
 _MODE_LABEL = {"preview": "미리보기", "live": "운영", "paused": "중지"}
+_DELIVERY_LABEL = {"telegram": "Telegram 전용", "sms": "SMS 우선"}
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -87,11 +88,34 @@ def render_alert_metrics() -> None:
             return
 
         mode = _MODE_LABEL.get(str(status.get("mode", "")), str(status.get("mode", "-")))
-        st.caption(
-            f"운영 상태 · {mode} · 최근 결과 {status.get('last_result', '-')} · "
-            f"정책 {status.get('policy_version', '-')} · "
-            f"일일 상한 {status.get('daily_cap', 50)}건"
+        delivery_mode = _DELIVERY_LABEL.get(
+            str(status.get("user_delivery_mode", "")),
+            str(status.get("user_delivery_mode", "-")),
         )
+        st.caption(
+            f"운영 상태 · {mode} · 사용자 전달 {delivery_mode} · "
+            f"최근 결과 {status.get('last_result', '-')} · "
+            f"정책 {status.get('policy_version', '-')} · "
+            f"일 {int(status.get('sms_today', 0))}/{status.get('daily_cap', 100)}건 · "
+            f"월 {int(status.get('sms_month', 0))}/{status.get('monthly_cap', 500)}건"
+        )
+        if delivery_mode == "SMS 우선":
+            available = status.get("solapi_available")
+            cash = status.get("solapi_balance")
+            point = status.get("solapi_point")
+            if available is None:
+                balance_text = "조회 전"
+            else:
+                balance_text = (
+                    f"잔액 {int(cash or 0):,}원 · "
+                    f"포인트 {int(point or 0):,}원 · "
+                    f"사용 가능 합계 {int(available):,}원"
+                )
+            st.caption(
+                f"SOLAPI · {balance_text} · "
+                f"잔액 상태 {status.get('solapi_balance_level', '-')} · "
+                f"최근 조회 {status.get('solapi_balance_checked_at', '-')}"
+            )
         totals = metrics.get("totals", {})
         if not isinstance(totals, dict):
             totals = {}
@@ -104,19 +128,44 @@ def render_alert_metrics() -> None:
         transitions[0].metric("특보 발효", int(totals.get("warning_activated", 0)))
         transitions[1].metric("특보 격상", int(totals.get("warning_escalated", 0)))
         transitions[2].metric("특보 해제", int(totals.get("warning_cleared", 0)))
-        second = st.columns(4)
+        second = st.columns(5)
+        accepted_total = int(totals.get("sms_accepted", 0))
+        delivered_total = int(totals.get("sms_delivered", 0))
+        delivery_failed_total = int(totals.get("sms_delivery_failed", 0))
+        pending_total = max(
+            0,
+            accepted_total - delivered_total - delivery_failed_total,
+        )
         second[0].metric("문자 시도", int(totals.get("sms_attempted", 0)))
-        second[1].metric("수신 완료", int(totals.get("sms_delivered", 0)))
-        second[2].metric("실패·확인불가", (
-            int(totals.get("sms_failed", 0)) + int(totals.get("sms_unknown", 0))
-        ))
+        second[1].metric("수신 완료", delivered_total)
+        second[2].metric("수신 실패", delivery_failed_total)
+        second[3].metric("결과 대기", pending_total)
         success_rate = metrics.get("delivery_success_rate")
-        second[3].metric(
+        second[4].metric(
             "전달 성공률",
             "—" if success_rate is None else f"{success_rate}%",
         )
+        telegram_metrics = st.columns(4)
+        telegram_metrics[0].metric(
+            "사용자 Telegram",
+            int(totals.get("telegram_user_primary_sent", 0)),
+        )
+        telegram_metrics[1].metric(
+            "문자 대체 전파",
+            int(totals.get("telegram_user_fallback_sent", 0)),
+        )
+        telegram_metrics[2].metric(
+            "사용자 채널 실패",
+            int(totals.get("telegram_user_failed", 0)),
+        )
+        telegram_metrics[3].metric(
+            "관리자 알림",
+            int(totals.get("telegram_admin_sent", 0)),
+        )
         st.caption(
             "수신 완료는 통신사 결과이며 실제 열람을 의미하지 않습니다. "
+            f"접수 실패 {int(totals.get('sms_failed', 0))}건 · "
+            f"응답 확인 불가 {int(totals.get('sms_unknown', 0))}건 · "
             f"연락처 미매핑 {int(totals.get('unmapped_facilities', 0))}건 · "
             f"상한 차단 {int(totals.get('cap_blocked', 0))}건"
         )

@@ -1,4 +1,5 @@
 import datetime as dt
+import dataclasses
 import hashlib
 import unittest
 
@@ -6,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from safety_dashboard.adapters.google_sheet_contacts import GoogleSheetContactProvider
 from safety_dashboard.adapters.solapi import SolapiNotifier
+from safety_dashboard.adapters.telegram import TelegramResult
 from safety_dashboard.adapters.firestore_alerts import _provider_status
 from safety_dashboard.alerts.admin import (
     AlertAdminAuthorizationError,
@@ -13,14 +15,19 @@ from safety_dashboard.alerts.admin import (
 )
 from safety_dashboard.alerts.contacts import ContactDataError, build_contact_directory
 from safety_dashboard.alerts.domain import (
+    AlertBatch,
     ContactDirectory,
     FacilityRecipient,
     SmsDeliveryResult,
     SmsDeliveryStatus,
+    SolapiBalance,
+    TelegramAudience,
 )
+from safety_dashboard.alerts.messages import build_alert_batch_telegram_payloads
 from safety_dashboard.alerts.memory_store import InMemoryAlertStore
-from safety_dashboard.alerts.service import AlertDispatcher
+from safety_dashboard.alerts.service import AlertDispatcher, DispatchSummary
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.alerts.worker_app import create_worker_app
 from safety_dashboard.alerts.transitions import detect_transitions, impacts_from_snapshot
 from safety_dashboard.api.app import create_app
 from safety_dashboard.application.monitoring import MonitoringService
@@ -31,6 +38,7 @@ from safety_dashboard.domain import (
     Warning,
     WarningFeed,
     WarningLevel,
+    RiskGrade,
 )
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
@@ -71,8 +79,10 @@ class _ContactProvider:
     def __init__(self, recipients):
         self.recipients = recipients
         self.error = False
+        self.calls = 0
 
     def fetch(self, valid_facility_ids):
+        self.calls += 1
         if self.error:
             raise ContactDataError("테스트 연락처 장애")
         return ContactDirectory(
@@ -83,24 +93,47 @@ class _ContactProvider:
 
 
 class _Sms:
-    def __init__(self):
+    def __init__(self, status=SmsDeliveryStatus.ACCEPTED, detail=""):
         self.messages = []
+        self.status = status
+        self.detail = detail
 
     def send(self, message):
         self.messages.append(message)
         return SmsDeliveryResult(
-            SmsDeliveryStatus.ACCEPTED,
-            provider_message_id=f"provider-{len(self.messages)}",
+            self.status,
+            provider_message_id=(
+                f"provider-{len(self.messages)}"
+                if self.status is SmsDeliveryStatus.ACCEPTED
+                else ""
+            ),
+            detail=self.detail,
         )
 
 
 class _Telegram:
-    def __init__(self):
+    def __init__(self, success=True):
         self.batches = []
+        self.success = success
 
     def send_batch(self, messages):
         self.batches.append(tuple(messages))
-        return object()
+        return TelegramResult(
+            self.success,
+            len(messages) if self.success else 0,
+            len(messages),
+            "Telegram 성공" if self.success else "Telegram 실패",
+        )
+
+
+class _Balance:
+    def __init__(self, available):
+        self.available = available
+        self.calls = 0
+
+    def fetch_balance(self):
+        self.calls += 1
+        return SolapiBalance(self.available, 0, dt.datetime.now(dt.timezone.utc))
 
 
 class AutomaticAlertTests(unittest.TestCase):
@@ -150,6 +183,7 @@ class AutomaticAlertTests(unittest.TestCase):
     def settings(self, **values):
         defaults = dict(
             automation_mode="live",
+            user_delivery_mode="sms",
             recipient_hmac_secret="test-hmac-secret",
             dashboard_base_url="https://keco-safety-map.web.app",
             daily_cap=50,
@@ -159,7 +193,17 @@ class AutomaticAlertTests(unittest.TestCase):
         defaults.update(values)
         return AlertSettings(**defaults)
 
-    def dispatcher(self, snapshot, contacts=None, store=None, sms=None, settings=None):
+    def dispatcher(
+        self,
+        snapshot,
+        contacts=None,
+        store=None,
+        sms=None,
+        settings=None,
+        admin_telegram=None,
+        user_telegram=None,
+        balance_provider=None,
+    ):
         contact_provider = contacts or _ContactProvider((
             FacilityRecipient("F-1", "담당", "01011112222"),
             FacilityRecipient("F-2", "담당", "01011112222"),
@@ -172,7 +216,9 @@ class AutomaticAlertTests(unittest.TestCase):
                 store or InMemoryAlertStore(),
                 self.policy,
                 settings or self.settings(),
-                _Telegram(),
+                admin_telegram or _Telegram(),
+                user_telegram=user_telegram,
+                balance_provider=balance_provider,
             ),
             contact_provider,
         )
@@ -268,21 +314,134 @@ class AutomaticAlertTests(unittest.TestCase):
         dispatcher.run(self.now + dt.timedelta(minutes=15))
         self.assertEqual(len(telegram.batches), 2)
 
-    def test_contact_failure_holds_transition_and_recovers_as_delayed(self):
+    def test_contact_failure_falls_back_once_and_does_not_send_delayed_sms(self):
         store = InMemoryAlertStore()
         sms = _Sms()
-        dispatcher, contacts = self.dispatcher(self.snapshot(), store=store, sms=sms)
+        user = _Telegram()
+        dispatcher, contacts = self.dispatcher(
+            self.snapshot(), store=store, sms=sms, user_telegram=user
+        )
         dispatcher.run(self.now)
         contacts.error = True
         dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
         result = dispatcher.run(self.now + dt.timedelta(minutes=5))
         self.assertEqual(result.status, "CONTACTS_ERROR")
-        self.assertEqual(len(store.load_pending(self.now + dt.timedelta(minutes=6))), 2)
+        self.assertEqual(store.load_pending(self.now + dt.timedelta(minutes=6)), ())
+        self.assertEqual(len(user.batches), 1)
+        self.assertIn("문자 대체 전파", user.batches[0][0].text)
         contacts.error = False
         recovered = dispatcher.run(self.now + dt.timedelta(minutes=10))
-        self.assertEqual(recovered.status, "DISPATCHED")
+        self.assertEqual(recovered.status, "NO_CHANGE")
+        self.assertEqual(sms.messages, [])
+        self.assertEqual(len(user.batches), 1)
+
+    def test_telegram_mode_skips_contacts_and_solapi_and_uses_user_channel(self):
+        contacts = _ContactProvider(())
+        sms = _Sms()
+        admin = _Telegram()
+        user = _Telegram()
+        store = InMemoryAlertStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            contacts=contacts,
+            store=store,
+            sms=sms,
+            settings=self.settings(user_delivery_mode="telegram"),
+            admin_telegram=admin,
+            user_telegram=user,
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        result = dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(result.status, "DISPATCHED")
+        self.assertEqual(contacts.calls, 0)
+        self.assertEqual(sms.messages, [])
+        self.assertEqual(len(user.batches), 1)
+        self.assertTrue(any(
+            "구미 측정소" in message.text for message in user.batches[0]
+        ))
+        self.assertTrue(all("010" not in message.text for message in user.batches[0]))
+        self.assertGreaterEqual(len(admin.batches), 1)
+
+    def test_sms_success_does_not_duplicate_to_user_channel(self):
+        user = _Telegram()
+        store = InMemoryAlertStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(), store=store, user_telegram=user
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        result = dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(result.accepted_count, 1)
+        self.assertEqual(user.batches, [])
+
+    def test_solapi_rejection_falls_back_to_user_channel_once(self):
+        sms = _Sms(SmsDeliveryStatus.FAILED, "잔액 부족")
+        user = _Telegram()
+        store = InMemoryAlertStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(), store=store, sms=sms, user_telegram=user
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        dispatcher.run(self.now + dt.timedelta(minutes=10))
         self.assertEqual(len(sms.messages), 1)
-        self.assertIn("[지연 알림]", sms.messages[0].text)
+        self.assertEqual(len(user.batches), 1)
+        self.assertIn("잔액 부족", user.batches[0][0].text)
+
+    def test_unmapped_facility_uses_one_fallback_post_without_phone_data(self):
+        contacts = _ContactProvider((
+            FacilityRecipient("F-1", "담당", "01011112222"),
+        ))
+        user = _Telegram()
+        store = InMemoryAlertStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(), contacts=contacts, store=store, user_telegram=user
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(len(user.batches), 1)
+        combined = "\n".join(item.text for item in user.batches[0])
+        self.assertIn("연락처 미등록 시설 1곳", combined)
+        self.assertNotIn("01011112222", combined)
+
+    def test_user_payload_alert_sound_and_facility_rows(self):
+        transitions = detect_transitions(
+            (),
+            impacts_from_snapshot(self.snapshot("주의보"), self.policy),
+            self.now,
+        )
+        low_batch = AlertBatch(
+            "low", self.now, transitions, "live", self.policy.version
+        )
+        low_payloads = build_alert_batch_telegram_payloads(
+            low_batch, "https://keco-safety-map.web.app"
+        )
+        self.assertTrue(low_payloads[0].silent)
+        details = "\n".join(item.text for item in low_payloads[1:])
+        for facility in self.facilities:
+            self.assertEqual(details.count(facility.name), 1)
+
+        high_transitions = tuple(
+            dataclasses.replace(
+                item,
+                current=dataclasses.replace(
+                    item.current,
+                    risk_grade=RiskGrade.HIGH,
+                ),
+            )
+            for item in transitions
+        )
+        high_batch = AlertBatch(
+            "high", self.now, high_transitions, "live", self.policy.version
+        )
+        high_payloads = build_alert_batch_telegram_payloads(
+            high_batch, "https://keco-safety-map.web.app"
+        )
+        self.assertFalse(high_payloads[0].silent)
+        self.assertTrue(all(item.silent for item in high_payloads[1:]))
 
     def test_delayed_escalation_is_discarded_after_warning_downgrade(self):
         store = InMemoryAlertStore()
@@ -349,6 +508,217 @@ class AutomaticAlertTests(unittest.TestCase):
         self.assertEqual(result.accepted_count, 1)
         self.assertEqual(result.blocked_count, 1)
         self.assertEqual(len(sms.messages), 1)
+
+    def test_monthly_cap_blocks_sms_and_uses_one_fallback_post(self):
+        contacts = _ContactProvider((
+            FacilityRecipient("F-1", "담당1", "01011112222"),
+            FacilityRecipient("F-2", "담당2", "01033334444"),
+        ))
+        store = InMemoryAlertStore()
+        store.metrics["2026-08-01"] = {"sms_attempted": 1}
+        sms = _Sms()
+        user = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            contacts=contacts,
+            store=store,
+            sms=sms,
+            user_telegram=user,
+            settings=self.settings(monthly_cap=1, monthly_cap_warning=1),
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        result = dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(result.blocked_count, 2)
+        self.assertEqual(sms.messages, [])
+        self.assertEqual(len(user.batches), 1)
+
+    def test_daily_and_monthly_warning_thresholds_notify_admin_once(self):
+        contacts = _ContactProvider((
+            FacilityRecipient("F-1", "담당1", "01011112222"),
+            FacilityRecipient("F-2", "담당2", "01033334444"),
+        ))
+        store = InMemoryAlertStore()
+        store.metrics["2026-08-01"] = {"sms_attempted": 399}
+        admin = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            contacts=contacts,
+            store=store,
+            admin_telegram=admin,
+            settings=self.settings(
+                daily_cap=100,
+                cap_warning=2,
+                monthly_cap=500,
+                monthly_cap_warning=400,
+            ),
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        combined = "\n".join(
+            item.text for batch in admin.batches for item in batch
+        )
+        self.assertIn("오늘 자동 문자 발송이 2건에 도달", combined)
+        self.assertIn("이번 달 자동 문자 발송이 400건에 도달", combined)
+
+    def test_balance_is_checked_hourly_only_in_sms_mode_and_recovery_is_reported(self):
+        store = InMemoryAlertStore()
+        admin = _Telegram()
+        balance = _Balance(2000)
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            admin_telegram=admin,
+            balance_provider=balance,
+        )
+        dispatcher.run(self.now)
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(balance.calls, 1)
+        self.assertTrue(any(
+            "사용 가능 금액" in item.text for item in admin.batches[0]
+        ))
+        balance.available = 20000
+        dispatcher.run(self.now + dt.timedelta(hours=1))
+        self.assertEqual(balance.calls, 2)
+        self.assertTrue(any(
+            "회복" in item.text
+            for batch in admin.batches
+            for item in batch
+        ))
+
+        telegram_balance = _Balance(100)
+        telegram_dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            settings=self.settings(user_delivery_mode="telegram"),
+            balance_provider=telegram_balance,
+        )
+        telegram_dispatcher.run(self.now)
+        self.assertEqual(telegram_balance.calls, 0)
+
+    def test_user_telegram_retries_for_thirty_minutes_without_sms_reverse_fallback(self):
+        store = InMemoryAlertStore()
+        sms = _Sms()
+        user = _Telegram(success=False)
+        admin = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            sms=sms,
+            settings=self.settings(user_delivery_mode="telegram"),
+            admin_telegram=admin,
+            user_telegram=user,
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        for minute in (5, 10, 15, 20, 25, 30, 35):
+            dispatcher.run(self.now + dt.timedelta(minutes=minute))
+        self.assertEqual(len(user.batches), 7)
+        self.assertEqual(sms.messages, [])
+        self.assertEqual(
+            store.metrics[self.now.date().isoformat()]["telegram_user_failed"],
+            1,
+        )
+        self.assertTrue(any(
+            "30분 재시도 후 실패" in message.text
+            for batch in admin.batches
+            for message in batch
+        ))
+
+    def test_delivery_mode_change_does_not_reannounce_existing_warning(self):
+        store = InMemoryAlertStore()
+        telegram_dispatcher, _ = self.dispatcher(
+            self.snapshot("주의보"),
+            store=store,
+            settings=self.settings(user_delivery_mode="telegram"),
+            user_telegram=_Telegram(),
+        )
+        self.assertEqual(telegram_dispatcher.run(self.now).status, "BASELINED")
+        sms = _Sms()
+        sms_dispatcher, contacts = self.dispatcher(
+            self.snapshot("주의보"), store=store, sms=sms
+        )
+        self.assertEqual(
+            sms_dispatcher.run(self.now + dt.timedelta(minutes=5)).status,
+            "NO_CHANGE",
+        )
+        self.assertEqual(contacts.calls, 0)
+        self.assertEqual(sms.messages, [])
+
+    def test_terminal_sms_failure_webhook_queues_one_user_fallback(self):
+        store = InMemoryAlertStore()
+        sms = _Sms()
+        admin = _Telegram()
+        user = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            sms=sms,
+            admin_telegram=admin,
+            user_telegram=user,
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        self.assertEqual(user.batches, [])
+        message = sms.messages[0]
+        result = store.deliveries[message.id]["result"]
+        self.assertTrue(store.apply_provider_report(
+            result.provider_message_id,
+            "3113",
+            self.now + dt.timedelta(minutes=6),
+        ))
+        self.assertFalse(store.apply_provider_report(
+            result.provider_message_id,
+            "3113",
+            self.now + dt.timedelta(minutes=7),
+        ))
+        dispatcher.run(self.now + dt.timedelta(minutes=10))
+        dispatcher.run(self.now + dt.timedelta(minutes=15))
+        self.assertEqual(len(user.batches), 1)
+        self.assertIn("통신사 최종 수신 실패", user.batches[0][0].text)
+        self.assertTrue(any(
+            "문자 최종 전달 결과" in message.text
+            for batch in admin.batches
+            for message in batch
+        ))
+
+    def test_admin_and_user_telegram_test_targets_are_separate(self):
+        admin = _Telegram()
+        user = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(), admin_telegram=admin, user_telegram=user
+        )
+        admin_result = dispatcher.send_telegram_test(
+            TelegramAudience.ADMIN, self.now
+        )
+        user_result = dispatcher.send_telegram_test(
+            TelegramAudience.USER, self.now
+        )
+        self.assertEqual(admin_result.status, "TELEGRAM_TEST_SENT")
+        self.assertEqual(user_result.status, "TELEGRAM_TEST_SENT")
+        self.assertEqual(len(admin.batches), 1)
+        self.assertEqual(len(user.batches), 1)
+        self.assertIn("관리자방", admin.batches[0][0].text)
+        self.assertIn("사용자 채널", user.batches[0][0].text)
+
+    def test_daily_nine_oclock_summary_is_sent_once(self):
+        store = InMemoryAlertStore()
+        admin = _Telegram()
+        start = self.now.replace(hour=8, minute=55)
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(), store=store, admin_telegram=admin
+        )
+        dispatcher.run(start)
+        dispatcher.run(start + dt.timedelta(minutes=5))
+        dispatcher.run(start + dt.timedelta(minutes=10))
+        digests = [
+            message
+            for batch in admin.batches
+            for message in batch
+            if "자동 알림 일일 요약" in message.text
+        ]
+        self.assertEqual(len(digests), 1)
 
     def test_designated_test_number_is_logged_outside_operational_metrics(self):
         store = InMemoryAlertStore()
@@ -555,6 +925,22 @@ class ContactAndProviderTests(unittest.TestCase):
             ["M-1", "M-2"],
         )
 
+    def test_solapi_balance_keeps_cash_and_point_separate(self):
+        class Service:
+            def get_balance(self):
+                return {"balance": 12345.9, "point": 678.4}
+
+        balance = SolapiNotifier(
+            "key",
+            "secret",
+            "02-123-4567",
+            service=Service(),
+        ).fetch_balance()
+
+        self.assertEqual(balance.balance, 12345)
+        self.assertEqual(balance.point, 678)
+        self.assertEqual(balance.available, 13023)
+
 
 class _AdminStore:
     def __init__(self):
@@ -565,6 +951,12 @@ class _AdminStore:
 
     def notification_metrics(self, start, end):
         return {"from": str(start), "to": str(end), "totals": {"poll_runs": 2}}
+
+    def sms_count(self, day):
+        return 0
+
+    def monthly_sms_count(self, month):
+        return 0
 
     def export_rows(self, start, end):
         return [{
@@ -638,6 +1030,31 @@ class AlertAdminApiTests(unittest.TestCase):
         )
         self.assertEqual(webhook.status_code, 200)
         self.assertEqual(webhook.json()["updated"], 1)
+
+    def test_private_telegram_test_routes_select_different_audiences(self):
+        class Dispatcher:
+            def __init__(self):
+                self.audiences = []
+
+            def send_telegram_test(self, audience):
+                self.audiences.append(audience)
+                return DispatchSummary(
+                    "TELEGRAM_TEST_SENT",
+                    "preview",
+                    message_count=1,
+                    accepted_count=1,
+                )
+
+        dispatcher = Dispatcher()
+        client = TestClient(create_worker_app(dispatcher))
+        admin = client.post("/internal/v1/test/telegram/admin")
+        user = client.post("/internal/v1/test/telegram/user")
+        self.assertEqual(admin.status_code, 200)
+        self.assertEqual(user.status_code, 200)
+        self.assertEqual(
+            dispatcher.audiences,
+            [TelegramAudience.ADMIN, TelegramAudience.USER],
+        )
 
 
 if __name__ == "__main__":

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from typing import Any
+import datetime as dt
 
 from safety_dashboard.alerts.domain import (
     OutgoingSmsMessage,
     SmsDeliveryResult,
     SmsDeliveryStatus,
+    SolapiBalance,
 )
 
 
@@ -111,7 +113,11 @@ class SolapiNotifier:
                         _value(item, "message_id", "messageId") or ""
                     ),
                     provider_group_id=group_id,
-                    detail="SOLAPI 접수 거부",
+                    detail=str(
+                        _value(item, "status_message", "statusMessage")
+                        or _value(item, "error_message", "errorMessage")
+                        or "SOLAPI 접수 거부"
+                    ),
                 )
         unknown = SmsDeliveryResult(
             SmsDeliveryStatus.UNKNOWN,
@@ -119,6 +125,17 @@ class SolapiNotifier:
             detail="SOLAPI 응답에 메시지 결과가 없습니다.",
         )
         return tuple(results.get(item.id, unknown) for item in messages)
+
+    def fetch_balance(self) -> SolapiBalance:
+        if not self.api_key or not self.api_secret:
+            raise RuntimeError("SOLAPI 설정값이 없습니다.")
+        service, _, _ = self._client()
+        response = service.get_balance()
+        return SolapiBalance(
+            balance=int(float(_value(response, "balance") or 0)),
+            point=int(float(_value(response, "point") or 0)),
+            fetched_at=dt.datetime.now(dt.timezone.utc),
+        )
 
     def _client(self) -> tuple[Any, Any, Any]:
         if self._service is not None:
@@ -175,7 +192,11 @@ def _registration_failures(
             provider_message_id=str(
                 _value(item, "message_id", "messageId") or ""
             ),
-            detail="SOLAPI 접수 거부",
+            detail=str(
+                _value(item, "status_message", "statusMessage")
+                or _value(item, "error_message", "errorMessage")
+                or "SOLAPI 접수 거부"
+            ),
         )
     fallback = SmsDeliveryResult(
         SmsDeliveryStatus.FAILED,

@@ -14,6 +14,7 @@ from safety_dashboard.adapters.solapi import SolapiNotifier
 from safety_dashboard.adapters.telegram import TelegramNotifier
 from safety_dashboard.alerts.service import AlertDispatcher
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.alerts.domain import TelegramAudience
 from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.settings import ApiSettings
 from safety_dashboard.domain.risk_policy import RiskPolicy
@@ -35,13 +36,28 @@ def _dispatcher() -> AlertDispatcher:
     api_settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
     policy = RiskPolicy.load(api_settings.policy_path)
-    telegram = (
+    admin_telegram = (
         TelegramNotifier(
             alert_settings.telegram_bot_token,
-            alert_settings.telegram_chat_id,
+            alert_settings.telegram_admin_chat_id
+            or alert_settings.telegram_chat_id,
         )
-        if alert_settings.telegram_bot_token and alert_settings.telegram_chat_id
+        if alert_settings.telegram_bot_token
+        and (alert_settings.telegram_admin_chat_id or alert_settings.telegram_chat_id)
         else None
+    )
+    user_telegram = (
+        TelegramNotifier(
+            alert_settings.telegram_bot_token,
+            alert_settings.telegram_user_chat_id,
+        )
+        if alert_settings.telegram_bot_token and alert_settings.telegram_user_chat_id
+        else None
+    )
+    solapi = SolapiNotifier(
+        alert_settings.solapi_api_key,
+        alert_settings.solapi_api_secret,
+        alert_settings.solapi_sender_number,
     )
     return AlertDispatcher(
         snapshot_provider=_SnapshotProvider(MonitoringApiService(api_settings)),
@@ -49,15 +65,13 @@ def _dispatcher() -> AlertDispatcher:
             alert_settings.contact_sheet_id,
             alert_settings.contact_sheet_range,
         ),
-        sms=SolapiNotifier(
-            alert_settings.solapi_api_key,
-            alert_settings.solapi_api_secret,
-            alert_settings.solapi_sender_number,
-        ),
+        sms=solapi,
         store=FirestoreAlertStore(alert_settings.project_id),
         policy=policy,
         settings=alert_settings,
-        telegram=telegram,
+        telegram=admin_telegram,
+        user_telegram=user_telegram,
+        balance_provider=solapi,
     )
 
 
@@ -79,6 +93,18 @@ def create_worker_app(dispatcher: AlertDispatcher | None = None) -> FastAPI:
     @application.post("/internal/v1/test")
     def send_test() -> dict[str, object]:
         return (dispatcher or _dispatcher()).send_test().as_dict()
+
+    @application.post("/internal/v1/test/telegram/admin")
+    def test_admin_telegram() -> dict[str, object]:
+        return (dispatcher or _dispatcher()).send_telegram_test(
+            TelegramAudience.ADMIN
+        ).as_dict()
+
+    @application.post("/internal/v1/test/telegram/user")
+    def test_user_telegram() -> dict[str, object]:
+        return (dispatcher or _dispatcher()).send_telegram_test(
+            TelegramAudience.USER
+        ).as_dict()
 
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:

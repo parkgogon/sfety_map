@@ -12,6 +12,8 @@ from safety_dashboard.alerts.domain import (
     FacilityImpact,
     OutgoingSmsMessage,
     SmsDeliveryResult,
+    SolapiBalance,
+    TelegramOutboxItem,
 )
 from safety_dashboard.domain.models import DashboardSnapshot
 
@@ -26,6 +28,10 @@ class ContactProvider(Protocol):
 
 class SmsNotifier(Protocol):
     def send(self, message: OutgoingSmsMessage) -> SmsDeliveryResult: ...
+
+
+class SolapiBalanceProvider(Protocol):
+    def fetch_balance(self) -> SolapiBalance: ...
 
 
 class AlertStateStore(Protocol):
@@ -43,6 +49,10 @@ class AlertStateStore(Protocol):
     ) -> None: ...
 
     def save_batch(self, batch: AlertBatch, status: str) -> None: ...
+
+    def update_batch_delivery(
+        self, batch_id: str, values: Mapping[str, object]
+    ) -> None: ...
 
     def save_pending(
         self,
@@ -70,6 +80,8 @@ class AlertStateStore(Protocol):
 
     def sms_count(self, day: dt.date) -> int: ...
 
+    def monthly_sms_count(self, month: dt.date) -> int: ...
+
     def record_run(
         self,
         day: dt.date,
@@ -87,3 +99,25 @@ class AlertStateStore(Protocol):
         now: dt.datetime,
         interval: dt.timedelta,
     ) -> bool: ...
+
+    def enqueue_telegram(self, item: TelegramOutboxItem) -> bool: ...
+
+    def due_telegram(
+        self, now: dt.datetime, limit: int = 20
+    ) -> tuple[TelegramOutboxItem, ...]: ...
+
+    def record_telegram_result(
+        self,
+        item: TelegramOutboxItem,
+        success: bool,
+        detail: str,
+        now: dt.datetime,
+    ) -> None: ...
+
+    def load_batch(self, batch_id: str) -> AlertBatch | None: ...
+
+    def delivery_summary(self, batch_id: str) -> Mapping[str, int]: ...
+
+    def notification_metrics(
+        self, start: dt.date, end: dt.date
+    ) -> Mapping[str, object]: ...

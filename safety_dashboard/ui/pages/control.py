@@ -521,7 +521,11 @@ else:
                     fingerprint,
                     simulation,
                     secret("telegram", "bot_token", "TELEGRAM_BOT_TOKEN"),
-                    secret("telegram", "chat_id", "TELEGRAM_CHAT_ID"),
+                    secret(
+                        "telegram",
+                        "user_chat_id",
+                        "TELEGRAM_USER_CHAT_ID",
+                    ),
                     temporary_policy=temporary_policy,
                     dashboard_base_url=secret(
                         "dashboard",

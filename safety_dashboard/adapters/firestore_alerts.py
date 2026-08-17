@@ -18,7 +18,11 @@ from safety_dashboard.alerts.domain import (
     OutgoingSmsMessage,
     SmsDeliveryResult,
     SmsDeliveryStatus,
+    TelegramAudience,
+    TelegramOutboxItem,
+    TelegramPurpose,
 )
+from safety_dashboard.domain.models import OutgoingTelegramMessage
 from safety_dashboard.domain.enums import RiskGrade, WarningLevel
 
 
@@ -100,6 +104,13 @@ class FirestoreAlertStore:
                 "transitions": [_transition_to_dict(item) for item in batch.transitions],
             },
             merge=True,
+        )
+
+    def update_batch_delivery(
+        self, batch_id: str, values: Mapping[str, object]
+    ) -> None:
+        self.client.collection("alert_batches").document(batch_id).set(
+            dict(values), merge=True
         )
 
     def save_pending(
@@ -217,6 +228,18 @@ class FirestoreAlertStore:
         values = snapshot.to_dict() if snapshot.exists else {}
         return int(values.get("sms_attempted", 0))
 
+    def monthly_sms_count(self, month: dt.date) -> int:
+        current = month.replace(day=1)
+        if current.month == 12:
+            end = dt.date(current.year + 1, 1, 1)
+        else:
+            end = dt.date(current.year, current.month + 1, 1)
+        total = 0
+        while current < end:
+            total += self.sms_count(current)
+            current += dt.timedelta(days=1)
+        return total
+
     def record_run(
         self,
         day: dt.date,
@@ -260,6 +283,134 @@ class FirestoreAlertStore:
 
         return bool(reserve(transaction))
 
+    def enqueue_telegram(self, item: TelegramOutboxItem) -> bool:
+        ref = self.client.collection("alert_telegram_outbox").document(item.id)
+        try:
+            ref.create({
+                "audience": item.audience.value,
+                "purpose": item.purpose.value,
+                "created_at": item.created_at,
+                "expires_at": item.expires_at,
+                "next_attempt_at": item.next_attempt_at,
+                "batch_id": item.batch_id,
+                "reason": item.reason,
+                "messages": [_telegram_message_to_dict(value) for value in item.messages],
+                "metric_scope": item.metric_scope,
+                "attempt_count": item.attempt_count,
+                "status": "PENDING",
+            })
+            return True
+        except AlreadyExists:
+            return False
+
+    def due_telegram(
+        self, now: dt.datetime, limit: int = 20
+    ) -> tuple[TelegramOutboxItem, ...]:
+        due: list[TelegramOutboxItem] = []
+        expired: list[tuple[Any, str]] = []
+        for snapshot in self.client.collection("alert_telegram_outbox").stream():
+            values = snapshot.to_dict() or {}
+            if values.get("status") != "PENDING":
+                continue
+            expires_at = _parse_datetime(values.get("expires_at"))
+            next_attempt_at = _parse_datetime(values.get("next_attempt_at"))
+            if expires_at and _aware(expires_at) < _aware(now):
+                expired.append((
+                    snapshot.reference,
+                    str(values.get("audience", TelegramAudience.USER.value)),
+                ))
+                continue
+            if next_attempt_at and _aware(next_attempt_at) > _aware(now):
+                continue
+            due.append(_telegram_job_from_dict(snapshot.id, values))
+            if len(due) >= limit:
+                break
+        if expired:
+            batch = self.client.batch()
+            for ref, _ in expired:
+                batch.set(
+                    ref,
+                    {"status": "EXPIRED", "completed_at": now},
+                    merge=True,
+                )
+            batch.commit()
+            counters: dict[str, int] = {}
+            for _, audience in expired:
+                counter = (
+                    "telegram_admin_failed"
+                    if audience == TelegramAudience.ADMIN.value
+                    else "telegram_user_failed"
+                )
+                counters[counter] = counters.get(counter, 0) + 1
+            if counters:
+                self.record_run(now.astimezone(KST).date(), counters)
+        return tuple(due)
+
+    def record_telegram_result(
+        self,
+        item: TelegramOutboxItem,
+        success: bool,
+        detail: str,
+        now: dt.datetime,
+    ) -> None:
+        attempts = item.attempt_count + 1
+        expired = _aware(now) + dt.timedelta(minutes=5) > _aware(item.expires_at)
+        status = "SENT" if success else ("EXPIRED" if expired else "PENDING")
+        values: dict[str, object] = {
+            "status": status,
+            "attempt_count": attempts,
+            "last_detail": detail,
+            "last_attempt_at": now,
+        }
+        if success or expired:
+            values["completed_at"] = now
+        else:
+            values["next_attempt_at"] = now + dt.timedelta(minutes=5)
+        self.client.collection("alert_telegram_outbox").document(item.id).set(
+            values, merge=True
+        )
+        if item.metric_scope != "operational":
+            return
+        counter = _telegram_metric(item, success, expired)
+        if counter:
+            self.record_run(now.astimezone(KST).date(), {counter: 1})
+
+    def load_batch(self, batch_id: str) -> AlertBatch | None:
+        snapshot = self.client.collection("alert_batches").document(batch_id).get()
+        if not snapshot.exists:
+            return None
+        values = snapshot.to_dict() or {}
+        return AlertBatch(
+            id=batch_id,
+            created_at=_parse_datetime(values.get("created_at"))
+            or dt.datetime.now(dt.timezone.utc),
+            transitions=tuple(
+                _transition_from_dict(item)
+                for item in values.get("transitions", [])
+            ),
+            mode=str(values.get("mode", "")),
+            policy_version=str(values.get("policy_version", "")),
+        )
+
+    def delivery_summary(self, batch_id: str) -> dict[str, int]:
+        counts: dict[str, int] = {status.value.lower(): 0 for status in SmsDeliveryStatus}
+        counts["total"] = 0
+        counts["provider_total"] = 0
+        query = self.client.collection("alert_deliveries").where(
+            filter=FieldFilter("batch_id", "==", batch_id)
+        )
+        for snapshot in query.stream():
+            values = snapshot.to_dict() or {}
+            if values.get("metric_scope", "operational") != "operational":
+                continue
+            counts["total"] += 1
+            status = str(values.get("status", "")).lower()
+            if status in counts:
+                counts[status] += 1
+            if values.get("provider_message_id"):
+                counts["provider_total"] += 1
+        return counts
+
     def notification_status(self) -> dict[str, object]:
         snapshot = self.status_ref.get()
         return _json_safe(snapshot.to_dict() if snapshot.exists else {})
@@ -282,7 +433,7 @@ class FirestoreAlertStore:
             current += dt.timedelta(days=1)
         totals["unique_recipients"] = len(recipients)
         delivered = totals.get("sms_delivered", 0)
-        terminal = delivered + totals.get("sms_failed", 0)
+        terminal = delivered + totals.get("sms_delivery_failed", 0)
         return {
             "from": start.isoformat(),
             "to": end.isoformat(),
@@ -354,10 +505,10 @@ class FirestoreAlertStore:
         transaction = self.client.transaction()
 
         @firestore.transactional
-        def update(txn: Any) -> tuple[bool, str, str]:
+        def update(txn: Any) -> tuple[bool, str, str, str]:
             snapshot = delivery_ref.get(transaction=txn)
             if not snapshot.exists:
-                return False, "", "operational"
+                return False, "", "operational", ""
             values = snapshot.to_dict() or {}
             previous = str(values.get("status", ""))
             metric_scope = str(values.get("metric_scope", "operational"))
@@ -365,7 +516,12 @@ class FirestoreAlertStore:
                 SmsDeliveryStatus.DELIVERED.value,
                 SmsDeliveryStatus.FAILED.value,
             }:
-                return False, str(values.get("attempted_day", "")), metric_scope
+                return (
+                    False,
+                    str(values.get("attempted_day", "")),
+                    metric_scope,
+                    str(values.get("batch_id", "")),
+                )
             txn.set(
                 delivery_ref,
                 {
@@ -375,9 +531,14 @@ class FirestoreAlertStore:
                 },
                 merge=True,
             )
-            return True, str(values.get("attempted_day", "")), metric_scope
+            return (
+                True,
+                str(values.get("attempted_day", "")),
+                metric_scope,
+                str(values.get("batch_id", "")),
+            )
 
-        changed, day, scope = update(transaction)
+        changed, day, scope, batch_id = update(transaction)
         if changed and day and target in {
             SmsDeliveryStatus.DELIVERED,
             SmsDeliveryStatus.FAILED,
@@ -386,12 +547,37 @@ class FirestoreAlertStore:
             field = (
                 f"{prefix}_delivered"
                 if target is SmsDeliveryStatus.DELIVERED
-                else f"{prefix}_failed"
+                else f"{prefix}_delivery_failed"
             )
             self.client.collection("alert_metrics").document(day).set(
                 {field: firestore.Increment(1), "updated_at": firestore.SERVER_TIMESTAMP},
                 merge=True,
             )
+        if changed and scope == "operational" and batch_id:
+            now = processed_at
+            if target is SmsDeliveryStatus.FAILED:
+                self.enqueue_telegram(TelegramOutboxItem(
+                    id=f"user-fallback-{batch_id}",
+                    audience=TelegramAudience.USER,
+                    purpose=TelegramPurpose.SMS_FALLBACK,
+                    created_at=now,
+                    expires_at=now + dt.timedelta(minutes=30),
+                    next_attempt_at=now,
+                    batch_id=batch_id,
+                    reason=f"통신사 최종 수신 실패 ({status_code})",
+                ))
+            summary = self.delivery_summary(batch_id)
+            terminal = summary.get("delivered", 0) + summary.get("failed", 0)
+            if summary.get("provider_total", 0) and terminal >= summary["provider_total"]:
+                self.enqueue_telegram(TelegramOutboxItem(
+                    id=f"admin-sms-final-{batch_id}",
+                    audience=TelegramAudience.ADMIN,
+                    purpose=TelegramPurpose.SMS_FINAL,
+                    created_at=now,
+                    expires_at=now + dt.timedelta(minutes=30),
+                    next_attempt_at=now,
+                    batch_id=batch_id,
+                ))
         return bool(changed)
 
 
@@ -463,6 +649,67 @@ def _provider_status(code: str) -> SmsDeliveryStatus:
     if code == "4000":
         return SmsDeliveryStatus.DELIVERED
     return SmsDeliveryStatus.FAILED
+
+
+def _telegram_message_to_dict(value: OutgoingTelegramMessage) -> dict[str, object]:
+    return {
+        "text": value.text,
+        "silent": value.silent,
+        "action_label": value.action_label,
+        "action_url": value.action_url,
+    }
+
+
+def _telegram_job_from_dict(
+    item_id: str,
+    values: Mapping[str, object],
+) -> TelegramOutboxItem:
+    messages = values.get("messages", [])
+    return TelegramOutboxItem(
+        id=item_id,
+        audience=TelegramAudience(str(values.get("audience", "admin"))),
+        purpose=TelegramPurpose(str(values.get("purpose", "system"))),
+        created_at=_parse_datetime(values.get("created_at"))
+        or dt.datetime.now(dt.timezone.utc),
+        expires_at=_parse_datetime(values.get("expires_at"))
+        or dt.datetime.now(dt.timezone.utc),
+        next_attempt_at=_parse_datetime(values.get("next_attempt_at"))
+        or dt.datetime.now(dt.timezone.utc),
+        batch_id=str(values.get("batch_id", "")),
+        reason=str(values.get("reason", "")),
+        messages=tuple(
+            OutgoingTelegramMessage(
+                text=str(item.get("text", "")),
+                silent=bool(item.get("silent", False)),
+                action_label=str(item.get("action_label", "")),
+                action_url=str(item.get("action_url", "")),
+            )
+            for item in messages
+            if isinstance(item, Mapping)
+        ),
+        metric_scope=str(values.get("metric_scope", "operational")),
+        attempt_count=int(values.get("attempt_count", 0)),
+    )
+
+
+def _telegram_metric(
+    item: TelegramOutboxItem,
+    success: bool,
+    expired: bool,
+) -> str:
+    if success:
+        if item.audience is TelegramAudience.ADMIN:
+            return "telegram_admin_sent"
+        if item.purpose is TelegramPurpose.SMS_FALLBACK:
+            return "telegram_user_fallback_sent"
+        return "telegram_user_primary_sent"
+    if expired:
+        return (
+            "telegram_admin_failed"
+            if item.audience is TelegramAudience.ADMIN
+            else "telegram_user_failed"
+        )
+    return ""
 
 
 def _parse_datetime(value: object) -> dt.datetime | None:

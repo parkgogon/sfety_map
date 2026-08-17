@@ -40,8 +40,14 @@ class AlertAdminService:
     def status(self) -> dict[str, object]:
         values = dict(self.store.notification_status())
         values.setdefault("mode", self.settings.automation_mode)
+        values.setdefault("user_delivery_mode", self.settings.user_delivery_mode)
         values["daily_cap"] = self.settings.daily_cap
         values["cap_warning"] = self.settings.cap_warning
+        values["monthly_cap"] = self.settings.monthly_cap
+        values["monthly_cap_warning"] = self.settings.monthly_cap_warning
+        today = dt.datetime.now(KST).date()
+        values["sms_today"] = self.store.sms_count(today)
+        values["sms_month"] = self.store.monthly_sms_count(today)
         return values
 
     def metrics(self, start: dt.date, end: dt.date) -> dict[str, object]:

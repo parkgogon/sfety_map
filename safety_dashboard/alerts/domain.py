@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Iterable
 
 from safety_dashboard.domain.enums import RiskGrade, WarningLevel
+from safety_dashboard.domain.models import OutgoingTelegramMessage
 
 
 class AlertTransitionKind(str, Enum):
@@ -33,6 +34,25 @@ class SmsDeliveryStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
     PREVIEW = "PREVIEW"
     BLOCKED_CAP = "BLOCKED_CAP"
+
+
+class UserDeliveryMode(str, Enum):
+    TELEGRAM = "telegram"
+    SMS = "sms"
+
+
+class TelegramAudience(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+
+
+class TelegramPurpose(str, Enum):
+    SYSTEM = "system"
+    USER_PRIMARY = "user_primary"
+    SMS_FALLBACK = "sms_fallback"
+    SMS_FINAL = "sms_final"
+    DAILY_DIGEST = "daily_digest"
+    TEST = "test"
 
 
 @dataclass(frozen=True)
@@ -134,6 +154,32 @@ class SmsDeliveryResult:
     provider_message_id: str = ""
     provider_group_id: str = ""
     detail: str = ""
+
+
+@dataclass(frozen=True)
+class SolapiBalance:
+    balance: int
+    point: int
+    fetched_at: dt.datetime
+
+    @property
+    def available(self) -> int:
+        return self.balance + self.point
+
+
+@dataclass(frozen=True)
+class TelegramOutboxItem:
+    id: str
+    audience: TelegramAudience
+    purpose: TelegramPurpose
+    created_at: dt.datetime
+    expires_at: dt.datetime
+    next_attempt_at: dt.datetime
+    batch_id: str = ""
+    reason: str = ""
+    messages: tuple[OutgoingTelegramMessage, ...] = ()
+    metric_scope: str = "operational"
+    attempt_count: int = 0
 
 
 def make_batch_id(transitions: Iterable[AlertTransition]) -> str:
