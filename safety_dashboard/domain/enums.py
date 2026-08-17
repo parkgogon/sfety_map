@@ -13,6 +13,30 @@ class DataHealth(str, Enum):
     SIMULATION = "SIMULATION"
 
 
+class KmaFailureCategory(str, Enum):
+    """KMA 조회 실패를 관리자용으로 분류한 내부 상태."""
+
+    AUTH_CONFIG = "AUTH_CONFIG"
+    QUOTA = "QUOTA"
+    KMA_SERVER = "KMA_SERVER"
+    KMA_ROUTE = "KMA_ROUTE"
+    CLOUD_EGRESS = "CLOUD_EGRESS"
+    RESPONSE_FORMAT = "RESPONSE_FORMAT"
+    UNKNOWN = "UNKNOWN"
+
+    @property
+    def label(self) -> str:
+        return {
+            KmaFailureCategory.AUTH_CONFIG: "인증·설정",
+            KmaFailureCategory.QUOTA: "사용량 제한",
+            KmaFailureCategory.KMA_SERVER: "KMA 서버",
+            KmaFailureCategory.KMA_ROUTE: "KMA API 통신경로",
+            KmaFailureCategory.CLOUD_EGRESS: "Cloud Run 외부통신",
+            KmaFailureCategory.RESPONSE_FORMAT: "응답 형식",
+            KmaFailureCategory.UNKNOWN: "원인 미확정",
+        }[self]
+
+
 class ContextStatus(str, Enum):
     """핵심 관제와 독립적으로 로드되는 현장 참고정보의 상태."""
 

@@ -27,6 +27,7 @@ class AlertSettings:
     admin_token: str = ""
     test_phone: str = ""
     project_id: str = ""
+    app_revision: str = "local"
     daily_cap: int = 100
     cap_warning: int = 80
     monthly_cap: int = 500
@@ -118,6 +119,7 @@ class AlertSettings:
                 os.getenv("GOOGLE_CLOUD_PROJECT", "").strip()
                 or os.getenv("GCP_PROJECT_ID", "").strip()
             ),
+            app_revision=(os.getenv("APP_REVISION", "").strip() or "local")[:40],
             daily_cap=daily_cap,
             cap_warning=cap_warning,
             monthly_cap=monthly_cap,

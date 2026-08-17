@@ -12,13 +12,35 @@ from typing import Any, Sequence
 import requests
 
 from core.region_resolver import KMA_WARNING_SCOPE_PREFIXES, normalize_warning_zone_data
-from safety_dashboard.domain.enums import DataHealth
-from safety_dashboard.domain.models import Warning, WarningFeed
+from safety_dashboard.domain.enums import DataHealth, KmaFailureCategory
+from safety_dashboard.domain.models import KmaFailureDiagnostic, Warning, WarningFeed
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
 
 WARNING_URL = "https://apihub.kma.go.kr/api/typ01/url/wrn_now_data_new.php"
 ZONE_URL = "https://www.weather.go.kr/wgis-nuri/js/info/wrnArea.geojson"
+KMA_PUBLIC_DELAY_MESSAGE = (
+    "KMA 특보 자료 수신이 지연되고 있습니다. "
+    "공식 특보를 함께 확인해 주세요."
+)
+
+
+def validate_warning_response(text: str) -> None:
+    """HTML·공백·알 수 없는 200 응답을 정상 빈 특보로 오인하지 않는다."""
+
+    stripped = text.strip()
+    lowered = stripped.casefold()
+    if not stripped:
+        raise ValueError("KMA 응답이 비어 있음")
+    if "<html" in lowered or "<!doctype" in lowered:
+        raise ValueError("KMA 대신 HTML 응답 수신")
+    has_header = "REG_UP" in stripped and "REG_ID" in stripped and "WRN" in stripped
+    has_record = any(
+        len(line.split(",")) >= 10 and not line.lstrip().startswith("#")
+        for line in stripped.splitlines()
+    )
+    if not has_header and not has_record:
+        raise ValueError("KMA 특보 응답 형식을 확인할 수 없음")
 
 
 def parse_warning_response(
@@ -71,7 +93,18 @@ class KmaWarningProvider:
     def fetch_active(self) -> WarningFeed:
         fetched_at = dt.datetime.now()
         if not self.api_key:
-            return WarningFeed((), DataHealth.ERROR, fetched_at, "KMA API 키가 없습니다.")
+            return WarningFeed(
+                (),
+                DataHealth.ERROR,
+                fetched_at,
+                KMA_PUBLIC_DELAY_MESSAGE,
+                KmaFailureDiagnostic(
+                    KmaFailureCategory.AUTH_CONFIG,
+                    "KMA API 키가 설정되지 않음",
+                    "요청을 시작하기 전에 필수 설정값이 비어 있음",
+                    cause_type="MissingApiKey",
+                ),
+            )
         params = {
             "fe": "f",
             "tm": fetched_at.strftime("%Y%m%d%H%M"),
@@ -81,14 +114,74 @@ class KmaWarningProvider:
         }
         try:
             response = requests.get(WARNING_URL, params=params, timeout=self.timeout)
+            if response.status_code in {400, 401, 403}:
+                return self._failure(
+                    fetched_at,
+                    KmaFailureCategory.AUTH_CONFIG,
+                    "KMA API가 인증을 거부함",
+                    f"HTTP {response.status_code}",
+                    http_status=response.status_code,
+                )
+            if response.status_code == 429:
+                return self._failure(
+                    fetched_at,
+                    KmaFailureCategory.QUOTA,
+                    "KMA API 사용량 제한에 도달함",
+                    "HTTP 429",
+                    http_status=429,
+                )
+            if response.status_code >= 500:
+                return self._failure(
+                    fetched_at,
+                    KmaFailureCategory.KMA_SERVER,
+                    "KMA API 서버가 오류를 반환함",
+                    f"HTTP {response.status_code}",
+                    http_status=response.status_code,
+                )
             response.raise_for_status()
+            validate_warning_response(response.text)
             warnings = parse_warning_response(response.text, self.policy)
-        except (requests.RequestException, ValueError) as exc:
-            return WarningFeed(
-                (), DataHealth.ERROR, fetched_at,
-                f"KMA 특보 조회 실패 ({type(exc).__name__})",
+        except ValueError as exc:
+            return self._failure(
+                fetched_at,
+                KmaFailureCategory.RESPONSE_FORMAT,
+                "KMA 응답 형식을 해석할 수 없음",
+                str(exc),
+                cause_type=type(exc).__name__,
+            )
+        except requests.RequestException as exc:
+            return self._failure(
+                fetched_at,
+                KmaFailureCategory.UNKNOWN,
+                "KMA API와 연결하지 못함",
+                type(exc).__name__,
+                cause_type=type(exc).__name__,
             )
         return WarningFeed(warnings, DataHealth.LIVE, fetched_at)
+
+    @staticmethod
+    def _failure(
+        fetched_at: dt.datetime,
+        category: KmaFailureCategory,
+        summary: str,
+        evidence: str,
+        *,
+        cause_type: str = "",
+        http_status: int | None = None,
+    ) -> WarningFeed:
+        return WarningFeed(
+            (),
+            DataHealth.ERROR,
+            fetched_at,
+            KMA_PUBLIC_DELAY_MESSAGE,
+            KmaFailureDiagnostic(
+                category,
+                summary,
+                evidence,
+                cause_type=cause_type,
+                http_status=http_status,
+            ),
+        )
 
 
 class WarningZoneRepository:

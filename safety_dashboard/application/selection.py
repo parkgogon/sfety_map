@@ -71,6 +71,7 @@ def _subset_snapshot(
         health=source.warning_feed.health,
         fetched_at=source.warning_feed.fetched_at,
         message=source.warning_feed.message,
+        diagnostic=source.warning_feed.diagnostic,
     )
     return DashboardSnapshot(
         generated_at=source.generated_at,

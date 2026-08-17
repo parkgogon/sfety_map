@@ -18,6 +18,8 @@ from safety_dashboard.alerts.domain import (
     AlertBatch,
     ContactDirectory,
     FacilityRecipient,
+    HealthCheck,
+    OperationalHealthReport,
     SmsDeliveryResult,
     SmsDeliveryStatus,
     SolapiBalance,
@@ -35,6 +37,8 @@ from safety_dashboard.domain import (
     DataHealth,
     Facility,
     GeoPoint,
+    KmaFailureCategory,
+    KmaFailureDiagnostic,
     Warning,
     WarningFeed,
     WarningLevel,
@@ -136,6 +140,33 @@ class _Balance:
         return SolapiBalance(self.available, 0, dt.datetime.now(dt.timezone.utc))
 
 
+class _HealthProbe:
+    def __init__(self, healthy=True):
+        self.healthy = healthy
+        self.calls = 0
+
+    def check(self, now):
+        self.calls += 1
+        return OperationalHealthReport(now, (
+            HealthCheck("사용자 웹", self.healthy, "HTTP 200", 120),
+            HealthCheck("공개 API", self.healthy, "HTTP 200", 80),
+            HealthCheck("사용자 Telegram", self.healthy, "채널 접근 가능"),
+        ))
+
+
+class _KmaDiagnoser:
+    def __init__(self, category=KmaFailureCategory.KMA_ROUTE):
+        self.category = category
+
+    def diagnose(self, initial):
+        return KmaFailureDiagnostic(
+            self.category,
+            f"{self.category.label} 테스트 판단",
+            "제어 점검 근거",
+            cause_type=initial.cause_type,
+        )
+
+
 class AutomaticAlertTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -203,6 +234,8 @@ class AutomaticAlertTests(unittest.TestCase):
         admin_telegram=None,
         user_telegram=None,
         balance_provider=None,
+        health_probe=None,
+        kma_diagnoser=None,
     ):
         contact_provider = contacts or _ContactProvider((
             FacilityRecipient("F-1", "담당", "01011112222"),
@@ -219,6 +252,8 @@ class AutomaticAlertTests(unittest.TestCase):
                 admin_telegram or _Telegram(),
                 user_telegram=user_telegram,
                 balance_provider=balance_provider,
+                health_probe=health_probe,
+                kma_diagnoser=kma_diagnoser,
             ),
             contact_provider,
         )
@@ -313,6 +348,31 @@ class AutomaticAlertTests(unittest.TestCase):
         dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
         dispatcher.run(self.now + dt.timedelta(minutes=15))
         self.assertEqual(len(telegram.batches), 2)
+
+    def test_kma_diagnostic_category_change_is_immediate_and_recovery_has_duration(self):
+        store = InMemoryAlertStore()
+        admin = _Telegram()
+        diagnoser = _KmaDiagnoser()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot("주의보"),
+            store=store,
+            admin_telegram=admin,
+            kma_diagnoser=diagnoser,
+        )
+        dispatcher.run(self.now)
+        dispatcher.snapshot_provider.snapshot = self.snapshot(health=DataHealth.ERROR)
+        dispatcher.run(self.now + dt.timedelta(minutes=5))
+        dispatcher.run(self.now + dt.timedelta(minutes=10))
+        self.assertEqual(len(admin.batches), 1)
+        self.assertIn("KMA API 통신경로", admin.batches[0][0].text)
+        diagnoser.category = KmaFailureCategory.CLOUD_EGRESS
+        dispatcher.run(self.now + dt.timedelta(minutes=15))
+        self.assertEqual(len(admin.batches), 2)
+        self.assertIn("Cloud Run 외부통신", admin.batches[1][0].text)
+        dispatcher.snapshot_provider.snapshot = self.snapshot("주의보")
+        dispatcher.run(self.now + dt.timedelta(minutes=20))
+        self.assertEqual(len(admin.batches), 3)
+        self.assertIn("장애 지속 · 15분", admin.batches[2][0].text)
 
     def test_contact_failure_falls_back_once_and_does_not_send_delayed_sms(self):
         store = InMemoryAlertStore()
@@ -743,6 +803,52 @@ class AutomaticAlertTests(unittest.TestCase):
         ]
         self.assertEqual(len(digests), 1)
 
+    def test_nine_and_eighteen_health_reports_are_once_and_use_silent_by_health(self):
+        store = InMemoryAlertStore()
+        admin = _Telegram()
+        probe = _HealthProbe(healthy=True)
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            admin_telegram=admin,
+            health_probe=probe,
+        )
+        morning = self.now.replace(hour=9, minute=0)
+        dispatcher.run(morning)
+        dispatcher.run(morning + dt.timedelta(minutes=5))
+        evening = morning.replace(hour=18)
+        dispatcher.run(evening)
+        dispatcher.run(evening + dt.timedelta(minutes=5))
+        reports = [
+            message
+            for batch in admin.batches
+            for message in batch
+            if "운영 상태" in message.text
+        ]
+        self.assertEqual(len(reports), 2)
+        self.assertEqual(probe.calls, 2)
+        self.assertTrue(all(item.silent for item in reports))
+        self.assertIn("전날 실적", reports[0].text)
+        self.assertNotIn("전날 실적", reports[1].text)
+        self.assertIn("배포", reports[0].text)
+
+    def test_degraded_heartbeat_is_audible_and_test_is_not_a_metric(self):
+        store = InMemoryAlertStore()
+        admin = _Telegram()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            admin_telegram=admin,
+            health_probe=_HealthProbe(healthy=False),
+        )
+        dispatcher.run(self.now)
+        result = dispatcher.send_heartbeat_test(self.now)
+        self.assertEqual(result.status, "HEARTBEAT_TEST_SENT")
+        self.assertFalse(admin.batches[-1][0].silent)
+        self.assertIn("[시험]", admin.batches[-1][0].text)
+        values = store.metrics.get(self.now.date().isoformat(), {})
+        self.assertNotIn("heartbeat_test", values)
+
     def test_designated_test_number_is_logged_outside_operational_metrics(self):
         store = InMemoryAlertStore()
         sms = _Sms()
@@ -1058,6 +1164,7 @@ class AlertAdminApiTests(unittest.TestCase):
         class Dispatcher:
             def __init__(self):
                 self.audiences = []
+                self.heartbeat_calls = 0
 
             def send_telegram_test(self, audience):
                 self.audiences.append(audience)
@@ -1068,16 +1175,28 @@ class AlertAdminApiTests(unittest.TestCase):
                     accepted_count=1,
                 )
 
+            def send_heartbeat_test(self):
+                self.heartbeat_calls += 1
+                return DispatchSummary(
+                    "HEARTBEAT_TEST_SENT",
+                    "preview",
+                    message_count=1,
+                    accepted_count=1,
+                )
+
         dispatcher = Dispatcher()
         client = TestClient(create_worker_app(dispatcher))
         admin = client.post("/internal/v1/test/telegram/admin")
         user = client.post("/internal/v1/test/telegram/user")
+        heartbeat = client.post("/internal/v1/test/heartbeat")
         self.assertEqual(admin.status_code, 200)
         self.assertEqual(user.status_code, 200)
+        self.assertEqual(heartbeat.status_code, 200)
         self.assertEqual(
             dispatcher.audiences,
             [TelegramAudience.ADMIN, TelegramAudience.USER],
         )
+        self.assertEqual(dispatcher.heartbeat_calls, 1)
 
 
 if __name__ == "__main__":

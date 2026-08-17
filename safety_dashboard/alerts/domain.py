@@ -53,6 +53,25 @@ class TelegramPurpose(str, Enum):
     SMS_FINAL = "sms_final"
     DAILY_DIGEST = "daily_digest"
     TEST = "test"
+    HEARTBEAT = "heartbeat"
+
+
+@dataclass(frozen=True)
+class HealthCheck:
+    name: str
+    healthy: bool
+    detail: str
+    latency_ms: int | None = None
+
+
+@dataclass(frozen=True)
+class OperationalHealthReport:
+    checked_at: dt.datetime
+    checks: tuple[HealthCheck, ...]
+
+    @property
+    def healthy(self) -> bool:
+        return all(item.healthy for item in self.checks)
 
 
 @dataclass(frozen=True)

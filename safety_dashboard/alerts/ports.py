@@ -11,6 +11,7 @@ from safety_dashboard.alerts.domain import (
     ContactDirectory,
     FacilityImpact,
     OutgoingSmsMessage,
+    OperationalHealthReport,
     SmsDeliveryResult,
     SolapiBalance,
     TelegramOutboxItem,
@@ -32,6 +33,10 @@ class SmsNotifier(Protocol):
 
 class SolapiBalanceProvider(Protocol):
     def fetch_balance(self) -> SolapiBalance: ...
+
+
+class SystemHealthProbe(Protocol):
+    def check(self, now: dt.datetime) -> OperationalHealthReport: ...
 
 
 class AlertStateStore(Protocol):

@@ -115,6 +115,25 @@ input:focus-visible {
   color: var(--color-text-primary);
 }
 
+.official-warning-link {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-700);
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: auto;
+  padding: 4px 7px;
+  text-decoration: none;
+}
+
+.official-warning-link:focus-visible,
+.official-warning-link:hover {
+  background: rgba(23, 107, 135, .08);
+  outline: 2px solid rgba(36, 123, 160, .3);
+  outline-offset: 1px;
+}
+
 .status-dot {
   background: var(--color-status-live);
   border-radius: var(--radius-pill);
@@ -1556,6 +1575,11 @@ input:focus-visible {
 
   .facility-count {
     display: none;
+  }
+
+  .official-warning-link {
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .notice-stack {

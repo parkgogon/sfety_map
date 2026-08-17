@@ -41,6 +41,8 @@ function setModeQuery(mode: MonitoringMode) {
   window.history.replaceState({}, "", url);
 }
 
+const KMA_OFFICIAL_WARNING_URL = "https://www.weather.go.kr/w/special-report/overall.do";
+
 export default function App() {
   const cctvEnabled = import.meta.env.VITE_CCTV_ENABLED !== "false";
   const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
@@ -202,6 +204,15 @@ export default function App() {
         <span className="status-dot" aria-hidden="true" />
         <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : "조회 불가"}`}</b>
         <span>· {formatReferenceTime(data.generated_at)} 기준</span>
+        <a
+          className="official-warning-link"
+          href={KMA_OFFICIAL_WARNING_URL}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="기상청 실제 특보 발효현황을 새 탭에서 열기"
+        >
+          기상청 특보 <span aria-hidden="true">↗</span>
+        </a>
         <span className="facility-count">· 시설 {visibleFacilities.length}개 표시</span>
       </div>
 

@@ -17,6 +17,7 @@ from safety_dashboard.alerts.domain import (
     AlertBatch,
     AlertTransition,
     AlertTransitionKind,
+    HealthCheck,
     OutgoingSmsMessage,
     SmsDeliveryResult,
     SmsDeliveryStatus,
@@ -24,6 +25,7 @@ from safety_dashboard.alerts.domain import (
     TelegramAudience,
     TelegramOutboxItem,
     TelegramPurpose,
+    OperationalHealthReport,
     make_batch_id,
 )
 from safety_dashboard.alerts.messages import (
@@ -37,6 +39,7 @@ from safety_dashboard.alerts.ports import (
     MonitoringSnapshotProvider,
     SmsNotifier,
     SolapiBalanceProvider,
+    SystemHealthProbe,
 )
 from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.alerts.transitions import (
@@ -45,8 +48,11 @@ from safety_dashboard.alerts.transitions import (
     impacts_from_snapshot,
     valid_pending_transitions,
 )
-from safety_dashboard.domain.enums import DataHealth
-from safety_dashboard.domain.models import OutgoingTelegramMessage
+from safety_dashboard.domain.enums import DataHealth, KmaFailureCategory
+from safety_dashboard.domain.models import (
+    KmaFailureDiagnostic,
+    OutgoingTelegramMessage,
+)
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
 
@@ -88,6 +94,8 @@ class AlertDispatcher:
         telegram: TelegramNotifier | None = None,
         user_telegram: TelegramNotifier | None = None,
         balance_provider: SolapiBalanceProvider | None = None,
+        health_probe: SystemHealthProbe | None = None,
+        kma_diagnoser: object | None = None,
     ) -> None:
         self.snapshot_provider = snapshot_provider
         self.contacts = contacts
@@ -98,6 +106,8 @@ class AlertDispatcher:
         self.admin_telegram = telegram
         self.user_telegram = user_telegram
         self.balance_provider = balance_provider
+        self.health_probe = health_probe
+        self.kma_diagnoser = kma_diagnoser
 
     def run(self, now: dt.datetime | None = None) -> DispatchSummary:
         current_time = _aware(now or dt.datetime.now(KST))
@@ -108,7 +118,7 @@ class AlertDispatcher:
             self._drain_telegram_outbox(current_time)
             self._check_solapi_balance(current_time)
             result = self._run_locked(current_time)
-            self._enqueue_daily_digest(current_time)
+            self._enqueue_scheduled_reports(current_time)
             self._drain_telegram_outbox(current_time)
             return result
         finally:
@@ -219,6 +229,33 @@ class AlertDispatcher:
             detail=result.message,
         )
 
+    def send_heartbeat_test(
+        self,
+        now: dt.datetime | None = None,
+    ) -> DispatchSummary:
+        """운영 실적과 정기 보고 중복키에 영향을 주지 않는 즉시 점검."""
+
+        current_time = _aware(now or dt.datetime.now(KST))
+        if self.admin_telegram is None:
+            return DispatchSummary(
+                "HEARTBEAT_TEST_NOT_CONFIGURED",
+                self.settings.automation_mode,
+                detail="관리자 Telegram 설정값이 없습니다.",
+            )
+        message = self._operational_report_message(
+            current_time,
+            include_metrics=False,
+            test=True,
+        )
+        result = self.admin_telegram.send_batch((message,))
+        return DispatchSummary(
+            "HEARTBEAT_TEST_SENT" if result.success else "HEARTBEAT_TEST_FAILED",
+            self.settings.automation_mode,
+            message_count=1,
+            accepted_count=int(result.success),
+            detail=result.message,
+        )
+
     def _run_locked(self, now: dt.datetime) -> DispatchSummary:
         mode = self.settings.automation_mode
         state_key = f"{mode}|{self.policy.version}"
@@ -237,15 +274,41 @@ class AlertDispatcher:
         try:
             snapshot = self.snapshot_provider.fetch()
         except Exception as exc:
-            return self._kma_error(now, day, f"관제 구성 실패 ({type(exc).__name__})")
+            return self._kma_error(
+                now,
+                day,
+                KmaFailureDiagnostic(
+                    KmaFailureCategory.UNKNOWN,
+                    "관제 snapshot을 구성하지 못함",
+                    type(exc).__name__,
+                    cause_type=type(exc).__name__,
+                ),
+            )
         if snapshot.warning_feed.health is not DataHealth.LIVE:
             return self._kma_error(
                 now,
                 day,
-                snapshot.warning_feed.message or "KMA 자료 미수신",
+                snapshot.warning_feed.diagnostic
+                or KmaFailureDiagnostic(
+                    KmaFailureCategory.UNKNOWN,
+                    "KMA 자료를 수신하지 못함",
+                    snapshot.warning_feed.message or "세부 근거 없음",
+                ),
             )
         if previous_status.get("kma_health") == "ERROR":
-            self._notify_admin("kma-recovered", now, "✅ KMA 자동 관제 조회가 정상화됐습니다.")
+            started = _parse_datetime(previous_status.get("kma_failure_started_at"))
+            duration = _duration_text(now - started) if started else "지속시간 미확인"
+            previous_category = str(
+                previous_status.get("kma_failure_category", "UNKNOWN")
+            )
+            self._notify_admin(
+                "kma-recovered",
+                now,
+                "✅ KMA 자동 관제 조회가 정상화됐습니다.\n"
+                f"이전 분류 · {_category_label(previous_category)}\n"
+                f"장애 지속 · {duration}",
+                force=True,
+            )
 
         current_impacts = impacts_from_snapshot(snapshot, self.policy)
         initialized, previous_mode, previous_impacts = self.store.load_state()
@@ -268,9 +331,10 @@ class AlertDispatcher:
                 "policy_version": self.policy.version,
                 "last_run_at": now,
                 "last_result": "BASELINED",
-                "kma_health": "LIVE",
                 "user_delivery_mode": self.settings.user_delivery_mode,
-                "active_impact_count": len(current_impacts),
+                **self._live_kma_status(
+                    now, current_impacts, len(snapshot.warning_feed.warnings)
+                ),
             })
             return DispatchSummary(
                 "BASELINED",
@@ -293,9 +357,10 @@ class AlertDispatcher:
                 "policy_version": self.policy.version,
                 "last_run_at": now,
                 "last_result": "NO_CHANGE",
-                "kma_health": "LIVE",
                 "user_delivery_mode": self.settings.user_delivery_mode,
-                "active_impact_count": len(current_impacts),
+                **self._live_kma_status(
+                    now, current_impacts, len(snapshot.warning_feed.warnings)
+                ),
             })
             return DispatchSummary("NO_CHANGE", mode)
 
@@ -308,6 +373,7 @@ class AlertDispatcher:
                 new_transitions,
                 now,
                 day,
+                len(snapshot.warning_feed.warnings),
             )
 
         valid_facility_ids = [item.id for item in snapshot.facilities]
@@ -330,6 +396,7 @@ class AlertDispatcher:
                 "연락처 Sheet 오류",
                 "CONTACTS_ERROR",
                 {"contacts_health": "ERROR", "contacts_detail": str(exc)},
+                len(snapshot.warning_feed.warnings),
             )
 
         try:
@@ -350,6 +417,7 @@ class AlertDispatcher:
                 "문자 발송 설정 오류",
                 "CONFIGURATION_ERROR",
                 {"configuration_detail": str(exc)},
+                len(snapshot.warning_feed.warnings),
             )
 
         unmapped = unmapped_facility_ids(transitions, directory)
@@ -370,7 +438,6 @@ class AlertDispatcher:
                 "policy_version": self.policy.version,
                 "last_run_at": now,
                 "last_result": "PREVIEW",
-                "kma_health": "LIVE",
                 "user_delivery_mode": "sms",
                 "contacts_health": "LIVE",
                 "contact_revision": directory.revision,
@@ -386,7 +453,9 @@ class AlertDispatcher:
                     for item in messages[:3]
                 ],
                 "unmapped_facility_count": len(unmapped),
-                "active_impact_count": len(current_impacts),
+                **self._live_kma_status(
+                    now, current_impacts, len(snapshot.warning_feed.warnings)
+                ),
             })
             return DispatchSummary(
                 "PREVIEW",
@@ -504,7 +573,6 @@ class AlertDispatcher:
             "policy_version": self.policy.version,
             "last_run_at": now,
             "last_result": "DISPATCHED",
-            "kma_health": "LIVE",
             "user_delivery_mode": "sms",
             "contacts_health": "LIVE",
             "contact_revision": directory.revision,
@@ -516,7 +584,9 @@ class AlertDispatcher:
             "unknown_count": unknown,
             "telegram_fallback_queued": fallback_queued,
             "unmapped_facility_count": len(unmapped),
-            "active_impact_count": len(current_impacts),
+            **self._live_kma_status(
+                now, current_impacts, len(snapshot.warning_feed.warnings)
+            ),
         })
         self._send_batch_summary(
             batch,
@@ -553,6 +623,7 @@ class AlertDispatcher:
         new_transitions: tuple[AlertTransition, ...],
         now: dt.datetime,
         day: dt.date,
+        active_warning_count: int,
     ) -> DispatchSummary:
         payloads = build_alert_batch_telegram_payloads(
             batch,
@@ -573,11 +644,10 @@ class AlertDispatcher:
                 "policy_version": self.policy.version,
                 "last_run_at": now,
                 "last_result": "PREVIEW",
-                "kma_health": "LIVE",
                 "preview_transition_count": len(batch.transitions),
                 "preview_message_count": len(payloads),
                 "preview_samples": [{"text": item.text} for item in payloads[:3]],
-                "active_impact_count": len(current_impacts),
+                **self._live_kma_status(now, current_impacts, active_warning_count),
             })
             return DispatchSummary(
                 "PREVIEW",
@@ -614,10 +684,9 @@ class AlertDispatcher:
             "policy_version": self.policy.version,
             "last_run_at": now,
             "last_result": "DISPATCHED",
-            "kma_health": "LIVE",
             "transition_count": len(batch.transitions),
             "message_count": len(payloads),
-            "active_impact_count": len(current_impacts),
+            **self._live_kma_status(now, current_impacts, active_warning_count),
         })
         self._send_batch_summary(
             batch,
@@ -648,6 +717,7 @@ class AlertDispatcher:
         reason: str,
         status: str,
         status_values: dict[str, object],
+        active_warning_count: int,
     ) -> DispatchSummary:
         mode = self.settings.automation_mode
         self.store.save_batch(
@@ -677,9 +747,8 @@ class AlertDispatcher:
             "policy_version": self.policy.version,
             "last_run_at": now,
             "last_result": status,
-            "kma_health": "LIVE",
             "telegram_fallback_queued": mode == "live",
-            "active_impact_count": len(current_impacts),
+            **self._live_kma_status(now, current_impacts, active_warning_count),
             **status_values,
         })
         self._notify_admin(
@@ -703,9 +772,26 @@ class AlertDispatcher:
         self,
         now: dt.datetime,
         day: dt.date,
-        detail: str,
+        diagnostic: KmaFailureDiagnostic,
     ) -> DispatchSummary:
         mode = self.settings.automation_mode
+        diagnose = getattr(self.kma_diagnoser, "diagnose", None)
+        if callable(diagnose):
+            try:
+                diagnostic = diagnose(diagnostic)
+            except Exception:
+                # 제어 점검 실패로 본래 KMA 장애 처리를 중단하지 않는다.
+                pass
+        previous = dict(self.store.notification_status())
+        was_error = previous.get("kma_health") == "ERROR"
+        previous_category = str(previous.get("kma_failure_category", ""))
+        category_changed = was_error and previous_category != diagnostic.category.value
+        started = (
+            _parse_datetime(previous.get("kma_failure_started_at"))
+            if was_error
+            else now
+        ) or now
+        consecutive = int(previous.get("kma_consecutive_errors", 0)) + 1
         self.store.record_run(day, {
             _poll_counter(mode): 1,
             "preview_kma_errors" if mode == "preview" else "kma_errors": 1,
@@ -716,12 +802,32 @@ class AlertDispatcher:
             "last_run_at": now,
             "last_result": "KMA_ERROR",
             "kma_health": "ERROR",
-            "kma_detail": detail,
+            "kma_detail": diagnostic.summary,
+            "kma_failure_category": diagnostic.category.value,
+            "kma_failure_summary": diagnostic.summary,
+            "kma_failure_evidence": diagnostic.evidence,
+            "kma_failure_started_at": started,
+            "kma_consecutive_errors": consecutive,
+            "kma_next_retry_at": now + dt.timedelta(minutes=5),
         })
+        last_success = _parse_datetime(previous.get("kma_last_success_at"))
+        last_success_text = (
+            last_success.astimezone(KST).strftime("%m-%d %H:%M")
+            if last_success
+            else "기록 없음"
+        )
         self._notify_admin(
-            "kma-error",
+            f"kma-error-{diagnostic.category.value}",
             now,
-            "⚠️ KMA 자동 관제 조회 실패: 이전 특보 상태를 보존하고 사용자 알림을 중단했습니다.",
+            "⚠️ KMA 자동 관제 조회 실패\n"
+            f"추정 원인 · {diagnostic.category.label}\n"
+            f"판단 · {diagnostic.summary}\n"
+            f"근거 · {diagnostic.evidence}\n"
+            f"최근 정상 · {last_success_text}\n"
+            f"연속 실패 · {consecutive}회\n"
+            "조치 · 이전 특보 보존, 해제·사용자 알림 중단\n"
+            "다음 재시도 · 5분 이내",
+            force=not was_error or category_changed,
         )
         return DispatchSummary(
             "KMA_ERROR",
@@ -729,12 +835,22 @@ class AlertDispatcher:
             detail="KMA 자료 미수신으로 상태를 변경하지 않았습니다.",
         )
 
-    def _notify_admin(self, key: str, now: dt.datetime, text: str) -> None:
-        if not self.store.admin_notice_due(key, now, dt.timedelta(hours=1)):
+    def _notify_admin(
+        self,
+        key: str,
+        now: dt.datetime,
+        text: str,
+        *,
+        force: bool = False,
+    ) -> None:
+        due = self.store.admin_notice_due(key, now, dt.timedelta(hours=1))
+        if not due and not force:
             return
-        hour_key = now.astimezone(KST).strftime("%Y%m%d%H")
+        time_key = now.astimezone(KST).strftime(
+            "%Y%m%d%H%M%S" if force else "%Y%m%d%H"
+        )
         self.store.enqueue_telegram(TelegramOutboxItem(
-            id=f"admin-{hashlib.sha256(f'{key}|{hour_key}'.encode()).hexdigest()[:24]}",
+            id=f"admin-{hashlib.sha256(f'{key}|{time_key}'.encode()).hexdigest()[:24]}",
             audience=TelegramAudience.ADMIN,
             purpose=TelegramPurpose.SYSTEM,
             created_at=now,
@@ -742,6 +858,29 @@ class AlertDispatcher:
             next_attempt_at=now,
             messages=(OutgoingTelegramMessage(text=html.escape(text)),),
         ))
+
+    @staticmethod
+    def _live_kma_status(
+        now: dt.datetime,
+        current_impacts: tuple,
+        active_warning_count: int | None = None,
+    ) -> dict[str, object]:
+        return {
+            "kma_health": "LIVE",
+            "kma_last_success_at": now,
+            "kma_consecutive_errors": 0,
+            "kma_failure_category": "",
+            "kma_failure_summary": "",
+            "kma_failure_evidence": "",
+            "kma_failure_started_at": "",
+            "active_impact_count": len(current_impacts),
+            "active_warning_count": (
+                active_warning_count
+                if active_warning_count is not None
+                else len({item.warning_key for item in current_impacts})
+            ),
+            "affected_facility_count": len({item.facility_id for item in current_impacts}),
+        }
 
     def _enqueue_user_batch(
         self,
@@ -927,50 +1066,114 @@ class AlertDispatcher:
                     f"✅ SOLAPI 사용 가능 금액이 {balance.available:,}원으로 회복됐습니다.",
                 )
 
-    def _enqueue_daily_digest(self, now: dt.datetime) -> None:
+    def _enqueue_scheduled_reports(self, now: dt.datetime) -> None:
         local = now.astimezone(KST)
-        if local.hour != 9:
+        if local.hour not in {9, 18}:
             return
-        report_day = local.date() - dt.timedelta(days=1)
-        key = f"daily-digest-{report_day.isoformat()}"
+        slot = "09" if local.hour == 9 else "18"
+        key = f"operational-health-{local.date().isoformat()}-{slot}"
         if not self.store.admin_notice_due(key, now, dt.timedelta(days=2)):
             return
-        metrics = self.store.notification_metrics(report_day, report_day)
-        totals = metrics.get("totals", {})
-        if not isinstance(totals, dict):
-            totals = {}
-        status = dict(self.store.notification_status())
-        route = "Telegram 전용" if self.settings.user_delivery_mode == "telegram" else "SMS 우선"
-        balance_line = (
-            "SMS 비활성"
-            if self.settings.user_delivery_mode == "telegram"
-            else f"{int(status.get('solapi_available', 0)):,}원"
+        message = self._operational_report_message(
+            now,
+            include_metrics=slot == "09",
         )
-        message = OutgoingTelegramMessage(text=(
-            f"📊 <b>{report_day:%Y-%m-%d} 자동 알림 일일 요약</b>\n"
-            f"전달 경로 · {route}\n"
-            f"자동 관제 · {int(totals.get('poll_runs', 0))}회\n"
-            f"특보 변화 · 발효 {int(totals.get('warning_activated', 0))} · "
-            f"격상 {int(totals.get('warning_escalated', 0))} · "
-            f"해제 {int(totals.get('warning_cleared', 0))}\n"
-            f"문자 · 시도 {int(totals.get('sms_attempted', 0))} · "
-            f"수신완료 {int(totals.get('sms_delivered', 0))} · "
-            f"수신실패 {int(totals.get('sms_delivery_failed', 0))} · "
-            f"접수실패 {int(totals.get('sms_failed', 0))}\n"
-            f"사용자 Telegram · 주경로 {int(totals.get('telegram_user_primary_sent', 0))} · "
-            f"대체 {int(totals.get('telegram_user_fallback_sent', 0))} · "
-            f"실패 {int(totals.get('telegram_user_failed', 0))}\n"
-            f"SOLAPI 사용 가능 금액 · {balance_line}"
-        ), silent=True)
         self.store.enqueue_telegram(TelegramOutboxItem(
-            id=f"admin-digest-{report_day.isoformat()}",
+            id=f"admin-health-{local.date().isoformat()}-{slot}",
             audience=TelegramAudience.ADMIN,
-            purpose=TelegramPurpose.DAILY_DIGEST,
+            purpose=TelegramPurpose.HEARTBEAT,
             created_at=now,
-            expires_at=now + dt.timedelta(seconds=self.settings.telegram_retry_seconds),
+            expires_at=now
+            + dt.timedelta(seconds=self.settings.telegram_retry_seconds),
             next_attempt_at=now,
             messages=(message,),
         ))
+
+    def _operational_report_message(
+        self,
+        now: dt.datetime,
+        *,
+        include_metrics: bool,
+        test: bool = False,
+    ) -> OutgoingTelegramMessage:
+        local = now.astimezone(KST)
+        status = dict(self.store.notification_status())
+        if self.health_probe is None:
+            probe = OperationalHealthReport(now, ())
+        else:
+            try:
+                probe = self.health_probe.check(now)
+            except Exception as exc:
+                probe = OperationalHealthReport(
+                    now,
+                    (HealthCheck("운영 경로 점검", False, type(exc).__name__),),
+                )
+
+        kma_ok = status.get("kma_health") == "LIVE"
+        mode_ok = self.settings.automation_mode == "live"
+        healthy = probe.healthy and kma_ok and mode_ok
+        title = (
+            "자동 알림 일일 요약 + 운영 상태"
+            if include_metrics
+            else "운영 상태 보고"
+        )
+        if test:
+            title = "[시험] " + title
+        icon = "✅" if healthy else "⚠️"
+        lines = [
+            f"{icon} <b>{html.escape(title)}</b>",
+            f"기준 · {local:%Y-%m-%d %H:%M}",
+        ]
+        if include_metrics:
+            report_day = local.date() - dt.timedelta(days=1)
+            metrics = self.store.notification_metrics(report_day, report_day)
+            totals = metrics.get("totals", {})
+            if not isinstance(totals, dict):
+                totals = {}
+            lines.extend((
+                f"\n<b>{report_day:%Y-%m-%d} 전날 실적</b>",
+                f"자동 관제 · {int(totals.get('poll_runs', 0))}회",
+                f"특보 변화 · 발효 {int(totals.get('warning_activated', 0))} · "
+                f"격상 {int(totals.get('warning_escalated', 0))} · "
+                f"해제 {int(totals.get('warning_cleared', 0))}",
+                f"문자 · 시도 {int(totals.get('sms_attempted', 0))} · "
+                f"수신완료 {int(totals.get('sms_delivered', 0))} · "
+                f"실패 {int(totals.get('sms_delivery_failed', 0)) + int(totals.get('sms_failed', 0))}",
+                f"사용자 Telegram · 주경로 {int(totals.get('telegram_user_primary_sent', 0))} · "
+                f"대체 {int(totals.get('telegram_user_fallback_sent', 0))} · "
+                f"실패 {int(totals.get('telegram_user_failed', 0))}",
+            ))
+        lines.append("\n<b>현재 시스템</b>")
+        if probe.checks:
+            for check in probe.checks:
+                latency = (
+                    f" · {check.latency_ms}ms"
+                    if check.latency_ms is not None
+                    else ""
+                )
+                lines.append(
+                    f"{_health_icon(check.healthy)} {html.escape(check.name)} · "
+                    f"{html.escape(check.detail)}{latency}"
+                )
+        lines.extend((
+            f"{_health_icon(mode_ok)} 자동 관제 · "
+            f"{html.escape(self.settings.automation_mode)} · "
+            f"최근 {html.escape(_format_status_time(status.get('last_run_at')))}",
+            f"{_health_icon(kma_ok)} KMA · "
+            f"{html.escape(str(status.get('kma_health', '미확인')))} · "
+            f"최근 정상 {html.escape(_format_status_time(status.get('kma_last_success_at')))} · "
+            f"연속 실패 {int(status.get('kma_consecutive_errors', 0))}회",
+            f"특보·시설 · 활성 {int(status.get('active_warning_count', 0))}건 · "
+            f"영향 {int(status.get('affected_facility_count', 0))}곳",
+            f"사용자 Telegram 최근 발송 · "
+            f"{html.escape(str(status.get('last_user_telegram_result', '기록 없음')))} · "
+            f"{html.escape(_format_status_time(status.get('last_user_telegram_at')))}",
+            f"배포 · {html.escape(self.settings.app_revision)}",
+        ))
+        return OutgoingTelegramMessage(
+            text="\n".join(lines),
+            silent=healthy,
+        )
 
     def _send_batch_summary(
         self,
@@ -1114,3 +1317,28 @@ def _balance_level(balance: SolapiBalance, settings: AlertSettings) -> str:
     if balance.available < settings.balance_warning:
         return "WARNING"
     return "NORMAL"
+
+
+def _health_icon(healthy: bool) -> str:
+    return "✅" if healthy else "❌"
+
+
+def _format_status_time(value: object) -> str:
+    parsed = _parse_datetime(value)
+    return parsed.astimezone(KST).strftime("%m-%d %H:%M") if parsed else "기록 없음"
+
+
+def _duration_text(value: dt.timedelta) -> str:
+    seconds = max(0, int(value.total_seconds()))
+    hours, remainder = divmod(seconds, 3600)
+    minutes = remainder // 60
+    if hours:
+        return f"{hours}시간 {minutes}분"
+    return f"{minutes}분"
+
+
+def _category_label(value: str) -> str:
+    try:
+        return KmaFailureCategory(value).label
+    except ValueError:
+        return KmaFailureCategory.UNKNOWN.label

@@ -9,6 +9,7 @@ from typing import Any, Mapping
 from safety_dashboard.domain.enums import (
     ContextStatus,
     DataHealth,
+    KmaFailureCategory,
     RiskGrade,
     WeatherLayerKind,
     WarningLevel,
@@ -57,6 +58,18 @@ class WarningFeed:
     health: DataHealth
     fetched_at: dt.datetime
     message: str = ""
+    diagnostic: KmaFailureDiagnostic | None = None
+
+
+@dataclass(frozen=True)
+class KmaFailureDiagnostic:
+    """관리자 알림에만 사용하는 KMA 실패 진단."""
+
+    category: KmaFailureCategory
+    summary: str
+    evidence: str
+    cause_type: str = ""
+    http_status: int | None = None
 
 
 @dataclass(frozen=True)

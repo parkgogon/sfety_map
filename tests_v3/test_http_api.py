@@ -152,6 +152,12 @@ class MonitoringApiTests(unittest.TestCase):
             None, DataHealth.FALLBACK, "내장 경계",
         )
         self.assertIsNone(payload["summary"])
+        self.assertEqual(
+            payload["status"]["detail"],
+            "KMA 특보 자료 수신이 지연되고 있습니다. "
+            "공식 특보를 함께 확인해 주세요.",
+        )
+        self.assertNotIn("KMA 장애", payload["status"]["detail"])
         self.assertTrue(all(item["grade"] == "UNAVAILABLE" for item in payload["facilities"]))
         self.assertTrue(all(item["grade_label"] == "조회 불가" for item in payload["facilities"]))
         self.assertTrue(all(item["grade_color"] == "#667085" for item in payload["facilities"]))

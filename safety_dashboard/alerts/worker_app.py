@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 
 from safety_dashboard.adapters.firestore_alerts import FirestoreAlertStore
 from safety_dashboard.adapters.google_sheet_contacts import GoogleSheetContactProvider
+from safety_dashboard.adapters.kma_diagnostics import KmaFailureDiagnoser
+from safety_dashboard.adapters.operational_health import HttpSystemHealthProbe
 from safety_dashboard.adapters.solapi import SolapiNotifier
 from safety_dashboard.adapters.telegram import TelegramNotifier
 from safety_dashboard.alerts.service import AlertDispatcher
@@ -72,6 +74,11 @@ def _dispatcher() -> AlertDispatcher:
         telegram=admin_telegram,
         user_telegram=user_telegram,
         balance_provider=solapi,
+        health_probe=HttpSystemHealthProbe(
+            alert_settings.dashboard_base_url,
+            user_telegram,
+        ),
+        kma_diagnoser=KmaFailureDiagnoser(),
     )
 
 
@@ -105,6 +112,10 @@ def create_worker_app(dispatcher: AlertDispatcher | None = None) -> FastAPI:
         return (dispatcher or _dispatcher()).send_telegram_test(
             TelegramAudience.USER
         ).as_dict()
+
+    @application.post("/internal/v1/test/heartbeat")
+    def test_heartbeat() -> dict[str, object]:
+        return (dispatcher or _dispatcher()).send_heartbeat_test().as_dict()
 
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:

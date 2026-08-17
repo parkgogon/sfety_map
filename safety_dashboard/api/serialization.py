@@ -8,6 +8,7 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 from safety_dashboard.adapters.cctv import OFFICIAL_MAP_URL, SOURCE_PAGE_URL
+from safety_dashboard.adapters.kma import KMA_PUBLIC_DELAY_MESSAGE
 from safety_dashboard.application.contacts import public_contact
 from safety_dashboard.application.cctv_directions import direction_label
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
@@ -299,7 +300,11 @@ def serialize_monitoring(
         "status": {
             "health": snapshot.warning_feed.health.value,
             "fetched_at": _iso(snapshot.warning_feed.fetched_at),
-            "detail": snapshot.warning_feed.message,
+            "detail": (
+                KMA_PUBLIC_DELAY_MESSAGE
+                if feed_unavailable
+                else snapshot.warning_feed.message
+            ),
             "zone_health": zone_health.value,
             "zone_detail": zone_detail,
         },

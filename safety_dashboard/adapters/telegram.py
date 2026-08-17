@@ -18,11 +18,45 @@ class TelegramResult:
     message: str
 
 
+@dataclass(frozen=True)
+class TelegramChatResult:
+    success: bool
+    title: str = ""
+    message: str = ""
+
+
 class TelegramNotifier:
     def __init__(self, bot_token: str, chat_id: str, timeout: float = 10) -> None:
         self.bot_token = bot_token.strip()
         self.chat_id = chat_id.strip()
         self.timeout = timeout
+
+    def check_chat(self) -> TelegramChatResult:
+        """메시지를 게시하지 않고 봇의 채널 접근 권한만 확인합니다."""
+
+        if not self.bot_token or not self.chat_id:
+            return TelegramChatResult(False, message="Telegram 설정값이 없습니다.")
+        try:
+            response = requests.post(
+                f"https://api.telegram.org/bot{self.bot_token}/getChat",
+                json={"chat_id": self.chat_id},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            body = response.json()
+            if not body.get("ok"):
+                raise ValueError("Telegram API가 채널 조회를 거부했습니다.")
+            result = body.get("result") or {}
+            return TelegramChatResult(
+                True,
+                title=str(result.get("title") or result.get("username") or "").strip(),
+                message="채널 접근 가능",
+            )
+        except (requests.RequestException, ValueError) as exc:
+            return TelegramChatResult(
+                False,
+                message=f"채널 접근 실패 ({type(exc).__name__})",
+            )
 
     def send_batch(
         self,
