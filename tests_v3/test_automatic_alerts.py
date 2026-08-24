@@ -1,7 +1,9 @@
 import datetime as dt
 import dataclasses
 import hashlib
+import os
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -30,7 +32,11 @@ from safety_dashboard.alerts.memory_store import InMemoryAlertStore
 from safety_dashboard.alerts.service import AlertDispatcher, DispatchSummary
 from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.alerts.worker_app import create_worker_app
-from safety_dashboard.alerts.transitions import detect_transitions, impacts_from_snapshot
+from safety_dashboard.alerts.transitions import (
+    detect_transitions,
+    filter_impacts_by_warning_type,
+    impacts_from_snapshot,
+)
 from safety_dashboard.api.app import create_app
 from safety_dashboard.application.monitoring import MonitoringService
 from safety_dashboard.domain import (
@@ -183,7 +189,13 @@ class AutomaticAlertTests(unittest.TestCase):
         )
         cls.now = dt.datetime(2026, 8, 12, 10, 0, tzinfo=KST)
 
-    def snapshot(self, raw_level=None, health=DataHealth.LIVE, minute=0):
+    def snapshot(
+        self,
+        raw_level=None,
+        health=DataHealth.LIVE,
+        minute=0,
+        warning_type="강풍",
+    ):
         warnings = ()
         if raw_level:
             level = {
@@ -193,7 +205,7 @@ class AutomaticAlertTests(unittest.TestCase):
             warnings = (
                 Warning(
                     f"W-{raw_level}-{minute}", "기상청", "L1070000", "L1070300",
-                    "경상북도", "구미시", "강풍", raw_level, level,
+                    "경상북도", "구미시", warning_type, raw_level, level,
                     command="발표", issued_at=self.now.replace(minute=minute),
                     effective_at=self.now.replace(minute=minute),
                 ),
@@ -271,6 +283,74 @@ class AutomaticAlertTests(unittest.TestCase):
             {item.kind.value for item in detect_transitions(warning, (), self.now)},
             {"CLEARED"},
         )
+
+    def test_warning_type_filter_excludes_tropical_night_without_changing_snapshot(self):
+        snapshot = self.snapshot("주의보", warning_type="열대야")
+        impacts = impacts_from_snapshot(snapshot, self.policy)
+
+        self.assertEqual(len(impacts), 2)
+        self.assertTrue(all(item.warning_type == "열대야" for item in impacts))
+        self.assertEqual(
+            filter_impacts_by_warning_type(
+                impacts,
+                excluded_warning_types=("열대야",),
+            ),
+            (),
+        )
+        self.assertEqual(
+            len(filter_impacts_by_warning_type(
+                impacts,
+                included_warning_types=("열대야", "호우"),
+            )),
+            2,
+        )
+
+    def test_warning_filter_change_rebaselines_without_false_clear(self):
+        store = InMemoryAlertStore()
+        user = _Telegram()
+        unfiltered, _ = self.dispatcher(
+            self.snapshot(),
+            store=store,
+            settings=self.settings(
+                user_delivery_mode="telegram",
+                excluded_warning_types=(),
+            ),
+            user_telegram=user,
+        )
+        self.assertEqual(unfiltered.run(self.now).status, "BASELINED")
+        unfiltered.snapshot_provider.snapshot = self.snapshot(
+            "주의보", warning_type="열대야"
+        )
+        self.assertEqual(
+            unfiltered.run(self.now + dt.timedelta(minutes=5)).status,
+            "DISPATCHED",
+        )
+        sent_before_filter_change = len(user.batches)
+
+        filtered, _ = self.dispatcher(
+            self.snapshot("주의보", warning_type="열대야"),
+            store=store,
+            settings=self.settings(
+                user_delivery_mode="telegram",
+                excluded_warning_types=("열대야",),
+            ),
+            user_telegram=user,
+        )
+        self.assertEqual(
+            filtered.run(self.now + dt.timedelta(minutes=10)).status,
+            "BASELINED",
+        )
+        self.assertEqual(len(user.batches), sent_before_filter_change)
+
+    def test_warning_type_environment_lists_support_pipe_separator(self):
+        with patch.dict(os.environ, {
+            "ALERT_INCLUDED_WARNING_TYPES": "호우|태풍|호우",
+            "ALERT_EXCLUDED_WARNING_TYPES": "열대야|안개",
+        }):
+            settings = AlertSettings.from_environment()
+
+        self.assertEqual(settings.included_warning_types, ("호우", "태풍"))
+        self.assertEqual(settings.excluded_warning_types, ("열대야", "안개"))
 
     def test_same_recipient_gets_one_message_and_repeated_poll_does_not_duplicate(self):
         store = InMemoryAlertStore()

@@ -65,6 +65,35 @@ def impacts_from_snapshot(
     return tuple(sorted(result, key=lambda item: item.key))
 
 
+def filter_impacts_by_warning_type(
+    impacts: Iterable[FacilityImpact],
+    included_warning_types: Iterable[str] = (),
+    excluded_warning_types: Iterable[str] = (),
+) -> tuple[FacilityImpact, ...]:
+    """자동 전파 대상으로 허용된 특보 영향만 남깁니다.
+
+    빈 포함목록은 모든 특보를 뜻하며 제외목록이 항상 우선합니다. 이 필터는
+    자동 알림 상태에만 적용되고 관제 snapshot이나 위험도 계산은 변경하지 않습니다.
+    """
+
+    included = {
+        item.strip().casefold()
+        for item in included_warning_types
+        if item.strip()
+    }
+    excluded = {
+        item.strip().casefold()
+        for item in excluded_warning_types
+        if item.strip()
+    }
+    return tuple(
+        item
+        for item in impacts
+        if (not included or item.warning_type.strip().casefold() in included)
+        and item.warning_type.strip().casefold() not in excluded
+    )
+
+
 def detect_transitions(
     previous: Sequence[FacilityImpact],
     current: Sequence[FacilityImpact],

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 
 from safety_dashboard.api.settings import _secret
@@ -36,6 +37,8 @@ class AlertSettings:
     balance_critical: int = 3000
     pending_seconds: int = 1800
     telegram_retry_seconds: int = 1800
+    included_warning_types: tuple[str, ...] = ()
+    excluded_warning_types: tuple[str, ...] = ("열대야",)
 
     @classmethod
     def from_environment(cls) -> "AlertSettings":
@@ -53,6 +56,14 @@ class AlertSettings:
                 return max(minimum, int(os.getenv(name, str(default))))
             except ValueError:
                 return default
+
+        def warning_types(name: str, default: str = "") -> tuple[str, ...]:
+            raw = os.getenv(name, default)
+            return tuple(dict.fromkeys(
+                item.strip()
+                for item in re.split(r"[,|;\n]+", raw)
+                if item.strip()
+            ))
 
         daily_cap = integer("ALERT_DAILY_CAP", 100, 1)
         cap_warning = min(
@@ -129,5 +140,11 @@ class AlertSettings:
             pending_seconds=integer("ALERT_PENDING_SECONDS", 1800, 60),
             telegram_retry_seconds=integer(
                 "ALERT_TELEGRAM_RETRY_SECONDS", 1800, 300
+            ),
+            included_warning_types=warning_types(
+                "ALERT_INCLUDED_WARNING_TYPES"
+            ),
+            excluded_warning_types=warning_types(
+                "ALERT_EXCLUDED_WARNING_TYPES", "열대야"
             ),
         )

@@ -56,6 +56,8 @@ GitHub Repository variables는 다음처럼 시작한다.
 ALERT_AUTOMATION_ENABLED=true
 ALERT_AUTOMATION_MODE=preview
 ALERT_USER_DELIVERY_MODE=telegram
+ALERT_INCLUDED_WARNING_TYPES=
+ALERT_EXCLUDED_WARNING_TYPES=열대야
 DASHBOARD_BASE_URL=https://keco-safety-map.web.app
 ```
 
@@ -67,6 +69,18 @@ DASHBOARD_BASE_URL=https://keco-safety-map.web.app
 - `ALERT_AUTOMATION_MODE=live`: 최초 1회는 현재 특보를 기준 상태로만
   저장하고, 그 다음 변화부터 전파
 - `ALERT_AUTOMATION_MODE=paused`: Scheduler는 유지하되 감지·전파 중지
+
+자동 알림의 특보 종류는 다음 두 GitHub Repository variable로
+조정한다. 지도·위험도·관제 화면에는 영향을 주지 않는다.
+
+- `ALERT_INCLUDED_WARNING_TYPES`: 비워 두면 전체, 값이 있으면 나열한
+  특보만 자동 알림
+- `ALERT_EXCLUDED_WARNING_TYPES`: 나열한 특보를 자동 알림에서 제외
+- 여러 특보는 쉼표 대신 `|`로 구분한다. 예:
+  `열대야|안개|황사`
+- 포함·제외 양쪽에 있으면 제외가 우선한다.
+- 필터를 바꾸고 재배포하면 현재 특보를 새 기준 상태로 등록하며,
+  제외된 특보를 `해제`로 잘못 알리지 않는다.
 
 전달 경로만 바꾸는 것은 특보 기준 상태를 초기화하지 않으며,
 이미 발효 중인 특보를 다시 발송하지 않는다.

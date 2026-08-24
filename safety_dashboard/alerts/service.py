@@ -45,6 +45,7 @@ from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.alerts.transitions import (
     deduplicate_transitions,
     detect_transitions,
+    filter_impacts_by_warning_type,
     impacts_from_snapshot,
     valid_pending_transitions,
 )
@@ -258,7 +259,10 @@ class AlertDispatcher:
 
     def _run_locked(self, now: dt.datetime) -> DispatchSummary:
         mode = self.settings.automation_mode
-        state_key = f"{mode}|{self.policy.version}"
+        state_key = (
+            f"{mode}|{self.policy.version}|"
+            f"{_warning_filter_fingerprint(self.settings)}"
+        )
         day = now.astimezone(KST).date()
         if mode == "paused":
             self.store.record_run(day, {"paused_poll_runs": 1})
@@ -310,7 +314,11 @@ class AlertDispatcher:
                 force=True,
             )
 
-        current_impacts = impacts_from_snapshot(snapshot, self.policy)
+        current_impacts = filter_impacts_by_warning_type(
+            impacts_from_snapshot(snapshot, self.policy),
+            self.settings.included_warning_types,
+            self.settings.excluded_warning_types,
+        )
         initialized, previous_mode, previous_impacts = self.store.load_state()
         new_transitions = (
             detect_transitions(previous_impacts, current_impacts, now)
@@ -1226,6 +1234,25 @@ class AlertDispatcher:
             batch_id=batch.id,
             messages=(OutgoingTelegramMessage(text=text),),
         ))
+
+
+def _warning_filter_fingerprint(settings: AlertSettings) -> str:
+    """필터 변경 시 현재 상태를 다시 기준화해 거짓 해제 알림을 막습니다."""
+
+    included = ",".join(sorted(
+        item.strip().casefold()
+        for item in settings.included_warning_types
+        if item.strip()
+    ))
+    excluded = ",".join(sorted(
+        item.strip().casefold()
+        for item in settings.excluded_warning_types
+        if item.strip()
+    ))
+    digest = hashlib.sha256(
+        f"include={included}|exclude={excluded}".encode("utf-8")
+    ).hexdigest()[:12]
+    return f"alerts-{digest}"
 
 
 def _batch(
