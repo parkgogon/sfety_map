@@ -78,6 +78,8 @@ DASHBOARD_BASE_URL=https://keco-safety-map.web.app
 - `ALERT_EXCLUDED_WARNING_TYPES`: 나열한 특보를 자동 알림에서 제외
 - 여러 특보는 쉼표 대신 `|`로 구분한다. 예:
   `열대야|안개|황사`
+- 제외 없이 모든 특보를 다시 받으려면 `ALERT_EXCLUDED_WARNING_TYPES=-`로
+  설정한다.
 - 포함·제외 양쪽에 있으면 제외가 우선한다.
 - 필터를 바꾸고 재배포하면 현재 특보를 새 기준 상태로 등록하며,
   제외된 특보를 `해제`로 잘못 알리지 않는다.

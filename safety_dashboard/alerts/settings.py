@@ -59,6 +59,8 @@ class AlertSettings:
 
         def warning_types(name: str, default: str = "") -> tuple[str, ...]:
             raw = os.getenv(name, default)
+            if raw.strip().casefold() in {"", "-", "none", "없음"}:
+                return ()
             return tuple(dict.fromkeys(
                 item.strip()
                 for item in re.split(r"[,|;\n]+", raw)

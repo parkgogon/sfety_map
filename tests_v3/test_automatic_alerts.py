@@ -352,6 +352,15 @@ class AutomaticAlertTests(unittest.TestCase):
         self.assertEqual(settings.included_warning_types, ("호우", "태풍"))
         self.assertEqual(settings.excluded_warning_types, ("열대야", "안개"))
 
+        with patch.dict(os.environ, {
+            "ALERT_INCLUDED_WARNING_TYPES": "-",
+            "ALERT_EXCLUDED_WARNING_TYPES": "없음",
+        }):
+            settings = AlertSettings.from_environment()
+
+        self.assertEqual(settings.included_warning_types, ())
+        self.assertEqual(settings.excluded_warning_types, ())
+
     def test_same_recipient_gets_one_message_and_repeated_poll_does_not_duplicate(self):
         store = InMemoryAlertStore()
         sms = _Sms()
