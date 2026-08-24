@@ -62,7 +62,7 @@ class HealthProbe:
         return OperationalHealthReport(now, (
             HealthCheck("사용자 웹", True, "HTTP 200", 80),
             HealthCheck("공개 API", True, "HTTP 200", 40),
-            HealthCheck("사용자 Telegram", True, "채널 접근 가능"),
+            HealthCheck("사용자 Telegram", True, "대화방 접근 가능"),
         ))
 
 

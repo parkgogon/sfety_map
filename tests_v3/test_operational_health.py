@@ -32,7 +32,7 @@ class OperationalHealthTests(unittest.TestCase):
         telegram = Mock()
         telegram.check_chat.return_value = Mock(
             success=True,
-            title="사용자 채널",
+            title="시설담당자 그룹",
             message="",
         )
         report = HttpSystemHealthProbe(

@@ -156,7 +156,7 @@ class _HealthProbe:
         return OperationalHealthReport(now, (
             HealthCheck("사용자 웹", self.healthy, "HTTP 200", 120),
             HealthCheck("공개 API", self.healthy, "HTTP 200", 80),
-            HealthCheck("사용자 Telegram", self.healthy, "채널 접근 가능"),
+            HealthCheck("사용자 Telegram", self.healthy, "대화방 접근 가능"),
         ))
 
 
@@ -872,7 +872,7 @@ class AutomaticAlertTests(unittest.TestCase):
         self.assertEqual(len(admin.batches), 1)
         self.assertEqual(len(user.batches), 1)
         self.assertIn("관리자방", admin.batches[0][0].text)
-        self.assertIn("사용자 채널", user.batches[0][0].text)
+        self.assertIn("시설담당자 그룹", user.batches[0][0].text)
 
     def test_daily_nine_oclock_summary_is_sent_once(self):
         store = InMemoryAlertStore()

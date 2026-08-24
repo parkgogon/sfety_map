@@ -105,7 +105,7 @@ def build_alert_batch_telegram_payloads(
     fallback_reason: str = "",
     max_length: int = MAX_TELEGRAM_LENGTH,
 ) -> tuple[OutgoingTelegramMessage, ...]:
-    """자동 감지 batch를 개인정보 없는 사용자 채널 메시지로 만든다."""
+    """자동 감지 batch를 개인정보 없는 시설담당자 그룹 메시지로 만든다."""
 
     by_facility: dict[str, list[AlertTransition]] = defaultdict(list)
     for transition in batch.transitions:

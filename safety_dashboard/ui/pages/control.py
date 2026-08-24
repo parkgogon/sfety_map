@@ -403,7 +403,7 @@ if not filtered_affected:
         with st.container(key="target-action-controls"):
             empty_action_columns = st.columns(2)
             empty_telegram = empty_action_columns[0].form_submit_button(
-                "사용자 채널 수동 전파",
+                "시설담당자 그룹 수동 전파",
                 type="primary",
                 disabled=feed_failed,
                 width="stretch",
@@ -492,7 +492,7 @@ else:
         with st.container(key="target-action-controls"):
             action_columns = st.columns(2)
             telegram_clicked = action_columns[0].form_submit_button(
-                "사용자 채널 수동 전파",
+                "시설담당자 그룹 수동 전파",
                 type="primary",
                 disabled=feed_failed,
                 width="stretch",

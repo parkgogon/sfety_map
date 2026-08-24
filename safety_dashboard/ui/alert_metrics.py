@@ -189,7 +189,7 @@ def render_alert_metrics(*, standalone: bool = False) -> None:
             int(totals.get("telegram_user_fallback_sent", 0)),
         )
         telegram_metrics[2].metric(
-            "사용자 채널 실패",
+            "담당자 그룹 실패",
             int(totals.get("telegram_user_failed", 0)),
         )
         telegram_metrics[3].metric(
@@ -361,7 +361,7 @@ def _render_event_history(
             "출처": source_labels.get(str(item.get("source", "")), "-"),
             "사건": str(item.get("category") or item.get("event") or "-"),
             "시설": f"{int(item.get('facility_count', 0))}곳",
-            "채널": str(item.get("channel", "-")),
+            "전달 경로": str(item.get("channel", "-")),
             "상태": status_labels.get(
                 str(item.get("status", "")), str(item.get("status", "-"))
             ),

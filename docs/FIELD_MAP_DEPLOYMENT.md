@@ -80,8 +80,8 @@ GCP_PROJECT_ID=keco-safety-map
 GCP_ARTIFACT_REPOSITORY=safety-dashboard
 ```
 
-자동 시설담당자 알림은 기본 배포에서 꺼져 있다. 관리자·사용자
-Telegram 채널 준비 후 `ALERT_AUTOMATION_ENABLED=true`를 설정해야 비공개 작업자와
+자동 시설담당자 알림은 기본 배포에서 꺼져 있다. 관리자방·시설담당자
+Telegram 그룹 준비 후 `ALERT_AUTOMATION_ENABLED=true`를 설정해야 비공개 작업자와
 5분 Scheduler가 배포된다. 전체 절차는
 [`AUTOMATIC_ALERTS.md`](AUTOMATIC_ALERTS.md)를 따른다.
 

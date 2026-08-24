@@ -30,7 +30,7 @@ _MANUAL_CATEGORY_LABELS = {
 }
 
 
-@st.dialog("사용자 채널 수동 전파", width="large")
+@st.dialog("시설담당자 그룹 수동 전파", width="large")
 def telegram_dialog(
     selected_snapshot: DashboardSnapshot,
     scope_label: str,
@@ -46,7 +46,7 @@ def telegram_dialog(
     previous_result = st.session_state.get(result_key)
     if isinstance(previous_result, dict):
         if previous_result.get("status") == "SENT":
-            st.success("사용자 채널에 수동 전파를 완료했습니다.")
+            st.success("시설담당자 그룹에 수동 전파를 완료했습니다.")
         else:
             st.warning("즉시 발송에 실패해 최대 30분 재시도를 예약했습니다.")
         st.caption(f"요청 ID · {previous_result.get('dispatch_id', '-')}")
@@ -69,12 +69,12 @@ def telegram_dialog(
             st.rerun()
         return
     st.caption(
-        f"수신 채널 · K-ECO 시설 재난특보 · 조회 범위 · {scope_label}"
+        f"수신 그룹 · K-ECO 시설 재난특보 · 조회 범위 · {scope_label}"
     )
     if simulation:
         category = ManualTelegramCategory.DRILL
         st.warning(
-            "모의훈련 자료입니다. 사용자 채널에 실제 재난이 아닌 훈련 메시지로 "
+            "모의훈련 자료입니다. 시설담당자 그룹에 실제 재난이 아닌 훈련 메시지로 "
             "명확히 표시해 전파합니다."
         )
     else:
@@ -136,7 +136,7 @@ def telegram_dialog(
     )
     st.markdown("#### 최종 확인")
     confirmed = st.checkbox(
-        f"사용자 채널에 시설 {len(selected_snapshot.facilities)}곳, "
+        f"시설담당자 그룹에 시설 {len(selected_snapshot.facilities)}곳, "
         f"메시지 {len(messages)}건을 수동 전파합니다.",
         key=f"manual-confirm-{fingerprint}",
     )
@@ -178,7 +178,7 @@ def telegram_dialog(
         and (not note_required or note.strip())
     )
     if st.button(
-        "사용자 채널에 수동 전파",
+        "시설담당자 그룹에 수동 전파",
         type="primary",
         disabled=not can_send,
         key=f"manual-send-{fingerprint}",

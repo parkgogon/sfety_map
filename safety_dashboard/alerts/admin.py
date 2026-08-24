@@ -162,7 +162,7 @@ class AlertAdminService:
                 "detail": str(existing.get("last_detail", "이미 접수된 요청입니다.")),
             }
         if self.user_telegram is None:
-            raise AlertAdminConfigurationError("사용자 Telegram 채널이 설정되지 않았습니다.")
+            raise AlertAdminConfigurationError("시설담당자 Telegram 그룹이 설정되지 않았습니다.")
         duplicate = self.store.recent_duplicate(
             value.fingerprint,
             value.created_at - dt.timedelta(minutes=30),
@@ -382,7 +382,7 @@ class AlertAdminService:
     ) -> None:
         message = OutgoingTelegramMessage(
             text=(
-                f"{'✅' if success else '🚨'} <b>사용자 채널 수동 전파 "
+                f"{'✅' if success else '🚨'} <b>시설담당자 그룹 수동 전파 "
                 f"{'완료' if success else '실패'}</b>\n"
                 f"구분 · {html.escape(value.category.label)}\n"
                 f"시설 · {len(set(value.facility_ids))}곳\n"

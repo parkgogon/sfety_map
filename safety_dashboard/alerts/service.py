@@ -215,8 +215,8 @@ class AlertDispatcher:
             )
         result = notifier.send_batch((OutgoingTelegramMessage(
             text=(
-                "🧪 <b>K-ECO Telegram 채널 시험</b>\n"
-                f"대상 · {'관리자방' if audience is TelegramAudience.ADMIN else '사용자 채널'}\n"
+                "🧪 <b>K-ECO Telegram 연결 시험</b>\n"
+                f"대상 · {'관리자방' if audience is TelegramAudience.ADMIN else '시설담당자 그룹'}\n"
                 f"시각 · {current_time:%Y-%m-%d %H:%M}\n"
                 "실제 재난 알림이 아닙니다."
             ),

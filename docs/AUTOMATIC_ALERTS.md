@@ -5,7 +5,7 @@
 `chat_id`에 연결해 용도를 분리한다.
 
 - 관리자방: KMA·SOLAPI·Telegram 전달 결과, 장애, 잔액, 운영 상태
-- 사용자 비공개 채널: 시설·특보·등급·행동 지침·대시보드 링크
+- 시설담당자 비공개 그룹: 시설·특보·등급·행동 지침·대시보드 링크와 현장 회신
 
 기본 사용자 전달 경로는 `telegram`이다. `sms`로 바꾸면 SOLAPI LMS를
 우선 발송하고, 문자 경로가 사용 불가능한 사건만 사용자 Telegram에
@@ -14,11 +14,21 @@
 ## 1. Telegram 두 곳 준비
 
 1. 기존 관리자방은 그대로 사용한다.
-2. 시설담당자용 **비공개 채널**을 새로 만든다.
-3. 기존 봇을 사용자 채널의 관리자로 추가하고 `메시지 게시`만
-   허용한다.
-4. 관리자방과 사용자 채널의 `chat_id`를 각각 확인한다.
-5. 사용자 채널은 `가입 요청 후 승인` 초대 링크를 배포한다.
+2. 기존 채널에 연결했던 `K-ECO 시설 재난특보 의견` 토론 그룹의 연결을
+   해제하고 그룹 이름을 `K-ECO 시설 재난특보`로 바꾼다.
+3. 그룹을 비공개 일반 대화방으로 유지하고 담당자의 메시지·사진·파일·링크
+   전송을 허용한다. 그룹 정보 변경·고정·구성원 관리는 관리자만 허용한다.
+4. 기존 봇을 시설담당자 그룹의 관리자로 추가하되 불필요한 삭제·차단 권한은
+   부여하지 않는다.
+5. 관리자방과 시설담당자 그룹의 `chat_id`를 각각 확인한다.
+6. 신규 담당자에게는 관리자 승인 없이 즉시 가입하는 기간·횟수 제한 초대
+   링크를 개별 전달하고, 가입 완료 후 링크를 폐기한다.
+
+시설담당자 그룹에서는 봇의 공식 특보와 담당자 대화가 같은 시간순 대화에
+표시된다. 담당자는 관련 특보 메시지에 답장해 점검 결과를 남긴다. 봇은 수신
+업데이트를 처리하지 않으므로 담당자 대화를 읽거나 저장하지 않는다. 기존
+채널은 이전 기록용으로 보관하고 그룹 전환 확인 후 봇·초대 링크·개인 메시지를
+비활성화한다.
 
 Secret Manager에 다음 값을 둔다.
 
@@ -29,12 +39,42 @@ TELEGRAM_USER_CHAT_ID
 ```
 
 `TELEGRAM_ADMIN_CHAT_ID`가 없으면 기존 `TELEGRAM_CHAT_ID`를 관리자방으로
-계속 사용한다. 사용자 채널은 잘못된 방으로 전송하지 않도록
+계속 사용한다. 시설담당자 그룹은 잘못된 방으로 전송하지 않도록
 `TELEGRAM_USER_CHAT_ID`의 대체값을 두지 않는다.
 배포 워크플로는 기본적으로 기존 `TELEGRAM_CHAT_ID` Secret을
 관리자방에 연결한다. 새 `TELEGRAM_ADMIN_CHAT_ID` Secret으로 바꾸려면
 GitHub Repository variable `TELEGRAM_ADMIN_SECRET_NAME`을
 `TELEGRAM_ADMIN_CHAT_ID`로 설정한다.
+
+시설담당자 그룹 ID를 바꿀 때는 그룹에서 `/id` 명령을 한 번 보낸 뒤 기존
+봇의 `getUpdates` 결과에서 `group` 또는 `supergroup`의 음수 `chat.id`를
+확인한다. 기존 Secret은 삭제하거나 다시 만들지 않고 새 버전을 추가한다.
+
+```bash
+gcloud config set project keco-safety-map
+
+BOT_TOKEN="$(gcloud secrets versions access latest \
+  --secret=TELEGRAM_BOT_TOKEN --project=keco-safety-map)"
+
+curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates" | jq -r '
+  .result[]
+  | select(.message.chat.type == "group"
+        or .message.chat.type == "supergroup")
+  | [.message.chat.title, .message.chat.id]
+  | @tsv
+' | tail -1
+
+unset BOT_TOKEN
+
+printf '%s' '확인된_그룹_ID' |
+  gcloud secrets versions add TELEGRAM_USER_CHAT_ID \
+    --project=keco-safety-map --data-file=-
+```
+
+Secret 새 버전은 실행 중인 Cloud Run 리비전에 자동 반영되지 않으므로 GitHub
+Actions의 `Test and deploy field map`을 `main` 브랜치에서 수동 실행한다. 이
+워크플로가 공개 API와 자동 알림 작업자 양쪽에 `latest` 버전을 연결한다. 그룹
+ID 변경은 자동 관제 기준 상태를 초기화하지 않는다.
 
 중앙 관제의 수동 상황전파는 브라우저에서 봇을 직접 호출하지 않고 공개 API의
 토큰 보호 관리자 경로를 사용한다. Streamlit에는 관리자 API 연결값만 둔다.
@@ -106,7 +146,7 @@ admin_api_url = "https://<safety-dashboard-api Cloud Run 주소>"
 admin_token = "<ALERT_ADMIN_TOKEN과 같은 값>"
 ```
 
-## 3. 채널 시험
+## 3. Telegram 연결 시험
 
 작업자는 비공개 Cloud Run이므로 Cloud Shell에서 ID 토큰으로 호출한다.
 
@@ -119,7 +159,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   "$WORKER_URL/internal/v1/test/telegram/admin"
 
-# 사용자 채널 시험
+# 시설담당자 그룹 시험
 curl -sS -X POST \
   -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   "$WORKER_URL/internal/v1/test/telegram/user"
@@ -181,14 +221,14 @@ SOLAPI에서 발신번호를 등록하고 `SINGLE-REPORT` 웹훅을
 - SOLAPI 접수 실패·잔액 부족·응답 확인 불가
 - SOLAPI 웹훅의 통신사 최종 수신 실패
 
-SMS 성공 접수 시에는 사용자 채널에 같은 사건을 중복 게시하지
+SMS 성공 접수 시에는 시설담당자 그룹에 같은 사건을 중복 게시하지
 않는다. SOLAPI 웹훅은 기존
 `/api/v1/webhooks/solapi` 경로와 `X-Solapi-Secret` SHA-1 검증 방식을
 그대로 유지한다.
 
 ## 5. 재시도·중복 방지·실적
 
-- Telegram 작업은 Firestore outbox에 `채널·배치·용도`별 고유 ID로
+- Telegram 작업은 Firestore outbox에 `대상 대화방·배치·용도`별 고유 ID로
   저장한다.
 - Scheduler 재시도와 동일 SOLAPI 웹훅은 같은 사건을 중복 게시하지
   않는다.
@@ -209,7 +249,7 @@ SMS 성공 접수 시에는 사용자 채널에 같은 사건을 중복 게시�
   않는다.
 
 중앙 관제는 `운영 상황 / 대상 분석·전파 / 실적·이력`으로 나뉜다. 수동 전파는
-`재공지·정정·추가안내·훈련` 중 하나로 사용자 채널에 보내며, 최근 30분 내
+`재공지·정정·추가안내·훈련` 중 하나로 시설담당자 그룹에 보내며, 최근 30분 내
 같은 시설·특보 구성은 재확인을 요구한다. 요청·메모·대상·메시지·결과는
 Firestore에 감사 기록으로 남고 실패 시 5분 간격으로 최대 30분 재시도한다.
 
@@ -225,7 +265,7 @@ POST /internal/v1/test/heartbeat
 
 ## 6. 운영 전환 순서
 
-1. 관리자방과 사용자 채널 시험을 각각 성공시킨다.
+1. 관리자방과 시설담당자 그룹 시험을 각각 성공시킨다.
 2. `ALERT_USER_DELIVERY_MODE=telegram`, `ALERT_AUTOMATION_MODE=preview`에서
    KMA 정상 조회와 미리보기를 확인한다.
 3. `ALERT_AUTOMATION_MODE=live`로 바꾸고 workflow를 다시 실행한다.

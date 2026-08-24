@@ -222,7 +222,7 @@ DashboardSnapshot
 전체 DashboardSnapshot
   → 시설 그룹·위험도 filter_snapshot
   → 체크된 시설 action_snapshot
-  → 사용자 채널 수동 전파 API / PDF
+  → 시설담당자 그룹 수동 전파 API / PDF
 ```
 
 지도와 상단 지표는 적용 버튼으로 확정한 filter snapshot을, 두 출력물은
@@ -237,7 +237,7 @@ DashboardSnapshot
 ```
 
 수동 전파는 Streamlit이 Telegram 토큰을 가지지 않고
-`POST /internal/v1/notifications/manual`을 호출합니다. API는 사용자 채널로
+`POST /internal/v1/notifications/manual`을 호출합니다. API는 시설담당자 그룹으로
 즉시 전송하고 실패한 미전송 메시지만 Firestore outbox에 넣습니다.
 
 화면에서 편집한 위험도 행렬은 `risk_configuration` service가 기본
