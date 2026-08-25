@@ -6,8 +6,12 @@ import html
 
 import streamlit as st
 
+from safety_dashboard.ui.admin_gate import require_admin_access
 from safety_dashboard.ui.app_context import monitoring_context
 from safety_dashboard.ui.policy_editor import render_policy_editor
+
+
+require_admin_access()
 
 
 try:

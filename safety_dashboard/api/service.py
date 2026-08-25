@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import threading
 import time
+from dataclasses import replace
 from typing import Any, Callable
 
 from core.region_resolver import WarningZoneIndex
@@ -39,6 +40,11 @@ class MonitoringApiService:
         self._lock = threading.Lock()
         self._payloads: dict[bool, dict[str, Any]] = {}
         self._payload_expires_at: dict[bool, float] = {}
+        self._refresh_allowed_at: dict[bool, float] = {}
+        self._last_successful_builds: dict[
+            bool,
+            tuple[DashboardSnapshot, FacilityGroupCatalog, RiskPolicy],
+        ] = {}
         self._zone_data: dict[str, Any] | None = None
         self._zone_health = DataHealth.ERROR
         self._zone_detail = "특보구역을 불러오지 못했습니다."
@@ -52,26 +58,33 @@ class MonitoringApiService:
         """실시간과 모의훈련 결과를 서로 다른 캐시로 제공합니다."""
 
         now = self._monotonic()
-        if (
-            not force_refresh
-            and simulation in self._payloads
-            and now < self._payload_expires_at.get(simulation, 0.0)
-        ):
+        if self._can_reuse_payload(now, force_refresh, simulation):
             return self._payloads[simulation]
         with self._lock:
             now = self._monotonic()
-            if (
-                not force_refresh
-                and simulation in self._payloads
-                and now < self._payload_expires_at.get(simulation, 0.0)
-            ):
+            if self._can_reuse_payload(now, force_refresh, simulation):
                 return self._payloads[simulation]
             payload = self._build_payload(now, simulation=simulation)
             self._payloads[simulation] = payload
             self._payload_expires_at[simulation] = (
                 now + self.settings.monitoring_cache_seconds
             )
+            self._refresh_allowed_at[simulation] = (
+                now + self.settings.monitoring_refresh_cooldown_seconds
+            )
             return payload
+
+    def _can_reuse_payload(
+        self,
+        monotonic_now: float,
+        force_refresh: bool,
+        simulation: bool,
+    ) -> bool:
+        if simulation not in self._payloads:
+            return False
+        if force_refresh:
+            return monotonic_now < self._refresh_allowed_at.get(simulation, 0.0)
+        return monotonic_now < self._payload_expires_at.get(simulation, 0.0)
 
     def _build_payload(
         self,
@@ -82,6 +95,34 @@ class MonitoringApiService:
         snapshot, catalog, policy, zone_data, zone_health, zone_detail = (
             self._build_snapshot(monotonic_now, simulation=simulation)
         )
+        if snapshot.warning_feed.health in {
+            DataHealth.LIVE,
+            DataHealth.SIMULATION,
+        }:
+            self._last_successful_builds[simulation] = (snapshot, catalog, policy)
+        elif snapshot.warning_feed.health is DataHealth.ERROR:
+            previous = self._last_successful_builds.get(simulation)
+            if previous is not None:
+                previous_snapshot, previous_catalog, previous_policy = previous
+                detail = (
+                    f"{snapshot.warning_feed.message.strip()} "
+                    "마지막 정상 자료를 표시합니다."
+                ).strip()
+                snapshot = replace(
+                    previous_snapshot,
+                    warning_feed=replace(
+                        previous_snapshot.warning_feed,
+                        health=DataHealth.STALE,
+                        fetched_at=snapshot.warning_feed.fetched_at,
+                        message=detail,
+                        diagnostic=snapshot.warning_feed.diagnostic,
+                    ),
+                    notices=tuple(
+                        dict.fromkeys((*previous_snapshot.notices, detail))
+                    ),
+                )
+                catalog = previous_catalog
+                policy = previous_policy
         return serialize_monitoring(
             snapshot,
             catalog,

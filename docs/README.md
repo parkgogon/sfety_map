@@ -5,6 +5,7 @@
 
 문서는 다음 순서로 읽습니다.
 
+0. [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md) — 운영형 구조로 단계적으로 개선하는 확정 로드맵
 0. [USER_QUICK_GUIDE.md](USER_QUICK_GUIDE.md) — 내부 시험 사용자를 위한 간편 사용 안내
 1. [PRODUCT.md](PRODUCT.md) — 누구를 위해 어떤 문제를 해결하는가
 2. [FEATURE_INVENTORY.md](FEATURE_INVENTORY.md) — 무엇을 유지·변경·제외할 것인가

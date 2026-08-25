@@ -11,6 +11,13 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 
+from safety_dashboard.admin.access import (
+    AdminAccessConfigurationError,
+    AdminAccessDeniedError,
+    AdminAccessSettings,
+    AdminAccessThrottledError,
+    AdminAccessVerifier,
+)
 from safety_dashboard.api.context_service import (
     FacilityContextService,
     FacilityNotFoundError,
@@ -47,6 +54,10 @@ class ManualTelegramMessageRequest(BaseModel):
     action_url: str = Field(default="", max_length=500)
 
 
+class AdminAccessRequest(BaseModel):
+    password: str
+
+
 class ManualTelegramDispatchRequest(BaseModel):
     request_id: str = Field(min_length=8, max_length=80)
     category: ManualTelegramCategory
@@ -65,6 +76,7 @@ def create_app(
     context_service: FacilityContextService | None = None,
     weather_layer_service: WeatherLayerService | None = None,
     alert_admin_service: AlertAdminService | None = None,
+    admin_access_service: AdminAccessVerifier | None = None,
 ) -> FastAPI:
     settings = ApiSettings.from_environment()
     monitoring_service = service or MonitoringApiService(settings)
@@ -72,6 +84,9 @@ def create_app(
     weather_layers = weather_layer_service or WeatherLayerService(settings)
     alert_settings = AlertSettings.from_environment()
     alert_admin = alert_admin_service
+    admin_access = admin_access_service or AdminAccessVerifier(
+        AdminAccessSettings.from_environment()
+    )
 
     def notification_admin() -> AlertAdminService:
         nonlocal alert_admin
@@ -121,6 +136,37 @@ def create_app(
     @application.get("/api/v1/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "api_version": "v1"}
+
+    @application.post("/internal/v1/admin/access")
+    def verify_admin_access(
+        request: AdminAccessRequest,
+        response: Response,
+    ) -> dict[str, object]:
+        response.headers["Cache-Control"] = "private, no-store"
+        if not request.password or len(request.password) > 256:
+            raise HTTPException(
+                status_code=403,
+                detail="관리자 인증에 실패했습니다.",
+            )
+        try:
+            expires_in = admin_access.verify(request.password)
+        except AdminAccessDeniedError as exc:
+            raise HTTPException(
+                status_code=403,
+                detail="관리자 인증에 실패했습니다.",
+            ) from exc
+        except AdminAccessThrottledError as exc:
+            raise HTTPException(
+                status_code=429,
+                detail="인증 실패가 반복되어 잠시 후 다시 시도해 주세요.",
+                headers={"Retry-After": "300"},
+            ) from exc
+        except AdminAccessConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="관리자 잠금이 아직 설정되지 않았습니다.",
+            ) from exc
+        return {"status": "ok", "expires_in": expires_in}
 
     @application.get("/api/v1/monitoring")
     def monitoring(

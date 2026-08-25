@@ -13,6 +13,7 @@ from safety_dashboard.application.selection import action_snapshot, filter_snaps
 from safety_dashboard.domain.enums import DataHealth, RiskGrade
 from safety_dashboard.ui.dialogs import report_dialog, telegram_dialog
 from safety_dashboard.ui.alert_metrics import render_alert_metrics
+from safety_dashboard.ui.admin_gate import require_admin_access
 from safety_dashboard.ui.control_overview import render_control_overview
 from safety_dashboard.ui.map_view import COLORS, build_monitoring_map
 from safety_dashboard.ui.app_context import (
@@ -33,6 +34,9 @@ from safety_dashboard.ui.workflow import (
     scope_fingerprint,
     warning_text,
 )
+
+
+require_admin_access()
 
 
 _WORKSPACE_DESCRIPTIONS = {

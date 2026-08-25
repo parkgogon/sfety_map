@@ -145,6 +145,10 @@ input:focus-visible {
   background: var(--color-status-error);
 }
 
+.status-line.stale .status-dot {
+  background: var(--color-status-stale);
+}
+
 .status-line.simulation .status-dot {
   background: var(--color-status-simulation);
 }

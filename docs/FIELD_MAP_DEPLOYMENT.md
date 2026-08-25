@@ -52,17 +52,70 @@ React 현장 지도의 이번 범위에 포함하지 않는다.
 1. 결제 계정을 연결하고 Cloud Run, Artifact Registry, Secret Manager API를
    활성화한다.
 2. 서울 리전에 Docker 저장소 `safety-dashboard`를 만든다.
-3. Secret Manager에 `KMA_API_KEY`와 `ITS_CCTV_API_KEY`를 만들고 각 키를 저장한다.
+3. Secret Manager에 `KMA_API_KEY`, `ITS_CCTV_API_KEY`와
+   `ADMIN_ACCESS_PASSWORD`를 만들고 각 값을 저장한다.
    최초 배포는 비밀 버전 `1`을 명시적으로 사용한다. 키를 교체하면 새 버전을
    추가하고 배포 설정의 버전 번호도 함께 올린다.
 4. Cloud Run 실행 전용 서비스 계정 `safety-dashboard-runtime`을 만들고
-   두 비밀에만 Secret Accessor 권한을 부여한다.
+   해당 비밀에만 Secret Accessor 권한을 부여한다.
 5. Firebase Hosting을 활성화한다. 1차 주소는
    `https://keco-safety-map.web.app`을 사용한다.
 6. 카카오 개발자 콘솔에 실제 `.web.app` 주소를 추가한다.
 7. GitHub Actions용 Workload Identity와 서비스 계정을 만들고 Cloud Run,
    Artifact Registry, Firebase Hosting 배포 및 Secret Manager 접근 권한을
    부여한다.
+
+## Streamlit 관리자 화면 잠금
+
+기존 Streamlit의 `/control`, `/settings`는 Cloud Run에서 비밀번호를 확인한
+브라우저 세션만 8시간 동안 이용할 수 있다. 현장 지도는 잠그지 않는다. 관리자
+비밀번호는 기존 `ALERT_ADMIN_TOKEN`과 분리하고 코드나 GitHub 저장소에 넣지 않는다.
+
+Cloud Shell에서 비밀번호를 화면에 노출하지 않고 Secret을 생성한다.
+
+```bash
+gcloud config set project keco-safety-map
+
+read -rsp "새 관리자 비밀번호: " ADMIN_PASSWORD_INPUT
+echo
+printf '%s' "$ADMIN_PASSWORD_INPUT" |
+  gcloud secrets create ADMIN_ACCESS_PASSWORD \
+    --project=keco-safety-map \
+    --replication-policy=automatic \
+    --data-file=-
+unset ADMIN_PASSWORD_INPUT
+
+gcloud secrets add-iam-policy-binding ADMIN_ACCESS_PASSWORD \
+  --project=keco-safety-map \
+  --member="serviceAccount:safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+이미 Secret이 있으면 `secrets create` 대신 새 버전을 추가한다.
+
+```bash
+read -rsp "변경할 관리자 비밀번호: " ADMIN_PASSWORD_INPUT
+echo
+printf '%s' "$ADMIN_PASSWORD_INPUT" |
+  gcloud secrets versions add ADMIN_ACCESS_PASSWORD \
+    --project=keco-safety-map \
+    --data-file=-
+unset ADMIN_PASSWORD_INPUT
+```
+
+Streamlit secrets에는 비밀번호를 저장하지 않는다. 기존 관리자 API 주소가
+`[alerting].admin_api_url`에 있으면 그대로 사용한다. 별도 값을 쓰려면 다음만
+추가한다.
+
+```toml
+[admin]
+api_url = "https://<safety-dashboard-api Cloud Run 주소>"
+```
+
+인증 실패가 5회 누적되면 5분 동안 로그인을 제한한다. `관리자 화면 잠금`을
+누르거나 Streamlit 세션이 종료되면 다시 비밀번호를 입력해야 한다. 이 잠금은
+React 관리자 화면으로 이전하기 전까지 사용하는 임시 보호수단이며, 수동 전파와
+실적 API의 기존 `ALERT_ADMIN_TOKEN` 인증은 계속 유지한다.
 
 현재 배포 파일의 고정값은 다음과 같다.
 

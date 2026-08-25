@@ -2,7 +2,7 @@ import datetime as dt
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
@@ -215,6 +215,105 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(len(payload["warnings"]), 4)
         self.assertTrue(
             all(item["source"] == "모의훈련" for item in payload["warnings"])
+        )
+
+    def test_forced_refresh_is_shared_during_server_cooldown(self):
+        clock = [100.0]
+        service = MonitoringApiService(
+            ApiSettings(
+                kma_api_key="",
+                monitoring_cache_seconds=300,
+                monitoring_refresh_cooldown_seconds=60,
+            ),
+            monotonic=lambda: clock[0],
+        )
+        builds = []
+
+        def build_payload(_now, *, simulation=False):
+            builds.append(simulation)
+            return {"build": len(builds), "simulation": simulation}
+
+        service._build_payload = build_payload  # type: ignore[method-assign]
+
+        first = service.monitoring()
+        clock[0] = 110.0
+        repeated = service.monitoring(force_refresh=True)
+        self.assertIs(repeated, first)
+        self.assertEqual(builds, [False])
+
+        clock[0] = 161.0
+        refreshed = service.monitoring(force_refresh=True)
+        self.assertEqual(refreshed["build"], 2)
+        self.assertEqual(builds, [False, False])
+
+    def test_kma_failure_keeps_last_successful_monitoring_as_stale(self):
+        clock = [100.0]
+        service = MonitoringApiService(
+            ApiSettings(
+                kma_api_key="",
+                monitoring_cache_seconds=300,
+                monitoring_refresh_cooldown_seconds=60,
+            ),
+            monotonic=lambda: clock[0],
+        )
+        live_snapshot = self.snapshot(DataHealth.LIVE)
+        error_snapshot = self.snapshot(DataHealth.ERROR)
+        service._build_snapshot = Mock(  # type: ignore[method-assign]
+            side_effect=(
+                (
+                    live_snapshot,
+                    self.catalog,
+                    self.policy,
+                    None,
+                    DataHealth.FALLBACK,
+                    "내장 경계",
+                ),
+                (
+                    error_snapshot,
+                    self.catalog,
+                    self.policy,
+                    None,
+                    DataHealth.FALLBACK,
+                    "내장 경계",
+                ),
+            )
+        )
+
+        live = service.monitoring()
+        clock[0] = 161.0
+        stale = service.monitoring(force_refresh=True)
+
+        self.assertEqual(live["status"]["health"], DataHealth.LIVE.value)
+        self.assertEqual(stale["status"]["health"], DataHealth.STALE.value)
+        self.assertEqual(stale["generated_at"], live["generated_at"])
+        self.assertEqual(stale["summary"], live["summary"])
+        self.assertEqual(stale["warnings"], live["warnings"])
+        self.assertEqual(
+            [item["grade"] for item in stale["facilities"]],
+            [item["grade"] for item in live["facilities"]],
+        )
+        self.assertIn("마지막 정상 자료", stale["status"]["detail"])
+
+    def test_cold_start_kma_failure_remains_unavailable(self):
+        service = MonitoringApiService(ApiSettings(kma_api_key=""))
+        error_snapshot = self.snapshot(DataHealth.ERROR)
+        service._build_snapshot = Mock(  # type: ignore[method-assign]
+            return_value=(
+                error_snapshot,
+                self.catalog,
+                self.policy,
+                None,
+                DataHealth.FALLBACK,
+                "내장 경계",
+            )
+        )
+
+        payload = service.monitoring()
+
+        self.assertEqual(payload["status"]["health"], DataHealth.ERROR.value)
+        self.assertIsNone(payload["summary"])
+        self.assertTrue(
+            all(item["grade"] == "UNAVAILABLE" for item in payload["facilities"])
         )
 
 

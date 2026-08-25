@@ -48,6 +48,7 @@ class ApiSettings:
         ROOT / "safety_dashboard" / "config" / "cctv_directions.toml"
     )
     monitoring_cache_seconds: int = 300
+    monitoring_refresh_cooldown_seconds: int = 60
     zone_cache_seconds: int = 86400
     weather_cache_seconds: int = 600
     weather_layer_cache_seconds: int = 600
@@ -99,6 +100,9 @@ class ApiSettings:
                 )
             ),
             monitoring_cache_seconds=seconds("MONITORING_CACHE_SECONDS", 300, 30),
+            monitoring_refresh_cooldown_seconds=seconds(
+                "MONITORING_REFRESH_COOLDOWN_SECONDS", 60, 10
+            ),
             zone_cache_seconds=seconds("WARNING_ZONE_CACHE_SECONDS", 86400, 300),
             weather_cache_seconds=seconds("WEATHER_CACHE_SECONDS", 600, 60),
             weather_layer_cache_seconds=seconds(

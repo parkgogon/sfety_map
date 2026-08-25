@@ -178,7 +178,8 @@ export default function App() {
 
   const simulation = data.status.health === "SIMULATION";
   const live = data.status.health === "LIVE";
-  const feedAvailable = live || simulation;
+  const stale = data.status.health === "STALE";
+  const feedAvailable = live || simulation || stale;
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -198,11 +199,11 @@ export default function App() {
       </header>
 
       <div
-        className={`status-line ${simulation ? "simulation" : live ? "live" : "problem"}`}
+        className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
         role="status"
       >
         <span className="status-dot" aria-hidden="true" />
-        <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : "조회 불가"}`}</b>
+        <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}</b>
         <span>· {formatReferenceTime(data.generated_at)} 기준</span>
         <a
           className="official-warning-link"
@@ -228,9 +229,10 @@ export default function App() {
         </div>
       )}
 
-      {(error || !feedAvailable || data.status.zone_health === "FALLBACK" || deepLinkNotice) && (
+      {(error || stale || !feedAvailable || data.status.zone_health === "FALLBACK" || deepLinkNotice) && (
         <div className="notice-stack" aria-live="polite">
           {error && <div className="notice warning">{error}</div>}
+          {stale && <div className="notice warning">{data.status.detail || "KMA 특보 자료 수신이 지연되어 마지막 정상 자료를 표시합니다."}</div>}
           {!feedAvailable && <div className="notice error">{data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다."}</div>}
           {data.status.zone_health === "FALLBACK" && <div className="notice info">최신 특보 경계 대신 검증된 내장 경계를 사용 중입니다.</div>}
           {deepLinkNotice && <div className="notice info">{deepLinkNotice}</div>}
