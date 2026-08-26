@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import streamlit as st
@@ -21,11 +21,13 @@ from safety_dashboard.adapters.disaster_messages import (
 )
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 from safety_dashboard.adapters.kma import (
-    FeedWarningProvider,
-    KmaWarningProvider,
     StaticWarningProvider,
     WarningZoneRepository,
     simulation_warnings,
+)
+from safety_dashboard.adapters.monitoring_api import (
+    MonitoringSnapshotApiClient,
+    MonitoringSnapshotApiError,
 )
 from safety_dashboard.adapters.region_matcher import OfficialZoneMatcher
 from safety_dashboard.application.facility_groups import FacilityGroupCatalog
@@ -33,7 +35,10 @@ from safety_dashboard.application.cctv_directions import (
     CctvDirectionCatalog,
     load_cctv_direction_catalog,
 )
-from safety_dashboard.application.monitoring import MonitoringService
+from safety_dashboard.application.monitoring import (
+    MonitoringService,
+    reassess_snapshot,
+)
 from safety_dashboard.domain.enums import DataHealth
 from safety_dashboard.domain.models import (
     DashboardSnapshot,
@@ -122,11 +127,16 @@ def build_zone_index(zone_data: dict) -> WarningZoneIndex:
     return WarningZoneIndex.from_geojson(zone_data)
 
 
-@st.cache_data(ttl=600, show_spinner=False)
-def load_live_feed(api_key: str, policy_modified_at: float):
-    del policy_modified_at
-    policy = RiskPolicy.load(POLICY_PATH)
-    return KmaWarningProvider(api_key, policy).fetch_active()
+@st.cache_data(ttl=60, show_spinner=False)
+def load_common_monitoring_snapshot(
+    admin_api_url: str,
+    admin_token: str,
+) -> DashboardSnapshot:
+    return MonitoringSnapshotApiClient(
+        admin_api_url,
+        admin_token,
+        timeout=12,
+    ).fetch()
 
 
 @st.cache_data(ttl=180, show_spinner=False)
@@ -182,26 +192,26 @@ def monitoring_context(simulation: bool = False) -> MonitoringContext:
     base_policy = load_policy(POLICY_PATH.stat().st_mtime)
     policy, temporary = effective_policy(base_policy)
     zone_data, zone_health, zone_message = load_zones()
-    zone_index = build_zone_index(zone_data)
     if simulation:
-        provider = StaticWarningProvider(simulation_warnings(policy))
-    else:
-        feed = load_live_feed(
-            secret("kma", "api_key", "KMA_API_KEY"),
-            POLICY_PATH.stat().st_mtime,
+        zone_index = build_zone_index(zone_data)
+        service = MonitoringService(
+            _FacilityTupleRepository(
+                load_facilities(FACILITY_PATH.stat().st_mtime)
+            ),
+            StaticWarningProvider(simulation_warnings(policy)),
+            OfficialZoneMatcher(zone_index),
+            policy,
         )
-        provider = FeedWarningProvider(feed)
-    service = MonitoringService(
-        _FacilityTupleRepository(load_facilities(FACILITY_PATH.stat().st_mtime)),
-        provider,
-        OfficialZoneMatcher(zone_index),
-        policy,
-    )
+        snapshot = service.get_snapshot()
+    else:
+        snapshot = _shared_live_snapshot()
+        if snapshot.policy_version != policy.version:
+            snapshot = reassess_snapshot(snapshot, policy)
     return MonitoringContext(
         base_policy=base_policy,
         policy=policy,
         temporary_policy=temporary,
-        snapshot=service.get_snapshot(),
+        snapshot=snapshot,
         zone_data=zone_data,
         zone_health=zone_health,
         zone_message=zone_message,
@@ -210,9 +220,59 @@ def monitoring_context(simulation: bool = False) -> MonitoringContext:
 
 
 def clear_live_caches() -> None:
-    load_live_feed.clear()
+    load_common_monitoring_snapshot.clear()
     load_zones.clear()
     build_zone_index.clear()
     load_current_weather.clear()
     load_disaster_feed.clear()
     load_cctv_feed.clear()
+
+
+def _shared_live_snapshot() -> DashboardSnapshot:
+    state_key = "shared_last_monitoring_snapshot"
+    try:
+        snapshot = load_common_monitoring_snapshot(
+            secret("alerting", "admin_api_url", "ALERT_ADMIN_API_URL"),
+            secret("alerting", "admin_token", "ALERT_ADMIN_TOKEN"),
+        )
+    except MonitoringSnapshotApiError as exc:
+        previous = st.session_state.get(state_key)
+        if isinstance(previous, DashboardSnapshot):
+            return _stale_streamlit_snapshot(
+                previous,
+                "공통 관제 API 연결이 지연되어 "
+                "이 브라우저의 마지막 정상 자료를 표시합니다.",
+            )
+        raise RuntimeError(
+            "공통 관제 snapshot을 불러오지 못했습니다."
+        ) from exc
+
+    previous = st.session_state.get(state_key)
+    if (
+        snapshot.warning_feed.health is DataHealth.ERROR
+        and isinstance(previous, DashboardSnapshot)
+    ):
+        return _stale_streamlit_snapshot(
+            previous,
+            snapshot.warning_feed.message
+            or "공통 관제 자료 수신이 지연되고 있습니다.",
+        )
+    if snapshot.warning_feed.health in {DataHealth.LIVE, DataHealth.STALE}:
+        st.session_state[state_key] = snapshot
+    return snapshot
+
+
+def _stale_streamlit_snapshot(
+    snapshot: DashboardSnapshot,
+    message: str,
+) -> DashboardSnapshot:
+    detail = message.strip()
+    return replace(
+        snapshot,
+        warning_feed=replace(
+            snapshot.warning_feed,
+            health=DataHealth.STALE,
+            message=detail,
+        ),
+        notices=tuple(dict.fromkeys((*snapshot.notices, detail))),
+    )

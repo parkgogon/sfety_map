@@ -45,6 +45,10 @@ from safety_dashboard.alerts.domain import (
 from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.domain.enums import WeatherLayerKind
 from safety_dashboard.domain.models import OutgoingTelegramMessage
+from safety_dashboard.monitoring.snapshot import (
+    MONITORING_SNAPSHOT_SCHEMA_VERSION,
+    dashboard_snapshot_to_document,
+)
 from safety_dashboard.operations.readiness import OperationalReadinessService
 
 
@@ -257,6 +261,23 @@ def create_app(
         response.headers["Cache-Control"] = "private, no-store"
         service = _authorized_admin(notification_admin(), x_alert_admin_token)
         return service.status()
+
+    @application.get("/internal/v1/monitoring/snapshot")
+    def internal_monitoring_snapshot(
+        response: Response,
+        mode: Literal["live", "simulation"] = Query("live"),
+        x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+    ) -> dict[str, object]:
+        """Streamlit 관제·PDF가 공개 지도와 같은 관제 결과를 읽는다."""
+
+        response.headers["Cache-Control"] = "private, no-store"
+        _authorized_admin(notification_admin(), x_alert_admin_token)
+        snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
+        return {
+            "api_version": "v1",
+            "snapshot_schema_version": MONITORING_SNAPSHOT_SCHEMA_VERSION,
+            "snapshot": dashboard_snapshot_to_document(snapshot),
+        }
 
     @application.get("/internal/v1/notifications/overview")
     def notification_overview(

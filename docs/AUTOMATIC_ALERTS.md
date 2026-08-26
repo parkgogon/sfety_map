@@ -278,7 +278,16 @@ snapshot을 덮어쓰지 않는다.
 표시하고 마지막 정상 KMA 기준 시각을 유지한다. Firestore 읽기는 5초 제한을 두며
 장애가 공개 API 전체 장애로 번지지 않게 한다. 모의훈련은 운영 저장본과 계속 분리한다.
 
-Streamlit 중앙관제와 PDF의 저장본 읽기 전환은 다음 단계에서 진행한다.
+Streamlit 중앙관제는 `GET /internal/v1/monitoring/snapshot`을
+`X-Alert-Admin-Token`으로 호출해 같은 관제 결과를 읽는다. Streamlit은
+더 이상 KMA 특보를 직접 조회하지 않으며, 선택 시설 snapshot에서 PDF와
+수동 Telegram 메시지를 만든다. API 연결이 일시 실패하면 같은
+브라우저 세션의 마지막 정상 자료를 `STALE`로 표시하되, 지연·오류
+상태에서는 새 Telegram 전파와 PDF 생성을 차단한다.
+
+브라우저 세션의 임시 위험도 정책은 Firestore 기준 상태를 덮어쓰지
+않는다. 공통 snapshot의 특보–시설 연결관계는 그대로 두고 해당 세션의
+등급만 다시 판정한다.
 
 `실적·이력`에서 자동 관제와 수동 상황전파를 분리해 확인한다. SMS 수치는
 SMS 모드이거나 선택 기간에 문자 이력이 있을 때만 표시한다.

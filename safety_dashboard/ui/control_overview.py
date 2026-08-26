@@ -31,6 +31,12 @@ def render_control_overview() -> None:
 
     snapshot = context.snapshot
     feed_failed = snapshot.warning_feed.health is DataHealth.ERROR
+    feed_stale = snapshot.warning_feed.health is DataHealth.STALE
+    if feed_stale:
+        st.warning(
+            snapshot.warning_feed.message
+            or "KMA 수신이 지연되어 마지막 정상 관제 자료를 표시합니다."
+        )
     render_metric_grid((
         (
             "활성 특보",

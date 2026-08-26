@@ -20,6 +20,10 @@ from safety_dashboard.domain import (
     WarningLevel,
 )
 from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.monitoring.snapshot import (
+    dashboard_snapshot_from_document,
+    dashboard_snapshot_to_document,
+)
 
 
 ROOT = Path(__file__).parents[1]
@@ -89,7 +93,10 @@ class OutputTests(unittest.TestCase):
             assessments=source.assessments + (excluded_assessment,),
             summary=replace(source.summary, affected_facility_count=2, high_risk_count=2),
         )
-        selected = action_snapshot(full_snapshot, ("air",))
+        common_snapshot = dashboard_snapshot_from_document(
+            dashboard_snapshot_to_document(full_snapshot)
+        )
+        selected = action_snapshot(common_snapshot, ("air",))
         data = PdfReportRenderer(FONT_PATH).render(
             selected,
             scope_label="대기측정소 / 상",

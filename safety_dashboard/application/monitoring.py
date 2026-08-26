@@ -65,6 +65,56 @@ class MonitoringService:
         )
 
 
+def reassess_snapshot(
+    snapshot: DashboardSnapshot,
+    policy: RiskPolicy,
+) -> DashboardSnapshot:
+    """저장된 특보–시설 연결은 유지하고 현재 세션 정책만 다시 적용한다."""
+
+    warnings_by_id = {
+        warning.id: warning for warning in snapshot.warning_feed.warnings
+    }
+    assessments = tuple(
+        policy.assess(
+            source.facility,
+            (
+                warnings_by_id[reason.warning_id]
+                for reason in source.reasons
+                if reason.warning_id in warnings_by_id
+            ),
+            assessed_at=snapshot.generated_at,
+        )
+        for source in snapshot.assessments
+    )
+    affected = tuple(
+        item for item in assessments if item.grade is not RiskGrade.NONE
+    )
+    highest_level = max(
+        (item.level for item in snapshot.warning_feed.warnings),
+        key=_warning_level_rank,
+        default=WarningLevel.UNKNOWN,
+    )
+    return DashboardSnapshot(
+        generated_at=snapshot.generated_at,
+        warning_feed=snapshot.warning_feed,
+        facilities=snapshot.facilities,
+        assessments=assessments,
+        summary=DashboardSummary(
+            active_warning_count=len(snapshot.warning_feed.warnings),
+            affected_facility_count=len(affected),
+            high_risk_count=sum(
+                item.grade is RiskGrade.HIGH for item in affected
+            ),
+            unassessed_count=sum(
+                item.grade is RiskGrade.UNASSESSED for item in affected
+            ),
+            highest_warning_level=highest_level,
+        ),
+        policy_version=policy.version,
+        notices=snapshot.notices,
+    )
+
+
 def _warning_level_rank(level: WarningLevel) -> int:
     return {
         WarningLevel.UNKNOWN: 0,

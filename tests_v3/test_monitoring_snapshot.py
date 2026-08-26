@@ -23,6 +23,8 @@ from safety_dashboard.monitoring.snapshot import (
     MONITORING_SNAPSHOT_SCHEMA_VERSION,
     MonitoringSnapshot,
     MonitoringSnapshotError,
+    dashboard_snapshot_from_document,
+    dashboard_snapshot_to_document,
 )
 
 
@@ -179,6 +181,19 @@ def test_monitoring_snapshot_rejects_non_live_and_inconsistent_results():
         MonitoringSnapshot.capture(invalid)
 
 
+def test_dashboard_transfer_contract_allows_stale_without_private_contact():
+    source = _dashboard(health=DataHealth.STALE)
+
+    document = dashboard_snapshot_to_document(source)
+    restored = dashboard_snapshot_from_document(document)
+
+    assert restored.warning_feed.health is DataHealth.STALE
+    assert restored.warning_feed.fetched_at == source.warning_feed.fetched_at
+    assert restored.summary == source.summary
+    assert "010-1234-5678" not in str(document)
+    assert public_contact(restored.facilities[0]) == "환경서비스부 · 홍길동 과장"
+
+
 def test_monitoring_snapshot_treats_legacy_naive_times_as_kst():
     source = _dashboard()
     local_time = dt.datetime(2026, 8, 26, 18, 10)
@@ -243,6 +258,9 @@ class MonitoringSnapshotTests(unittest.TestCase):
     )
     test_monitoring_snapshot_rejects_non_live_and_inconsistent_results = staticmethod(
         test_monitoring_snapshot_rejects_non_live_and_inconsistent_results
+    )
+    test_dashboard_transfer_contract_allows_stale_without_private_contact = staticmethod(
+        test_dashboard_transfer_contract_allows_stale_without_private_contact
     )
     test_monitoring_snapshot_treats_legacy_naive_times_as_kst = staticmethod(
         test_monitoring_snapshot_treats_legacy_naive_times_as_kst

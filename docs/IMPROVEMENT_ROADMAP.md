@@ -61,7 +61,7 @@ Firestore        관제 상태·알림·실적·감사 이력
 - [x] 자동 작업자가 5분마다 최신 정상 `MonitoringSnapshot`을 저장한다.
 - [x] snapshot ID, 생성 시각, KMA 조회 시각, 정책 버전과 자료 상태를 기록한다.
 - [x] React 사용자 API와 API 수동 전파가 최신 snapshot을 우선 읽는다.
-- [ ] Streamlit 중앙관제와 PDF를 공통 snapshot 읽기로 전환한다.
+- [x] Streamlit 중앙관제와 PDF를 공통 snapshot 읽기로 전환한다.
 - 모의훈련과 브라우저 세션 임시정책은 실시간 기준 상태와 분리한다.
 - Streamlit의 KMA 직접 조회를 제거한다.
 
@@ -154,7 +154,10 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] 사용자 API와 API 수동 전파의 Firestore 공통 snapshot 우선 읽기 전환
 - [x] 15분 이내 저장본 우선, 정책 불일치·손상·Firestore 장애 시 KMA 직접 조회 fallback
 - [x] 오래된 저장본과 KMA 장애가 겹치면 마지막 정상 기준 시각을 유지한 `STALE` 응답 제공
-- [ ] Streamlit 중앙관제·PDF의 Firestore 공통 snapshot 읽기 전환
+- [x] Streamlit 중앙관제·PDF의 Cloud Run 보호 경로를 통한 공통 snapshot 읽기 전환
+- [x] Streamlit의 KMA 특보 직접 조회 제거 및 60초 snapshot 캐시·세션 내 마지막 자료 보존
+- [x] 세션 임시 정책은 저장된 특보–시설 연결을 유지하고 등급만 재판정
+- [x] KMA STALE·ERROR 상태의 수동 Telegram·PDF 작업 차단
 - [x] Streamlit 중앙 관제·설정에 Cloud Run 검증 방식의 8시간 임시 세션 잠금 적용
 - [x] `ADMIN_ACCESS_PASSWORD` Secret 생성·권한 부여와 실제 배포 확인
 - [x] 외부 감시용 자동 관제 준비 상태 API와 Cloud Monitoring 멱등 배포 설정 추가

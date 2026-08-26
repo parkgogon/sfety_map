@@ -5,7 +5,10 @@ from pathlib import Path
 
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 from safety_dashboard.adapters.kma import StaticWarningProvider, parse_warning_response
-from safety_dashboard.application.monitoring import MonitoringService
+from safety_dashboard.application.monitoring import (
+    MonitoringService,
+    reassess_snapshot,
+)
 from safety_dashboard.application.notifications import build_telegram_messages
 from safety_dashboard.domain import DataHealth, Facility, GeoPoint, RiskGrade, Warning, WarningLevel
 from safety_dashboard.domain.risk_policy import RiskPolicy
@@ -51,6 +54,34 @@ class ApplicationTests(unittest.TestCase):
         self.assertEqual(snapshot.summary.high_risk_count, 1)
         self.assertEqual(snapshot.assessments[0].grade, RiskGrade.HIGH)
         self.assertEqual(snapshot.assessments[1].grade, RiskGrade.NONE)
+
+    def test_session_policy_reuses_saved_warning_facility_links(self):
+        snapshot = MonitoringService(
+            MemoryFacilities(self.facilities),
+            StaticWarningProvider((self.warning,)),
+            MatchByAddress(),
+            POLICY,
+        ).get_snapshot(dt.datetime(2026, 8, 3, 10, 0))
+        matrix = dict(POLICY.warning_matrix)
+        matrix["호우"] = {
+            **matrix["호우"],
+            WarningLevel.WARNING: RiskGrade.LOW,
+        }
+        temporary_policy = replace(
+            POLICY,
+            version="temporary-test",
+            warning_matrix=matrix,
+        )
+
+        reassessed = reassess_snapshot(snapshot, temporary_policy)
+
+        self.assertIs(reassessed.warning_feed, snapshot.warning_feed)
+        self.assertEqual(reassessed.generated_at, snapshot.generated_at)
+        self.assertEqual(reassessed.policy_version, "temporary-test")
+        self.assertEqual(reassessed.assessments[0].grade, RiskGrade.LOW)
+        self.assertEqual(reassessed.assessments[1].grade, RiskGrade.NONE)
+        self.assertEqual(reassessed.summary.affected_facility_count, 1)
+        self.assertEqual(reassessed.summary.high_risk_count, 0)
 
     def test_telegram_escapes_untrusted_facility_text(self):
         assessment = POLICY.assess(self.facilities[0], (self.warning,))

@@ -135,6 +135,37 @@ class MonitoringSnapshot:
         return result
 
 
+def dashboard_snapshot_to_document(
+    snapshot: DashboardSnapshot,
+) -> dict[str, Any]:
+    """개인정보를 제거한 관제 snapshot 전송 형식을 만든다.
+
+    Firestore 문서와 관리자 API가 같은 dashboard 계약을 사용하도록
+    직렬화 경계를 공개한다. LIVE 외의 STALE·ERROR 상태도 안전하게
+    전송할 수 있지만, 데이터 내부 일관성은 항상 검증한다.
+    """
+
+    _validate_dashboard(snapshot)
+    return _dashboard_to_dict(snapshot)
+
+
+def dashboard_snapshot_from_document(
+    values: Mapping[str, Any],
+) -> DashboardSnapshot:
+    """관리자 API에서 받은 dashboard snapshot을 검증해 복원한다."""
+
+    try:
+        snapshot = _dashboard_from_dict(_mapping(values))
+    except MonitoringSnapshotError:
+        raise
+    except (KeyError, TypeError, ValueError) as exc:
+        raise MonitoringSnapshotError(
+            "관제 snapshot 전송 형식이 잘못되었습니다."
+        ) from exc
+    _validate_dashboard(snapshot)
+    return snapshot
+
+
 def _dashboard_to_dict(snapshot: DashboardSnapshot) -> dict[str, Any]:
     facilities = [_facility_to_dict(item) for item in snapshot.facilities]
     return {

@@ -119,7 +119,9 @@ feed_label = {
     DataHealth.FALLBACK: "내장본",
     DataHealth.STALE: "지연",
 }[snapshot.warning_feed.health]
-feed_failed = snapshot.warning_feed.health is DataHealth.ERROR
+feed_error = snapshot.warning_feed.health is DataHealth.ERROR
+feed_stale = snapshot.warning_feed.health is DataHealth.STALE
+actions_blocked = feed_error or feed_stale
 
 st.markdown(
     f'<div class="status-strip"><span class="status-primary">'
@@ -130,10 +132,15 @@ st.markdown(
     f'· 정책 {html.escape(policy.version)}</span></div>',
     unsafe_allow_html=True,
 )
-if feed_failed:
+if feed_error:
     st.warning(
         snapshot.warning_feed.message
         or "KMA 자료를 조회하지 못했습니다. API 키와 네트워크를 확인하세요."
+    )
+elif feed_stale:
+    st.warning(
+        snapshot.warning_feed.message
+        or "KMA 수신이 지연되어 마지막 정상 관제 자료를 표시합니다."
     )
 if zone_health is DataHealth.FALLBACK:
     st.info("최신 경계를 불러오지 못해 검증된 내장 특보구역을 사용 중입니다.")
@@ -261,22 +268,24 @@ render_metric_grid(
     (
         (
             "영향 특보",
-            "—" if feed_failed else filtered_snapshot.summary.active_warning_count,
-            "조회 실패" if feed_failed else "현재 표시 시설에 연결",
+            "—" if feed_error else filtered_snapshot.summary.active_warning_count,
+            "조회 실패" if feed_error else (
+                "마지막 정상 자료" if feed_stale else "현재 표시 시설에 연결"
+            ),
         ),
         (
             "영향 시설",
-            "—" if feed_failed else filtered_snapshot.summary.affected_facility_count,
+            "—" if feed_error else filtered_snapshot.summary.affected_facility_count,
             (
                 "판정 중단"
-                if feed_failed
+                if feed_error
                 else f"표시 시설 {len(filtered_snapshot.facilities)}개 중"
             ),
         ),
         (
             "상 위험",
-            "—" if feed_failed else filtered_snapshot.summary.high_risk_count,
-            "판정 중단" if feed_failed else note,
+            "—" if feed_error else filtered_snapshot.summary.high_risk_count,
+            "판정 중단" if feed_error else note,
         ),
     )
 )
@@ -329,7 +338,7 @@ with map_column:
 with detail_column:
     st.markdown("#### 점검 우선순위 목록")
     if not detail_items:
-        if feed_failed:
+        if feed_error:
             st.error("KMA 조회 실패로 점검 우선순위 목록을 계산하지 못했습니다.")
         else:
             st.success("현재 조회 범위에 특보 영향 시설이 없습니다.")
@@ -387,7 +396,7 @@ targets_expander.caption(
     "Telegram과 PDF는 이 표에서 체크한 시설과 연결 특보만 사용합니다."
 )
 if not filtered_affected:
-    if feed_failed:
+    if feed_error:
         targets_expander.error("KMA 조회 실패로 후속 작업 대상 선정을 중단했습니다.")
     else:
         targets_expander.success("현재 조회 범위에서 선택할 영향 시설이 없습니다.")
@@ -409,17 +418,18 @@ if not filtered_affected:
             empty_telegram = empty_action_columns[0].form_submit_button(
                 "시설담당자 그룹 수동 전파",
                 type="primary",
-                disabled=feed_failed,
+                disabled=actions_blocked,
                 width="stretch",
             )
             empty_report = empty_action_columns[1].form_submit_button(
                 "PDF 보고서",
-                disabled=feed_failed,
+                disabled=actions_blocked,
                 width="stretch",
             )
-    if feed_failed:
+    if actions_blocked:
         targets_expander.caption(
-            "KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다."
+            "KMA 실시간 자료가 정상이 아닌 상태에서는 "
+            "발송과 보고서를 사용할 수 없습니다."
         )
     elif empty_telegram or empty_report:
         targets_expander.warning(
@@ -498,18 +508,19 @@ else:
             telegram_clicked = action_columns[0].form_submit_button(
                 "시설담당자 그룹 수동 전파",
                 type="primary",
-                disabled=feed_failed,
+                disabled=actions_blocked,
                 width="stretch",
             )
             report_clicked = action_columns[1].form_submit_button(
                 "PDF 보고서",
-                disabled=feed_failed,
+                disabled=actions_blocked,
                 width="stretch",
             )
 
-    if feed_failed:
+    if actions_blocked:
         targets_expander.caption(
-            "KMA 조회 실패 상태에서는 발송과 보고서를 사용할 수 없습니다."
+            "KMA 실시간 자료가 정상이 아닌 상태에서는 "
+            "발송과 보고서를 사용할 수 없습니다."
         )
     if select_all_clicked or select_none_clicked:
         st.session_state[target_state_key] = (

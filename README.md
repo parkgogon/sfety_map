@@ -14,6 +14,8 @@ python -m venv .venv
 
 `.streamlit/secrets.toml`에 KMA API 키와 텔레그램 설정을 입력해야 합니다.
 실제 비밀정보 파일은 Git에서 제외됩니다.
+중앙 관제에서는 `[alerting].admin_api_url`과 `admin_token`을 사용해
+Cloud Run의 공통 관제 snapshot을 읽습니다.
 
 시설담당자용 React 현장 지도 1차 화면은 `field_web/`, 같은 위험도 계산을
 제공하는 Cloud Run API는 `safety_dashboard/api/`에 있습니다. 기존 Streamlit
@@ -101,6 +103,11 @@ tests_v3/                      v3 핵심 규칙 테스트
 필요할 때만 이동·확대를 활성화합니다.
 시설 상세 정보와 후속 작업 대상은 PC·모바일 모두 기본으로 접혀 있으며,
 필요할 때 펼쳐 판정 근거를 확인하거나 작업 대상을 편집합니다.
+실시간 중앙 관제와 여기서 생성하는 PDF·수동 Telegram은
+자동 작업자와 React 현장 지도가 사용하는 같은 Firestore 관제 snapshot을
+기준으로 합니다. Streamlit은 KMA 특보를 별도로 재조회하지 않으며,
+`STALE`·`ERROR` 상태에서는 실수로 구식 자료를 전파하지 않도록
+새 Telegram 전파와 PDF 생성을 차단합니다.
 `중앙 관제`와 `설정`은 Cloud Run이 검증하는 공용 관리자 비밀번호로 잠기며,
 성공한 Streamlit 세션에서 8시간 동안 이용할 수 있습니다. 비밀번호는
 `ADMIN_ACCESS_PASSWORD` Secret으로만 관리하고 기존 관리자 API 토큰과 분리합니다.

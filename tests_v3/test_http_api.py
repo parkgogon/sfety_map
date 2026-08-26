@@ -11,6 +11,8 @@ from safety_dashboard.api.app import create_app
 from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.settings import ApiSettings
 from safety_dashboard.api.serialization import serialize_monitoring
+from safety_dashboard.adapters.monitoring_api import MonitoringSnapshotApiClient
+from safety_dashboard.alerts.admin import AlertAdminAuthorizationError
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository, FacilityDataError
 from safety_dashboard.application.facility_groups import FacilityGroup, FacilityGroupCatalog
 from safety_dashboard.application.monitoring import MonitoringService
@@ -81,6 +83,23 @@ class _ApiService:
     def monitoring(self, force_refresh=False, simulation=False):
         self.calls.append((force_refresh, simulation))
         return {"api_version": "v1", "facilities": []}
+
+
+class _SnapshotApiService(_ApiService):
+    def __init__(self, dashboard):
+        super().__init__()
+        self.dashboard = dashboard
+        self.snapshot_calls = []
+
+    def snapshot(self, *, simulation=False):
+        self.snapshot_calls.append(simulation)
+        return self.dashboard
+
+
+class _AdminAuthorizer:
+    def authorize_admin(self, token):
+        if token != "admin-token":
+            raise AlertAdminAuthorizationError("denied")
 
 
 class _SnapshotStore:
@@ -224,6 +243,37 @@ class MonitoringApiTests(unittest.TestCase):
             422,
         )
         self.assertEqual(client.get("/api/v1/health").json()["status"], "ok")
+
+    def test_internal_snapshot_route_is_protected_and_round_trips(self):
+        service = _SnapshotApiService(self.snapshot())
+        client = TestClient(create_app(
+            service,
+            alert_admin_service=_AdminAuthorizer(),
+        ))
+        url = "/internal/v1/monitoring/snapshot"
+
+        self.assertEqual(client.get(url).status_code, 403)
+        response = client.get(
+            url,
+            headers={"X-Alert-Admin-Token": "admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
+        self.assertEqual(response.json()["snapshot_schema_version"], 1)
+        self.assertNotIn("010-1234-5678", response.text)
+
+        restored = MonitoringSnapshotApiClient(
+            "http://testserver",
+            "admin-token",
+            get=client.get,
+        ).fetch()
+        self.assertEqual(restored.policy_version, self.policy.version)
+        self.assertEqual(restored.summary.affected_facility_count, 1)
+        self.assertEqual(
+            restored.facilities[0].department,
+            "환경서비스처 대기관리부 · 홍길동 대리",
+        )
+        self.assertEqual(service.snapshot_calls, [False, False])
 
     def test_simulation_uses_existing_scenario_without_calling_kma(self):
         store = _SnapshotStore(error=AssertionError("모의훈련은 저장본을 읽지 않습니다."))

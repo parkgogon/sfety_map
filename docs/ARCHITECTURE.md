@@ -236,6 +236,15 @@ DashboardSnapshot
 실적·이력       → 자동·수동 metrics/events + 비식별 CSV
 ```
 
+실시간 중앙 관제는 Streamlit에서 KMA를 다시 조회하지 않는다.
+`GET /internal/v1/monitoring/snapshot`으로 Cloud Run이 Firestore에서 선택한
+공통 `DashboardSnapshot`을 읽고, 이 결과를 필터·지도·수동 전파·PDF가
+계속 공유한다. 전송 계약은 개인 휴대전화와 원본 CSV 부가 열을 제외한다.
+
+모의훈련은 Streamlit 내 고정 시나리오를 별도로 사용한다. 세션 임시
+정책은 공통 snapshot이 보존한 특보–시설 연결만 재사용해 등급을
+다시 산출하며 자동 관제 기준 상태에는 영향을 주지 않는다.
+
 수동 전파는 Streamlit이 Telegram 토큰을 가지지 않고
 `POST /internal/v1/notifications/manual`을 호출합니다. API는 시설담당자 그룹으로
 즉시 전송하고 실패한 미전송 메시지만 Firestore outbox에 넣습니다.
