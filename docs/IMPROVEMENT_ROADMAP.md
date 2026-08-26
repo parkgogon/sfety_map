@@ -72,8 +72,8 @@ Firestore        관제 상태·알림·실적·감사 이력
   `TelegramOutboxService`로 분리한다.
 - [x] SOLAPI 잔액 점검과 09·18시 운영보고를
   `AlertOperationsService`로 분리한다.
-- [ ] `AlertDispatcher`에 남은 SMS 발송·비용 상한 처리를 전달 경로
-  서비스로 분리한다.
+- [x] `AlertDispatcher`에 남은 SMS 연락처 준비·발송·비용 상한·
+  Telegram 대체 전파를 `SmsDeliveryService`로 분리한다.
 - `FirestoreAlertStore`를 상태, 발송, outbox, 실적과 감사 저장소로 나눈다.
 - Firestore 전체 스캔을 조건 쿼리와 인덱스로 교체한다.
 - 오래된 outbox와 임시 상태에 보존기간 또는 TTL을 적용한다.

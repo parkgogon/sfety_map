@@ -12,9 +12,9 @@
 한 번 대체 전파한다. 배포 초기값은 반드시 `preview`로 유지한다.
 
 작업자 내부에서는 관제 회차 계산(`AlertCyclePlanner`), Telegram outbox
-(`TelegramOutboxService`), 잔액·정기 운영보고(`AlertOperationsService`)를
-분리한다. 배포 서비스와 Scheduler 경로, Firestore 문서 형식, 자동알림 기준
-상태는 기존과 동일하다.
+(`TelegramOutboxService`), SMS 준비·상한·대체 전파(`SmsDeliveryService`),
+잔액·정기 운영보고(`AlertOperationsService`)를 분리한다. 배포 서비스와
+Scheduler 경로, Firestore 문서 형식, 자동알림 기준 상태는 기존과 동일하다.
 
 ## 1. Telegram 두 곳 준비
 

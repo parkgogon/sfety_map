@@ -8,7 +8,6 @@ import hashlib
 import hmac
 import logging
 import uuid
-from collections import Counter
 from dataclasses import dataclass
 
 from safety_dashboard.adapters.telegram import TelegramNotifier
@@ -30,8 +29,6 @@ from safety_dashboard.alerts.domain import (
 )
 from safety_dashboard.alerts.messages import (
     build_alert_batch_telegram_payloads,
-    build_sms_messages,
-    unmapped_facility_ids,
 )
 from safety_dashboard.alerts.operations import AlertOperationsService
 from safety_dashboard.alerts.ports import (
@@ -43,6 +40,10 @@ from safety_dashboard.alerts.ports import (
     SystemHealthProbe,
 )
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.alerts.sms_delivery import (
+    SmsDeliveryService,
+    SmsPathUnavailable,
+)
 from safety_dashboard.alerts.telegram_outbox import TelegramOutboxService
 from safety_dashboard.domain.enums import DataHealth, KmaFailureCategory
 from safety_dashboard.domain.models import (
@@ -56,7 +57,6 @@ from safety_dashboard.monitoring.snapshot import MonitoringSnapshot
 
 
 KST = dt.timezone(dt.timedelta(hours=9))
-ESTIMATED_LMS_COST_KRW = 45
 LOGGER = logging.getLogger("safety_dashboard.alerts")
 
 
@@ -114,6 +114,13 @@ class AlertDispatcher:
             settings,
             telegram,
             user_telegram,
+        )
+        self.sms_delivery = SmsDeliveryService(
+            contacts,
+            sms,
+            store,
+            settings,
+            self.telegram_outbox,
         )
         self.operations = AlertOperationsService(
             store,
@@ -400,14 +407,14 @@ class AlertDispatcher:
 
         valid_facility_ids = [item.id for item in snapshot.facilities]
         try:
-            directory = self.contacts.fetch(valid_facility_ids)
-            if previous_status.get("contacts_health") == "ERROR":
-                self.telegram_outbox.notify_admin(
-                    "contacts-recovered",
-                    now,
-                    "✅ 자동 문자 연락처 조회가 정상화됐습니다.",
-                )
-        except ContactDataError as exc:
+            preparation = self.sms_delivery.prepare(
+                batch,
+                valid_facility_ids,
+                contacts_was_unhealthy=(
+                    previous_status.get("contacts_health") == "ERROR"
+                ),
+            )
+        except SmsPathUnavailable as exc:
             return self._fallback_without_sms(
                 batch,
                 current_impacts,
@@ -415,45 +422,24 @@ class AlertDispatcher:
                 new_transitions,
                 now,
                 day,
-                "연락처 Sheet 오류",
-                "CONTACTS_ERROR",
-                {"contacts_health": "ERROR", "contacts_detail": str(exc)},
+                exc.reason,
+                exc.status,
+                exc.status_values,
                 len(snapshot.warning_feed.warnings),
             )
 
-        try:
-            messages = build_sms_messages(
-                batch,
-                directory,
-                self.settings.recipient_hmac_secret,
-                self.settings.dashboard_base_url,
-            )
-        except ValueError as exc:
-            return self._fallback_without_sms(
-                batch,
-                current_impacts,
-                state_key,
-                new_transitions,
-                now,
-                day,
-                "문자 발송 설정 오류",
-                "CONFIGURATION_ERROR",
-                {"configuration_detail": str(exc)},
-                len(snapshot.warning_feed.warnings),
-            )
-
-        unmapped = unmapped_facility_ids(transitions, directory)
         if mode == "preview":
-            estimated_cost = len(messages) * ESTIMATED_LMS_COST_KRW
             self.store.save_batch(batch, "PREVIEW")
             self.store.save_state(current_impacts, state_key, now)
             self.store.record_run(day, {
                 "preview_poll_runs": 1,
                 "kma_success": 1,
                 "preview_transition_count": len(transitions),
-                "preview_messages": len(messages),
-                "preview_estimated_cost_krw": estimated_cost,
-                "preview_unmapped_facilities": len(unmapped),
+                "preview_messages": len(preparation.messages),
+                "preview_estimated_cost_krw": preparation.estimated_cost_krw,
+                "preview_unmapped_facilities": len(
+                    preparation.unmapped_facility_ids
+                ),
             })
             self.store.update_status({
                 "mode": mode,
@@ -462,19 +448,14 @@ class AlertDispatcher:
                 "last_result": "PREVIEW",
                 "user_delivery_mode": "sms",
                 "contacts_health": "LIVE",
-                "contact_revision": directory.revision,
+                "contact_revision": preparation.directory.revision,
                 "preview_transition_count": len(transitions),
-                "preview_message_count": len(messages),
-                "preview_estimated_cost_krw": estimated_cost,
-                "preview_samples": [
-                    {
-                        "recipient_code": item.recipient_hash[:12],
-                        "facility_count": len(item.facility_ids),
-                        "text": item.text,
-                    }
-                    for item in messages[:3]
-                ],
-                "unmapped_facility_count": len(unmapped),
+                "preview_message_count": len(preparation.messages),
+                "preview_estimated_cost_krw": preparation.estimated_cost_krw,
+                "preview_samples": preparation.preview_samples,
+                "unmapped_facility_count": len(
+                    preparation.unmapped_facility_ids
+                ),
                 **self._live_kma_status(
                     now, current_impacts, len(snapshot.warning_feed.warnings)
                 ),
@@ -483,113 +464,24 @@ class AlertDispatcher:
                 "PREVIEW",
                 mode,
                 transition_count=len(transitions),
-                message_count=len(messages),
+                message_count=len(preparation.messages),
                 detail="실제 문자는 발송하지 않았습니다.",
             )
 
-        self.store.save_batch(batch, "PROCESSING")
-        counters: Counter[str] = Counter({
+        outcome = self.sms_delivery.dispatch(batch, preparation, now, day)
+        counters = {
             "poll_runs": 1,
             "kma_success": 1,
-            "unmapped_facilities": len(unmapped),
             **transition_counters(new_transitions),
-        })
-        sms_today = self.store.sms_count(day)
-        sms_month = self.store.monthly_sms_count(day)
-        if sms_today < self.settings.cap_warning <= sms_today + len(messages):
-            self.telegram_outbox.notify_admin(
-                f"daily-cap-warning-{day.isoformat()}",
-                now,
-                f"⚠️ 오늘 자동 문자 발송이 {self.settings.cap_warning}건에 도달합니다.",
-            )
-        if (
-            sms_month < self.settings.monthly_cap_warning
-            <= sms_month + len(messages)
-        ):
-            self.telegram_outbox.notify_admin(
-                f"monthly-cap-warning-{day:%Y-%m}",
-                now,
-                f"⚠️ 이번 달 자동 문자 발송이 "
-                f"{self.settings.monthly_cap_warning}건에 도달합니다.",
-            )
-
-        recipient_hashes: list[str] = []
-        accepted = 0
-        blocked = 0
-        attempted = 0
-        failed = 0
-        unknown = 0
-        fallback_reasons: list[str] = []
-        sendable: list[OutgoingSmsMessage] = []
-        for message in messages:
-            reservation = self.store.reserve_delivery(message, now)
-            if reservation not in {SmsDeliveryStatus.RESERVED.value}:
-                continue
-            if (
-                sms_today + attempted >= self.settings.daily_cap
-                or sms_month + attempted >= self.settings.monthly_cap
-            ):
-                reason = (
-                    "일일 발송 상한 초과"
-                    if sms_today + attempted >= self.settings.daily_cap
-                    else "월간 발송 상한 초과"
-                )
-                result = SmsDeliveryResult(
-                    SmsDeliveryStatus.BLOCKED_CAP,
-                    detail=reason,
-                )
-                self.store.record_delivery_result(message, result, now)
-                counters["cap_blocked"] += 1
-                blocked += 1
-                fallback_reasons.append(reason)
-                continue
-            sendable.append(message)
-            attempted += 1
-
-        results = _send_messages(self.sms, tuple(sendable))
-        for message, result in zip(sendable, results, strict=True):
-            self.store.record_delivery_result(message, result, now)
-            counters["sms_attempted"] += 1
-            recipient_hashes.append(message.recipient_hash)
-            if result.status is SmsDeliveryStatus.ACCEPTED:
-                counters["sms_accepted"] += 1
-                accepted += 1
-            elif result.status is SmsDeliveryStatus.FAILED:
-                counters["sms_failed"] += 1
-                failed += 1
-                fallback_reasons.append(result.detail or "SOLAPI 접수 실패")
-            else:
-                counters["sms_unknown"] += 1
-                unknown += 1
-                fallback_reasons.append("SOLAPI 결과 확인 불가")
-
-        if unmapped:
-            fallback_reasons.append(f"연락처 미등록 시설 {len(unmapped)}곳")
-        fallback_queued = bool(fallback_reasons)
-        if fallback_queued:
-            self.telegram_outbox.enqueue_user_batch(
-                batch,
-                now,
-                TelegramPurpose.SMS_FALLBACK,
-                " · ".join(dict.fromkeys(fallback_reasons)),
-            )
+            **outcome.counters,
+        }
 
         self.store.save_state(current_impacts, state_key, now)
         self.store.resolve_pending(
             [item.id for item in transitions],
             "DISPATCHED",
         )
-        self.store.save_batch(batch, "DISPATCHED")
-        self.store.update_batch_delivery(batch.id, {
-            "delivery_route": "sms",
-            "sms_message_count": len(messages),
-            "sms_accepted_count": accepted,
-            "sms_failed_count": failed,
-            "sms_unknown_count": unknown,
-            "sms_blocked_count": blocked,
-            "telegram_fallback_queued": fallback_queued,
-        })
-        self.store.record_run(day, counters, recipient_hashes)
+        self.store.record_run(day, counters, outcome.recipient_hashes)
         self.store.update_status({
             "mode": mode,
             "policy_version": self.policy.version,
@@ -597,44 +489,28 @@ class AlertDispatcher:
             "last_result": "DISPATCHED",
             "user_delivery_mode": "sms",
             "contacts_health": "LIVE",
-            "contact_revision": directory.revision,
+            "contact_revision": preparation.directory.revision,
             "transition_count": len(transitions),
-            "message_count": len(messages),
-            "accepted_count": accepted,
-            "blocked_count": blocked,
-            "failed_count": failed,
-            "unknown_count": unknown,
-            "telegram_fallback_queued": fallback_queued,
-            "unmapped_facility_count": len(unmapped),
+            "message_count": outcome.message_count,
+            "accepted_count": outcome.accepted_count,
+            "blocked_count": outcome.blocked_count,
+            "failed_count": outcome.failed_count,
+            "unknown_count": outcome.unknown_count,
+            "telegram_fallback_queued": outcome.fallback_queued,
+            "unmapped_facility_count": len(
+                preparation.unmapped_facility_ids
+            ),
             **self._live_kma_status(
                 now, current_impacts, len(snapshot.warning_feed.warnings)
             ),
         })
-        self.telegram_outbox.enqueue_batch_summary(
-            batch,
-            "SMS 우선",
-            len(messages),
-            accepted,
-            failed,
-            unknown,
-            blocked,
-            len(unmapped),
-            fallback_queued,
-        )
-        if blocked:
-            self.telegram_outbox.notify_admin(
-                f"daily-cap-blocked-{day.isoformat()}",
-                now,
-                f"🚫 코드 발송 상한으로 자동 문자 {blocked}건을 차단하고 "
-                "사용자 Telegram 대체 전파를 예약했습니다.",
-            )
         return DispatchSummary(
             "DISPATCHED",
             mode,
             transition_count=len(transitions),
-            message_count=len(messages),
-            accepted_count=accepted,
-            blocked_count=blocked,
+            message_count=outcome.message_count,
+            accepted_count=outcome.accepted_count,
+            blocked_count=outcome.blocked_count,
         )
 
     def _save_monitoring_snapshot(
@@ -909,35 +785,6 @@ class AlertDispatcher:
             ),
             "affected_facility_count": len({item.facility_id for item in current_impacts}),
         }
-
-
-def _send_messages(
-    notifier: SmsNotifier,
-    messages: tuple[OutgoingSmsMessage, ...],
-) -> tuple[SmsDeliveryResult, ...]:
-    if not messages:
-        return ()
-    send_many = getattr(notifier, "send_many", None)
-    try:
-        if callable(send_many):
-            results = tuple(send_many(messages))
-        else:
-            results = tuple(notifier.send(item) for item in messages)
-    except Exception as exc:
-        results = ()
-        error_name = type(exc).__name__
-    else:
-        error_name = "InvalidBatchResponse"
-    if len(results) == len(messages):
-        return results
-    unknown = SmsDeliveryResult(
-        SmsDeliveryStatus.UNKNOWN,
-        detail=f"SOLAPI 일괄 응답 확인 불가 ({error_name})",
-    )
-    return tuple(
-        results[index] if index < len(results) else unknown
-        for index in range(len(messages))
-    )
 
 
 def _aware(value: dt.datetime) -> dt.datetime:

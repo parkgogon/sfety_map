@@ -170,11 +170,14 @@ Streamlit 캐시는 adapter를 감싸는 UI/infrastructure decorator로 적용�
 ```text
 AlertDispatcher
 ├── AlertCyclePlanner       snapshot → 영향 상태·발효/격상/해제 계획
+├── SmsDeliveryService      연락처·문자·비용 상한·Telegram 대체 경로
 ├── TelegramOutboxService  outbox 생성·재시도·전달 결과 보고
 └── AlertOperationsService 잔액 점검·09/18시 운영 상태 보고
 ```
 
 - `AlertCyclePlanner`는 외부 조회·저장을 하지 않는 순수 계산 모듈이다.
+- `SmsDeliveryService`는 연락처 Sheet 준비, SOLAPI 발송, 일·월 상한과
+  실패 시 시설담당자 Telegram 대체 전파를 한 경계에서 관리한다.
 - `TelegramOutboxService`는 관리자방과 시설담당자 그룹의 전달·재시도를 한곳에서
   처리한다.
 - `AlertOperationsService`는 재난 변화 전파와 무관한 비용·운영 상태 보고를

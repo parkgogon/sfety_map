@@ -23,6 +23,7 @@ from safety_dashboard.alerts.domain import (
     FacilityRecipient,
     HealthCheck,
     OperationalHealthReport,
+    OutgoingSmsMessage,
     SmsDeliveryResult,
     SmsDeliveryStatus,
     SolapiBalance,
@@ -33,6 +34,11 @@ from safety_dashboard.alerts.messages import build_alert_batch_telegram_payloads
 from safety_dashboard.alerts.memory_store import InMemoryAlertStore
 from safety_dashboard.alerts.service import AlertDispatcher, DispatchSummary
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.alerts.sms_delivery import (
+    SmsDeliveryService,
+    SmsPathUnavailable,
+    send_messages,
+)
 from safety_dashboard.alerts.telegram_outbox import TelegramOutboxService
 from safety_dashboard.alerts.worker_app import create_worker_app
 from safety_dashboard.alerts.transitions import (
@@ -818,6 +824,135 @@ class AutomaticAlertTests(unittest.TestCase):
         self.assertEqual(result.accepted_count, 1)
         self.assertEqual(result.blocked_count, 1)
         self.assertEqual(len(sms.messages), 1)
+
+    def test_sms_delivery_service_prepares_grouped_messages(self):
+        transitions = detect_transitions(
+            (),
+            impacts_from_snapshot(self.snapshot("주의보"), self.policy),
+            self.now,
+        )
+        batch = AlertBatch(
+            "sms-prepare",
+            self.now,
+            transitions,
+            "live",
+            self.policy.version,
+        )
+        contacts = _ContactProvider((
+            FacilityRecipient("F-1", "담당", "01011112222"),
+            FacilityRecipient("F-2", "담당", "01011112222"),
+        ))
+        store = InMemoryAlertStore()
+        settings = self.settings()
+        service = SmsDeliveryService(
+            contacts,
+            _Sms(),
+            store,
+            settings,
+            TelegramOutboxService(store, settings, _Telegram(), _Telegram()),
+        )
+
+        preparation = service.prepare(batch, ("F-1", "F-2"))
+
+        self.assertEqual(len(preparation.messages), 1)
+        self.assertEqual(preparation.estimated_cost_krw, 45)
+        self.assertEqual(preparation.unmapped_facility_ids, ())
+        self.assertEqual(
+            preparation.preview_samples[0]["facility_count"], 2
+        )
+
+    def test_sms_delivery_service_reports_contact_path_error(self):
+        transitions = detect_transitions(
+            (),
+            impacts_from_snapshot(self.snapshot("주의보"), self.policy),
+            self.now,
+        )
+        batch = AlertBatch(
+            "sms-contact-error",
+            self.now,
+            transitions,
+            "live",
+            self.policy.version,
+        )
+        contacts = _ContactProvider(())
+        contacts.error = True
+        store = InMemoryAlertStore()
+        settings = self.settings()
+        service = SmsDeliveryService(
+            contacts,
+            _Sms(),
+            store,
+            settings,
+            TelegramOutboxService(store, settings, _Telegram(), _Telegram()),
+        )
+
+        with self.assertRaises(SmsPathUnavailable) as raised:
+            service.prepare(batch, ("F-1", "F-2"))
+
+        self.assertEqual(raised.exception.status, "CONTACTS_ERROR")
+        self.assertEqual(
+            raised.exception.status_values["contacts_health"], "ERROR"
+        )
+
+    def test_sms_delivery_service_caps_and_queues_one_user_fallback(self):
+        transitions = detect_transitions(
+            (),
+            impacts_from_snapshot(self.snapshot("주의보"), self.policy),
+            self.now,
+        )
+        batch = AlertBatch(
+            "sms-cap",
+            self.now,
+            transitions,
+            "live",
+            self.policy.version,
+        )
+        contacts = _ContactProvider((
+            FacilityRecipient("F-1", "담당1", "01011112222"),
+            FacilityRecipient("F-2", "담당2", "01033334444"),
+        ))
+        store = InMemoryAlertStore()
+        notifier = _Sms()
+        settings = self.settings(daily_cap=1, cap_warning=1)
+        outbox = TelegramOutboxService(
+            store, settings, _Telegram(), _Telegram()
+        )
+        service = SmsDeliveryService(
+            contacts, notifier, store, settings, outbox
+        )
+        preparation = service.prepare(batch, ("F-1", "F-2"))
+
+        outcome = service.dispatch(batch, preparation, self.now, self.now.date())
+
+        self.assertEqual(outcome.accepted_count, 1)
+        self.assertEqual(outcome.blocked_count, 1)
+        self.assertTrue(outcome.fallback_queued)
+        self.assertEqual(len(notifier.messages), 1)
+        user_fallbacks = [
+            values["item"]
+            for values in store.telegram_jobs.values()
+            if values["item"].purpose is TelegramPurpose.SMS_FALLBACK
+        ]
+        self.assertEqual(len(user_fallbacks), 1)
+
+    def test_send_messages_marks_missing_batch_result_unknown(self):
+        class PartialBatchSms:
+            def send_many(self, messages):
+                return (SmsDeliveryResult(SmsDeliveryStatus.ACCEPTED),)
+
+        messages = (
+            OutgoingSmsMessage(
+                "sms-1", "batch", "hash-1", "01011112222", "1", (), ()
+            ),
+            OutgoingSmsMessage(
+                "sms-2", "batch", "hash-2", "01033334444", "2", (), ()
+            ),
+        )
+
+        results = send_messages(PartialBatchSms(), messages)
+
+        self.assertEqual(results[0].status, SmsDeliveryStatus.ACCEPTED)
+        self.assertEqual(results[1].status, SmsDeliveryStatus.UNKNOWN)
 
     def test_monthly_cap_blocks_sms_and_uses_one_fallback_post(self):
         contacts = _ContactProvider((
