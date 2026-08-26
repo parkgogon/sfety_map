@@ -199,5 +199,7 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
+        with:
+          install_components: beta
       - name: Configure public uptime checks and alerts
         run: bash scripts/configure_uptime_monitoring.sh
