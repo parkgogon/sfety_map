@@ -24,6 +24,7 @@ from safety_dashboard.domain.models import (
 
 MONITORING_SNAPSHOT_SCHEMA_VERSION = 1
 UTC = dt.timezone.utc
+KST = dt.timezone(dt.timedelta(hours=9))
 
 
 class MonitoringSnapshotError(ValueError):
@@ -356,8 +357,11 @@ def _mapping(value: object) -> Mapping[str, Any]:
 
 
 def _aware(value: dt.datetime) -> dt.datetime:
+    # KMA 원문과 기존 도메인 모델의 naive datetime은 한국 현지
+    # 시각이다. UTC로 간주하면 저장 snapshot의 조회 시각이 9시간
+    # 뒤로 밀리므로 저장 경계에서 KST를 명시한다.
     if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
+        return value.replace(tzinfo=KST)
     return value
 
 

@@ -179,6 +179,33 @@ def test_monitoring_snapshot_rejects_non_live_and_inconsistent_results():
         MonitoringSnapshot.capture(invalid)
 
 
+def test_monitoring_snapshot_treats_legacy_naive_times_as_kst():
+    source = _dashboard()
+    local_time = dt.datetime(2026, 8, 26, 18, 10)
+    dashboard = dataclasses.replace(
+        source,
+        generated_at=local_time,
+        warning_feed=dataclasses.replace(
+            source.warning_feed,
+            fetched_at=local_time - dt.timedelta(seconds=1),
+        ),
+        assessments=tuple(
+            dataclasses.replace(item, assessed_at=local_time)
+            for item in source.assessments
+        ),
+    )
+
+    snapshot = MonitoringSnapshot.capture(dashboard, stored_at=NOW)
+    document = snapshot.to_document()
+
+    assert document["generated_at"].endswith("+09:00")
+    assert document["kma_fetched_at"].endswith("+09:00")
+    assert document["dashboard"]["warning_feed"]["fetched_at"].endswith("+09:00")
+    restored = MonitoringSnapshot.from_document(document)
+    assert restored.generated_at.utcoffset() == dt.timedelta(hours=9)
+    assert restored.kma_fetched_at.hour == 18
+
+
 def test_firestore_monitoring_store_writes_snapshot_and_pointer_atomically():
     client = _FakeFirestoreClient()
     store = FirestoreMonitoringSnapshotStore(client=client)
@@ -216,6 +243,9 @@ class MonitoringSnapshotTests(unittest.TestCase):
     )
     test_monitoring_snapshot_rejects_non_live_and_inconsistent_results = staticmethod(
         test_monitoring_snapshot_rejects_non_live_and_inconsistent_results
+    )
+    test_monitoring_snapshot_treats_legacy_naive_times_as_kst = staticmethod(
+        test_monitoring_snapshot_treats_legacy_naive_times_as_kst
     )
     test_firestore_monitoring_store_writes_snapshot_and_pointer_atomically = staticmethod(
         test_firestore_monitoring_store_writes_snapshot_and_pointer_atomically
