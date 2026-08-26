@@ -161,6 +161,27 @@ class ReportRenderer(Protocol):
 Streamlit 캐시는 adapter를 감싸는 UI/infrastructure decorator로 적용하고 도메인
 모델에는 캐시 개념을 넣지 않습니다.
 
+### 자동 알림 작업자 내부 모듈
+
+자동 작업자는 하나의 Cloud Run 실행 단위를 유지하지만 내부 책임은 분리한다.
+`AlertDispatcher`는 잠금과 전체 순서만 조율하며 다음 서비스의 세부 규칙을 직접
+구현하지 않는다.
+
+```text
+AlertDispatcher
+├── AlertCyclePlanner       snapshot → 영향 상태·발효/격상/해제 계획
+├── TelegramOutboxService  outbox 생성·재시도·전달 결과 보고
+└── AlertOperationsService 잔액 점검·09/18시 운영 상태 보고
+```
+
+- `AlertCyclePlanner`는 외부 조회·저장을 하지 않는 순수 계산 모듈이다.
+- `TelegramOutboxService`는 관리자방과 시설담당자 그룹의 전달·재시도를 한곳에서
+  처리한다.
+- `AlertOperationsService`는 재난 변화 전파와 무관한 비용·운영 상태 보고를
+  격리한다.
+- 기존 `AlertDispatcher(...)` 생성 규격과 `AlertStateStore` 계약은 유지하므로
+  Worker API, Firestore 문서와 자동알림 기준 상태는 변경하지 않는다.
+
 ### 시설담당자용 HTTP API
 
 React 현장 지도는 초기 관제 데이터와 선택 시설의 외부 참고정보를 분리해

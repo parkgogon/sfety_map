@@ -67,8 +67,13 @@ Firestore        관제 상태·알림·실적·감사 이력
 
 ### 3단계 — 서버 모듈화
 
-- `AlertDispatcher`를 관제 회차, 변화 감지, 전달 경로, Telegram outbox,
-  문자 비용 보호와 운영 보고로 나눈다.
+- [x] 관제 영향·기준화·변화 감지를 순수 `AlertCyclePlanner`로 분리한다.
+- [x] Telegram outbox 생성·재시도·결과 보고를
+  `TelegramOutboxService`로 분리한다.
+- [x] SOLAPI 잔액 점검과 09·18시 운영보고를
+  `AlertOperationsService`로 분리한다.
+- [ ] `AlertDispatcher`에 남은 SMS 발송·비용 상한 처리를 전달 경로
+  서비스로 분리한다.
 - `FirestoreAlertStore`를 상태, 발송, outbox, 실적과 감사 저장소로 나눈다.
 - Firestore 전체 스캔을 조건 쿼리와 인덱스로 교체한다.
 - 오래된 outbox와 임시 상태에 보존기간 또는 TTL을 적용한다.
@@ -163,3 +168,7 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] 외부 감시용 자동 관제 준비 상태 API와 Cloud Monitoring 멱등 배포 설정 추가
 - [x] Cloud Monitoring 배포 권한과 업타임 체크·알림 채널·경보 정책 생성 확인
 - [ ] 실제 장애 발생 시 이메일 알림 실수신 확인
+- [x] 자동 관제 회차 계산을 `AlertCyclePlanner`로 분리하고 직접 단위 테스트 추가
+- [x] Telegram outbox와 운영보고·SOLAPI 잔액 점검을 독립 서비스로 분리
+- [x] `AlertDispatcher` 외부 생성 규격과 Firestore 상태·자동알림 기준을 유지한 채
+  1,413줄에서 972줄로 축소

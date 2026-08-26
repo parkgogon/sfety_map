@@ -16,6 +16,7 @@ from safety_dashboard.alerts.admin import (
     AlertAdminService,
 )
 from safety_dashboard.alerts.contacts import ContactDataError, build_contact_directory
+from safety_dashboard.alerts.cycle import AlertCyclePlanner
 from safety_dashboard.alerts.domain import (
     AlertBatch,
     ContactDirectory,
@@ -26,11 +27,13 @@ from safety_dashboard.alerts.domain import (
     SmsDeliveryStatus,
     SolapiBalance,
     TelegramAudience,
+    TelegramPurpose,
 )
 from safety_dashboard.alerts.messages import build_alert_batch_telegram_payloads
 from safety_dashboard.alerts.memory_store import InMemoryAlertStore
 from safety_dashboard.alerts.service import AlertDispatcher, DispatchSummary
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.alerts.telegram_outbox import TelegramOutboxService
 from safety_dashboard.alerts.worker_app import create_worker_app
 from safety_dashboard.alerts.transitions import (
     detect_transitions,
@@ -406,6 +409,76 @@ class AutomaticAlertTests(unittest.TestCase):
             "BASELINED",
         )
         self.assertEqual(len(user.batches), sent_before_filter_change)
+
+    def test_cycle_planner_separates_baseline_and_transition_calculation(self):
+        planner = AlertCyclePlanner(
+            self.policy,
+            self.settings(user_delivery_mode="telegram"),
+        )
+        baseline = planner.plan(
+            self.snapshot(),
+            initialized=False,
+            previous_mode="",
+            previous_impacts=(),
+            pending=(),
+            now=self.now,
+        )
+        self.assertTrue(baseline.baseline_required)
+        self.assertEqual(baseline.transitions, ())
+
+        changed = planner.plan(
+            self.snapshot("주의보"),
+            initialized=True,
+            previous_mode=planner.state_key,
+            previous_impacts=baseline.current_impacts,
+            pending=(),
+            now=self.now + dt.timedelta(minutes=5),
+        )
+        self.assertFalse(changed.baseline_required)
+        self.assertEqual(len(changed.new_transitions), 2)
+        self.assertEqual(
+            {item.id for item in changed.transitions},
+            {item.id for item in changed.new_transitions},
+        )
+        self.assertEqual(
+            {item.kind.value for item in changed.transitions},
+            {"ACTIVATED"},
+        )
+
+    def test_telegram_outbox_service_delivers_user_batch_and_admin_result(self):
+        settings = self.settings(user_delivery_mode="telegram")
+        planner = AlertCyclePlanner(self.policy, settings)
+        plan = planner.plan(
+            self.snapshot("주의보"),
+            initialized=True,
+            previous_mode=planner.state_key,
+            previous_impacts=(),
+            pending=(),
+            now=self.now,
+        )
+        batch = planner.batch(plan.transitions, self.now)
+        store = InMemoryAlertStore()
+        store.save_batch(batch, "DISPATCHED")
+        admin = _Telegram()
+        user = _Telegram()
+        outbox = TelegramOutboxService(
+            store,
+            settings,
+            admin,
+            user,
+        )
+
+        outbox.enqueue_user_batch(
+            batch,
+            self.now,
+            TelegramPurpose.USER_PRIMARY,
+            "",
+        )
+        outbox.drain(self.now)
+
+        self.assertEqual(len(user.batches), 1)
+        self.assertEqual(len(admin.batches), 1)
+        self.assertIn("사용자 Telegram 성공", admin.batches[0][0].text)
 
     def test_warning_type_environment_lists_support_pipe_separator(self):
         with patch.dict(os.environ, {
