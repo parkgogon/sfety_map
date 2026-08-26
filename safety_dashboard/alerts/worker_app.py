@@ -9,6 +9,9 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from safety_dashboard.adapters.firestore_alerts import FirestoreAlertStore
+from safety_dashboard.adapters.firestore_monitoring import (
+    FirestoreMonitoringSnapshotStore,
+)
 from safety_dashboard.adapters.google_sheet_contacts import GoogleSheetContactProvider
 from safety_dashboard.adapters.kma_diagnostics import KmaFailureDiagnoser
 from safety_dashboard.adapters.operational_health import HttpSystemHealthProbe
@@ -61,6 +64,7 @@ def _dispatcher() -> AlertDispatcher:
         alert_settings.solapi_api_secret,
         alert_settings.solapi_sender_number,
     )
+    alert_store = FirestoreAlertStore(alert_settings.project_id)
     return AlertDispatcher(
         snapshot_provider=_SnapshotProvider(MonitoringApiService(api_settings)),
         contacts=GoogleSheetContactProvider(
@@ -68,7 +72,7 @@ def _dispatcher() -> AlertDispatcher:
             alert_settings.contact_sheet_range,
         ),
         sms=solapi,
-        store=FirestoreAlertStore(alert_settings.project_id),
+        store=alert_store,
         policy=policy,
         settings=alert_settings,
         telegram=admin_telegram,
@@ -79,6 +83,9 @@ def _dispatcher() -> AlertDispatcher:
             user_telegram,
         ),
         kma_diagnoser=KmaFailureDiagnoser(),
+        monitoring_snapshot_store=FirestoreMonitoringSnapshotStore(
+            client=alert_store.client
+        ),
     )
 
 

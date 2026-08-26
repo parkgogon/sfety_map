@@ -6,6 +6,7 @@ import datetime as dt
 import html
 import hashlib
 import hmac
+import logging
 import uuid
 from collections import Counter
 from dataclasses import dataclass
@@ -51,14 +52,18 @@ from safety_dashboard.alerts.transitions import (
 )
 from safety_dashboard.domain.enums import DataHealth, KmaFailureCategory
 from safety_dashboard.domain.models import (
+    DashboardSnapshot,
     KmaFailureDiagnostic,
     OutgoingTelegramMessage,
 )
 from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.monitoring.ports import MonitoringSnapshotStore
+from safety_dashboard.monitoring.snapshot import MonitoringSnapshot
 
 
 KST = dt.timezone(dt.timedelta(hours=9))
 ESTIMATED_LMS_COST_KRW = 45
+LOGGER = logging.getLogger("safety_dashboard.alerts")
 
 
 @dataclass(frozen=True)
@@ -97,6 +102,7 @@ class AlertDispatcher:
         balance_provider: SolapiBalanceProvider | None = None,
         health_probe: SystemHealthProbe | None = None,
         kma_diagnoser: object | None = None,
+        monitoring_snapshot_store: MonitoringSnapshotStore | None = None,
     ) -> None:
         self.snapshot_provider = snapshot_provider
         self.contacts = contacts
@@ -109,6 +115,7 @@ class AlertDispatcher:
         self.balance_provider = balance_provider
         self.health_probe = health_probe
         self.kma_diagnoser = kma_diagnoser
+        self.monitoring_snapshot_store = monitoring_snapshot_store
 
     def run(self, now: dt.datetime | None = None) -> DispatchSummary:
         current_time = _aware(now or dt.datetime.now(KST))
@@ -299,6 +306,7 @@ class AlertDispatcher:
                     snapshot.warning_feed.message or "세부 근거 없음",
                 ),
             )
+        self._save_monitoring_snapshot(snapshot, now)
         if previous_status.get("kma_health") == "ERROR":
             started = _parse_datetime(previous_status.get("kma_failure_started_at"))
             duration = _duration_text(now - started) if started else "지속시간 미확인"
@@ -622,6 +630,36 @@ class AlertDispatcher:
             accepted_count=accepted,
             blocked_count=blocked,
         )
+
+    def _save_monitoring_snapshot(
+        self, dashboard: DashboardSnapshot, now: dt.datetime
+    ) -> None:
+        """공통 snapshot 저장 실패를 기존 자동 알림 흐름과 격리합니다."""
+
+        if self.monitoring_snapshot_store is None:
+            return
+        try:
+            snapshot = MonitoringSnapshot.capture(dashboard, stored_at=now)
+            self.monitoring_snapshot_store.save_latest(snapshot)
+        except Exception as exc:
+            LOGGER.warning(
+                "monitoring_snapshot_save_failed type=%s",
+                type(exc).__name__,
+            )
+            self.store.update_status({
+                "monitoring_snapshot_health": "ERROR",
+                "monitoring_snapshot_error_type": type(exc).__name__,
+                "monitoring_snapshot_attempted_at": now,
+            })
+            return
+        self.store.update_status({
+            "monitoring_snapshot_health": "LIVE",
+            "latest_monitoring_snapshot_id": snapshot.id,
+            "latest_monitoring_snapshot_generated_at": snapshot.generated_at,
+            "latest_monitoring_snapshot_kma_fetched_at": snapshot.kma_fetched_at,
+            "monitoring_snapshot_stored_at": snapshot.stored_at,
+            "monitoring_snapshot_error_type": "",
+        })
 
     def _dispatch_telegram_primary(
         self,

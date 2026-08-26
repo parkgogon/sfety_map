@@ -58,9 +58,9 @@ Firestore        관제 상태·알림·실적·감사 이력
 
 ### 2단계 — 공통 관제 snapshot
 
-- 자동 작업자가 5분마다 최신 정상 `MonitoringSnapshot`을 저장한다.
-- React, 중앙관제, 자동알림, 수동 전파와 PDF가 같은 snapshot을 읽는다.
-- snapshot ID, 생성 시각, KMA 조회 시각, 정책 버전과 자료 상태를 기록한다.
+- [x] 자동 작업자가 5분마다 최신 정상 `MonitoringSnapshot`을 저장한다.
+- [x] snapshot ID, 생성 시각, KMA 조회 시각, 정책 버전과 자료 상태를 기록한다.
+- [ ] React, 중앙관제, 자동알림, 수동 전파와 PDF가 같은 snapshot을 읽는다.
 - 모의훈련과 브라우저 세션 임시정책은 실시간 기준 상태와 분리한다.
 - Streamlit의 KMA 직접 조회를 제거한다.
 
@@ -148,8 +148,11 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] 같은 프로세스의 동시 요청이 하나의 KMA 조회 결과를 공유
 - [x] KMA 일시 실패 시 프로세스에 남아 있는 마지막 정상 관제 결과를 `STALE`로 제공
 - [x] 사용자 화면에 `KMA 수신 지연`과 마지막 정상 자료 기준 시각 표시
-- [ ] Cloud Run 재시작 후에도 유지되는 Firestore 공통 snapshot — 2단계에서 진행
+- [x] 공통 `MonitoringSnapshot` v1 계약과 Firestore 최신 포인터·불변 문서 저장소 추가
+- [x] 자동 작업자가 정상 관제 회차를 기존 알림 처리와 병행 저장하도록 연결
+- [ ] 사용자 API·중앙관제·PDF의 Firestore 공통 snapshot 읽기 전환
 - [x] Streamlit 중앙 관제·설정에 Cloud Run 검증 방식의 8시간 임시 세션 잠금 적용
 - [x] `ADMIN_ACCESS_PASSWORD` Secret 생성·권한 부여와 실제 배포 확인
 - [x] 외부 감시용 자동 관제 준비 상태 API와 Cloud Monitoring 멱등 배포 설정 추가
-- [ ] Cloud Monitoring 배포 계정 권한 부여·이메일 알림 실수신 확인
+- [x] Cloud Monitoring 배포 권한과 업타임 체크·알림 채널·경보 정책 생성 확인
+- [ ] 실제 장애 발생 시 이메일 알림 실수신 확인

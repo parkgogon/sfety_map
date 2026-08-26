@@ -85,6 +85,20 @@ class _SnapshotProvider:
         return self.snapshot
 
 
+class _MonitoringSnapshotStore:
+    def __init__(self, *, fail=False):
+        self.fail = fail
+        self.saved = []
+
+    def save_latest(self, snapshot):
+        if self.fail:
+            raise RuntimeError("테스트 snapshot 저장 장애")
+        self.saved.append(snapshot)
+
+    def load_latest(self):
+        return self.saved[-1] if self.saved else None
+
+
 class _ContactProvider:
     def __init__(self, recipients):
         self.recipients = recipients
@@ -248,6 +262,7 @@ class AutomaticAlertTests(unittest.TestCase):
         balance_provider=None,
         health_probe=None,
         kma_diagnoser=None,
+        monitoring_snapshot_store=None,
     ):
         contact_provider = contacts or _ContactProvider((
             FacilityRecipient("F-1", "담당", "01011112222"),
@@ -266,9 +281,59 @@ class AutomaticAlertTests(unittest.TestCase):
                 balance_provider=balance_provider,
                 health_probe=health_probe,
                 kma_diagnoser=kma_diagnoser,
+                monitoring_snapshot_store=monitoring_snapshot_store,
             ),
             contact_provider,
         )
+
+    def test_live_monitoring_snapshot_is_mirrored_without_changing_baseline(self):
+        source = self.snapshot("주의보")
+        state = InMemoryAlertStore()
+        snapshots = _MonitoringSnapshotStore()
+        dispatcher, _ = self.dispatcher(
+            source,
+            store=state,
+            monitoring_snapshot_store=snapshots,
+        )
+
+        result = dispatcher.run(self.now)
+
+        self.assertEqual(result.status, "BASELINED")
+        self.assertEqual(len(snapshots.saved), 1)
+        self.assertEqual(snapshots.saved[0].dashboard.summary, source.summary)
+        self.assertEqual(state.status["monitoring_snapshot_health"], "LIVE")
+        self.assertEqual(
+            state.status["latest_monitoring_snapshot_id"], snapshots.saved[0].id
+        )
+
+    def test_monitoring_snapshot_storage_failure_does_not_block_alert_run(self):
+        state = InMemoryAlertStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot("주의보"),
+            store=state,
+            monitoring_snapshot_store=_MonitoringSnapshotStore(fail=True),
+        )
+
+        result = dispatcher.run(self.now)
+
+        self.assertEqual(result.status, "BASELINED")
+        self.assertEqual(state.status["last_result"], "BASELINED")
+        self.assertEqual(state.status["monitoring_snapshot_health"], "ERROR")
+        self.assertEqual(
+            state.status["monitoring_snapshot_error_type"], "RuntimeError"
+        )
+
+    def test_failed_kma_result_is_not_saved_as_common_snapshot(self):
+        snapshots = _MonitoringSnapshotStore()
+        dispatcher, _ = self.dispatcher(
+            self.snapshot(health=DataHealth.ERROR),
+            monitoring_snapshot_store=snapshots,
+        )
+
+        result = dispatcher.run(self.now)
+
+        self.assertEqual(result.status, "KMA_ERROR")
+        self.assertEqual(snapshots.saved, [])
 
     def test_transition_identity_ignores_same_level_reissue_and_detects_escalation(self):
         advisory = impacts_from_snapshot(self.snapshot("주의보", minute=0), self.policy)

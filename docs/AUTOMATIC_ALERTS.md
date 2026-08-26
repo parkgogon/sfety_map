@@ -253,6 +253,25 @@ SMS 성공 접수 시에는 시설담당자 그룹에 같은 사건을 중복 �
 같은 시설·특보 구성은 재확인을 요구한다. 요청·메모·대상·메시지·결과는
 Firestore에 감사 기록으로 남고 실패 시 5분 간격으로 최대 30분 재시도한다.
 
+## 공통 관제 snapshot 병행 저장
+
+자동 작업자는 KMA 조회와 시설 위험도 계산이 정상 완료된 회차마다 같은
+`DashboardSnapshot`을 버전이 있는 `MonitoringSnapshot`으로 변환해 Firestore에
+병행 저장한다.
+
+- `monitoring_snapshots/{snapshot_id}`: 해당 관제 회차의 불변 데이터
+- `monitoring_state/latest`: 최신 정상 snapshot을 가리키는 포인터
+
+snapshot에는 고유 ID, 스키마 버전, 생성·저장·KMA 조회 시각, 정책 버전,
+활성 특보, 103개 시설의 공개 정보와 위험도 판정 결과가 들어간다. 원본 휴대전화와
+CSV 부가 열은 저장하지 않는다. KMA 오류·지연·모의훈련 결과는 정상 운영
+snapshot을 덮어쓰지 않는다.
+
+병행 저장은 기존 발효·격상·해제 판단보다 독립적이다. Firestore snapshot 저장에
+실패해도 기존 자동알림을 중단하거나 KMA 장애로 기록하지 않고 운영 상태에
+`monitoring_snapshot_health=ERROR`만 남긴다. 현재 단계에서는 저장만 수행하며,
+사용자 API·중앙관제·PDF가 이 저장본을 읽는 전환은 다음 단계에서 진행한다.
+
 `실적·이력`에서 자동 관제와 수동 상황전파를 분리해 확인한다. SMS 수치는
 SMS 모드이거나 선택 기간에 문자 이력이 있을 때만 표시한다.
 
