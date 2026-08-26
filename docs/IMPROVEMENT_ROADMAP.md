@@ -150,5 +150,6 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] 사용자 화면에 `KMA 수신 지연`과 마지막 정상 자료 기준 시각 표시
 - [ ] Cloud Run 재시작 후에도 유지되는 Firestore 공통 snapshot — 2단계에서 진행
 - [x] Streamlit 중앙 관제·설정에 Cloud Run 검증 방식의 8시간 임시 세션 잠금 적용
-- [ ] `ADMIN_ACCESS_PASSWORD` Secret 생성·권한 부여와 실제 배포 확인
-- [ ] 외부 가동상태 감시 — 다음 작업
+- [x] `ADMIN_ACCESS_PASSWORD` Secret 생성·권한 부여와 실제 배포 확인
+- [x] 외부 감시용 자동 관제 준비 상태 API와 Cloud Monitoring 멱등 배포 설정 추가
+- [ ] Cloud Monitoring 배포 계정 권한 부여·이메일 알림 실수신 확인

@@ -33,6 +33,7 @@ Streamlit secrets를 읽는다.
 ## API 계약
 
 - `GET /api/v1/health`: Cloud Run 프로세스 상태
+- `GET /api/v1/health/operations`: 5분 자동 관제 작업자의 최근 실행 상태
 - `GET /api/v1/monitoring`: 시설 103개, KMA 상태·특보·위험도·현재 특보 경계
 - `GET /api/v1/monitoring?refresh=true`: 수동 강제 갱신
 - `GET /api/v1/facilities/{facility_id}/weather`: 시설 KMA 격자의 초단기실황
@@ -131,7 +132,40 @@ Repository variables:
 ```text
 GCP_PROJECT_ID=keco-safety-map
 GCP_ARTIFACT_REPOSITORY=safety-dashboard
+UPTIME_MONITORING_ENABLED=true
+UPTIME_ALERT_EMAIL=<외부 장애 알림을 받을 관리자 이메일>
 ```
+
+## 외부 가동상태 감시
+
+`UPTIME_MONITORING_ENABLED=true`이면 배포 완료 후 GitHub Actions가
+Cloud Monitoring에 다음 두 개의 공개 업타임 체크를 생성하거나 갱신한다.
+
+- 사용자 시설지도 HTML 응답
+- 자동 관제 작업자의 최근 10분 이내 실행 여부
+
+점검은 5분 주기로 아시아·미국 3개 지역에서 실행한다. 10분간
+복수 지역의 실패가 지속될 때만 인시던트를 열어 일시적인 통신 지연으로
+인한 오경보를 줄인다. `UPTIME_ALERT_EMAIL`이 설정되면 장애·복구를 해당
+주소로 통지한다.
+
+KMA 수신 장애는 자동 관제 작업자가 기존 관리자 Telegram으로 별도
+통지한다. KMA가 잠시 응답하지 않더라도 작업자가 계속 실행 중이면
+`/api/v1/health/operations`는 가동 중으로 판정한다. 이로써 우리 시스템
+장애와 외부 KMA 자료 지연을 구분한다.
+
+배포 계정에는 다음 권한이 필요하다.
+
+```text
+roles/monitoring.uptimeCheckConfigEditor
+roles/monitoring.alertPolicyEditor
+roles/monitoring.notificationChannelEditor
+```
+
+업타임 체크는 JavaScript나 지도 타일을 실행하지 않고 HTTP 응답과
+필수 문구만 검증한다. 상세 구성은
+[`scripts/configure_uptime_monitoring.sh`](../scripts/configure_uptime_monitoring.sh)에서
+멱등적으로 관리한다.
 
 자동 시설담당자 알림은 기본 배포에서 꺼져 있다. 관리자방·시설담당자
 Telegram 그룹 준비 후 `ALERT_AUTOMATION_ENABLED=true`를 설정해야 비공개 작업자와

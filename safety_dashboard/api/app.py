@@ -42,6 +42,7 @@ from safety_dashboard.alerts.domain import (
 from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.domain.enums import WeatherLayerKind
 from safety_dashboard.domain.models import OutgoingTelegramMessage
+from safety_dashboard.operations.readiness import OperationalReadinessService
 
 
 LOGGER = logging.getLogger("safety_dashboard.api")
@@ -77,6 +78,7 @@ def create_app(
     weather_layer_service: WeatherLayerService | None = None,
     alert_admin_service: AlertAdminService | None = None,
     admin_access_service: AdminAccessVerifier | None = None,
+    operational_readiness_service: OperationalReadinessService | None = None,
 ) -> FastAPI:
     settings = ApiSettings.from_environment()
     monitoring_service = service or MonitoringApiService(settings)
@@ -84,6 +86,7 @@ def create_app(
     weather_layers = weather_layer_service or WeatherLayerService(settings)
     alert_settings = AlertSettings.from_environment()
     alert_admin = alert_admin_service
+    readiness = operational_readiness_service
     admin_access = admin_access_service or AdminAccessVerifier(
         AdminAccessSettings.from_environment()
     )
@@ -125,6 +128,13 @@ def create_app(
                 manual_snapshot_provider=monitoring_service.snapshot,
             )
         return alert_admin
+
+    def operational_readiness() -> OperationalReadinessService:
+        nonlocal readiness
+        if readiness is None:
+            store = FirestoreAlertStore(alert_settings.project_id)
+            readiness = OperationalReadinessService(store.notification_status)
+        return readiness
     application = FastAPI(
         title="K-ECO Safety Monitoring API",
         version="1.0.0",
@@ -136,6 +146,14 @@ def create_app(
     @application.get("/api/v1/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "api_version": "v1"}
+
+    @application.get("/api/v1/health/operations")
+    def operations_health(response: Response) -> dict[str, object]:
+        response.headers["Cache-Control"] = "private, no-store"
+        result = operational_readiness().check()
+        if not result.healthy:
+            response.status_code = 503
+        return result.as_dict()
 
     @application.post("/internal/v1/admin/access")
     def verify_admin_access(
