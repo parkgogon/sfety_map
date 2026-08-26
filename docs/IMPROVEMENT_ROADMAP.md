@@ -62,8 +62,8 @@ Firestore        관제 상태·알림·실적·감사 이력
 - [x] snapshot ID, 생성 시각, KMA 조회 시각, 정책 버전과 자료 상태를 기록한다.
 - [x] React 사용자 API와 API 수동 전파가 최신 snapshot을 우선 읽는다.
 - [x] Streamlit 중앙관제와 PDF를 공통 snapshot 읽기로 전환한다.
-- 모의훈련과 브라우저 세션 임시정책은 실시간 기준 상태와 분리한다.
-- Streamlit의 KMA 직접 조회를 제거한다.
+- [x] 모의훈련과 브라우저 세션 임시정책은 실시간 기준 상태와 분리한다.
+- [x] Streamlit의 KMA 직접 조회를 제거한다.
 
 ### 3단계 — 서버 모듈화
 
