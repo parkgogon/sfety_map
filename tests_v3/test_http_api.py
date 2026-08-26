@@ -1,3 +1,4 @@
+import dataclasses
 import datetime as dt
 import tempfile
 import unittest
@@ -25,6 +26,31 @@ from safety_dashboard.domain import (
     WarningLevel,
 )
 from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.monitoring.snapshot import MonitoringSnapshot
+
+
+KST = dt.timezone(dt.timedelta(hours=9))
+TEST_ZONES = {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {"regid": "L1070300", "regko": "구미시"},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [127.0, 35.0],
+                        [130.0, 35.0],
+                        [130.0, 37.0],
+                        [127.0, 37.0],
+                        [127.0, 35.0],
+                    ]
+                ],
+            },
+        }
+    ],
+}
 
 
 class _Repository:
@@ -55,6 +81,22 @@ class _ApiService:
     def monitoring(self, force_refresh=False, simulation=False):
         self.calls.append((force_refresh, simulation))
         return {"api_version": "v1", "facilities": []}
+
+
+class _SnapshotStore:
+    def __init__(self, snapshot=None, *, error=None):
+        self.snapshot = snapshot
+        self.error = error
+        self.load_count = 0
+
+    def load_latest(self):
+        self.load_count += 1
+        if self.error is not None:
+            raise self.error
+        return self.snapshot
+
+    def save_latest(self, _snapshot):
+        raise AssertionError("공개 API는 snapshot을 저장하면 안 됩니다.")
 
 
 class MonitoringApiTests(unittest.TestCase):
@@ -184,7 +226,9 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(client.get("/api/v1/health").json()["status"], "ok")
 
     def test_simulation_uses_existing_scenario_without_calling_kma(self):
+        store = _SnapshotStore(error=AssertionError("모의훈련은 저장본을 읽지 않습니다."))
         service = MonitoringApiService(ApiSettings(kma_api_key=""))
+        service._monitoring_snapshot_store = store
         service._zones = lambda _: (  # type: ignore[method-assign]
             {
                 "type": "FeatureCollection",
@@ -216,6 +260,112 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertTrue(
             all(item["source"] == "모의훈련" for item in payload["warnings"])
         )
+        self.assertEqual(store.load_count, 0)
+
+    def test_fresh_firestore_snapshot_is_used_without_kma_call(self):
+        current = dt.datetime(2026, 8, 11, 9, 5, tzinfo=KST)
+        stored = MonitoringSnapshot.capture(
+            self.snapshot(DataHealth.LIVE),
+            stored_at=current - dt.timedelta(minutes=4),
+        )
+        store = _SnapshotStore(stored)
+        service = MonitoringApiService(
+            ApiSettings(kma_api_key="unused"),
+            clock=lambda: current,
+            monitoring_snapshot_store=store,
+        )
+        service._zones = lambda _: (  # type: ignore[method-assign]
+            TEST_ZONES,
+            DataHealth.FALLBACK,
+            "내장 경계",
+        )
+
+        with patch(
+            "safety_dashboard.api.service.KmaWarningProvider",
+            side_effect=AssertionError("최신 저장본이 있으면 KMA를 재조회하면 안 됩니다."),
+        ):
+            payload = service.monitoring()
+
+        self.assertEqual(store.load_count, 1)
+        self.assertEqual(payload["status"]["health"], DataHealth.LIVE.value)
+        self.assertEqual(payload["generated_at"], "2026-08-11T09:00:00+09:00")
+        self.assertEqual(payload["summary"]["affected_facility_count"], 1)
+        self.assertEqual(len(payload["facilities"]), 2)
+
+    def test_stale_firestore_snapshot_is_fallback_when_kma_fails(self):
+        current = dt.datetime(2026, 8, 11, 10, 0, tzinfo=KST)
+        stored = MonitoringSnapshot.capture(
+            self.snapshot(DataHealth.LIVE),
+            stored_at=current - dt.timedelta(hours=1),
+        )
+        store = _SnapshotStore(stored)
+        service = MonitoringApiService(
+            ApiSettings(
+                kma_api_key="",
+                monitoring_snapshot_fresh_seconds=900,
+            ),
+            clock=lambda: current,
+            monitoring_snapshot_store=store,
+        )
+        service._zones = lambda _: (  # type: ignore[method-assign]
+            TEST_ZONES,
+            DataHealth.FALLBACK,
+            "내장 경계",
+        )
+
+        payload = service.monitoring()
+
+        self.assertEqual(payload["status"]["health"], DataHealth.STALE.value)
+        self.assertEqual(payload["status"]["fetched_at"], "2026-08-11T09:00:00+09:00")
+        self.assertEqual(payload["summary"]["affected_facility_count"], 1)
+        self.assertIn("마지막 정상 자료", payload["status"]["detail"])
+
+    def test_snapshot_store_error_falls_back_to_existing_kma_path(self):
+        store = _SnapshotStore(error=RuntimeError("Firestore 장애"))
+        service = MonitoringApiService(
+            ApiSettings(kma_api_key=""),
+            monitoring_snapshot_store=store,
+        )
+        service._zones = lambda _: (  # type: ignore[method-assign]
+            TEST_ZONES,
+            DataHealth.FALLBACK,
+            "내장 경계",
+        )
+
+        payload = service.monitoring()
+
+        self.assertEqual(store.load_count, 1)
+        self.assertEqual(payload["status"]["health"], DataHealth.ERROR.value)
+        self.assertIsNone(payload["summary"])
+
+    def test_snapshot_with_different_policy_is_not_reused(self):
+        source = self.snapshot(DataHealth.LIVE)
+        old_policy_dashboard = dataclasses.replace(
+            source,
+            policy_version="old-policy",
+            assessments=tuple(
+                dataclasses.replace(item, policy_version="old-policy")
+                for item in source.assessments
+            ),
+        )
+        store = _SnapshotStore(
+            MonitoringSnapshot.capture(old_policy_dashboard)
+        )
+        service = MonitoringApiService(
+            ApiSettings(kma_api_key=""),
+            monitoring_snapshot_store=store,
+        )
+        service._zones = lambda _: (  # type: ignore[method-assign]
+            TEST_ZONES,
+            DataHealth.FALLBACK,
+            "내장 경계",
+        )
+
+        payload = service.monitoring()
+
+        self.assertEqual(store.load_count, 1)
+        self.assertEqual(payload["status"]["health"], DataHealth.ERROR.value)
+        self.assertIsNone(payload["summary"])
 
     def test_forced_refresh_is_shared_during_server_cooldown(self):
         clock = [100.0]
@@ -286,6 +436,10 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(live["status"]["health"], DataHealth.LIVE.value)
         self.assertEqual(stale["status"]["health"], DataHealth.STALE.value)
         self.assertEqual(stale["generated_at"], live["generated_at"])
+        self.assertEqual(
+            stale["status"]["fetched_at"],
+            live["status"]["fetched_at"],
+        )
         self.assertEqual(stale["summary"], live["summary"])
         self.assertEqual(stale["warnings"], live["warnings"])
         self.assertEqual(

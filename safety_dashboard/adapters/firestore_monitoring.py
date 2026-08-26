@@ -17,8 +17,15 @@ MAX_DOCUMENT_BYTES = 900_000
 
 
 class FirestoreMonitoringSnapshotStore:
-    def __init__(self, project_id: str = "", *, client: Any | None = None) -> None:
+    def __init__(
+        self,
+        project_id: str = "",
+        *,
+        client: Any | None = None,
+        read_timeout: float = 5,
+    ) -> None:
         self.client = client or firestore.Client(project=project_id or None)
+        self.read_timeout = read_timeout
         self.snapshots = self.client.collection("monitoring_snapshots")
         self.latest_ref = self.client.collection("monitoring_state").document("latest")
 
@@ -52,14 +59,14 @@ class FirestoreMonitoringSnapshotStore:
         batch.commit()
 
     def load_latest(self) -> MonitoringSnapshot | None:
-        pointer = self.latest_ref.get()
+        pointer = self.latest_ref.get(timeout=self.read_timeout)
         if not pointer.exists:
             return None
         pointer_values = pointer.to_dict() or {}
         snapshot_id = str(pointer_values.get("snapshot_id", ""))
         if not snapshot_id:
             raise MonitoringSnapshotError("최신 관제 snapshot ID가 비어 있습니다.")
-        stored = self.snapshots.document(snapshot_id).get()
+        stored = self.snapshots.document(snapshot_id).get(timeout=self.read_timeout)
         if not stored.exists:
             raise MonitoringSnapshotError(
                 f"최신 관제 snapshot 문서를 찾을 수 없습니다: {snapshot_id}"

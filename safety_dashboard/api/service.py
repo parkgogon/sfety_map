@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import threading
 import time
 from dataclasses import replace
@@ -24,6 +25,12 @@ from safety_dashboard.application.monitoring import MonitoringService
 from safety_dashboard.domain.enums import DataHealth
 from safety_dashboard.domain.models import DashboardSnapshot
 from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.monitoring.ports import MonitoringSnapshotStore
+from safety_dashboard.monitoring.snapshot import MonitoringSnapshot
+
+
+LOGGER = logging.getLogger("safety_dashboard.monitoring_api")
+UTC = dt.timezone.utc
 
 
 class MonitoringApiService:
@@ -34,9 +41,17 @@ class MonitoringApiService:
         settings: ApiSettings,
         *,
         monotonic: Callable[[], float] = time.monotonic,
+        clock: Callable[[], dt.datetime] | None = None,
+        monitoring_snapshot_store: MonitoringSnapshotStore | None = None,
+        monitoring_snapshot_store_factory: (
+            Callable[[], MonitoringSnapshotStore] | None
+        ) = None,
     ) -> None:
         self.settings = settings
         self._monotonic = monotonic
+        self._clock = clock or (lambda: dt.datetime.now(UTC))
+        self._monitoring_snapshot_store = monitoring_snapshot_store
+        self._monitoring_snapshot_store_factory = monitoring_snapshot_store_factory
         self._lock = threading.Lock()
         self._payloads: dict[bool, dict[str, Any]] = {}
         self._payload_expires_at: dict[bool, float] = {}
@@ -104,23 +119,7 @@ class MonitoringApiService:
             previous = self._last_successful_builds.get(simulation)
             if previous is not None:
                 previous_snapshot, previous_catalog, previous_policy = previous
-                detail = (
-                    f"{snapshot.warning_feed.message.strip()} "
-                    "마지막 정상 자료를 표시합니다."
-                ).strip()
-                snapshot = replace(
-                    previous_snapshot,
-                    warning_feed=replace(
-                        previous_snapshot.warning_feed,
-                        health=DataHealth.STALE,
-                        fetched_at=snapshot.warning_feed.fetched_at,
-                        message=detail,
-                        diagnostic=snapshot.warning_feed.diagnostic,
-                    ),
-                    notices=tuple(
-                        dict.fromkeys((*previous_snapshot.notices, detail))
-                    ),
-                )
+                snapshot = _stale_snapshot(previous_snapshot, snapshot)
                 catalog = previous_catalog
                 policy = previous_policy
         return serialize_monitoring(
@@ -157,8 +156,23 @@ class MonitoringApiService:
     ]:
         policy = RiskPolicy.load(self.settings.policy_path)
         catalog = FacilityGroupCatalog.load(self.settings.group_path)
-        facilities = CsvFacilityRepository(self.settings.facility_path)
         zone_data, zone_health, zone_detail = self._zones(monotonic_now)
+        stored_snapshot = (
+            None
+            if simulation
+            else self._load_monitoring_snapshot(policy.version)
+        )
+        if stored_snapshot is not None and self._snapshot_is_fresh(stored_snapshot):
+            return (
+                stored_snapshot.dashboard,
+                catalog,
+                policy,
+                zone_data,
+                zone_health,
+                zone_detail,
+            )
+
+        facilities = CsvFacilityRepository(self.settings.facility_path)
         zone_index = WarningZoneIndex.from_geojson(zone_data)
         warning_provider = (
             StaticWarningProvider(simulation_warnings(policy))
@@ -171,7 +185,62 @@ class MonitoringApiService:
             OfficialZoneMatcher(zone_index),
             policy,
         ).get_snapshot(now=dt.datetime.now(KST))
+        if (
+            snapshot.warning_feed.health is DataHealth.ERROR
+            and stored_snapshot is not None
+        ):
+            snapshot = _stale_snapshot(stored_snapshot.dashboard, snapshot)
         return snapshot, catalog, policy, zone_data, zone_health, zone_detail
+
+    def _load_monitoring_snapshot(
+        self,
+        policy_version: str,
+    ) -> MonitoringSnapshot | None:
+        store = self._monitoring_snapshot_store
+        if store is None and self._monitoring_snapshot_store_factory is not None:
+            try:
+                store = self._monitoring_snapshot_store_factory()
+            except Exception as exc:
+                LOGGER.warning(
+                    "monitoring_snapshot_store_init_failed type=%s",
+                    type(exc).__name__,
+                )
+                return None
+            self._monitoring_snapshot_store = store
+        if store is None:
+            return None
+        try:
+            snapshot = store.load_latest()
+        except Exception as exc:
+            LOGGER.warning(
+                "monitoring_snapshot_read_failed type=%s",
+                type(exc).__name__,
+            )
+            return None
+        if snapshot is None:
+            return None
+        if snapshot.policy_version != policy_version:
+            LOGGER.info(
+                "monitoring_snapshot_policy_mismatch stored=%s current=%s",
+                snapshot.policy_version,
+                policy_version,
+            )
+            return None
+        now = _utc(self._clock())
+        future_limit = now + dt.timedelta(minutes=2)
+        if (
+            _utc(snapshot.generated_at) > future_limit
+            or _utc(snapshot.kma_fetched_at) > future_limit
+        ):
+            LOGGER.warning("monitoring_snapshot_future_timestamp")
+            return None
+        return snapshot
+
+    def _snapshot_is_fresh(self, snapshot: MonitoringSnapshot) -> bool:
+        age = _utc(self._clock()) - _utc(snapshot.kma_fetched_at)
+        return age <= dt.timedelta(
+            seconds=self.settings.monitoring_snapshot_fresh_seconds
+        )
 
     def _zones(self, monotonic_now: float) -> tuple[dict[str, Any], DataHealth, str]:
         if self._zone_data is None or monotonic_now >= self._zone_expires_at:
@@ -184,3 +253,29 @@ class MonitoringApiService:
             self._zone_detail = detail
             self._zone_expires_at = monotonic_now + self.settings.zone_cache_seconds
         return self._zone_data, self._zone_health, self._zone_detail
+
+
+def _utc(value: dt.datetime) -> dt.datetime:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=KST)
+    return value.astimezone(UTC)
+
+
+def _stale_snapshot(
+    stored: DashboardSnapshot,
+    failed: DashboardSnapshot,
+) -> DashboardSnapshot:
+    detail = (
+        f"{failed.warning_feed.message.strip()} "
+        "마지막 정상 자료를 표시합니다."
+    ).strip()
+    return replace(
+        stored,
+        warning_feed=replace(
+            stored.warning_feed,
+            health=DataHealth.STALE,
+            message=detail,
+            diagnostic=failed.warning_feed.diagnostic,
+        ),
+        notices=tuple(dict.fromkeys((*stored.notices, detail))),
+    )

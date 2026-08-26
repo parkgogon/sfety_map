@@ -101,7 +101,7 @@ class _FakeDocument:
         self.client = client
         self.path = path
 
-    def get(self):
+    def get(self, **_kwargs):
         return _FakeDocumentSnapshot(self.client.documents.get(self.path))
 
 

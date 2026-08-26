@@ -26,6 +26,9 @@ from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.settings import ApiSettings
 from safety_dashboard.api.weather_layer_service import WeatherLayerService
 from safety_dashboard.adapters.firestore_alerts import FirestoreAlertStore, KST
+from safety_dashboard.adapters.firestore_monitoring import (
+    FirestoreMonitoringSnapshotStore,
+)
 from safety_dashboard.adapters.operational_health import HttpSystemHealthProbe
 from safety_dashboard.adapters.telegram import TelegramNotifier
 from safety_dashboard.alerts.admin import (
@@ -81,10 +84,15 @@ def create_app(
     operational_readiness_service: OperationalReadinessService | None = None,
 ) -> FastAPI:
     settings = ApiSettings.from_environment()
-    monitoring_service = service or MonitoringApiService(settings)
+    alert_settings = AlertSettings.from_environment()
+    monitoring_service = service or MonitoringApiService(
+        settings,
+        monitoring_snapshot_store_factory=lambda: (
+            FirestoreMonitoringSnapshotStore(alert_settings.project_id)
+        ),
+    )
     facility_context = context_service or FacilityContextService(settings)
     weather_layers = weather_layer_service or WeatherLayerService(settings)
-    alert_settings = AlertSettings.from_environment()
     alert_admin = alert_admin_service
     readiness = operational_readiness_service
     admin_access = admin_access_service or AdminAccessVerifier(
