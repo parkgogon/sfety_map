@@ -24,20 +24,26 @@ ensure_uptime_check() {
   local display_name="$1"
   local path="$2"
   local matcher="$3"
-  local check_name check_id current_host
+  local check_name check_id configs current_host created
 
-  check_name="$(
-    gcloud monitoring uptime list-configs \
+  if ! configs="$(
+      gcloud monitoring uptime list-configs \
       --project "$PROJECT_ID" \
-      --format=json |
+      --format=json
+    )"; then
+    echo "Unable to list uptime checks; verify Monitoring IAM roles" >&2
+    return 5
+  fi
+  check_name="$(
+    printf '%s' "$configs" |
       jq -r --arg name "$display_name" \
         '.[] | select(.displayName == $name) | .name' |
       head -1
   )"
 
   if [[ -z "$check_name" ]]; then
-    check_name="$(
-      gcloud monitoring uptime create "$display_name" \
+    if ! created="$(
+        gcloud monitoring uptime create "$display_name" \
         --project "$PROJECT_ID" \
         --resource-type=uptime-url \
         --resource-labels="host=$DASHBOARD_HOST,project_id=$PROJECT_ID" \
@@ -53,7 +59,11 @@ ensure_uptime_check() {
         --regions=asia-pacific,usa-iowa,usa-oregon \
         --user-labels="managed_by=github_actions,component=keco_safety" \
         --format='value(name)'
-    )"
+      )"; then
+      echo "Unable to create uptime check: $display_name" >&2
+      return 6
+    fi
+    check_name="$created"
     echo "Created uptime check: $display_name" >&2
   else
     current_host="$(
@@ -90,21 +100,27 @@ ensure_uptime_check() {
 }
 
 ensure_email_channel() {
-  local channel_name
+  local channel_name channels created
   if [[ -z "$ALERT_EMAIL" ]]; then
     return 0
   fi
-  channel_name="$(
-    gcloud beta monitoring channels list \
+  if ! channels="$(
+      gcloud beta monitoring channels list \
       --project "$PROJECT_ID" \
-      --format=json |
+      --format=json
+    )"; then
+    echo "Unable to list Monitoring notification channels" >&2
+    return 7
+  fi
+  channel_name="$(
+    printf '%s' "$channels" |
       jq -r --arg email "$ALERT_EMAIL" \
         '.[] | select(.type == "email" and .labels.email_address == $email) | .name' |
       head -1
   )"
   if [[ -z "$channel_name" ]]; then
-    channel_name="$(
-      gcloud beta monitoring channels create \
+    if ! created="$(
+        gcloud beta monitoring channels create \
         --project "$PROJECT_ID" \
         --display-name="K-ECO safety uptime administrator" \
         --description="External availability alerts for the K-ECO safety dashboard" \
@@ -112,7 +128,11 @@ ensure_email_channel() {
         --channel-labels="email_address=$ALERT_EMAIL" \
         --user-labels="managed_by=github_actions,component=keco_safety" \
         --format='value(name)'
-    )"
+      )"; then
+      echo "Unable to create uptime notification channel" >&2
+      return 8
+    fi
+    channel_name="$created"
     echo "Created uptime notification channel" >&2
   else
     gcloud beta monitoring channels update "$channel_name" \
@@ -127,7 +147,7 @@ ensure_alert_policy() {
   local display_name="$1"
   local check_id="$2"
   local notification_channel="$3"
-  local policy_name policy_file
+  local policy_name policy_file policies
 
   policy_file="$TMP_DIR/$(printf '%s' "$check_id" | tr -cd '[:alnum:]_-').json"
   jq -n \
@@ -170,10 +190,16 @@ ensure_alert_policy() {
       ]
     }' > "$policy_file"
 
-  policy_name="$(
-    gcloud monitoring policies list \
+  if ! policies="$(
+      gcloud monitoring policies list \
       --project "$PROJECT_ID" \
-      --format=json |
+      --format=json
+    )"; then
+    echo "Unable to list Monitoring alert policies" >&2
+    return 9
+  fi
+  policy_name="$(
+    printf '%s' "$policies" |
       jq -r --arg name "$display_name" \
         '.[] | select(.displayName == $name) | .name' |
       head -1
