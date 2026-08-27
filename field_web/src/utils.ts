@@ -270,8 +270,10 @@ export function cctvDirectionText(cctv: NearbyCctv): string {
 }
 
 export function uniqueWarningText(facility: Facility): string {
-  if (!facility.reasons.length) {
+  const activeReasons = facility.reasons.filter((item) => item.grade !== "NONE");
+  if (!activeReasons.length) {
     return facility.grade === "UNAVAILABLE" ? "KMA 자료 조회 불가" : "현재 영향 특보 없음";
   }
-  return [...new Set(facility.reasons.map((item) => `${item.type} ${item.raw_level}`))].join(" · ");
+  return [...new Set(activeReasons.map((item) => `${item.type} ${item.raw_level}`))].join(" · ");
 }
+

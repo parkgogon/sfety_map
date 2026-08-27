@@ -359,22 +359,22 @@ class AutomaticAlertTests(unittest.TestCase):
         )
 
     def test_warning_type_filter_excludes_tropical_night_without_changing_snapshot(self):
-        snapshot = self.snapshot("주의보", warning_type="열대야")
+        snapshot = self.snapshot("주의보", warning_type="안개")
         impacts = impacts_from_snapshot(snapshot, self.policy)
 
         self.assertEqual(len(impacts), 2)
-        self.assertTrue(all(item.warning_type == "열대야" for item in impacts))
+        self.assertTrue(all(item.warning_type == "안개" for item in impacts))
         self.assertEqual(
             filter_impacts_by_warning_type(
                 impacts,
-                excluded_warning_types=("열대야",),
+                excluded_warning_types=("안개",),
             ),
             (),
         )
         self.assertEqual(
             len(filter_impacts_by_warning_type(
                 impacts,
-                included_warning_types=("열대야", "호우"),
+                included_warning_types=("안개", "호우"),
             )),
             2,
         )
@@ -393,7 +393,7 @@ class AutomaticAlertTests(unittest.TestCase):
         )
         self.assertEqual(unfiltered.run(self.now).status, "BASELINED")
         unfiltered.snapshot_provider.snapshot = self.snapshot(
-            "주의보", warning_type="열대야"
+            "주의보", warning_type="안개"
         )
         self.assertEqual(
             unfiltered.run(self.now + dt.timedelta(minutes=5)).status,
@@ -402,11 +402,11 @@ class AutomaticAlertTests(unittest.TestCase):
         sent_before_filter_change = len(user.batches)
 
         filtered, _ = self.dispatcher(
-            self.snapshot("주의보", warning_type="열대야"),
+            self.snapshot("주의보", warning_type="안개"),
             store=store,
             settings=self.settings(
                 user_delivery_mode="telegram",
-                excluded_warning_types=("열대야",),
+                excluded_warning_types=("안개",),
             ),
             user_telegram=user,
         )
@@ -415,6 +415,7 @@ class AutomaticAlertTests(unittest.TestCase):
             "BASELINED",
         )
         self.assertEqual(len(user.batches), sent_before_filter_change)
+
 
     def test_cycle_planner_separates_baseline_and_transition_calculation(self):
         planner = AlertCyclePlanner(

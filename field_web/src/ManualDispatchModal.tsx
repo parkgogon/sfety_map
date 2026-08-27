@@ -32,7 +32,8 @@ export function buildManualMessages(
     : `📢 [K-ECO 수동 상황전파 - ${category === "REMINDER" ? "재공지" : category === "CORRECTION" ? "정정" : "추가안내"}]`;
 
   const affected = facilities.filter((f) => f.grade === "HIGH" || f.grade === "MEDIUM" || f.grade === "LOW");
-  const warnings = [...new Set(affected.flatMap((f) => f.reasons.map((r) => `${r.type} ${r.raw_level}`)))];
+  const warnings = [...new Set(affected.flatMap((f) => f.reasons.filter((r) => r.grade !== "NONE").map((r) => `${r.type} ${r.raw_level}`)))];
+
 
   const lines = [
     header,

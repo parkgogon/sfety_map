@@ -139,7 +139,12 @@ class RiskPolicy:
         matched_warnings: Iterable[Warning],
         assessed_at: dt.datetime | None = None,
     ) -> RiskAssessment:
-        reasons = tuple(self.classify_warning(item) for item in matched_warnings)
+        reasons = tuple(
+            reason
+            for item in matched_warnings
+            for reason in (self.classify_warning(item),)
+            if reason.grade is not RiskGrade.NONE
+        )
         if reasons:
             grade = max(
                 (reason.grade for reason in reasons),
@@ -154,6 +159,7 @@ class RiskPolicy:
             policy_version=self.version,
             assessed_at=assessed_at or dt.datetime.now(),
         )
+
 
     def definition(self, grade: RiskGrade) -> GradeDefinition:
         return self.grades[grade]
