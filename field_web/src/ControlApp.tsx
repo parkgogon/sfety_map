@@ -287,7 +287,7 @@ export default function ControlApp() {
               onClick={handleLogout}
               title="관리자 인증 해제 (로그아웃)"
             >
-              🔓 관리자 로그아웃
+              🔓 <span className="btn-text-full">관리자 로그아웃</span><span className="btn-text-short">로그아웃</span>
             </button>
           ) : (
             <button
@@ -296,7 +296,7 @@ export default function ControlApp() {
               onClick={() => setLoginModalOpen(true)}
               title="관리자 인증 로그인"
             >
-              🔒 관리자 인증
+              🔒 <span className="btn-text-full">관리자 인증</span><span className="btn-text-short">인증</span>
             </button>
           )}
           <button
@@ -305,7 +305,7 @@ export default function ControlApp() {
             onClick={() => navigate("/settings")}
             title="위험도 정책 기준 설정"
           >
-            위험도 설정 ⚙
+            ⚙ <span className="btn-text-full">위험도 설정</span><span className="btn-text-short">설정</span>
           </button>
           <button
             className="secondary-button"
@@ -313,7 +313,7 @@ export default function ControlApp() {
             onClick={() => navigate("/")}
             title="스마트폰 현장 안전지도로 이동"
           >
-            현장 지도 보기 ↗
+            <span className="btn-text-full">현장 지도 보기 ↗</span><span className="btn-text-short">현장지도 ↗</span>
           </button>
           <button
             className={`icon-button refresh-button ${refreshing ? "spinning" : ""}`}

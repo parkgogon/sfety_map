@@ -2528,9 +2528,221 @@ input:focus-visible {
   color: #15803d;
 }
 
-.admin-login-modal {
-  max-width: 440px;
-  width: 90vw;
+/* Modals & Dialogs */
+.modal-backdrop {
+  align-items: center !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-4);
+  position: fixed;
+  z-index: 1000;
 }
+
+.modal-card,
+.admin-login-modal,
+.manual-dispatch-modal {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  max-width: 460px;
+  overflow: hidden;
+  padding: 24px !important;
+  position: relative;
+  width: 100%;
+  z-index: 1001;
+}
+
+.modal-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-header h2 {
+  color: #0f172a;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.close-button {
+  align-items: center;
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 50%;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  font-size: 1.25rem;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+  width: 32px;
+}
+
+.close-button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.modal-description {
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* Header Action Buttons */
+.btn-text-short {
+  display: none;
+}
+.btn-text-full {
+  display: inline;
+}
+
+/* Priority Table & Analysis Table Fixes */
+.priority-table-wrapper,
+.analysis-table-wrapper {
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  width: 100%;
+}
+
+.priority-table,
+.analysis-table {
+  border-collapse: collapse;
+  min-width: 600px;
+  width: 100%;
+}
+
+.priority-table th,
+.priority-table td,
+.analysis-table th,
+.analysis-table td {
+  padding: 10px 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.priority-table td strong,
+.analysis-table td strong {
+  white-space: nowrap;
+}
+
+/* Mobile & Tablet Responsive Optimizations */
+@media (max-width: 640px) {
+  .btn-text-short {
+    display: inline;
+  }
+  .btn-text-full {
+    display: none;
+  }
+
+  .control-header {
+    min-height: auto;
+    padding: 8px 12px;
+  }
+
+  .control-brand h1 {
+    font-size: 1.15rem;
+  }
+
+  .control-header-actions {
+    gap: 4px;
+  }
+
+  .control-header-actions button {
+    font-size: 0.75rem !important;
+    padding: 6px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  .control-workspace-tabs {
+    padding: 0 8px;
+  }
+
+  .tab-button {
+    font-size: 0.85rem;
+    padding: 10px 12px;
+  }
+
+  .control-content {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3);
+  }
+
+  /* KPI Grid: 2-column mobile layout */
+  .kpi-grid {
+    gap: 8px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .kpi-card {
+    padding: 10px 12px !important;
+  }
+
+  .kpi-value {
+    font-size: 1.45rem !important;
+    margin: 4px 0 2px !important;
+  }
+
+  .kpi-label {
+    font-size: 0.72rem !important;
+  }
+
+  .kpi-card small {
+    font-size: 0.68rem !important;
+  }
+
+  /* Analysis Tab Buttons */
+  .analysis-actions-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .analysis-selection-buttons {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .analysis-selection-buttons button {
+    font-size: 0.72rem;
+    padding: 6px 4px;
+    white-space: nowrap;
+  }
+
+  .analysis-dispatch-buttons {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-dispatch-buttons button {
+    padding: 10px;
+    width: 100%;
+  }
+
+  .analysis-split-layout {
+    gap: var(--space-3);
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-map-card,
+  .analysis-table-card {
+    height: 380px;
+  }
+}
+
 
 

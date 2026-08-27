@@ -135,10 +135,11 @@ export function ManualDispatchModal({
             <h2 id="manual-dispatch-title">시설담당자 그룹 수동 상황전파</h2>
             <p>선택된 {facilities.length}개 소관시설에 대해 Telegram 그룹 알림을 전파합니다.</p>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="닫기">
+          <button className="close-button" type="button" onClick={onClose} aria-label="닫기">
             ×
           </button>
         </div>
+
 
         <div className="modal-body">
           {/* 전파 구분 */}
