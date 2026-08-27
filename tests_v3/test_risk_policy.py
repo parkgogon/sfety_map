@@ -4,7 +4,7 @@ from pathlib import Path
 
 from safety_dashboard.adapters.pdf_report import GRADE_COLOR
 from safety_dashboard.domain import Facility, GeoPoint, RiskGrade, Warning, WarningLevel
-from safety_dashboard.domain.risk_policy import RiskPolicy
+from safety_dashboard.domain.risk_policy import RISK_GRADE_COLORS, RiskPolicy
 from safety_dashboard.ui.map_view import COLORS
 
 
@@ -14,6 +14,7 @@ POLICY_PATH = (
     / "config"
     / "risk_policy.toml"
 )
+
 
 
 def warning(kind: str, raw_level: str, level: WarningLevel) -> Warning:
@@ -107,6 +108,10 @@ class RiskPolicyTests(unittest.TestCase):
         )
         self.assertEqual(COLORS, expected_hex)
         self.assertEqual(GRADE_COLOR, expected_rgb)
+        for grade, color in expected_hex.items():
+            self.assertEqual(RISK_GRADE_COLORS[grade], color)
+            self.assertEqual(RISK_GRADE_COLORS[grade.value], color)
+
 
         tokens = (
             Path(__file__).parents[1]

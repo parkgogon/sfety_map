@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from core.region_resolver import WarningZoneIndex, warning_matches_facility
 from safety_dashboard.domain.models import Facility, Warning
+from safety_dashboard.domain.region_resolver import WarningZoneIndex, warning_matches_facility
 
 
 class OfficialZoneMatcher:

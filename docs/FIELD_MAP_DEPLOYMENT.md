@@ -184,6 +184,36 @@ KAKAO_MAP_APP_KEY=<카카오 JavaScript 키>
 건너뛴다. 설정 후 `main` 브랜치의 테스트가 통과하면 API를 먼저 배포하고 React
 화면을 이어서 배포한다. pull request는 테스트만 수행한다.
 
+## Firestore TTL(보존기간 만료 자동정리) 설정
+
+완료·만료된 임시 보류 전이(`alert_pending`) 및 Telegram 발송 큐(`alert_telegram_outbox`)
+문서는 terminal 상태(`SENT`, `EXPIRED`, `RESOLVED`)로 변경될 때 7일 뒤 시각이
+`delete_after` 필드로 기록된다. 미처리 `PENDING` 문서에는 이 필드가 없으므로
+살아 있는 작업은 안전하게 보존된다.
+
+Firestore에서 이 필드를 기준으로 자동 삭제하도록 TTL 정책을 활성화한다.
+
+```bash
+# 1. alert_pending 컬렉션 TTL 활성화
+gcloud firestore fields ttls update delete_after \
+  --collection-group=alert_pending \
+  --project=keco-safety-map \
+  --enable-ttl
+
+# 2. alert_telegram_outbox 컬렉션 TTL 활성화
+gcloud firestore fields ttls update delete_after \
+  --collection-group=alert_telegram_outbox \
+  --project=keco-safety-map \
+  --enable-ttl
+```
+
+현재 상태 확인:
+
+```bash
+gcloud firestore fields ttls list --project=keco-safety-map
+```
+
+
 ## 배포 전 확인
 
 ```bash

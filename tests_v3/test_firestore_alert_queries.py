@@ -195,7 +195,30 @@ class FirestoreAlertQueryTests(unittest.TestCase):
             {"alert_pending/active", "alert_pending/expired"},
         )
         self.assertEqual(client.documents["alert_pending/expired"]["status"], "EXPIRED")
+        self.assertEqual(
+            client.documents["alert_pending/expired"]["delete_after"],
+            NOW + dt.timedelta(days=7),
+        )
+        self.assertNotIn("delete_after", client.documents["alert_pending/active"])
         self.assertEqual(client.documents["alert_pending/resolved"]["status"], "SENT")
+
+    def test_resolve_pending_sets_delete_after_and_resolved_at(self) -> None:
+        client = _FakeFirestoreClient({
+            "alert_pending/p-1": {
+                "status": "PENDING",
+                "expires_at": NOW + dt.timedelta(minutes=10),
+            }
+        })
+
+        FirestoreAlertStore(client=client).resolve_pending(["p-1"], "RESOLVED")
+
+        doc = client.documents["alert_pending/p-1"]
+        self.assertEqual(doc["status"], "RESOLVED")
+        self.assertIn("resolved_at", doc)
+        self.assertEqual(
+            doc["delete_after"].date(),
+            (NOW + dt.timedelta(days=7)).date(),
+        )
 
     def test_due_telegram_queries_only_pending_and_keeps_due_rules(self) -> None:
         client = _FakeFirestoreClient({
@@ -230,9 +253,75 @@ class FirestoreAlertQueryTests(unittest.TestCase):
             "EXPIRED",
         )
         self.assertEqual(
+            client.documents["alert_telegram_outbox/expired"]["delete_after"],
+            NOW + dt.timedelta(days=7),
+        )
+        self.assertNotIn("delete_after", client.documents["alert_telegram_outbox/due"])
+        self.assertNotIn("delete_after", client.documents["alert_telegram_outbox/future"])
+        self.assertEqual(
             client.documents["alert_telegram_outbox/sent"]["status"],
             "SENT",
         )
+
+    def test_record_telegram_result_sets_delete_after_only_on_terminal(self) -> None:
+        client = _FakeFirestoreClient({})
+        store = FirestoreAlertStore(client=client)
+
+        from safety_dashboard.alerts.domain import TelegramAudience, TelegramOutboxItem, TelegramPurpose
+
+        item = TelegramOutboxItem(
+            id="job-1",
+            audience=TelegramAudience.ADMIN,
+            purpose=TelegramPurpose.SYSTEM,
+            created_at=NOW,
+            expires_at=NOW + dt.timedelta(minutes=30),
+            next_attempt_at=NOW,
+            batch_id="",
+            reason="test",
+            messages=(),
+            metric_scope="operational",
+            attempt_count=0,
+        )
+
+        # 1. Non-terminal: 재시도 대기 (실패했지만 아직 만료되지 않음)
+        store.record_telegram_result(item, success=False, detail="네트워크 오류", now=NOW)
+        doc_retry = client.documents["alert_telegram_outbox/job-1"]
+        self.assertEqual(doc_retry["status"], "PENDING")
+        self.assertNotIn("delete_after", doc_retry)
+        self.assertNotIn("completed_at", doc_retry)
+        self.assertEqual(doc_retry["next_attempt_at"], NOW + dt.timedelta(minutes=5))
+
+        # 2. Terminal: 성공 (SENT)
+        store.record_telegram_result(item, success=True, detail="전송 성공", now=NOW)
+        doc_sent = client.documents["alert_telegram_outbox/job-1"]
+        self.assertEqual(doc_sent["status"], "SENT")
+        self.assertEqual(doc_sent["completed_at"], NOW)
+        self.assertEqual(doc_sent["delete_after"], NOW + dt.timedelta(days=7))
+
+        # 3. Terminal: 만료 (EXPIRED)
+        expired_item = TelegramOutboxItem(
+            id="job-2",
+            audience=TelegramAudience.ADMIN,
+            purpose=TelegramPurpose.SYSTEM,
+            created_at=NOW,
+            expires_at=NOW + dt.timedelta(minutes=2),
+            next_attempt_at=NOW,
+            batch_id="",
+            reason="test",
+            messages=(),
+            metric_scope="operational",
+            attempt_count=1,
+        )
+        store.record_telegram_result(
+            expired_item,
+            success=False,
+            detail="네트워크 오류",
+            now=NOW,
+        )
+        doc_expired = client.documents["alert_telegram_outbox/job-2"]
+        self.assertEqual(doc_expired["status"], "EXPIRED")
+        self.assertEqual(doc_expired["completed_at"], NOW)
+        self.assertEqual(doc_expired["delete_after"], NOW + dt.timedelta(days=7))
 
 
 if __name__ == "__main__":

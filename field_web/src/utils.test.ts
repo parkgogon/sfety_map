@@ -3,6 +3,7 @@ import type { Facility, NearbyCctv, WeatherResponse } from "./types";
 import {
   cctvDirectionText,
   filterFacilities,
+  formatElapsedTime,
   formatReferenceTime,
   GRADE_COLORS,
   GRADE_DISPLAY_ORDER,
@@ -10,6 +11,7 @@ import {
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
+  searchFacilities,
   shouldFitInitialFacilities,
   shouldZoomForSelection,
   shouldShowMapZoomControl,
@@ -52,6 +54,19 @@ describe("현장 지도 필터", () => {
       "구미수질 측정소",
     );
     expect(result.map((item) => item.id)).toEqual(["F-1"]);
+  });
+
+  it("전체 시설 검색은 필터와 무관하게 전체 시설에서 검색한다", () => {
+    const result = searchFacilities(facilities, "포항대기");
+    expect(result.map((item) => item.id)).toEqual(["F-2"]);
+  });
+
+  it("경과 시간을 한국어 분/시간 단위로 표시한다", () => {
+    const base = new Date("2026-08-27T10:00:00+09:00");
+    expect(formatElapsedTime("2026-08-27T10:00:00+09:00", base)).toBe("방금 전");
+    expect(formatElapsedTime("2026-08-27T09:45:00+09:00", base)).toBe("15분 전");
+    expect(formatElapsedTime("2026-08-27T08:00:00+09:00", base)).toBe("2시간 전");
+    expect(formatElapsedTime("invalid", base)).toBe("");
   });
 
   it("딥링크는 facility_id만 읽고 길이를 제한한다", () => {

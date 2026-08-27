@@ -10,6 +10,7 @@ from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from safety_dashboard.adapters.firestore_alert_common import (
+    DEFAULT_PENDING_RETENTION,
     _aware,
     _impact_from_dict,
     _impact_to_dict,
@@ -153,8 +154,17 @@ class FirestoreAlertStateRepository:
             result.append(_transition_from_dict(values["transition"]))
         if expired:
             batch = self.client.batch()
+            delete_after = now + DEFAULT_PENDING_RETENTION
             for ref in expired:
-                batch.set(ref, {"status": "EXPIRED", "resolved_at": now}, merge=True)
+                batch.set(
+                    ref,
+                    {
+                        "status": "EXPIRED",
+                        "resolved_at": now,
+                        "delete_after": delete_after,
+                    },
+                    merge=True,
+                )
             batch.commit()
         return tuple(result)
 
@@ -163,9 +173,18 @@ class FirestoreAlertStateRepository:
             return
         batch = self.client.batch()
         now = dt.datetime.now(dt.timezone.utc)
+        delete_after = now + DEFAULT_PENDING_RETENTION
         for transition_id in transition_ids:
             ref = self.client.collection(self.collections.pending).document(
                 transition_id
             )
-            batch.set(ref, {"status": status, "resolved_at": now}, merge=True)
+            batch.set(
+                ref,
+                {
+                    "status": status,
+                    "resolved_at": now,
+                    "delete_after": delete_after,
+                },
+                merge=True,
+            )
         batch.commit()

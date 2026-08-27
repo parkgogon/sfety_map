@@ -16,6 +16,21 @@ class RiskPolicyError(ValueError):
     """정책 파일의 구조나 값이 유효하지 않을 때 발생합니다."""
 
 
+RISK_GRADE_COLORS: dict[RiskGrade | str, str] = {
+    RiskGrade.HIGH: "#D92D20",
+    RiskGrade.MEDIUM: "#C2410C",
+    RiskGrade.LOW: "#8A6D00",
+    RiskGrade.NONE: "#176B87",
+    RiskGrade.UNASSESSED: "#7C3AED",
+    "HIGH": "#D92D20",
+    "MEDIUM": "#C2410C",
+    "LOW": "#8A6D00",
+    "NONE": "#176B87",
+    "UNASSESSED": "#7C3AED",
+}
+
+
+
 @dataclass(frozen=True)
 class GradeDefinition:
     grade: RiskGrade
@@ -24,6 +39,7 @@ class GradeDefinition:
     meaning: str
     action: str
     color: str
+
 
 
 @dataclass(frozen=True)

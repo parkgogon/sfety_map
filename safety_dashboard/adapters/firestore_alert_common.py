@@ -27,6 +27,8 @@ from safety_dashboard.domain.models import OutgoingTelegramMessage
 
 
 KST = dt.timezone(dt.timedelta(hours=9))
+DEFAULT_PENDING_RETENTION = dt.timedelta(days=7)
+DEFAULT_OUTBOX_RETENTION = dt.timedelta(days=7)
 
 
 @dataclass(frozen=True)

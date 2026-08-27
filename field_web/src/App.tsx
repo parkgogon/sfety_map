@@ -7,6 +7,7 @@ import { GradeLegend } from "./GradeLegend";
 import { KakaoMap } from "./KakaoMap";
 import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
+import { navigate } from "./router";
 import type {
   Facility,
   MapFocusRequest,
@@ -15,13 +16,16 @@ import type {
   RiskGrade,
   WeatherLayerKind,
 } from "./types";
+
 import {
   type FacilitySelectionSource,
   filterFacilities,
+  formatElapsedTime,
   formatReferenceTime,
   GRADE_DISPLAY_ORDER,
   requestedFacilityId,
   requestedMonitoringMode,
+  searchFacilities,
   shouldZoomForSelection,
   uniqueWarningText,
   WEATHER_LAYER_LABELS,
@@ -70,6 +74,10 @@ export default function App() {
     facility: Facility,
     source: FacilitySelectionSource = "marker",
   ) => {
+    if (source === "search" || source === "deep_link") {
+      setSelectedGroups((current) => current.has(facility.group_id) ? current : new Set([...current, facility.group_id]));
+      setSelectedGrades((current) => current.has(facility.grade) ? current : new Set([...current, facility.grade]));
+    }
     setSelectedId(facility.id);
     setSearch("");
     setSameLocation([]);
@@ -101,8 +109,6 @@ export default function App() {
       setFacilityQuery("");
       return;
     }
-    setSelectedGroups((current) => new Set([...current, facility.group_id]));
-    setSelectedGrades((current) => new Set([...current, facility.grade]));
     selectFacility(facility, "deep_link");
   }, [data, selectFacility]);
 
@@ -112,9 +118,9 @@ export default function App() {
   );
   const searchResults = useMemo(
     () => search.trim() && data
-      ? filterFacilities(data.facilities, selectedGroups, selectedGrades, search).slice(0, 8)
+      ? searchFacilities(data.facilities, search, 8)
       : [],
-    [data, search, selectedGroups, selectedGrades],
+    [data, search],
   );
   const selectedFacility = data?.facilities.find((item) => item.id === selectedId) ?? null;
   const weather = useFacilityWeather(selectedFacility?.id ?? "");
@@ -132,6 +138,43 @@ export default function App() {
     setSelectedCctvId("");
     setFacilityQuery("");
   }, []);
+
+  const resetFilters = useCallback(() => {
+    if (!data) return;
+    setSelectedGroups(new Set(data.groups.map((group) => group.id)));
+    setSelectedGrades(new Set(GRADE_DISPLAY_ORDER));
+  }, [data]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (selectedCctvId) {
+        setSelectedCctvId("");
+        return;
+      }
+      if (filterOpen) {
+        setFilterOpen(false);
+        return;
+      }
+      if (weatherLayerOpen) {
+        setWeatherLayerOpen(false);
+        return;
+      }
+      if (sameLocation.length > 0) {
+        setSameLocation([]);
+        return;
+      }
+      if (search) {
+        setSearch("");
+        return;
+      }
+      if (selectedId) {
+        clearFacility();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedCctvId, filterOpen, weatherLayerOpen, sameLocation, search, selectedId, clearFacility]);
 
   const toggleGroup = (id: string) => {
     setSelectedGroups((current) => {
@@ -187,16 +230,27 @@ export default function App() {
           <span className="brand-mark">K-ECO SAFETY MONITORING</span>
           <h1>현장 안전지도</h1>
         </div>
-        <button
-          className={`icon-button refresh-button ${refreshing ? "spinning" : ""}`}
-          type="button"
-          onClick={() => void refresh()}
-          disabled={refreshing}
-          aria-label="관제 자료 새로고침"
-        >
-          ↻
-        </button>
+        <div className="header-actions">
+          <button
+            className="secondary-button header-control-link"
+            type="button"
+            onClick={() => navigate("/control")}
+            title="중앙관제 관리자 대시보드로 이동"
+          >
+            중앙관제 🖥️
+          </button>
+          <button
+            className={`icon-button refresh-button ${refreshing ? "spinning" : ""}`}
+            type="button"
+            onClick={() => void refresh()}
+            disabled={refreshing}
+            aria-label="관제 자료 새로고침"
+          >
+            ↻
+          </button>
+        </div>
       </header>
+
 
       <div
         className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
@@ -204,7 +258,7 @@ export default function App() {
       >
         <span className="status-dot" aria-hidden="true" />
         <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}</b>
-        <span>· {formatReferenceTime(data.generated_at)} 기준</span>
+        <span>· {formatReferenceTime(data.generated_at)} 기준{stale && formatElapsedTime(data.generated_at) ? ` (${formatElapsedTime(data.generated_at)})` : ""}</span>
         <a
           className="official-warning-link"
           href={KMA_OFFICIAL_WARNING_URL}
@@ -214,7 +268,14 @@ export default function App() {
         >
           기상청 특보 <span aria-hidden="true">↗</span>
         </a>
-        <span className="facility-count">· 시설 {visibleFacilities.length}개 표시</span>
+        <span className="facility-count">
+          · 시설 {visibleFacilities.length}개 표시
+          {visibleFacilities.length === 0 && (
+            <button className="reset-filter-inline" type="button" onClick={resetFilters}>
+              (전체 표시)
+            </button>
+          )}
+        </span>
       </div>
 
       {monitoringMode === "simulation" && (
@@ -255,6 +316,15 @@ export default function App() {
           onSelectCctv={selectCctv}
         />
 
+        {visibleFacilities.length === 0 && (
+          <div className="empty-facilities-overlay" role="status">
+            <p>현재 필터 조건에 해당하는 시설이 없습니다.</p>
+            <button className="primary-button" type="button" onClick={resetFilters}>
+              전체 시설 다시 표시
+            </button>
+          </div>
+        )}
+
         <div className="map-search-panel">
           <div className="search-row">
             <label className="search-box">
@@ -288,7 +358,7 @@ export default function App() {
                   <span className="result-grade" style={{ backgroundColor: facility.grade_color }}>{facility.grade_label}</span>
                   <span><b>{facility.name}</b><small>{facility.address}</small></span>
                 </button>
-              )) : <p>현재 필터에서 일치하는 시설이 없습니다.</p>}
+              )) : <p>일치하는 시설이 없습니다.</p>}
             </div>
           )}
           {weatherLayerKind && (
@@ -382,7 +452,7 @@ export default function App() {
             </div>
             <div className="filter-actions">
               <button type="button" onClick={() => setSelectedGroups(new Set(data.groups.map((group) => group.id)))}>전체 선택</button>
-              <button className="primary-button" type="button" onClick={() => setFilterOpen(false)}>지도에 적용</button>
+              <button className="primary-button" type="button" onClick={() => setFilterOpen(false)}>확인</button>
             </div>
           </section>
         </div>

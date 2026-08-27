@@ -275,6 +275,97 @@ class MonitoringApiTests(unittest.TestCase):
         )
         self.assertEqual(service.snapshot_calls, [False, False])
 
+    def test_internal_report_pdf_route_is_protected_and_renders_pdf(self):
+        service = _SnapshotApiService(self.snapshot())
+        client = TestClient(create_app(
+            service,
+            alert_admin_service=_AdminAuthorizer(),
+        ))
+        url = "/internal/v1/monitoring/report.pdf"
+
+        self.assertEqual(client.get(url).status_code, 403)
+        response = client.get(
+            url,
+            headers={"X-Alert-Admin-Token": "admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertIn("attachment; filename=\"safety_monitoring_report_", response.headers["content-disposition"])
+
+        # 특정 시설 필터링 테스트
+        filtered_response = client.get(
+            f"{url}?facility_ids=F-1&scope_label=선택시설",
+            headers={"X-Alert-Admin-Token": "admin-token"},
+        )
+        self.assertEqual(filtered_response.status_code, 200)
+        self.assertTrue(filtered_response.content.startswith(b"%PDF"))
+
+    def test_internal_policy_route_is_protected_and_returns_matrix(self):
+        service = _SnapshotApiService(self.snapshot())
+        client = TestClient(create_app(
+            service,
+            alert_admin_service=_AdminAuthorizer(),
+        ))
+        url = "/internal/v1/policy"
+
+        self.assertEqual(client.get(url).status_code, 403)
+        response = client.get(
+            url,
+            headers={"X-Alert-Admin-Token": "admin-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertIn("version", json_data)
+        self.assertIn("warning_types", json_data)
+        self.assertIn("grades", json_data)
+        self.assertIn("호우", json_data["warning_types"])
+        self.assertEqual(json_data["warning_types"]["호우"]["WARNING"], "HIGH")
+
+    def test_admin_access_issues_httponly_cookie_and_protects_routes(self):
+        from safety_dashboard.admin.access import AdminAccessSettings, AdminAccessVerifier
+
+        verifier = AdminAccessVerifier(
+            AdminAccessSettings(password="safe-password", session_seconds=3600)
+        )
+        service = _SnapshotApiService(self.snapshot())
+        client = TestClient(create_app(
+            service,
+            admin_access_service=verifier,
+            alert_admin_service=_AdminAuthorizer(),
+        ))
+
+        # 1) 세션 상태 확인 (미인증)
+        status_unauth = client.get("/internal/v1/admin/session")
+        self.assertEqual(status_unauth.status_code, 200)
+        self.assertFalse(status_unauth.json()["authenticated"])
+
+        # 2) 로그인 성공 및 쿠키 발급
+        login_res = client.post("/internal/v1/admin/access", json={"password": "safe-password"})
+        self.assertEqual(login_res.status_code, 200)
+        self.assertIn("token", login_res.json())
+        self.assertIn("keco_admin_session", login_res.cookies)
+
+        # 3) 세션 상태 확인 (인증됨)
+        status_auth = client.get("/internal/v1/admin/session")
+        self.assertEqual(status_auth.status_code, 200)
+        self.assertTrue(status_auth.json()["authenticated"])
+
+        # 4) 쿠키 기반 보호 엔드포인트 접근
+        policy_res = client.get("/internal/v1/policy")
+        self.assertEqual(policy_res.status_code, 200)
+        self.assertIn("warning_types", policy_res.json())
+
+        # 5) 로그아웃
+        logout_res = client.post("/internal/v1/admin/logout")
+        self.assertEqual(logout_res.status_code, 200)
+        self.assertEqual(logout_res.json()["status"], "ok")
+
+        # 6) 로그아웃 후 쿠키 무효화 확인
+        client.cookies.clear()
+        policy_after_logout = client.get("/internal/v1/policy")
+        self.assertEqual(policy_after_logout.status_code, 403)
+
     def test_simulation_uses_existing_scenario_without_calling_kma(self):
         store = _SnapshotStore(error=AssertionError("모의훈련은 저장본을 읽지 않습니다."))
         service = MonitoringApiService(ApiSettings(kma_api_key=""))

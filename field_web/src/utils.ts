@@ -156,6 +156,23 @@ export function filterFacilities(
   });
 }
 
+export function searchFacilities(
+  facilities: Facility[],
+  search: string,
+  limit = 8,
+): Facility[] {
+  const needle = normalizeSearch(search);
+  if (!needle) return [];
+  const results: Facility[] = [];
+  for (const facility of facilities) {
+    if (normalizeSearch(`${facility.name} ${facility.address} ${facility.type}`).includes(needle)) {
+      results.push(facility);
+      if (results.length >= limit) break;
+    }
+  }
+  return results;
+}
+
 export function requestedFacilityId(search: string): string {
   return new URLSearchParams(search).get("facility_id")?.trim().slice(0, 128) ?? "";
 }
@@ -176,6 +193,19 @@ export function formatReferenceTime(value: string): string {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+export function formatElapsedTime(value: string, now = new Date()): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const elapsedMs = Math.max(0, now.getTime() - date.getTime());
+  const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
+  if (elapsedMinutes < 1) return "방금 전";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}분 전`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}시간 전`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays}일 전`;
 }
 
 export function formatObservationTime(value: string | null): string {

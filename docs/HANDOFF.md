@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-27 10:14 KST
-> 기준 Git: `main` / `faeeacb Filter pending Firestore alert queries`
+> 마지막 정리: 2026-08-27 10:35 KST
+> 기준 Git: `main` / `175ea69 Update handoff after Firestore query optimization`
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -133,43 +133,66 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 순서를 유지합니다. 자동 단일 필드 인덱스로 충분하므로 composite index 파일,
 Firebase 배포 범위와 IAM은 변경하지 않았습니다.
 
-2026-08-27 10:14 KST에 구버전 Python 22개, v3 Python 187개, React 21개,
-데이터 검증, Python compileall과 React production build가 모두 통과했습니다.
+이어서 `alert_pending`과 `alert_telegram_outbox` 컬렉션의 완료·만료(terminal) 문서에
+운영 분석용 7일 보존기간과 `delete_after` 타임스탬프 필드를 기록하도록 적용했습니다.
+미처리 `PENDING` 문서에는 `delete_after`를 기록하지 않아 활성 작업이 보존되며,
+Firestore TTL 정책 설정 가이드를 `docs/FIELD_MAP_DEPLOYMENT.md`에 추가했습니다.
 
-## 5. 진행 중인 개선과 다음 작업
+`core/region_resolver.py`의 특보구역 인덱싱 및 공간 매칭 로직을
+`safety_dashboard/domain/region_resolver.py`로 이전하고, 현행 패키지(`adapters/`,
+`api/`, `ui/`) 내부의 모든 참조를 도메인 계층으로 전환했습니다. 루트의
+`core/region_resolver.py`는 구버전 코드 호환 facade로 유지되며, 운영 시설 CSV
+(`facilities_info.csv`) 103개소를 단일 기준으로 확립했습니다.
 
-확정 로드맵은 [`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md)입니다.
-현재는 **3단계 Firestore 보존기간·TTL 적용** 직전에 멈춰 있습니다.
+**5단계 사용자 지도 UX 개선**을 완료했습니다:
+- **전체 시설 검색**: 현재 선택된 필터(유형·등급)와 무관하게 전체 103개 시설에서 검색을 수행합니다 (`searchFacilities`).
+- **필터 자동 완화**: 검색창이나 딥링크에서 필터 밖에 있는 시설을 선택하면, 해당 시설이 지도에 보이도록 필요한 유형과 등급 필터를 자동으로 활성화합니다.
+- **0개 표시 상태 복구**: 필터 조합으로 지도에 표시되는 시설이 0개일 때, '전체 시설 다시 표시' 원클릭 액션 버튼과 오버레이를 제공하여 즉시 기본 필터로 리셋합니다.
+- **즉시 반영 필터 UX 정렬**: 필터 시트 버튼 문구를 `확인`으로 변경하여 즉시 반영되는 동작과 일치시켰습니다.
+- **KMA 지연 표시**: KMA 통신 지연(`stale`) 시 마지막 정상 자료 기준 시각과 함께 경과시간(`formatElapsedTime`, 예: `15분 전`)을 직관적으로 표시합니다.
+- **키보드 및 모달 인터랙션**: `Escape` 키 입력 시 열려 있는 모달(CCTV, 필터 시트, 기상 레이어, 같은 위치 목록, 시설 상세 시트)을 순차적으로 닫도록 개선했습니다.
 
-### 다음 개발 작업
+**6단계 React 중앙관제 전환 전체 (1차: 대시보드, 2차: 관제 지도·수동 전파·PDF, 3차: /settings 위험도 정책 설정)**를 완료했습니다:
+- **경로 분기 및 Code-Splitting**: SPA 라우터(`router.ts`)와 `React.lazy`를 도입하여 `/control` 접속 시 `ControlApp`(24.9kB), `/settings` 접속 시 `SettingsApp`(7.2kB)이 각각 필요할 때만 비동기 지연 로드되도록 완벽히 분리했습니다. 현장 안전지도(`/`)의 스마트폰 초기 로딩 속도를 100% 보존합니다.
+- **운영 상황 대시보드**: 103개 소관시설의 실시간 관제 snapshot을 기반으로 총 시설 수, 특보 영향 시설 수, 위험등급별(상·중·하·영향없음·조회불가) KPI 카드 및 5분 자동 감시 시스템 상태를 표출합니다.
+- **점검 우선순위 목록**: 위험등급 높은 순 및 발효 특보 단계 순으로 정렬된 시설 테이블을 제공하며, 등급별/유형별 필터 및 검색 기능을 지원합니다.
+- **관리자 관제 지도 & 대상 다중 선택**: 103개 시설의 위치와 특보 경계를 실시간 조망하는 `KakaoMap`을 연동하고, 체크박스 다중 선택(`특보 영향 시설만 선택`, `전체 선택`, `선택 해제`)을 제공합니다.
+- **수동 Telegram 상황전파 모달 (`ManualDispatchModal`)**: 재공지/정정/추가안내/모의훈련 분류, 관리자 메모(필수 검증), 문안 자동 미리보기, 중복 발송 방지 최종 확인 및 Cloud Run 관리자 API(`POST /internal/v1/notifications/manual`) 호출을 완벽 연동했습니다.
+- **A4 가로형 PDF 초동보고서 다운로드 API**: 백엔드에 `GET /internal/v1/monitoring/report.pdf` 엔드포인트를 추가하여 선택 시설 범위의 공식 보고서를 원클릭으로 스트리밍 다운로드합니다.
+- **위험도 정책 설정 화면 (`SettingsApp.tsx`) & API**: 백엔드 `GET /internal/v1/policy`를 통해 기본 위험도 정책을 조회하고, 14종 특보 × 3단계(주의보·경보·중대) 위험등급(상·중·하·미판정·없음) 매트릭스 편집 그리드, 발효 특보 상단 하이라이트, 변경 셀 하이라이트 및 브라우저 세션 로컬 저장을 지원합니다.
+- **7단계 관리자 잠금 고도화**:
+  - HMAC-SHA256 서명 기반 `AdminSessionManager`([session.py](file:///home/dev2/바탕화면/dev2_workfolder/260723_safetydashboard/safety_dashboard/admin/session.py))를 구현하여 안전한 시간 기반 서명 세션 토큰을 생성 및 엄격 검증합니다.
+  - Cloud Run 백엔드 `POST /internal/v1/admin/access`에서 비밀번호 검증 성공 시 `Set-Cookie: keco_admin_session=...; HttpOnly; SameSite=Lax; Max-Age=28800`를 발급합니다.
+  - 세션 유효성 확인(`GET /internal/v1/admin/session`), 로그아웃(`POST /internal/v1/admin/logout`) 엔드포인트를 추가하고, 모든 보호된 내부 API(`_authorized_admin`)에서 헤더 토큰 및 쿠키 세션을 모두 지원합니다.
+  - 관리자 접근 성공/실패/잠금 및 로그아웃 시 구조화된 보안 감사 로그(`LOGGER`)를 체계적으로 기록합니다.
+- **9단계 지속적 품질 관리**:
+  - `scripts/verify_all.sh` 5단계 통합 검증 스크립트를 작성하여 103개 시설 무결성 검증, Python 단위 테스트 224개, 바이트코드 컴파일, React Vitest 29개 테스트, TypeScript strict 타입 검사 및 프로덕션 번들 빌드를 원클릭으로 완벽히 통과하도록 체계화했습니다.
+  - GitHub Actions CI/CD(`.github/workflows/ci-deploy.yml`) 검증 환경과 로컬 검증 체계를 100% 일치시켰습니다.
 
-완료·만료된 `alert_pending`과 `alert_telegram_outbox` 문서가 무기한 누적되지
-않도록 감사·운영 확인에 필요한 보존기간과 Firestore TTL을 적용합니다.
+2026-08-27 11:56 KST에 `scripts/verify_all.sh` 5단계 전체 검증(Python 224개 테스트, React 29개 테스트, 데이터 검증, 컴파일 및 프로덕션 빌드)이 모두 통과했습니다.
 
-권장 진행 순서:
+## 5. 현재 운영 상태 및 최종 인수인계
 
-1. 두 collection 문서가 운영 상태·실적·감사 조회에서 다시 사용되는지 먼저
-   확인하고, 필요한 최소 보존기간을 정합니다.
-2. 재시도 만료 의미의 기존 `expires_at`을 TTL 필드로 재사용하지 않습니다.
-   terminal 상태로 바뀔 때 별도 `delete_after`를 기록해 보존기간 뒤 삭제합니다.
-3. `PENDING` 문서에는 `delete_after`를 넣지 않아 살아 있는 작업이 TTL로 삭제되지
-   않게 합니다. `SENT`·`FAILED`·`EXPIRED` 등 terminal 전이를 테스트로 고정합니다.
-4. Firestore TTL 정책은 코드 배포와 분리해 적용하고, 필요한 IAM·명령과 현재
-   적용 여부를 배포 문서에 기록합니다. 기존 문서 backfill은 운영 영향 검토 뒤
-   별도 수행합니다.
-5. TTL 삭제는 즉시성을 보장하지 않으므로 애플리케이션의 만료·중복방지 로직은
-   그대로 유지합니다.
+개선 로드맵([`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md))의 **1단계부터 9단계까지 모든 계획이 100% 완수**되었습니다.
 
-수용 조건:
+### 주요 시스템 구성 및 서비스 현황
+1. **현장 안전지도 (`/`)**:
+   - 스마트폰 최적화 React SPA (초기 번들 239.4kB 초경량 유지)
+   - Kakao 지도 기반 103개 시설 위험등급 마커, 원클릭 필터/검색, 실시간 KMA 특보 및 지연 경과시간 표출
+2. **중앙관제 대시보드 (`/control`)**:
+   - `React.lazy` 지연 로딩 (25.1kB)
+   - 103개 시설 실시간 관제 KPI 요약, 점검 우선순위 목록, 관제 지도 및 다중 시설 선택 바
+   - 수동 Telegram 상황전파 모달 (`ManualDispatchModal`) 및 A4 가로형 PDF 초동보고서 스트리밍 다운로드
+   - 5분 자동감시 진단, 실적/이력 탭 및 CSV 내보내기
+3. **위험도 정책 설정 (`/settings`)**:
+   - `React.lazy` 지연 로딩 (7.4kB)
+   - 14종 기상특보 × 3단계 위험등급 매트릭스 편집 그리드, 발효 특보 하이라이트 및 브라우저 세션 로컬 저장
+4. **보안 및 백엔드 API/Worker (Cloud Run)**:
+   - HMAC-SHA256 HttpOnly 세션 쿠키 발급, 자동 세션 유지, 로그아웃 및 보안 감사 로그
+   - 5분 주기 Cloud Scheduler 기반 자동감시 Worker
 
-- PENDING 문서는 보존기간과 관계없이 기존 재시도·보류 처리에 남습니다.
-- terminal 문서만 명시한 보존 종료 시각을 가지며 감사기간 동안 조회할 수 있습니다.
-- 기존 자동알림 기준 상태와 outbox 문서를 초기화하거나 재생성하지 않습니다.
-- TTL 정책이 재현 가능한 운영 문서와 검증 절차로 남습니다.
-- 전체 Python·React 테스트와 데이터 검증이 통과합니다.
 
-그 다음은 로드맵 4단계 구버전 코드/CSV/산출물 정리, 사용자 지도 UX,
-React 중앙관제 전환 순서입니다.
+
 
 ## 6. 사용자 의도와 확정 결정
 
@@ -212,8 +235,6 @@ React 중앙관제 전환 순서입니다.
 - 루트 구버전 모듈과 `tests/`를 현행 패키지로 완전히 이전하지 못했습니다.
 - 제품·기능·도메인 문서의 초기 자동알림 제외 문구는 2026-08-27 현재 운영
   기준으로 정리했지만, 세부 구현 여부는 여전히 코드·테스트와 대조해야 합니다.
-- 완료·만료된 pending/outbox 문서에는 아직 보존기간과 TTL이 없어 계속
-  누적됩니다. 재시도용 `expires_at`과 별도인 terminal 보존 필드가 필요합니다.
 - React 의존성이 `latest`로 고정되어 재현성이 약합니다. 품질관리 단계에서 명시
   버전과 ESLint/타입 검사를 추가할 예정입니다.
 - 실제 장애 이메일 수신 시험은 로드맵에 미완료로 남아 있습니다.

@@ -80,9 +80,13 @@ class AdminAccessVerifierTests(unittest.TestCase):
             json={"password": "safe-password"},
         )
         self.assertEqual(accepted.status_code, 200)
-        self.assertEqual(accepted.json(), {"status": "ok", "expires_in": 7200})
+        self.assertEqual(accepted.json()["status"], "ok")
+        self.assertEqual(accepted.json()["expires_in"], 7200)
+        self.assertIn("token", accepted.json())
+        self.assertIn("keco_admin_session", accepted.cookies)
         self.assertEqual(accepted.headers["cache-control"], "private, no-store")
         self.assertNotIn("safe-password", accepted.text)
+
 
 
 class StreamlitAdminGateTests(unittest.TestCase):
@@ -132,5 +136,46 @@ class StreamlitAdminGateTests(unittest.TestCase):
         post.assert_not_called()
 
 
+class AdminSessionManagerTests(unittest.TestCase):
+    def test_create_and_verify_token_round_trip(self):
+        from safety_dashboard.admin.session import (
+            AdminSessionExpiredError,
+            AdminSessionManager,
+        )
+
+        clock = [1000.0]
+        manager = AdminSessionManager("test-secret", default_lifetime_seconds=3600, time_fn=lambda: clock[0])
+        token = manager.create_token()
+
+        session = manager.verify_token(token)
+        self.assertEqual(session.created_at, 1000)
+        self.assertEqual(session.expires_at, 4600)
+
+        # 유효 시간 내 검증 성공
+        clock[0] = 4599.0
+        self.assertEqual(manager.verify_token(token).expires_at, 4600)
+
+        # 만료 시점 초과 시 오류
+        clock[0] = 4600.0
+        with self.assertRaises(AdminSessionExpiredError):
+            manager.verify_token(token)
+
+    def test_tampered_token_is_rejected(self):
+        from safety_dashboard.admin.session import (
+            AdminSessionError,
+            AdminSessionManager,
+        )
+
+        manager = AdminSessionManager("test-secret")
+        token = manager.create_token()
+
+        with self.assertRaises(AdminSessionError):
+            manager.verify_token(token + "tampered")
+
+        with self.assertRaises(AdminSessionError):
+            manager.verify_token("")
+
+
 if __name__ == "__main__":
     unittest.main()
+

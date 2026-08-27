@@ -9,8 +9,8 @@ import time
 from dataclasses import replace
 from typing import Any, Callable
 
-from core.region_resolver import WarningZoneIndex
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
+from safety_dashboard.domain.region_resolver import WarningZoneIndex
 from safety_dashboard.adapters.kma import (
     KmaWarningProvider,
     StaticWarningProvider,

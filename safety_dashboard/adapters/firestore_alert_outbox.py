@@ -9,6 +9,7 @@ from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from safety_dashboard.adapters.firestore_alert_common import (
+    DEFAULT_OUTBOX_RETENTION,
     KST,
     _aware,
     _parse_datetime,
@@ -75,10 +76,15 @@ class FirestoreTelegramOutboxRepository:
                 break
         if expired:
             batch = self.client.batch()
+            delete_after = now + DEFAULT_OUTBOX_RETENTION
             for ref, _, _, _, _ in expired:
                 batch.set(
                     ref,
-                    {"status": "EXPIRED", "completed_at": now},
+                    {
+                        "status": "EXPIRED",
+                        "completed_at": now,
+                        "delete_after": delete_after,
+                    },
                     merge=True,
                 )
             batch.commit()
@@ -131,6 +137,7 @@ class FirestoreTelegramOutboxRepository:
         }
         if success or expired:
             values["completed_at"] = now
+            values["delete_after"] = now + DEFAULT_OUTBOX_RETENTION
         else:
             values["next_attempt_at"] = now + dt.timedelta(minutes=5)
         self.client.collection(self.collections.telegram_outbox).document(item.id).set(

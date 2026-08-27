@@ -28,6 +28,16 @@ from safety_dashboard.domain.models import (
     WeatherLayerFeed,
     WeatherObservation,
 )
+from safety_dashboard.domain.region_resolver import (
+    KMA_WARNING_SCOPE_PREFIXES,
+    WarningZoneIndex,
+    boundary_names_for_warning,
+    dominant_warning,
+    facility_matches_warning,
+    normalize_warning_zone_data,
+    warning_level_rank,
+    warning_matches_facility,
+)
 
 __all__ = [
     "CctvFeed",
@@ -40,6 +50,7 @@ __all__ = [
     "Facility",
     "FacilityRegion",
     "GeoPoint",
+    "KMA_WARNING_SCOPE_PREFIXES",
     "KmaFailureCategory",
     "KmaFailureDiagnostic",
     "NearbyCctv",
@@ -50,8 +61,15 @@ __all__ = [
     "Warning",
     "WarningFeed",
     "WarningLevel",
+    "WarningZoneIndex",
     "WeatherGridPoint",
     "WeatherLayerFeed",
     "WeatherLayerKind",
     "WeatherObservation",
+    "boundary_names_for_warning",
+    "dominant_warning",
+    "facility_matches_warning",
+    "normalize_warning_zone_data",
+    "warning_level_rank",
+    "warning_matches_facility",
 ]

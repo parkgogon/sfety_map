@@ -24,6 +24,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.info(
+    "💡 **차세대 현장 안전지도 및 통합 중앙관제 React 웹 앱이 출시되었습니다.**\n\n"
+    "- 📱 **현장 안전지도**: [`keco-safety-map.web.app`](https://keco-safety-map.web.app/)\n"
+    "- 🖥️ **중앙관제 대시보드**: [`/control`](https://keco-safety-map.web.app/control)\n"
+    "- ⚙️ **위험도 정책 설정**: [`/settings`](https://keco-safety-map.web.app/settings)",
+    icon="🚀",
+)
+
+
 field_page = st.Page(
     "safety_dashboard/ui/pages/field_map.py",
     title="현장 지도",

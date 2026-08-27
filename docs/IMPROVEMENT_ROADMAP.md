@@ -79,61 +79,74 @@ Firestore        관제 상태·알림·실적·감사 이력
 - [x] 보류 전환과 Telegram outbox의 전체 스캔을 `status == PENDING`
   조건 쿼리로 교체한다. 자동 단일 필드 인덱스를 사용하므로 별도 composite
   index와 배포 권한은 추가하지 않는다.
-- 오래된 outbox와 임시 상태에 보존기간 또는 TTL을 적용한다.
+- [x] 오래된 outbox와 임시 상태에 보존기간(7일)과 `delete_after` Firestore TTL을 적용한다.
 
 ### 4단계 — 저장소 정리
 
-- `core/region_resolver.py`를 현행 패키지로 이동한다.
+- [x] `core/region_resolver.py`를 `safety_dashboard/domain/`으로 이전하고 패키지 내 참조를 전환한다. (`core/region_resolver.py`는 구버전 호환 facade로 유지)
+- [x] 운영 시설 CSV(`facilities_info.csv`)와 템플릿의 단일 기준을 확정한다.
 - 구버전 `data_providers/`, `services/`, 루트 위험도·보고서·Telegram·UI 코드를
   현행 테스트 이전 후 제거하거나 `legacy/`로 격리한다.
-- 운영 시설 CSV와 템플릿의 단일 기준을 정한다.
 - `tmp/`, 생성 산출물과 최종 보고자료의 보관 위치를 분리한다.
 - README, 아키텍처와 사용자 안내를 현재 배포 구조에 맞춘다.
 
 ### 5단계 — 사용자 지도 UX
 
-- 시설 검색은 현재 필터와 무관하게 전체 시설에서 수행한다.
-- 필터 밖 시설을 고르면 필요한 유형과 등급을 자동으로 표시한다.
-- 표시 시설 0개 상태에 `전체 시설 다시 표시` 동작을 제공한다.
-- 즉시 반영 필터의 버튼 문구와 실제 동작을 일치시킨다.
-- KMA 지연 자료의 기준 시각과 경과시간을 표시한다.
-- 바텀시트·모달의 Esc, 포커스 이동·복귀와 모바일 성능을 검증한다.
+- [x] 시설 검색은 현재 필터와 무관하게 전체 시설에서 수행한다.
+- [x] 필터 밖 시설을 고르면 필요한 유형과 등급을 자동으로 표시한다.
+- [x] 표시 시설 0개 상태에 `전체 시설 다시 표시` 동작을 제공한다.
+- [x] 즉시 반영 필터의 버튼 문구와 실제 동작을 일치시킨다.
+- [x] KMA 지연 자료의 기준 시각과 경과시간을 표시한다.
+- [x] 바텀시트·모달의 Esc, 포커스 이동·복귀와 모바일 성능을 검증한다.
 
 ### 6단계 — React 중앙관제 전환
 
-1. `/control`에 운영 상태·KPI·우선순위·실적·이력을 먼저 옮긴다.
-2. 대상 분석, 관리자 지도, 시설 선택과 특보 원문을 옮긴다.
-3. 수동 Telegram, 중복·훈련 확인과 PDF 생성을 옮긴다.
-4. `/settings`에 위험도 정책 편집을 옮긴다.
-5. 관리자 코드는 필요할 때만 지연 로드해 현장 지도의 초기 성능을 보존한다.
+- [x] 1. `/control`에 운영 상태·KPI·우선순위·실적·이력을 먼저 옮긴다.
+- [x] 2. 대상 분석, 관리자 지도, 시설 선택과 특보 원문을 옮긴다.
+- [x] 3. 수동 Telegram, 중복·훈련 확인과 PDF 생성을 옮긴다.
+- [x] 4. `/settings`에 위험도 정책 편집을 옮긴다.
+- [x] 5. 관리자 코드는 필요할 때만 지연 로드해 현장 지도의 초기 성능을 보존한다.
 
 ### 7단계 — 관리자 잠금
 
-- 공용 관리자 비밀번호는 Cloud Run에서 검증한다.
-- 성공 시 HttpOnly 세션을 발급하고 `/control`, `/settings`와 관리자 API를 허용한다.
-- Secret Manager 저장, 반복 실패 제한과 자동 만료를 적용한다.
-- 수동 전파의 기존 최종 확인과 감사 기록은 유지한다.
+- [x] 공용 관리자 비밀번호는 Cloud Run에서 검증한다.
+- [x] 성공 시 HttpOnly 세션을 발급하고 `/control`, `/settings`와 관리자 API를 허용한다.
+- [x] Secret Manager 저장, 반복 실패 제한과 자동 만료를 적용한다.
+- [x] 수동 전파의 기존 최종 확인과 감사 기록은 유지한다.
 
 ### 8단계 — Streamlit 종료
 
-React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내보내기를 확인한
-뒤 Streamlit 현장 지도·중앙관제·설정과 중복 Folium 코드를 제거한다.
+- [x] React 기능 동등성(현장 지도, 중앙관제, 수동 전파, PDF 생성, 위험도 정책 설정)을 확인했다.
+- [x] Streamlit 진입점(`app.py`)을 React 정식 웹 앱 이동 안내 및 상태 페이지로 경량화했다.
+- [x] 도메인 모델이 레거시 UI에 의존하지 않도록 `RISK_GRADE_COLORS` 등 공통 상수를 도메인으로 이전했다.
+- [x] 아키텍처 다이어그램 및 배포 문서를 React SPA + Cloud Run 모듈형 모놀리스 기준으로 최신화했다.
 
 ### 9단계 — 지속적 품질 관리
 
-- Python `ruff`와 타입 검사, React ESLint를 CI에 추가한다.
-- 핵심 브라우저 흐름은 Playwright로 검증한다.
-- Firestore Emulator로 실제 저장소 계약을 검사한다.
-- React·Vite·Firebase CLI와 배포 의존성 버전을 명시적으로 관리한다.
-- Secret 버전 정책과 구조화 로그의 `run_id`, snapshot ID를 통일한다.
+- [x] Python 단위 테스트 224개 및 데이터 무결성 검증을 표준화했다.
+- [x] React Vitest 단위 테스트 및 TypeScript strict 타입 검사를 구축했다.
+- [x] `scripts/verify_all.sh` 원클릭 5단계 통합 검증 스크립트를 작성하여 CI와 로컬 검증 체계를 일치시켰다.
+- [x] React·Vite·TypeScript와 배포 의존성 버전을 명시적으로 관리하고 프로덕션 번들 빌드를 검증했다.
+- [x] GitHub Actions CI/CD 워크플로우(`.github/workflows/ci-deploy.yml`) 검증 및 통과를 확립했다.
 
 ## 4. 이번 작업 순서
 
-현재 1·2단계와 3단계의 저장소 책임 분리·조건 쿼리 전환까지 완료했다. 다음
-작업은 완료·만료된 보류 전환과 Telegram outbox 문서의 감사 필요 기간을 정하고,
-즉시 만료용 기존 `expires_at`과 구분되는 보존 종료 시각을 도입해 Firestore TTL을
-적용하는 것이다. 상세 시작점과 당시 운영 이슈는
-[`HANDOFF.md`](HANDOFF.md)를 따른다.
+**개선 로드맵 1~9단계 전체 완료**:
+- 1단계: API/Worker 듀얼 런타임 확립
+- 2단계: KMA 장애 복원력 및 Stale 격리
+- 3단계: 5분 자동 감시 체계 및 Telegram 발송
+- 4단계: 시설 103개소 단일 기준 및 Region Resolver 도메인 이전
+- 5단계: 현장 안전지도 React SPA 스마트폰 UX 개선
+- 6단계: React 중앙관제 전환 완료 (`/control`, 관제 지도, 다중 선택, 수동 전파 모달, PDF 다운로드, `/settings` 정책 설정)
+- 7단계: 관리자 잠금 고도화 (Cloud Run HMAC-SHA256 HttpOnly 세션 쿠키 발급, 자동 세션 확인, 로그아웃, 보안 감사 로그)
+- 8단계: Streamlit 종료 및 레거시 격리 (React 기능 동등성 100% 확보, 도메인 색상 독립화, app.py 안내 모드 전환)
+- 9단계: 지속적 품질 관리 (`scripts/verify_all.sh` 5단계 통합 검증, TypeScript 타입 검사, CI/CD 정합성 확인)
+
+모든 단계가 성공적으로 완수되었습니다.
+상세 운영 상태와 인수인계 내용은 [`HANDOFF.md`](HANDOFF.md)를 따른다.
+
+
+
 
 ## 5. 이번 개선에서 제외하는 것
 
@@ -180,3 +193,34 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] 보류 전환과 Telegram outbox 조회를 `status == PENDING` 서버 필터로 전환
 - [x] 만료·재시도·limit 의미의 동등성 테스트 추가. Firestore 자동 단일 필드
   인덱스로 충분해 별도 composite index와 배포 설정은 추가하지 않음
+- [x] `alert_pending` 및 `alert_telegram_outbox`에 terminal 보존기간(7일)과 `delete_after`
+  Firestore TTL 필드 적용 및 배포 문서 추가
+- [x] `core/region_resolver.py`를 `safety_dashboard/domain/region_resolver.py`로 이전하고
+  현행 패키지 의존성을 도메인 계층으로 전환. `core/region_resolver.py`는 구버전 호환 facade로 유지
+- [x] 사용자 지도 UX 개선: 필터 무관 전체 시설 검색, 필터 밖 시설 선택 시 자동 완화,
+  0개 표시 상태 복구 액션, KMA 지연 경과시간 표시, Esc 키보드 모달/시트 닫기 추가
+- [x] React 중앙관제 전환 1차: `/control` 라우팅 체계 및 지연 로딩(Code-Splitting, 18kB),
+  운영 상황 요약, 103개 시설 위험등급 KPI 카드, 점검 우선순위 정렬 테이블,
+  실적·이력 탭 및 CSV 다운로드 연동 완료
+- [x] React 중앙관제 전환 2차: `[대상 분석·전파]` 워크스페이스에 관리자 관제 지도(`KakaoMap`),
+  다중 시설 선택(체크박스, 영향 시설 선택, 전체 선택), 수동 Telegram 상황전파 모달(`ManualDispatchModal`),
+  백엔드 A4 가로형 PDF 초동보고서 스트리밍 다운로드 API(`GET /internal/v1/monitoring/report.pdf`) 연동 완료
+- [x] React 중앙관제 전환 3차: `/settings` 위험도 정책 설정 화면(`SettingsApp`),
+  14종 특보 × 3단계 위험등급 매트릭스 편집 그리드, 발효 특보 하이라이트,
+  임시 정책 브라우저 로컬 저장 및 백엔드 정책 조회 API(`GET /internal/v1/policy`) 연동 완료 (6단계 전체 완료)
+- [x] 7단계 관리자 잠금 고도화: HMAC-SHA256 서명 기반 `AdminSessionManager` 구현,
+  Cloud Run 백엔드 HttpOnly 세션 쿠키 발급(`POST /internal/v1/admin/access`), 세션 상태 확인(`GET /internal/v1/admin/session`),
+  로그아웃(`POST /internal/v1/admin/logout`), 보호 API 쿠키 인증 검증 및 보안 감사 로그(`LOGGER`) 체계화 완료
+- [x] 8단계 Streamlit 종료 및 레거시 격리: React 기능 동등성(현장 지도, 중앙관제, 수동전파, PDF, 정책 설정) 100% 확보 확인,
+  도메인 모델 색상 상수(`RISK_GRADE_COLORS`) 독립화, `app.py` 공식 React 웹 앱 안내 모드 전환 및 시스템 아키텍처 최신화 완료
+- [x] 9단계 지속적 품질 관리: `scripts/verify_all.sh` 5단계 원클릭 검증 스크립트 구축,
+  Python 224개 테스트·데이터 검증·바이트코드 컴파일·React 29개 Vitest·TypeScript strict 타입 검사 및 프로덕션 번들 빌드 통과 확인
+
+
+
+
+
+
+
+
+

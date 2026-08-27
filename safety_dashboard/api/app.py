@@ -6,7 +6,7 @@ import datetime as dt
 import logging
 from typing import Literal
 
-from fastapi import FastAPI, Header, HTTPException, Query, Response
+from fastapi import Cookie, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
@@ -17,6 +17,12 @@ from safety_dashboard.admin.access import (
     AdminAccessSettings,
     AdminAccessThrottledError,
     AdminAccessVerifier,
+)
+from safety_dashboard.admin.session import (
+    AdminSession,
+    AdminSessionError,
+    AdminSessionExpiredError,
+    AdminSessionManager,
 )
 from safety_dashboard.api.context_service import (
     FacilityContextService,
@@ -102,6 +108,10 @@ def create_app(
     admin_access = admin_access_service or AdminAccessVerifier(
         AdminAccessSettings.from_environment()
     )
+    session_manager = AdminSessionManager(
+        secret_key=admin_access.settings.password or "keco-session-secret",
+        default_lifetime_seconds=admin_access.settings.session_seconds,
+    )
 
     def notification_admin() -> AlertAdminService:
         nonlocal alert_admin
@@ -171,32 +181,79 @@ def create_app(
     def verify_admin_access(
         request: AdminAccessRequest,
         response: Response,
+        http_req: Request,
     ) -> dict[str, object]:
+        client_ip = http_req.client.host if http_req.client else "unknown"
         response.headers["Cache-Control"] = "private, no-store"
         if not request.password or len(request.password) > 256:
+            LOGGER.warning("admin_access_rejected_empty ip=%s", client_ip)
             raise HTTPException(
                 status_code=403,
                 detail="관리자 인증에 실패했습니다.",
             )
         try:
             expires_in = admin_access.verify(request.password)
+            session_token = session_manager.create_token(expires_in)
+            response.set_cookie(
+                key=AdminSessionManager.COOKIE_NAME,
+                value=session_token,
+                max_age=expires_in,
+                httponly=True,
+                samesite="lax",
+                secure=False,
+                path="/",
+            )
+            LOGGER.info("admin_access_granted ip=%s expires_in=%s", client_ip, expires_in)
+            return {"status": "ok", "token": session_token, "expires_in": expires_in}
         except AdminAccessDeniedError as exc:
+            LOGGER.warning("admin_access_denied ip=%s", client_ip)
             raise HTTPException(
                 status_code=403,
                 detail="관리자 인증에 실패했습니다.",
             ) from exc
         except AdminAccessThrottledError as exc:
+            LOGGER.warning("admin_access_throttled ip=%s", client_ip)
             raise HTTPException(
                 status_code=429,
                 detail="인증 실패가 반복되어 잠시 후 다시 시도해 주세요.",
                 headers={"Retry-After": "300"},
             ) from exc
         except AdminAccessConfigurationError as exc:
+            LOGGER.error("admin_access_unconfigured ip=%s", client_ip)
             raise HTTPException(
                 status_code=503,
                 detail="관리자 잠금이 아직 설정되지 않았습니다.",
             ) from exc
-        return {"status": "ok", "expires_in": expires_in}
+
+    @application.get("/internal/v1/admin/session")
+    def admin_session_status(
+        http_req: Request,
+        response: Response,
+        x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
+    ) -> dict[str, object]:
+        response.headers["Cache-Control"] = "private, no-store"
+        token_to_check = x_alert_admin_token or cookie_session
+        if not token_to_check:
+            return {"authenticated": False}
+        try:
+            session = session_manager.verify_token(token_to_check)
+            return {
+                "authenticated": True,
+                "created_at": session.created_at,
+                "expires_at": session.expires_at,
+            }
+        except Exception:
+            return {"authenticated": False}
+
+    @application.post("/internal/v1/admin/logout")
+    def admin_logout(response: Response, http_req: Request) -> dict[str, str]:
+        response.headers["Cache-Control"] = "private, no-store"
+        response.delete_cookie(key=AdminSessionManager.COOKIE_NAME, path="/")
+        client_ip = http_req.client.host if http_req.client else "unknown"
+        LOGGER.info("admin_logout ip=%s", client_ip)
+        return {"status": "ok", "message": "logged_out"}
+
 
     @application.get("/api/v1/monitoring")
     def monitoring(
@@ -257,9 +314,10 @@ def create_app(
     def notification_status(
         response: Response,
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         response.headers["Cache-Control"] = "private, no-store"
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         return service.status()
 
     @application.get("/internal/v1/monitoring/snapshot")
@@ -267,11 +325,12 @@ def create_app(
         response: Response,
         mode: Literal["live", "simulation"] = Query("live"),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         """Streamlit 관제·PDF가 공개 지도와 같은 관제 결과를 읽는다."""
 
         response.headers["Cache-Control"] = "private, no-store"
-        _authorized_admin(notification_admin(), x_alert_admin_token)
+        _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
         return {
             "api_version": "v1",
@@ -279,13 +338,97 @@ def create_app(
             "snapshot": dashboard_snapshot_to_document(snapshot),
         }
 
+    @application.get("/internal/v1/monitoring/report.pdf")
+    def internal_monitoring_report_pdf(
+        mode: Literal["live", "simulation"] = Query("live"),
+        facility_ids: str = Query("", description="콤마로 구분된 시설 ID 목록"),
+        scope_label: str = Query("전체 소관시설", max_length=100),
+        x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
+    ) -> Response:
+        """관제 snapshot 기반 A4 가로형 PDF 초동보고서를 생성하여 다운로드합니다."""
+        _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
+        snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
+
+        target_snapshot = snapshot
+        if facility_ids.strip():
+            selected_ids = [fid.strip() for fid in facility_ids.split(",") if fid.strip()]
+            if selected_ids:
+                selected_set = frozenset(selected_ids)
+                assessments = tuple(
+                    item for item in snapshot.assessments if item.facility.id in selected_set
+                )
+                from safety_dashboard.application.selection import _subset_snapshot
+                target_snapshot = _subset_snapshot(snapshot, assessments)
+
+        from pathlib import Path
+        from safety_dashboard.adapters.pdf_report import PdfReportRenderer
+
+        font_path = Path(__file__).resolve().parent.parent.parent / "fonts" / "NotoSansKR.ttf"
+        try:
+            renderer = PdfReportRenderer(font_path)
+            pdf_bytes = renderer.render(target_snapshot, scope_label=scope_label)
+        except Exception as exc:
+            LOGGER.error("pdf_report_generation_failed", exc_info=True)
+            raise HTTPException(status_code=500, detail="PDF 보고서를 생성하지 못했습니다.") from exc
+
+        now_str = dt.datetime.now(KST).strftime("%Y%m%d_%H%M%S")
+        filename = f"safety_monitoring_report_{now_str}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Cache-Control": "private, no-store",
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
+        )
+
+    @application.get("/internal/v1/policy")
+    def internal_policy(
+        response: Response,
+        x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
+    ) -> dict[str, object]:
+        """기본 위험도 정책 및 특보별 매트릭스 정보를 반환합니다."""
+        response.headers["Cache-Control"] = "private, no-store"
+        _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
+
+        from pathlib import Path
+        from safety_dashboard.domain.risk_policy import RiskPolicy
+        policy_path = Path(__file__).resolve().parent.parent / "config" / "risk_policy.toml"
+        policy = RiskPolicy.load(policy_path)
+
+        return {
+            "version": policy.version,
+            "description": policy.description,
+            "default_grade": policy.default_grade.value,
+            "grades": {
+                grade.value: {
+                    "rank": defn.rank,
+                    "label": defn.label,
+                    "meaning": defn.meaning,
+                    "action": defn.action,
+                    "color": defn.color,
+                }
+                for grade, defn in policy.grades.items()
+            },
+            "warning_types": {
+                warning_type: {
+                    level.value: grade.value
+                    for level, grade in levels.items()
+                }
+                for warning_type, levels in policy.warning_matrix.items()
+            },
+        }
+
     @application.get("/internal/v1/notifications/overview")
     def notification_overview(
         response: Response,
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         response.headers["Cache-Control"] = "private, no-store"
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         return service.overview()
 
     @application.get("/internal/v1/notifications/metrics")
@@ -294,9 +437,10 @@ def create_app(
         start: dt.date = Query(alias="from"),
         end: dt.date = Query(alias="to"),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         response.headers["Cache-Control"] = "private, no-store"
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         try:
             return service.metrics(start, end)
         except ValueError as exc:
@@ -311,9 +455,10 @@ def create_app(
         status: str = Query("all"),
         limit: int = Query(100, ge=1, le=200),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         response.headers["Cache-Control"] = "private, no-store"
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         start_at = dt.datetime.combine(start, dt.time.min, tzinfo=KST)
         end_at = dt.datetime.combine(
             end + dt.timedelta(days=1), dt.time.min, tzinfo=KST
@@ -335,9 +480,10 @@ def create_app(
         request: ManualTelegramDispatchRequest,
         response: Response,
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> dict[str, object]:
         response.headers["Cache-Control"] = "private, no-store"
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         now = dt.datetime.now(dt.timezone.utc)
         dispatch = ManualTelegramDispatch(
             id=request.request_id,
@@ -421,15 +567,34 @@ def create_app(
 
 def _authorized_admin(
     service: AlertAdminService,
-    token: str,
+    token: str = "",
+    cookie_session: str = "",
+    session_manager: AdminSessionManager | None = None,
 ) -> AlertAdminService:
-    try:
-        service.authorize_admin(token)
-    except AlertAdminAuthorizationError as exc:
-        raise HTTPException(status_code=403, detail="관리자 인증 실패") from exc
-    except AlertAdminConfigurationError as exc:
-        raise HTTPException(status_code=503, detail="관리자 통계 연동 미설정") from exc
-    return service
+    if token:
+        try:
+            service.authorize_admin(token)
+            return service
+        except AlertAdminAuthorizationError:
+            if session_manager:
+                try:
+                    session_manager.verify_token(token)
+                    return service
+                except Exception:
+                    pass
+            raise HTTPException(status_code=403, detail="관리자 인증 실패")
+        except AlertAdminConfigurationError as exc:
+            raise HTTPException(status_code=503, detail="관리자 통계 연동 미설정") from exc
+
+    if cookie_session and session_manager:
+        try:
+            session_manager.verify_token(cookie_session)
+            return service
+        except Exception:
+            raise HTTPException(status_code=403, detail="관리자 세션이 만료되었거나 올바르지 않습니다.")
+
+    raise HTTPException(status_code=403, detail="관리자 인증이 필요합니다.")
 
 
 app = create_app()
+

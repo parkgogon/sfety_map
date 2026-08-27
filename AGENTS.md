@@ -69,33 +69,29 @@ AI가 처음 작업을 맡으면 이 파일과 [`docs/HANDOFF.md`](docs/HANDOFF.
 ## 4. 현재 아키텍처 지도
 
 ```text
-Firebase Hosting / React / Kakao Maps
-  field_web/                    시설담당자용 현장 안전지도
-          │ /api/**
+Firebase Hosting / React SPA / Kakao Maps
+  field_web/                    현장 안전지도(/), 중앙관제(/control), 설정(/settings)
+          │ /api/**, /internal/**
           ▼
 Cloud Run API
-  safety_dashboard/api/         공개 조회와 보호된 관리자 API
-  safety_dashboard/domain/      외부 기술과 무관한 모델·위험도
+  safety_dashboard/api/         공개 조회, 보호된 관리자 세션·수동전파·PDF·정책 API
+  safety_dashboard/domain/      외부 기술과 무관한 시설·위험도·지역 모델
   safety_dashboard/application/ 조회·선택·메시지 유스케이스
-  safety_dashboard/adapters/    KMA·CSV·Firestore·Telegram·PDF 등
+  safety_dashboard/adapters/    KMA·Firestore·Telegram·PDF 등
           ▲
           │ 공통 MonitoringSnapshot
           ▼
 Cloud Run Worker + Scheduler
   safety_dashboard/alerts/      5분 자동감시·변화·발송·운영보고
 
-Streamlit (전환 기간 관리자 UI)
+Streamlit (전환 완료 및 안내 진입점)
   app.py
-  safety_dashboard/ui/pages/    현장 지도·중앙 관제·설정
 ```
 
 실행 단위는 API와 Worker로 나뉘지만, 코드는 **모듈형 모놀리스**로 유지합니다.
 KMA·Telegram·PDF 등을 각각 서버로 분해하는 MSA는 현재 규모에서 운영 복잡도가 더
 크므로 도입하지 않습니다.
 
-루트의 `core/`, `data_providers/`, `services/`, `ui/`, `risk_engine.py`,
-`report_generator.py`, `telegram_utils.py`는 아직 회귀 테스트가 남아 있는 구버전
-영역입니다. 현행 패키지로 기능과 테스트를 옮기기 전에는 삭제하지 않습니다.
 
 ## 5. 변경 시 지켜야 할 불변 규칙
 

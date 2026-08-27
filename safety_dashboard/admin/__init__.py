@@ -7,6 +7,12 @@ from safety_dashboard.admin.access import (
     AdminAccessThrottledError,
     AdminAccessVerifier,
 )
+from safety_dashboard.admin.session import (
+    AdminSession,
+    AdminSessionError,
+    AdminSessionExpiredError,
+    AdminSessionManager,
+)
 
 __all__ = [
     "AdminAccessConfigurationError",
@@ -14,4 +20,9 @@ __all__ = [
     "AdminAccessSettings",
     "AdminAccessThrottledError",
     "AdminAccessVerifier",
+    "AdminSession",
+    "AdminSessionError",
+    "AdminSessionExpiredError",
+    "AdminSessionManager",
 ]
+

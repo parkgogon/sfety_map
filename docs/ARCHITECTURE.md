@@ -36,14 +36,19 @@ Cloud의 GitHub 연동을 유지한다. 테스트나 빌드가 실패하면 기�
 버전에 복구할 수 있어야 한다.
 
 ```text
-시설담당자 스마트폰
+시설담당자 스마트폰 & 중앙관제 브라우저
     ↓ HTTPS
-Firebase Hosting (React + Kakao Maps)
-    └── /api/** → Cloud Run asia-northeast3
-                      ├── KMA
-                      ├── ITS CCTV
-                      └── 재난문자
+Firebase Hosting (React SPA + Kakao Maps)
+    ├── / (현장 안전지도)
+    ├── /control (중앙관제 대시보드·지도·수동전파) [React.lazy 지연로드]
+    ├── /settings (위험도 정책 매트릭스 설정) [React.lazy 지연로드]
+    └── /api/**, /internal/** → Cloud Run asia-northeast3
+                                  ├── KMA 기상특보
+                                  ├── Firestore (알림 상태/이력/관제 Snapshot)
+                                  ├── Telegram (자동/수동 상황전파)
+                                  └── PDF 초동보고서 스트리밍 렌더러
 ```
+
 
 ### 기본 운영 관측
 

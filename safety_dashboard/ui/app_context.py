@@ -9,7 +9,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from core.region_resolver import WarningZoneIndex
 from safety_dashboard.adapters.cctv import DEFAULT_API_URL as CCTV_API_URL
 from safety_dashboard.adapters.cctv import ItsCctvProvider
 from safety_dashboard.adapters.current_weather import CurrentWeatherProvider
@@ -20,6 +19,7 @@ from safety_dashboard.adapters.disaster_messages import (
     SafetyDataDisasterMessageProvider,
 )
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
+from safety_dashboard.domain.region_resolver import WarningZoneIndex
 from safety_dashboard.adapters.kma import (
     StaticWarningProvider,
     WarningZoneRepository,

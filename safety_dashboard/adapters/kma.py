@@ -11,9 +11,12 @@ from typing import Any, Sequence
 
 import requests
 
-from core.region_resolver import KMA_WARNING_SCOPE_PREFIXES, normalize_warning_zone_data
 from safety_dashboard.domain.enums import DataHealth, KmaFailureCategory
 from safety_dashboard.domain.models import KmaFailureDiagnostic, Warning, WarningFeed
+from safety_dashboard.domain.region_resolver import (
+    KMA_WARNING_SCOPE_PREFIXES,
+    normalize_warning_zone_data,
+)
 from safety_dashboard.domain.risk_policy import RiskPolicy
 
 
