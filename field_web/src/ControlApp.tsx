@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMonitoringData } from "./api";
 import {
   checkAdminSession,
+  downloadReportPdf,
   getReportPdfUrl,
   getStoredAdminToken,
   logoutAdmin,
@@ -199,15 +200,23 @@ export default function ControlApp() {
   }, []);
 
   // PDF 다운로드 실행
-  const handlePdfDownload = () => {
-    if (!data) return;
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const handlePdfDownload = async () => {
+    if (!data || pdfLoading) return;
     const selectedIds = Array.from(selectedFacilityIds);
     const scopeLabel = selectedIds.length === data.facilities.length
       ? "전체 소관시설"
       : `선택 ${selectedIds.length}개소`;
-    const url = getReportPdfUrl(adminToken, monitoringMode, selectedIds, scopeLabel);
-    window.open(url, "_blank");
+    setPdfLoading(true);
+    try {
+      await downloadReportPdf(adminToken, monitoringMode, selectedIds, scopeLabel);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "PDF 다운로드에 실패했습니다.");
+    } finally {
+      setPdfLoading(false);
+    }
   };
+
 
   // 위험등급별 집계
   const gradeCounts = useMemo(() => {
@@ -539,10 +548,11 @@ export default function ControlApp() {
                 type="button"
                 className="secondary-button pdf-button"
                 onClick={handlePdfDownload}
-                disabled={selectedFacilityIds.size === 0}
+                disabled={selectedFacilityIds.size === 0 || pdfLoading}
               >
-                PDF 초동보고서 다운로드 ⤓
+                {pdfLoading ? "PDF 생성 중..." : "PDF 초동보고서 다운로드 ⤓"}
               </button>
+
               <button
                 type="button"
                 className="primary-button dispatch-button"

@@ -304,8 +304,39 @@ export function getReportPdfUrl(
     params.set("facility_ids", facilityIds.join(","));
   }
   params.set("scope_label", scopeLabel);
+  if (token) {
+    params.set("token", token);
+  }
   return `/internal/v1/monitoring/report.pdf?${params.toString()}`;
 }
+
+export async function downloadReportPdf(
+  token: string,
+  mode: "live" | "simulation" = "live",
+  facilityIds: string[] = [],
+  scopeLabel = "전체 소관시설",
+): Promise<void> {
+  const url = getReportPdfUrl(token, mode, facilityIds, scopeLabel);
+  const response = await fetch(url, {
+    headers: token ? { "X-Alert-Admin-Token": token } : {},
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    const errorJson = (await response.json().catch(() => ({ detail: "" }))) as { detail?: string };
+    throw new Error(errorJson.detail || "PDF 보고서를 다운로드하지 못했습니다. 관리자 인증 상태를 확인해 주세요.");
+  }
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  const nowStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  a.download = `keco_safety_report_${nowStr}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
 
 export interface PolicyGradeDef {
   rank: number;

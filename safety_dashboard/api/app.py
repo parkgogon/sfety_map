@@ -343,12 +343,15 @@ def create_app(
         mode: Literal["live", "simulation"] = Query("live"),
         facility_ids: str = Query("", description="콤마로 구분된 시설 ID 목록"),
         scope_label: str = Query("전체 소관시설", max_length=100),
+        token: str = Query("", description="관리자 세션 토큰"),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
         cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> Response:
         """관제 snapshot 기반 A4 가로형 PDF 초동보고서를 생성하여 다운로드합니다."""
-        _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
+        effective_token = x_alert_admin_token or token
+        _authorized_admin(notification_admin(), effective_token, cookie_session, session_manager)
         snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
+
 
         target_snapshot = snapshot
         if facility_ids.strip():
@@ -528,9 +531,13 @@ def create_app(
     def notification_export(
         start: dt.date = Query(alias="from"),
         end: dt.date = Query(alias="to"),
+        token: str = Query("", description="관리자 세션 토큰"),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> Response:
-        service = _authorized_admin(notification_admin(), x_alert_admin_token)
+        effective_token = x_alert_admin_token or token
+        service = _authorized_admin(notification_admin(), effective_token, cookie_session, session_manager)
+
         try:
             content = service.export_csv(start, end)
         except ValueError as exc:
