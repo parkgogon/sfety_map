@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-27 10:07 KST
-> 기준 Git: `main` / `fb6c6ff Split Firestore alert store responsibilities`
+> 마지막 정리: 2026-08-27 10:14 KST
+> 기준 Git: `main` / `faeeacb Filter pending Firestore alert queries`
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -126,40 +126,50 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 
 기존 `FirestoreAlertStore(...)`는 46줄 compatibility facade로 남겼고 collection
 이름·핵심 문서 필드·Worker/API 메서드 계약을 테스트로 고정했습니다.
-2026-08-27 10:07 KST에 구버전 Python 22개, v3 Python 185개, React 21개,
+
+`faeeacb`에서 `load_pending()`과 `due_telegram()`을
+`status == PENDING` Firestore 조건 쿼리로 전환했습니다. 완료·만료 이력은 더 이상
+매 회차 읽지 않으며 만료 갱신, 다음 재시도 시각과 limit 적용은 기존 애플리케이션
+순서를 유지합니다. 자동 단일 필드 인덱스로 충분하므로 composite index 파일,
+Firebase 배포 범위와 IAM은 변경하지 않았습니다.
+
+2026-08-27 10:14 KST에 구버전 Python 22개, v3 Python 187개, React 21개,
 데이터 검증, Python compileall과 React production build가 모두 통과했습니다.
 
 ## 5. 진행 중인 개선과 다음 작업
 
 확정 로드맵은 [`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md)입니다.
-현재는 **3단계 Firestore 쿼리 효율화** 직전에 멈춰 있습니다.
+현재는 **3단계 Firestore 보존기간·TTL 적용** 직전에 멈춰 있습니다.
 
 ### 다음 개발 작업
 
-`load_pending()`과 `due_telegram()`의 collection 전체 scan을 조건 query로
-바꾸고 필요한 Firestore index를 배포 설정에 명시합니다.
+완료·만료된 `alert_pending`과 `alert_telegram_outbox` 문서가 무기한 누적되지
+않도록 감사·운영 확인에 필요한 보존기간과 Firestore TTL을 적용합니다.
 
 권장 진행 순서:
 
-1. `alert_pending`은 `status == PENDING`으로 서버 필터링하고 만료 처리와
-   반환 의미가 기존과 같은지 가짜 query로 검증합니다.
-2. `alert_telegram_outbox`는 `status == PENDING`과 `next_attempt_at <= now`를
-   이용하고, 만료 작업·limit·재시도 순서가 변하지 않게 합니다.
-3. 필요한 composite index를 `firestore.indexes.json`과 Firebase 설정에 추가하고
-   CI 배포 범위를 확인합니다.
-4. 구조 분리 커밋과 쿼리 변경 커밋을 합치지 않습니다.
-5. TTL은 쿼리 동등성을 확인한 뒤 다음 작업으로 남깁니다.
+1. 두 collection 문서가 운영 상태·실적·감사 조회에서 다시 사용되는지 먼저
+   확인하고, 필요한 최소 보존기간을 정합니다.
+2. 재시도 만료 의미의 기존 `expires_at`을 TTL 필드로 재사용하지 않습니다.
+   terminal 상태로 바뀔 때 별도 `delete_after`를 기록해 보존기간 뒤 삭제합니다.
+3. `PENDING` 문서에는 `delete_after`를 넣지 않아 살아 있는 작업이 TTL로 삭제되지
+   않게 합니다. `SENT`·`FAILED`·`EXPIRED` 등 terminal 전이를 테스트로 고정합니다.
+4. Firestore TTL 정책은 코드 배포와 분리해 적용하고, 필요한 IAM·명령과 현재
+   적용 여부를 배포 문서에 기록합니다. 기존 문서 backfill은 운영 영향 검토 뒤
+   별도 수행합니다.
+5. TTL 삭제는 즉시성을 보장하지 않으므로 애플리케이션의 만료·중복방지 로직은
+   그대로 유지합니다.
 
 수용 조건:
 
-- 반환되는 보류 전환과 due Telegram 작업이 기존 구현과 같습니다.
-- 만료 상태 갱신, 수동 전파·배치 실패 반영과 실적 카운터가 유지됩니다.
+- PENDING 문서는 보존기간과 관계없이 기존 재시도·보류 처리에 남습니다.
+- terminal 문서만 명시한 보존 종료 시각을 가지며 감사기간 동안 조회할 수 있습니다.
 - 기존 자동알림 기준 상태와 outbox 문서를 초기화하거나 재생성하지 않습니다.
-- 필요한 index가 코드와 함께 재현 가능하게 관리됩니다.
+- TTL 정책이 재현 가능한 운영 문서와 검증 절차로 남습니다.
 - 전체 Python·React 테스트와 데이터 검증이 통과합니다.
 
-그 다음은 오래된 outbox·임시 상태 TTL을 적용한 뒤 로드맵 4단계 구버전
-코드/CSV/산출물 정리, 사용자 지도 UX, React 중앙관제 전환 순서입니다.
+그 다음은 로드맵 4단계 구버전 코드/CSV/산출물 정리, 사용자 지도 UX,
+React 중앙관제 전환 순서입니다.
 
 ## 6. 사용자 의도와 확정 결정
 
@@ -202,8 +212,8 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 - 루트 구버전 모듈과 `tests/`를 현행 패키지로 완전히 이전하지 못했습니다.
 - 제품·기능·도메인 문서의 초기 자동알림 제외 문구는 2026-08-27 현재 운영
   기준으로 정리했지만, 세부 구현 여부는 여전히 코드·테스트와 대조해야 합니다.
-- Firestore의 일부 pending/event 조회는 전체 scan을 사용합니다. 구조 분리 뒤
-  query/index/TTL 개선이 필요합니다.
+- 완료·만료된 pending/outbox 문서에는 아직 보존기간과 TTL이 없어 계속
+  누적됩니다. 재시도용 `expires_at`과 별도인 terminal 보존 필드가 필요합니다.
 - React 의존성이 `latest`로 고정되어 재현성이 약합니다. 품질관리 단계에서 명시
   버전과 ESLint/타입 검사를 추가할 예정입니다.
 - 실제 장애 이메일 수신 시험은 로드맵에 미완료로 남아 있습니다.
