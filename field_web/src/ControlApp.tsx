@@ -433,27 +433,37 @@ export default function ControlApp() {
             <div className="system-health-panel">
               <div className="panel-header">
                 <h3>5분 자동 관제 시스템 상태</h3>
-                <span className={`badge ${overview.data.cycle_status.healthy ? "badge-success" : "badge-warning"}`}>
-                  {overview.data.cycle_status.healthy ? "정상 감시 중" : "확인 필요"}
+                <span className={`badge ${overview.data.healthy ? "badge-success" : "badge-warning"}`}>
+                  {overview.data.healthy ? "정상 감시 중" : "점검 필요"}
                 </span>
               </div>
               <div className="health-grid">
                 <div>
                   <span className="label">마지막 자동 실행:</span>
-                  <b>{overview.data.cycle_status.last_run_at ? formatReferenceTime(overview.data.cycle_status.last_run_at) : "—"}</b>
-                  <small>({overview.data.cycle_status.elapsed_minutes ?? 0}분 전)</small>
+                  <b>{overview.data.last_run_at ? formatReferenceTime(overview.data.last_run_at) : "—"}</b>
+                  <small>({overview.data.worker_detail || (overview.data.worker_fresh ? "정상" : "지연")})</small>
                 </div>
                 <div>
-                  <span className="label">KMA 통신 진단:</span>
-                  <b>{overview.data.cycle_status.kma_diagnostics || "정상"}</b>
+                  <span className="label">KMA 통신 상태:</span>
+                  <b>{overview.data.kma_health === "LIVE" ? "정상 (LIVE)" : overview.data.kma_health || "정상"}</b>
                 </div>
                 <div>
-                  <span className="label">오늘 자동 발송:</span>
-                  <b>{overview.data.today_metrics.auto_facilities}개소 영향 ({overview.data.today_metrics.auto_batches}회 발송)</b>
+                  <span className="label">운영 모드:</span>
+                  <b>{overview.data.mode === "live" ? "실시간 운영 (Live)" : (overview.data.mode || "모의")}</b>
                 </div>
               </div>
+              {overview.data.checks && overview.data.checks.length > 0 && (
+                <div className="health-checks-list" style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: "0.75rem" }}>
+                  {overview.data.checks.map((chk, idx) => (
+                    <span key={idx} style={{ color: chk.healthy ? "var(--color-risk-low, #15803d)" : "var(--color-risk-high, #b91c1c)" }}>
+                      {chk.healthy ? "✓" : "⚠"} {chk.name}: {chk.detail}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
 
           {/* 점검 우선순위 목록 */}
           <div className="priority-panel">

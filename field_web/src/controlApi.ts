@@ -2,38 +2,27 @@ import { useCallback, useEffect, useState } from "react";
 
 const ADMIN_TOKEN_KEY = "keco_admin_token";
 
-export interface ControlOverview {
-  generated_at: string;
-  cycle_status: {
-    healthy: boolean;
-    last_run_at: string | null;
-    elapsed_minutes: number | null;
-    mode: string;
-    kma_failures: number;
-    kma_diagnostics: string;
-    total_cycles_24h: number;
-    kma_failures_24h: number;
-  };
-  today_metrics: {
-    date: string;
-    auto_batches: number;
-    auto_facilities: number;
-    manual_batches: number;
-    manual_facilities: number;
-    telegram_messages: number;
-    sms_messages: number;
-  };
-  live_facilities: {
-    total: number;
-    active_warnings: number;
-    high_count: number;
-    medium_count: number;
-    low_count: number;
-    none_count: number;
-    unassessed_count: number;
-    unavailable_count: number;
-  };
+export interface HealthCheckItem {
+  name: string;
+  healthy: boolean;
+  detail: string;
 }
+
+export interface ControlOverview {
+  checked_at?: string;
+  healthy?: boolean;
+  worker_fresh?: boolean;
+  worker_detail?: string;
+  kma_health?: string;
+  last_run_at?: string | null;
+  mode?: string;
+  user_delivery_mode?: string;
+  daily_cap?: number;
+  sms_today?: number;
+  sms_month?: number;
+  checks?: HealthCheckItem[];
+}
+
 
 export interface AlertMetrics {
   from: string;
