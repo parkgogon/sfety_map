@@ -646,6 +646,47 @@ input:focus-visible {
   width: 8px;
 }
 
+.grade-legend-divider {
+  background: var(--color-border);
+  flex: none;
+  height: 16px;
+  margin: 0 6px;
+  width: 1px;
+}
+
+.zone-legend-group {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.zone-legend-label {
+  color: var(--color-text-muted);
+  font-size: .65rem;
+  font-weight: 700;
+}
+
+.zone-legend-chip {
+  align-items: center;
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-primary);
+  display: flex;
+  font-size: .65rem;
+  font-weight: 700;
+  gap: 3px;
+  padding: 2px 6px;
+}
+
+.zone-color-box {
+  border-radius: 2px;
+  display: inline-block;
+  flex: none;
+  height: 8px;
+  width: 8px;
+}
+
 .grade-legend .grade-legend-collapse,
 .grade-legend .grade-legend-expand {
   align-items: center;
@@ -743,6 +784,26 @@ input:focus-visible {
   width: min(320px, calc(100vw - 24px));
 }
 
+.help-section-title {
+  color: var(--color-brand-900);
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.help-divider {
+  background: var(--color-border);
+  height: 1px;
+  margin: var(--space-2) 0;
+}
+
+.help-subtext {
+  color: var(--color-status-stale);
+  font-size: .65rem;
+  margin: 6px 0 0;
+}
+
 .grade-help-popover > strong {
   display: block;
   font-size: var(--font-size-sm);
@@ -776,6 +837,10 @@ input:focus-visible {
   flex: none;
   height: 9px;
   width: 9px;
+}
+
+.grade-help-popover dt span.zone-color-box {
+  border-radius: 2px;
 }
 
 .grade-help-popover dd {

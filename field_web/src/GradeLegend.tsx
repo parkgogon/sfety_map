@@ -21,6 +21,11 @@ export const GRADE_HELP: Record<RiskGrade, string> = {
 };
 export const GRADE_HELP_FOOTER = "영향 없음은 절대적인 안전을 의미하지 않습니다.";
 
+export const WARNING_ZONE_LEGENDS = [
+  { key: "WARNING", label: "경보", color: "#D92D20", desc: "심각한 재해 위험 특보 (호우/폭염/태풍 등)" },
+  { key: "ADVISORY", label: "주의보", color: "#E87817", desc: "주의가 필요한 기상특보" },
+] as const;
+
 export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const helpButtonRef = useRef<HTMLButtonElement>(null);
@@ -75,7 +80,7 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
           aria-controls="grade-legend-options"
           onClick={() => setCollapsed(false)}
         >
-          등급 <span aria-hidden="true">›</span>
+          범례 <span aria-hidden="true">›</span>
         </button>
       </div>
     );
@@ -85,12 +90,12 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
     <div
       ref={rootRef}
       className={`grade-legend ${helpVisible ? "help-visible" : ""}`}
-      aria-label="위험등급 지도 표시 설정"
+      aria-label="위험등급 및 특보구역 지도 표시 설정"
     >
       <button
         className="grade-legend-collapse"
         type="button"
-        aria-label="위험등급 범례 접기"
+        aria-label="범례 접기"
         aria-expanded="true"
         aria-controls="grade-legend-options"
         onClick={collapseLegend}
@@ -110,6 +115,16 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
             {GRADE_LABELS[grade]}
           </button>
         ))}
+        <div className="grade-legend-divider" aria-hidden="true" />
+        <div className="zone-legend-group" title="기상청 특보 발효 구역 색상">
+          <span className="zone-legend-label">구역:</span>
+          {WARNING_ZONE_LEGENDS.map((zone) => (
+            <span key={zone.key} className="zone-legend-chip">
+              <span className="zone-color-box" style={{ backgroundColor: zone.color, borderColor: zone.color }} />
+              {zone.label}
+            </span>
+          ))}
+        </div>
       </div>
       <div
         className="grade-help"
@@ -132,7 +147,7 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
           ref={helpButtonRef}
           className="grade-help-button"
           type="button"
-          aria-label="위험등급 설명"
+          aria-label="범례 상세 설명"
           aria-expanded={helpVisible}
           aria-controls="grade-help-popover"
           onClick={() => {
@@ -145,19 +160,39 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
         </button>
         {helpVisible && (
           <div id="grade-help-popover" className="grade-help-popover" role="tooltip">
-            <strong>위험등급 안내</strong>
-            <dl>
-              {GRADE_DISPLAY_ORDER.map((grade) => (
-                <div key={grade}>
-                  <dt><span style={{ backgroundColor: GRADE_COLORS[grade] }} />{GRADE_LABELS[grade]}</dt>
-                  <dd>{GRADE_HELP[grade]}</dd>
-                </div>
-              ))}
-            </dl>
-            <p>{GRADE_HELP_FOOTER}</p>
+            <div className="help-section">
+              <strong className="help-section-title">📍 시설 위험등급 (마커)</strong>
+              <dl>
+                {GRADE_DISPLAY_ORDER.map((grade) => (
+                  <div key={grade}>
+                    <dt><span style={{ backgroundColor: GRADE_COLORS[grade] }} />{GRADE_LABELS[grade]}</dt>
+                    <dd>{GRADE_HELP[grade]}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="help-subtext">{GRADE_HELP_FOOTER}</p>
+            </div>
+
+            <div className="help-divider" />
+
+            <div className="help-section">
+              <strong className="help-section-title">🗺️ 특보 발효 구역 (지도 배경)</strong>
+              <dl>
+                {WARNING_ZONE_LEGENDS.map((zone) => (
+                  <div key={zone.key}>
+                    <dt>
+                      <span className="zone-color-box" style={{ backgroundColor: zone.color, borderColor: zone.color }} />
+                      {zone.label}
+                    </dt>
+                    <dd>{zone.desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 }
+
