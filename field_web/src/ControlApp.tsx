@@ -107,6 +107,8 @@ export default function ControlApp() {
     setSelectedFacilityIds(new Set(affected.length > 0 ? affected : data.facilities.map((f) => f.id)));
   }, [data]);
 
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!passwordInput.trim()) return;
@@ -116,6 +118,7 @@ export default function ControlApp() {
       const token = await verifyAdminPassword(passwordInput.trim());
       setAdminToken(token);
       setPasswordInput("");
+      setLoginModalOpen(false);
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : "인증 실패");
     } finally {
@@ -127,6 +130,7 @@ export default function ControlApp() {
     void logoutAdmin();
     setAdminToken("");
   };
+
 
   // 우선순위 정렬된 시설 목록
   const prioritySortedFacilities = useMemo(() => {
@@ -203,6 +207,10 @@ export default function ControlApp() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const handlePdfDownload = async () => {
     if (!data || pdfLoading) return;
+    if (!adminToken) {
+      setLoginModalOpen(true);
+      return;
+    }
     const selectedIds = Array.from(selectedFacilityIds);
     const scopeLabel = selectedIds.length === data.facilities.length
       ? "전체 소관시설"
@@ -272,6 +280,25 @@ export default function ControlApp() {
           <h1>중앙 관제</h1>
         </div>
         <div className="control-header-actions">
+          {adminToken ? (
+            <button
+              className="secondary-button auth-status-btn logged-in"
+              type="button"
+              onClick={handleLogout}
+              title="관리자 인증 해제 (로그아웃)"
+            >
+              🔓 관리자 로그아웃
+            </button>
+          ) : (
+            <button
+              className="primary-button auth-status-btn"
+              type="button"
+              onClick={() => setLoginModalOpen(true)}
+              title="관리자 인증 로그인"
+            >
+              🔒 관리자 인증
+            </button>
+          )}
           <button
             className="secondary-button"
             type="button"
@@ -299,6 +326,7 @@ export default function ControlApp() {
           </button>
         </div>
       </header>
+
 
       {/* 상태 스트립 */}
       <div
@@ -556,7 +584,13 @@ export default function ControlApp() {
               <button
                 type="button"
                 className="primary-button dispatch-button"
-                onClick={() => setDispatchModalOpen(true)}
+                onClick={() => {
+                  if (!adminToken) {
+                    setLoginModalOpen(true);
+                    return;
+                  }
+                  setDispatchModalOpen(true);
+                }}
                 disabled={selectedFacilityIds.size === 0}
               >
                 수동 Telegram 상황전파 📢
@@ -647,9 +681,46 @@ export default function ControlApp() {
         </section>
       )}
 
+      {/* 관리자 인증 모달 */}
+      {loginModalOpen && (
+        <div className="modal-backdrop" onClick={() => setLoginModalOpen(false)}>
+          <div className="modal-card admin-login-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔒 관리자 인증</h2>
+              <button type="button" className="close-button" onClick={() => setLoginModalOpen(false)}>×</button>
+            </div>
+            <p className="modal-description">
+              수동 상황전파, PDF 초동보고서 다운로드 및 발송 이력을 관리하려면 관리자 비밀번호를 입력해 주세요.
+            </p>
+            <form onSubmit={async (e) => {
+              await handleLogin(e);
+            }} className="login-form">
+              <input
+                type="password"
+                placeholder="관리자 비밀번호"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                disabled={authLoading}
+                autoFocus
+              />
+              <div className="modal-actions" style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+                <button type="button" className="secondary-button" onClick={() => setLoginModalOpen(false)}>
+                  취소
+                </button>
+                <button className="primary-button" type="submit" disabled={authLoading}>
+                  {authLoading ? "인증 중..." : "인증 확인"}
+                </button>
+              </div>
+            </form>
+            {authError && <div className="notice error" style={{ marginTop: 12 }}>{authError}</div>}
+          </div>
+        </div>
+      )}
+
       {/* 수동 전파 모달 */}
       {dispatchModalOpen && (
         <ManualDispatchModal
+
           facilities={selectedFacilitiesList}
           adminToken={adminToken}
           monitoringMode={monitoringMode}

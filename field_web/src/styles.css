@@ -2516,3 +2516,21 @@ input:focus-visible {
   padding: var(--space-2) 0;
 }
 
+.auth-status-btn {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 6px 12px;
+}
+
+.auth-status-btn.logged-in {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #15803d;
+}
+
+.admin-login-modal {
+  max-width: 440px;
+  width: 90vw;
+}
+
+
