@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-27 09:35 KST  
-> 기준 Git: `main` / `00a15b5 Extract SMS delivery service`
+> 마지막 정리: 2026-08-27 10:07 KST
+> 기준 Git: `main` / `fb6c6ff Split Firestore alert store responsibilities`
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -117,49 +117,49 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 - `AlertOperationsService`: SOLAPI 잔액과 09/18시 운영보고
 - `SmsDeliveryService`: 연락처, 비용 상한, SMS와 Telegram 대체 전달
 
-직전 커밋 `00a15b5`에서 SMS 전달 서비스를 분리했습니다. 인수인계 문서 구축 후
-2026-08-27 09:44 KST에 구버전 Python 22개, v3 Python 180개, React 21개 테스트,
-Python compileall과 React production build를 다시 실행해 모두 통과했습니다.
+`fb6c6ff`에서 999줄 `FirestoreAlertStore`를 다음 저장 책임으로 분리했습니다.
+
+- `FirestoreAlertStateRepository`: 잠금, 기준 상태, 배치와 보류 전환
+- `FirestoreAlertDeliveryRepository`: SMS 예약과 SOLAPI 최종 결과
+- `FirestoreTelegramOutboxRepository`: Telegram 큐, 재시도와 완료
+- `FirestoreAlertAuditRepository`: 상태, 실적, 수동 전파와 감사 이력
+
+기존 `FirestoreAlertStore(...)`는 46줄 compatibility facade로 남겼고 collection
+이름·핵심 문서 필드·Worker/API 메서드 계약을 테스트로 고정했습니다.
+2026-08-27 10:07 KST에 구버전 Python 22개, v3 Python 185개, React 21개,
+데이터 검증, Python compileall과 React production build가 모두 통과했습니다.
 
 ## 5. 진행 중인 개선과 다음 작업
 
 확정 로드맵은 [`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md)입니다.
-현재는 **3단계 서버 모듈화의 마지막 큰 항목**에서 멈춰 있습니다.
+현재는 **3단계 Firestore 쿼리 효율화** 직전에 멈춰 있습니다.
 
 ### 다음 개발 작업
 
-`safety_dashboard/adapters/firestore_alerts.py`의 약 1,000줄
-`FirestoreAlertStore`를 책임별 저장소로 나눕니다.
-
-현재 한 클래스가 다음을 모두 담당합니다.
-
-- Worker lock과 발효 기준 상태
-- 자동 배치·보류 전환·SMS 전달 결과
-- Telegram outbox와 재시도 결과
-- 상태·실적 집계
-- 수동 전파·중복 검사·이벤트·CSV
-- SOLAPI provider report 반영
+`load_pending()`과 `due_telegram()`의 collection 전체 scan을 조건 query로
+바꾸고 필요한 Firestore index를 배포 설정에 명시합니다.
 
 권장 진행 순서:
 
-1. 현재 `AlertStateStore` 호출과 Firestore collection/schema를 테스트로 고정합니다.
-2. 상태/잠금, SMS/배치, Telegram outbox, 실적/감사 저장 책임을 내부 클래스로
-   분리합니다.
-3. 기존 `FirestoreAlertStore`는 당분간 같은 생성자와 메서드를 제공하는 facade로
-   남겨 Worker/API 조립부를 깨지 않습니다.
-4. 전체 스캔을 바로 최적화하지 말고 구조 분리와 동등성부터 검증합니다.
-5. 별도 커밋에서 조건 query·index와 TTL을 적용합니다.
+1. `alert_pending`은 `status == PENDING`으로 서버 필터링하고 만료 처리와
+   반환 의미가 기존과 같은지 가짜 query로 검증합니다.
+2. `alert_telegram_outbox`는 `status == PENDING`과 `next_attempt_at <= now`를
+   이용하고, 만료 작업·limit·재시도 순서가 변하지 않게 합니다.
+3. 필요한 composite index를 `firestore.indexes.json`과 Firebase 설정에 추가하고
+   CI 배포 범위를 확인합니다.
+4. 구조 분리 커밋과 쿼리 변경 커밋을 합치지 않습니다.
+5. TTL은 쿼리 동등성을 확인한 뒤 다음 작업으로 남깁니다.
 
 수용 조건:
 
-- Firestore collection 이름과 문서 의미가 바뀌지 않습니다.
-- 자동알림 기준 상태와 기존 outbox를 초기화하지 않습니다.
-- 같은 Scheduler 재시도·웹훅·수동 요청의 중복 방지가 유지됩니다.
-- 공개/내부 API 응답 계약이 유지됩니다.
+- 반환되는 보류 전환과 due Telegram 작업이 기존 구현과 같습니다.
+- 만료 상태 갱신, 수동 전파·배치 실패 반영과 실적 카운터가 유지됩니다.
+- 기존 자동알림 기준 상태와 outbox 문서를 초기화하거나 재생성하지 않습니다.
+- 필요한 index가 코드와 함께 재현 가능하게 관리됩니다.
 - 전체 Python·React 테스트와 데이터 검증이 통과합니다.
 
-그 다음은 로드맵 4단계인 구버전 코드/CSV/산출물 정리이며, 이후 사용자 지도 UX,
-React 중앙관제 전환 순서입니다.
+그 다음은 오래된 outbox·임시 상태 TTL을 적용한 뒤 로드맵 4단계 구버전
+코드/CSV/산출물 정리, 사용자 지도 UX, React 중앙관제 전환 순서입니다.
 
 ## 6. 사용자 의도와 확정 결정
 
@@ -196,7 +196,8 @@ React 중앙관제 전환 순서입니다.
 
 ## 7. 알려진 부채와 주의점
 
-- `FirestoreAlertStore`와 `AlertStateStore` 포트가 너무 많은 책임을 가집니다.
+- `FirestoreAlertStore` 구현은 책임별로 분리됐지만 `AlertStateStore` 포트는 아직
+  너무 많은 메서드를 가집니다.
 - `AlertDispatcher`는 819줄로 줄었지만 KMA 오류 처리와 경로 조율이 아직 큽니다.
 - 루트 구버전 모듈과 `tests/`를 현행 패키지로 완전히 이전하지 못했습니다.
 - 제품·기능·도메인 문서의 초기 자동알림 제외 문구는 2026-08-27 현재 운영
