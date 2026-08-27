@@ -182,36 +182,6 @@ function clearAroundFacilities(
   context.restore();
 }
 
-function drawWarningOutlines(
-  context: CanvasRenderingContext2D,
-  kakao: any,
-  map: any,
-  warningZones: WarningZoneFeature[],
-) {
-  const projection = map.getProjection();
-  warningZones.forEach((feature) => {
-    const polygons = feature.geometry.type === "Polygon"
-      ? [feature.geometry.coordinates]
-      : feature.geometry.coordinates;
-    (polygons as number[][][][]).forEach((polygon) => {
-      polygon.forEach((ring) => {
-        context.beginPath();
-        ring.forEach(([longitude, latitude], index) => {
-          const point = projection.containerPointFromCoords(
-            new kakao.maps.LatLng(latitude, longitude),
-          );
-          if (index === 0) context.moveTo(point.x, point.y);
-          else context.lineTo(point.x, point.y);
-        });
-        context.closePath();
-        context.strokeStyle = feature.properties.color;
-        context.lineWidth = 2;
-        context.stroke();
-      });
-    });
-  });
-}
-
 function renderWeatherCanvas(
   canvas: HTMLCanvasElement,
   element: HTMLDivElement,
@@ -220,7 +190,6 @@ function renderWeatherCanvas(
   layer: WeatherLayerResponse | null,
   facilities: Facility[],
   selectedFacilityId: string,
-  warningZones: WarningZoneFeature[],
 ) {
   const width = element.clientWidth;
   const height = element.clientHeight;
@@ -244,9 +213,9 @@ function renderWeatherCanvas(
     drawScalarLayer(context, width, height, points, layer);
   }
   clearAroundFacilities(context, kakao, map, facilities, selectedFacilityId);
-  drawWarningOutlines(context, kakao, map, warningZones);
   canvas.style.opacity = "1";
 }
+
 
 const GRADE_RANK = new Map<RiskGrade, number>(
   GRADE_PRIORITY_ORDER.map((grade, index) => [
@@ -530,7 +499,6 @@ export function KakaoMap({
           weatherLayer,
           facilities,
           selectedFacilityId,
-          warningZones,
         );
       });
     };
@@ -557,7 +525,8 @@ export function KakaoMap({
         kakao.maps.event.removeListener(map, "idle", draw);
       }
     };
-  }, [facilities, selectedFacilityId, warningZones, weatherLayer]);
+  }, [facilities, selectedFacilityId, weatherLayer]);
+
 
   return (
     <div className="map-frame" aria-label="시설 위치 지도">
