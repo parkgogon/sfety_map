@@ -346,12 +346,33 @@ export default function SettingsApp() {
           </div>
         </div>
 
-        <div className="settings-footer-info">
-          <small>
-            ※ 설정값은 현재 브라우저 세션의 관제 결과 계산에만 적용되며, 서버의 원본 정책 파일이나 다른 사용자에게는 영향을 주지 않습니다.
-          </small>
+        {/* 하단 저장 및 복원 바 */}
+        <div className="settings-bottom-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", padding: "12px 16px", background: "var(--color-bg-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+          <div className="settings-footer-info" style={{ margin: 0, padding: 0 }}>
+            <small>
+              ※ 설정값은 현재 브라우저 세션의 관제 결과 계산에 적용되며, 관리자 화면 및 모의 전파에 반영됩니다.
+            </small>
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleResetDefault}
+              disabled={!isTemporary}
+            >
+              기본값으로 복원
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleSaveTemporary}
+            >
+              임시 정책 브라우저 적용
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
   );
 }
