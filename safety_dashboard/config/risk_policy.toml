@@ -102,9 +102,10 @@ WARNING = "MEDIUM"
 CRITICAL = "HIGH"
 
 [warning_types."열대야"]
-ADVISORY = "LOW"
-WARNING = "MEDIUM"
-CRITICAL = "HIGH"
+ADVISORY = "NONE"
+WARNING = "NONE"
+CRITICAL = "NONE"
+
 
 [warning_types."건조"]
 ADVISORY = "LOW"
