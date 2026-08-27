@@ -74,7 +74,8 @@ Firestore        관제 상태·알림·실적·감사 이력
   `AlertOperationsService`로 분리한다.
 - [x] `AlertDispatcher`에 남은 SMS 연락처 준비·발송·비용 상한·
   Telegram 대체 전파를 `SmsDeliveryService`로 분리한다.
-- `FirestoreAlertStore`를 상태, 발송, outbox, 실적과 감사 저장소로 나눈다.
+- [x] `FirestoreAlertStore`를 상태, 발송, outbox, 실적과 감사
+  저장소로 나눈다.
 - Firestore 전체 스캔을 조건 쿼리와 인덱스로 교체한다.
 - 오래된 outbox와 임시 상태에 보존기간 또는 TTL을 적용한다.
 
@@ -126,11 +127,10 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 
 ## 4. 이번 작업 순서
 
-현재 1·2단계와 3단계의 자동 작업자 서비스 분리는 완료했다. 다음 작업은
-`FirestoreAlertStore`를 상태/잠금, SMS·배치, Telegram outbox, 실적·감사 저장
-책임으로 나누는 것이다. 기존 Firestore collection과 `FirestoreAlertStore`
-생성 규격은 유지한 채 내부 책임부터 분리하고, 조건 query·index·TTL은 동등성
-검증 후 별도 작업으로 진행한다. 상세 시작점과 당시 운영 이슈는
+현재 1·2단계와 3단계의 저장소 책임 분리까지 완료했다. 다음 작업은
+Firestore 전체 scan을 조건 query로 바꾸고 필요한 composite index를 명시하는
+것이다. 구조 분리와 쿼리 변경을 한 커밋에 섞지 않으며, 조건 query 동등성을
+검증한 뒤 TTL을 별도로 적용한다. 상세 시작점과 당시 운영 이슈는
 [`HANDOFF.md`](HANDOFF.md)를 따른다.
 
 ## 5. 이번 개선에서 제외하는 것
@@ -168,3 +168,10 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 - [x] Telegram outbox와 운영보고·SOLAPI 잔액 점검을 독립 서비스로 분리
 - [x] `AlertDispatcher` 외부 생성 규격과 Firestore 상태·자동알림 기준을 유지한 채
   1,413줄에서 972줄로 축소
+
+### 2026-08-27
+
+- [x] 999줄 `FirestoreAlertStore`를 상태·SMS·Telegram outbox·실적/감사
+  저장 모듈로 분리
+- [x] 기존 `FirestoreAlertStore(...)` facade, collection 이름, 핵심 문서 필드와
+  Worker/API 메서드 계약 회귀 테스트 추가

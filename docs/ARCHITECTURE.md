@@ -173,6 +173,12 @@ AlertDispatcher
 ├── SmsDeliveryService      연락처·문자·비용 상한·Telegram 대체 경로
 ├── TelegramOutboxService  outbox 생성·재시도·전달 결과 보고
 └── AlertOperationsService 잔액 점검·09/18시 운영 상태 보고
+
+FirestoreAlertStore (compatibility facade)
+├── FirestoreAlertStateRepository     잠금·기준 상태·배치·보류 전환
+├── FirestoreAlertDeliveryRepository  SMS 예약·SOLAPI 최종 결과
+├── FirestoreTelegramOutboxRepository Telegram 큐·재시도·완료
+└── FirestoreAlertAuditRepository     상태·실적·수동 전파·감사 이력
 ```
 
 - `AlertCyclePlanner`는 외부 조회·저장을 하지 않는 순수 계산 모듈이다.
@@ -184,6 +190,9 @@ AlertDispatcher
   격리한다.
 - 기존 `AlertDispatcher(...)` 생성 규격과 `AlertStateStore` 계약은 유지하므로
   Worker API, Firestore 문서와 자동알림 기준 상태는 변경하지 않는다.
+- `FirestoreAlertStore(...)`도 기존 생성자와 메서드를 유지하는 facade다.
+  책임별 저장 모듈은 같은 client와 collection을 공유하며, 저장 스키마를
+  바꾸지 않고 코드 소유권만 나눈다.
 
 ### 시설담당자용 HTTP API
 
