@@ -76,7 +76,9 @@ Firestore        관제 상태·알림·실적·감사 이력
   Telegram 대체 전파를 `SmsDeliveryService`로 분리한다.
 - [x] `FirestoreAlertStore`를 상태, 발송, outbox, 실적과 감사
   저장소로 나눈다.
-- Firestore 전체 스캔을 조건 쿼리와 인덱스로 교체한다.
+- [x] 보류 전환과 Telegram outbox의 전체 스캔을 `status == PENDING`
+  조건 쿼리로 교체한다. 자동 단일 필드 인덱스를 사용하므로 별도 composite
+  index와 배포 권한은 추가하지 않는다.
 - 오래된 outbox와 임시 상태에 보존기간 또는 TTL을 적용한다.
 
 ### 4단계 — 저장소 정리
@@ -127,10 +129,10 @@ React 기능 동등성, Telegram 시험, PDF 회귀, 정책 적용과 실적 내
 
 ## 4. 이번 작업 순서
 
-현재 1·2단계와 3단계의 저장소 책임 분리까지 완료했다. 다음 작업은
-Firestore 전체 scan을 조건 query로 바꾸고 필요한 composite index를 명시하는
-것이다. 구조 분리와 쿼리 변경을 한 커밋에 섞지 않으며, 조건 query 동등성을
-검증한 뒤 TTL을 별도로 적용한다. 상세 시작점과 당시 운영 이슈는
+현재 1·2단계와 3단계의 저장소 책임 분리·조건 쿼리 전환까지 완료했다. 다음
+작업은 완료·만료된 보류 전환과 Telegram outbox 문서의 감사 필요 기간을 정하고,
+즉시 만료용 기존 `expires_at`과 구분되는 보존 종료 시각을 도입해 Firestore TTL을
+적용하는 것이다. 상세 시작점과 당시 운영 이슈는
 [`HANDOFF.md`](HANDOFF.md)를 따른다.
 
 ## 5. 이번 개선에서 제외하는 것
@@ -175,3 +177,6 @@ Firestore 전체 scan을 조건 query로 바꾸고 필요한 composite index를 
   저장 모듈로 분리
 - [x] 기존 `FirestoreAlertStore(...)` facade, collection 이름, 핵심 문서 필드와
   Worker/API 메서드 계약 회귀 테스트 추가
+- [x] 보류 전환과 Telegram outbox 조회를 `status == PENDING` 서버 필터로 전환
+- [x] 만료·재시도·limit 의미의 동등성 테스트 추가. Firestore 자동 단일 필드
+  인덱스로 충분해 별도 composite index와 배포 설정은 추가하지 않음

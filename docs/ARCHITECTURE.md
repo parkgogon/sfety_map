@@ -193,6 +193,13 @@ FirestoreAlertStore (compatibility facade)
 - `FirestoreAlertStore(...)`도 기존 생성자와 메서드를 유지하는 facade다.
   책임별 저장 모듈은 같은 client와 collection을 공유하며, 저장 스키마를
   바꾸지 않고 코드 소유권만 나눈다.
+- 보류 전환과 Telegram outbox는 Firestore에서 `status == PENDING`을 먼저
+  필터링한 뒤 애플리케이션에서 만료 시각·다음 재시도 시각·limit을 적용한다.
+  누적된 완료 문서를 읽지 않으면서 기존 만료·재시도 순서를 그대로 유지하기
+  위한 경계다.
+- 이 조건은 Firestore 자동 단일 필드 인덱스로 처리하므로 별도 composite index,
+  Firebase index 배포 범위나 추가 IAM 권한을 요구하지 않는다. 시간 조건까지
+  서버 쿼리에 합치는 것은 실제 규모와 비용을 측정한 뒤에만 검토한다.
 
 ### 시설담당자용 HTTP API
 

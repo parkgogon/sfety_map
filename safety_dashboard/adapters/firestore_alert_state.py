@@ -7,6 +7,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from safety_dashboard.adapters.firestore_alert_common import (
     _aware,
@@ -140,10 +141,11 @@ class FirestoreAlertStateRepository:
     def load_pending(self, now: dt.datetime) -> tuple[AlertTransition, ...]:
         result = []
         expired = []
-        for snapshot in self.client.collection(self.collections.pending).stream():
+        query = self.client.collection(self.collections.pending).where(
+            filter=FieldFilter("status", "==", "PENDING")
+        )
+        for snapshot in query.stream():
             values = snapshot.to_dict() or {}
-            if values.get("status") != "PENDING":
-                continue
             expires_at = values.get("expires_at")
             if expires_at and _aware(expires_at) < _aware(now):
                 expired.append(snapshot.reference)

@@ -6,6 +6,7 @@ import datetime as dt
 from typing import Any
 
 from google.api_core.exceptions import AlreadyExists
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from safety_dashboard.adapters.firestore_alert_common import (
     KST,
@@ -51,10 +52,11 @@ class FirestoreTelegramOutboxRepository:
     ) -> tuple[TelegramOutboxItem, ...]:
         due: list[TelegramOutboxItem] = []
         expired: list[tuple[Any, str, str, str, str]] = []
-        for snapshot in self.client.collection(self.collections.telegram_outbox).stream():
+        query = self.client.collection(self.collections.telegram_outbox).where(
+            filter=FieldFilter("status", "==", "PENDING")
+        )
+        for snapshot in query.stream():
             values = snapshot.to_dict() or {}
-            if values.get("status") != "PENDING":
-                continue
             expires_at = _parse_datetime(values.get("expires_at"))
             next_attempt_at = _parse_datetime(values.get("next_attempt_at"))
             if expires_at and _aware(expires_at) < _aware(now):
