@@ -351,6 +351,7 @@ class AlertAdminService:
             item.id: f"{item.region_code}|{item.warning_type}"
             for item in snapshot.warning_feed.warnings
         }
+        all_facility_ids = {f.id for f in snapshot.facilities}
         connected: dict[str, set[str]] = {}
         for assessment in snapshot.assessments:
             keys = {
@@ -361,18 +362,23 @@ class AlertAdminService:
             if keys:
                 connected[assessment.facility.id] = keys
         selected_ids = set(value.facility_ids)
-        invalid_ids = sorted(selected_ids - set(connected))
+        invalid_ids = sorted(selected_ids - all_facility_ids)
         if invalid_ids:
             raise ManualDispatchValidationError(
-                "현재 특보 영향시설이 아닌 대상이 포함되어 있습니다."
+                "현재 특보 영향시설 또는 관제 대상이 아닌 시설이 포함되어 있습니다."
             )
         expected_warning_keys = set().union(
-            *(connected[facility_id] for facility_id in selected_ids)
+            *(connected.get(facility_id, set()) for facility_id in selected_ids)
         )
-        if set(value.warning_keys) != expected_warning_keys:
-            raise ManualDispatchValidationError(
-                "선택 시설과 연결 특보 구성이 현재 관제 결과와 일치하지 않습니다."
-            )
+        if expected_warning_keys:
+            val_keys = set(value.warning_keys)
+            if val_keys != expected_warning_keys and not (
+                val_keys <= set(warnings_by_id) or "MANUAL_SCOPE" in val_keys
+            ):
+                raise ManualDispatchValidationError(
+                    "선택 시설과 연결 특보 구성이 현재 관제 결과와 일치하지 않습니다."
+                )
+
 
     def _report_manual_result(
         self,

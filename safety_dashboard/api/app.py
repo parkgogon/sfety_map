@@ -488,6 +488,29 @@ def create_app(
         response.headers["Cache-Control"] = "private, no-store"
         service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
         now = dt.datetime.now(dt.timezone.utc)
+        # 현재 관제 snapshot 기반 warning_keys 자동 보정
+
+        effective_warning_keys = list(request.warning_keys)
+        try:
+            snapshot = monitoring_service.snapshot(simulation=request.mode == "simulation")
+            warnings_by_id = {
+                item.id: f"{item.region_code}|{item.warning_type}"
+                for item in snapshot.warning_feed.warnings
+            }
+            derived_keys: set[str] = set()
+            for assessment in snapshot.assessments:
+                if assessment.facility.id in request.facility_ids:
+                    for reason in assessment.reasons:
+                        if reason.warning_id in warnings_by_id:
+                            derived_keys.add(warnings_by_id[reason.warning_id])
+            if derived_keys:
+                effective_warning_keys = sorted(derived_keys)
+        except Exception:
+            pass
+
+        if not effective_warning_keys:
+            effective_warning_keys = list(request.warning_keys) or ["MANUAL_SCOPE"]
+
         dispatch = ManualTelegramDispatch(
             id=request.request_id,
             created_at=now,
@@ -496,7 +519,7 @@ def create_app(
             note=request.note,
             mode=request.mode,
             facility_ids=tuple(request.facility_ids),
-            warning_keys=tuple(request.warning_keys),
+            warning_keys=tuple(effective_warning_keys),
             messages=tuple(
                 OutgoingTelegramMessage(
                     text=item.text,
@@ -509,6 +532,7 @@ def create_app(
             policy_version=request.policy_version,
             temporary_policy=request.temporary_policy,
         )
+
         try:
             return service.dispatch_manual(
                 dispatch,
