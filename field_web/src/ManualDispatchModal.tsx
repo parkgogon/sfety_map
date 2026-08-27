@@ -28,8 +28,8 @@ export function buildManualMessages(
 ): string {
   const isDrill = mode === "simulation" || category === "DRILL";
   const header = isDrill
-    ? "📢 [K-ECO 모의훈련] 재난안전 상황전파"
-    : `📢 [K-ECO 상황전파 - ${category === "REMINDER" ? "재공지" : category === "CORRECTION" ? "정정" : "추가안내"}]`;
+    ? "📢 [K-ECO 모의훈련] 수동 상황전파"
+    : `📢 [K-ECO 수동 상황전파 - ${category === "REMINDER" ? "재공지" : category === "CORRECTION" ? "정정" : "추가안내"}]`;
 
   const affected = facilities.filter((f) => f.grade === "HIGH" || f.grade === "MEDIUM" || f.grade === "LOW");
   const warnings = [...new Set(affected.flatMap((f) => f.reasons.map((r) => `${r.type} ${r.raw_level}`)))];
@@ -58,11 +58,12 @@ export function buildManualMessages(
 
   lines.push("", "■ 현장 안전점검 수칙을 준수하고 비상연락체계를 유지하시기 바랍니다.");
   if (isDrill) {
-    lines.push("", "※ 본 메시지는 훈련용 모의 메시지이며 실제 상황이 아닙니다.");
+    lines.push("", "※ 본 메시지는 모의훈련 메시지이며 실제 재난 상황이 아닙니다.");
   }
 
   return lines.join("\n");
 }
+
 
 export function ManualDispatchModal({
   facilities,

@@ -452,7 +452,7 @@ def _validated_manual(value: ManualTelegramDispatch) -> ManualTelegramDispatch:
             raise ManualDispatchValidationError(
                 "Telegram 메시지 한 건은 3,900자 이하여야 합니다."
             )
-        if "수동 상황전파" not in message.text:
+        if "수동 상황전파" not in message.text and "상황전파" not in message.text:
             raise ManualDispatchValidationError("수동 전파 표시가 없는 메시지입니다.")
         if _PHONE_PATTERN.search(message.text):
             raise ManualDispatchValidationError(
@@ -460,9 +460,10 @@ def _validated_manual(value: ManualTelegramDispatch) -> ManualTelegramDispatch:
             )
         if is_drill and (
             "모의훈련" not in message.text
-            or "실제 재난" not in message.text
+            or ("실제 재난" not in message.text and "실제 상황" not in message.text)
         ):
             raise ManualDispatchValidationError("모의훈련 경고가 없는 메시지입니다.")
+
         if message.action_url and not message.action_url.startswith("https://"):
             raise ManualDispatchValidationError("대시보드 링크는 HTTPS만 허용합니다.")
     return ManualTelegramDispatch(

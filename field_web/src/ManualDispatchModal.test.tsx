@@ -65,7 +65,7 @@ describe("ManualDispatchModal", () => {
       "live",
     );
 
-    expect(text).toContain("[K-ECO 상황전파 - 재공지]");
+    expect(text).toContain("[K-ECO 수동 상황전파 - 재공지]");
     expect(text).toContain("총 2개소");
     expect(text).toContain("호우 경보");
     expect(text).toContain("비상 대기조 운영 요망");
@@ -80,9 +80,10 @@ describe("ManualDispatchModal", () => {
       "simulation",
     );
 
-    expect(text).toContain("[K-ECO 모의훈련]");
-    expect(text).toContain("실제 상황이 아닙니다");
+    expect(text).toContain("[K-ECO 모의훈련] 수동 상황전파");
+    expect(text).toContain("실제 재난 상황이 아닙니다");
   });
+
 
   it("renders modal markup without errors", () => {
     const html = renderToStaticMarkup(
