@@ -5,6 +5,7 @@
 
 문서는 다음 순서로 읽습니다.
 
+0. [HANDOFF.md](HANDOFF.md) — 새 작업자가 실제 Git·코드와 대조할 현재 상태와 다음 작업
 0. [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md) — 운영형 구조로 단계적으로 개선하는 확정 로드맵
 0. [USER_QUICK_GUIDE.md](USER_QUICK_GUIDE.md) — 내부 시험 사용자를 위한 간편 사용 안내
 1. [PRODUCT.md](PRODUCT.md) — 누구를 위해 어떤 문제를 해결하는가
@@ -24,3 +25,8 @@
 
 제품 범위·관제 권역·위험도 정책 결정은 확정됐으며, 핵심 도메인 예제는
 `tests_v3/`에서 자동 검증합니다.
+
+AI 서비스나 작업 세션을 바꿀 때는 저장소 루트의 [`AGENTS.md`](../AGENTS.md)를
+먼저 읽고 이 디렉터리의 `HANDOFF.md`를 실제 Git 상태와 대조합니다.
+`HANDOFF.md`는 작업일지를 누적하는 문서가 아니라 현재 완료·미완료·다음 작업을
+유지하는 살아 있는 상태 문서입니다.

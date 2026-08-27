@@ -75,6 +75,9 @@ tests_v3/                      v3 핵심 규칙 테스트
 상단 메뉴로 연결합니다. 선택한 페이지만 실행되며 공통 관제 입력은 캐시를 공유합니다.
 
 제품 목표, 업무 규칙과 구조는 [`docs/`](docs/README.md)에 정리되어 있습니다.
+다른 AI 계정·세션·코딩 도구에서 작업을 이어갈 때는
+[`AGENTS.md`](AGENTS.md)와 [`docs/HANDOFF.md`](docs/HANDOFF.md)를 먼저 읽고
+현재 Git·코드 상태와 대조합니다.
 색상·간격·컴포넌트·역할별 화면 기준은
 [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)와
 [`safety_dashboard/ui/design_tokens.css`](safety_dashboard/ui/design_tokens.css)를 단일 기준으로 사용합니다.
