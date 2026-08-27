@@ -22,7 +22,9 @@ export function navigate(path: string, search = ""): void {
   const target = search ? `${path}${search.startsWith("?") ? search : `?${search}`}` : path;
   window.history.pushState({}, "", target);
   window.dispatchEvent(new CustomEvent(NAVIGATE_EVENT));
+  window.scrollTo(0, 0);
 }
+
 
 export function useLocation(): RouteLocation {
   const [location, setLocation] = useState<RouteLocation>(getCurrentLocation);
