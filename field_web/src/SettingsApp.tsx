@@ -12,15 +12,93 @@ import {
   verifyAdminPassword,
 } from "./controlApi";
 import { navigate } from "./router";
-import { GRADE_COLORS, GRADE_LABELS } from "./utils";
+import { GRADE_LABELS } from "./utils";
 
-const LEVEL_LABELS: Record<string, string> = {
-  ADVISORY: "주의보 (ADVISORY)",
-  WARNING: "경보 (WARNING)",
-  CRITICAL: "중대·심각 (CRITICAL)",
+export const LEVEL_LABELS = {
+  ADVISORY: "주의보",
+  WARNING: "경보",
+  CRITICAL: "중대",
 };
 
-const GRADE_OPTIONS = ["HIGH", "MEDIUM", "LOW", "UNASSESSED", "NONE"] as const;
+export const GRADE_OPTIONS = ["HIGH", "MEDIUM", "LOW", "UNASSESSED", "NONE"] as const;
+const POLICY_LEVELS = ["ADVISORY", "WARNING", "CRITICAL"] as const;
+
+interface PolicyMatrixEditorProps {
+  warningTypes: readonly string[];
+  activeWarningTypes: ReadonlySet<string>;
+  editedMatrix: Record<string, Record<string, string>>;
+  defaultMatrix: Record<string, Record<string, string>>;
+  onCellChange: (warningType: string, level: string, grade: string) => void;
+}
+
+export function PolicyMatrixEditor({
+  warningTypes,
+  activeWarningTypes,
+  editedMatrix,
+  defaultMatrix,
+  onCellChange,
+}: PolicyMatrixEditorProps) {
+  return (
+    <div className="policy-table-wrapper">
+      <table className="policy-matrix-table">
+        <thead>
+          <tr>
+            <th className="policy-warning-name-heading">특보 종류</th>
+            <th className="policy-warning-status-heading">상태</th>
+            {POLICY_LEVELS.map((level) => <th key={level}>{LEVEL_LABELS[level]}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {warningTypes.map((warningType) => {
+            const isActive = activeWarningTypes.has(warningType);
+            const levels = editedMatrix[warningType] || {};
+            return (
+              <tr
+                key={warningType}
+                className={`policy-warning-row ${isActive ? "row-active-warning" : ""}`}
+              >
+                <td className="col-warning-name">
+                  <strong>{warningType}</strong>
+                </td>
+                <td className="col-warning-status">
+                  {isActive ? (
+                    <span className="status-tag active">● 발효 중</span>
+                  ) : (
+                    <span className="status-tag">평시</span>
+                  )}
+                </td>
+                {POLICY_LEVELS.map((level) => {
+                  const currentGrade = levels[level] || "UNASSESSED";
+                  const modified = defaultMatrix[warningType]?.[level] !== currentGrade;
+                  return (
+                    <td
+                      key={level}
+                      className={`col-grade-cell ${modified ? "cell-modified" : ""}`}
+                      data-label={LEVEL_LABELS[level]}
+                    >
+                      <select
+                        className={`policy-grade-select grade-${currentGrade.toLowerCase()}`}
+                        value={currentGrade}
+                        onChange={(event) => onCellChange(warningType, level, event.target.value)}
+                        aria-label={`${warningType} ${LEVEL_LABELS[level]} 위험등급`}
+                      >
+                        {GRADE_OPTIONS.map((grade) => (
+                          <option key={grade} value={grade}>
+                            {GRADE_LABELS[grade]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function SettingsApp() {
   const [adminToken, setAdminToken] = useState<string>(getStoredAdminToken);
@@ -142,26 +220,20 @@ export default function SettingsApp() {
     setSavedSuccess(false);
   };
 
-  // 셀 변경 여부 검사
-  const isCellModified = (warningType: string, level: string, currentGrade: string): boolean => {
-    if (!policyData || !policyData.warning_types[warningType]) return false;
-    return policyData.warning_types[warningType][level] !== currentGrade;
-  };
-
   if (!adminToken) {
     return (
       <div className="control-shell">
-        <header className="control-header">
+        <header className="control-header settings-header">
           <div className="control-brand">
             <span className="brand-mark">K-ECO SAFETY MONITORING</span>
             <h1>위험도 정책 설정</h1>
           </div>
           <div className="control-header-actions">
             <button className="secondary-button" type="button" onClick={() => navigate("/control")}>
-              중앙 관제 ↗
+              <span className="btn-text-full">중앙 관제 ↗</span><span className="btn-text-short">관제 ↗</span>
             </button>
             <button className="secondary-button" type="button" onClick={() => navigate("/")}>
-              현장 지도 ↗
+              <span className="btn-text-full">현장 지도 ↗</span><span className="btn-text-short">지도 ↗</span>
             </button>
           </div>
         </header>
@@ -214,20 +286,20 @@ export default function SettingsApp() {
 
   return (
     <div className="control-shell">
-      <header className="control-header">
+      <header className="control-header settings-header">
         <div className="control-brand">
           <span className="brand-mark">K-ECO SAFETY MONITORING</span>
           <h1>위험도 정책 설정</h1>
         </div>
         <div className="control-header-actions">
           <button className="secondary-button" type="button" onClick={() => navigate("/control")}>
-            중앙 관제 ↗
+            <span className="btn-text-full">중앙 관제 ↗</span><span className="btn-text-short">관제 ↗</span>
           </button>
           <button className="secondary-button" type="button" onClick={() => navigate("/")}>
-            현장 지도 ↗
+            <span className="btn-text-full">현장 지도 ↗</span><span className="btn-text-short">지도 ↗</span>
           </button>
           <button className="secondary-button" type="button" onClick={handleLogout}>
-            로그아웃
+            <span className="btn-text-full">로그아웃</span><span className="btn-text-short">종료</span>
           </button>
         </div>
       </header>
@@ -285,75 +357,23 @@ export default function SettingsApp() {
             )}
           </div>
 
-          <div className="policy-table-wrapper">
-            <table className="policy-matrix-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 140 }}>특보 종류</th>
-                  <th style={{ width: 100 }}>상태</th>
-                  <th>{LEVEL_LABELS.ADVISORY}</th>
-                  <th>{LEVEL_LABELS.WARNING}</th>
-                  <th>{LEVEL_LABELS.CRITICAL}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedWarningTypes.map((warningType) => {
-                  const isActive = activeWarningTypes.has(warningType);
-                  const levels = editedMatrix[warningType] || {};
-                  return (
-                    <tr key={warningType} className={isActive ? "row-active-warning" : ""}>
-                      <td className="col-warning-name">
-                        <strong>{warningType}</strong>
-                      </td>
-                      <td className="col-warning-status">
-                        {isActive ? (
-                          <span className="status-tag active">🔴 발효 중</span>
-                        ) : (
-                          <span className="status-tag">평시</span>
-                        )}
-                      </td>
-                      {(["ADVISORY", "WARNING", "CRITICAL"] as const).map((level) => {
-                        const currentGrade = levels[level] || "UNASSESSED";
-                        const modified = isCellModified(warningType, level, currentGrade);
-                        return (
-                          <td
-                            key={level}
-                            className={`col-grade-cell ${modified ? "cell-modified" : ""}`}
-                          >
-                            <select
-                              value={currentGrade}
-                              onChange={(e) => handleCellChange(warningType, level, e.target.value)}
-                              style={{
-                                color: GRADE_COLORS[currentGrade as keyof typeof GRADE_COLORS] || "inherit",
-                                fontWeight: 700,
-                              }}
-                              aria-label={`${warningType} ${level} 위험등급`}
-                            >
-                              {GRADE_OPTIONS.map((grade) => (
-                                <option key={grade} value={grade}>
-                                  {GRADE_LABELS[grade]} ({grade})
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <PolicyMatrixEditor
+            warningTypes={sortedWarningTypes}
+            activeWarningTypes={activeWarningTypes}
+            editedMatrix={editedMatrix}
+            defaultMatrix={policyData.warning_types}
+            onCellChange={handleCellChange}
+          />
         </div>
 
         {/* 하단 저장 및 복원 바 */}
-        <div className="settings-bottom-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", padding: "12px 16px", background: "var(--color-bg-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
-          <div className="settings-footer-info" style={{ margin: 0, padding: 0 }}>
+        <div className="settings-bottom-actions">
+          <div className="settings-footer-info">
             <small>
               ※ 설정값은 현재 브라우저 세션의 관제 결과 계산에 적용되며, 관리자 화면 및 모의 전파에 반영됩니다.
             </small>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="settings-bottom-buttons">
             <button
               type="button"
               className="secondary-button"
