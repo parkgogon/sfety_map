@@ -40,14 +40,19 @@ Cloud의 GitHub 연동을 유지한다. 테스트나 빌드가 실패하면 기�
     ↓ HTTPS
 Firebase Hosting (React SPA + Kakao Maps)
     ├── / (현장 안전지도)
-    ├── /control (중앙관제 대시보드·지도·수동전파) [React.lazy 지연로드]
-    ├── /settings (위험도 정책 매트릭스 설정) [React.lazy 지연로드]
+    ├── /control (중앙관제 대시보드·지도·수동전파) [SPA 경로 분기]
+    ├── /settings (위험도 정책 매트릭스 설정) [SPA 경로 분기]
     └── /api/**, /internal/** → Cloud Run asia-northeast3
                                   ├── KMA 기상특보
                                   ├── Firestore (알림 상태/이력/관제 Snapshot)
                                   ├── Telegram (자동/수동 상황전파)
                                   └── PDF 초동보고서 스트리밍 렌더러
 ```
+
+세 React 화면은 현재 정적 import 단일 번들로 배포합니다. 초기 `React.lazy` 청크는
+경로 전환 직후 이전 배포 청크가 보이는 문제를 피하기 위해 `709d542`에서 합쳤습니다.
+다시 청크를 분리하려면 Firebase의 HTML 캐시와 배포 중 청크 교체 시나리오를 함께
+검증해야 합니다.
 
 
 ### 기본 운영 관측

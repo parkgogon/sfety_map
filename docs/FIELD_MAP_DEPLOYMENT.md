@@ -1,10 +1,10 @@
-# React 현장 지도 로컬 실행과 배포
+# React 웹 로컬 실행과 배포
 
-> 상태: 1차 핵심 현장 지도 구현 기준
+> 상태: 현장 지도·중앙관제·설정 운영 기준
 
-시설담당자용 React 화면은 Firebase Hosting, Python API는 Cloud Run 서울
-`asia-northeast3`에 배포한다. 기존 Streamlit 현장 지도·중앙 관제·설정은
-검증 기간 동안 그대로 유지한다.
+현장 지도(`/`)·중앙관제(`/control`)·설정(`/settings`) React SPA는 Firebase
+Hosting, Python API는 Cloud Run 서울 `asia-northeast3`에 배포한다. `app.py`는
+React 정식 웹으로 이동시키는 경량 안내 진입점으로 유지한다.
 
 ## 로컬 실행
 
@@ -66,9 +66,9 @@ React 현장 지도의 이번 범위에 포함하지 않는다.
    Artifact Registry, Firebase Hosting 배포 및 Secret Manager 접근 권한을
    부여한다.
 
-## Streamlit 관리자 화면 잠금
+## React 관리자 화면 잠금
 
-기존 Streamlit의 `/control`, `/settings`는 Cloud Run에서 비밀번호를 확인한
+React의 `/control`, `/settings`와 보호 API는 Cloud Run에서 비밀번호를 확인한
 브라우저 세션만 8시간 동안 이용할 수 있다. 현장 지도는 잠그지 않는다. 관리자
 비밀번호는 기존 `ALERT_ADMIN_TOKEN`과 분리하고 코드나 GitHub 저장소에 넣지 않는다.
 
@@ -104,26 +104,29 @@ printf '%s' "$ADMIN_PASSWORD_INPUT" |
 unset ADMIN_PASSWORD_INPUT
 ```
 
-Streamlit secrets에는 비밀번호를 저장하지 않는다. 기존 관리자 API 주소가
-`[alerting].admin_api_url`에 있으면 그대로 사용한다. 별도 값을 쓰려면 다음만
-추가한다.
-
-```toml
-[admin]
-api_url = "https://<safety-dashboard-api Cloud Run 주소>"
-```
-
 인증 실패가 5회 누적되면 5분 동안 로그인을 제한한다. `관리자 화면 잠금`을
-누르거나 Streamlit 세션이 종료되면 다시 비밀번호를 입력해야 한다. 이 잠금은
-React 관리자 화면으로 이전하기 전까지 사용하는 임시 보호수단이며, 수동 전파와
-실적 API의 기존 `ALERT_ADMIN_TOKEN` 인증은 계속 유지한다.
+누르거나 8시간 세션이 만료되면 다시 비밀번호를 입력해야 한다. 비밀번호는
+브라우저 번들이나 `.env.local`에 넣지 않고 Cloud Run Secret Manager에서만 읽는다.
 
 현재 배포 파일의 고정값은 다음과 같다.
 
 - Cloud Run 서비스: `safety-dashboard-api`
 - Cloud Run 리전: `asia-northeast3`
 - Firebase API rewrite: `/api/**`
+- Firebase 보호 API rewrite: `/internal/**`
 - 기본 Artifact Registry 저장소: `safety-dashboard`
+
+## Firebase Hosting 캐시
+
+Firebase의 사용자 지정 헤더는 rewrite 후 파일이 아니라 최초 요청 URL에 맞춰
+적용됩니다. 따라서 `firebase.json`은 `/index.html`뿐 아니라 SPA 진입 경로인 `/`,
+`/control{,/**}`, `/settings{,/**}`에도 `no-cache, no-store`를 지정합니다. 해시가
+붙는 `/assets/**` 파일만 1년 `immutable`로 캐시합니다. 자세한 매칭 순서는
+[Firebase Hosting 구성 문서](https://firebase.google.com/docs/hosting/full-config)를
+따릅니다.
+
+배포 후 세 진입 경로의 `Cache-Control`이 실제로 무캐시인지 확인합니다. 운영 응답이
+여전히 기본 `max-age=3600`이면 요청 경로 헤더 규칙이 배포되지 않은 것입니다.
 
 ## GitHub 설정
 
