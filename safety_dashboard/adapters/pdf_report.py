@@ -433,18 +433,31 @@ class PdfReportRenderer:
             "※ 시설 위험등급은 기상특보 단계가 아닌 시설별 재난영향도 평가 결과임.",
         )
 
-        # 3. 우측: 일체형 인포 패널 (TOP 4 + 핵심 안전관리 요령)
+        # 3. 우측: 일체형 인포 패널 (중점 관리 대상 시설 + 핵심 안전관리 요령)
         top_h = 41.0
         pdf.set_xy(right_x, start_y)
         pdf.set_fill_color(*CARD_BG)
         pdf.set_draw_color(*LINE)
         pdf.rect(right_x, start_y, right_w, top_h, style="DF")
 
-        # 3-1. 헤더 라벨
+        # 3-1. 헤더 라벨 및 개소수 뱃지 (TOP4 내부 표현 제거)
+        affected_count = len(sorted_assessments)
+        if affected_count == 0:
+            count_label = "0개소"
+        elif affected_count <= 4:
+            count_label = f"{affected_count}개소"
+        else:
+            count_label = "상위 4개소"
+
         pdf.set_xy(right_x + 3.0, start_y + 2.0)
         pdf.set_font("Ko", "B", 7.8)
         pdf.set_text_color(*NAVY)
-        pdf.cell(right_w - 6.0, 3.8, "중점 관리 대상 시설 (TOP 4)")
+        pdf.cell(42.0, 3.8, "중점 관리 대상 시설")
+
+        pdf.set_xy(right_x + right_w - 24.0, start_y + 2.2)
+        pdf.set_font("Ko", "B", 6.2)
+        pdf.set_text_color(*MUTED)
+        pdf.cell(21.0, 3.4, count_label, align="R")
 
         if not top4_rows:
             pdf.set_xy(right_x, start_y + 17.0)
@@ -454,37 +467,43 @@ class PdfReportRenderer:
         else:
             row_y = start_y + 6.5
             for rank_idx, item in enumerate(top4_rows, 1):
-                # 번호 뱃지 (지도 마커 번호와 완벽 1:1 연계)
+                # 순위 번호 뱃지 (지도 마커 번호와 완벽 1:1 연계)
                 pdf.set_xy(right_x + 3.0, row_y)
                 pdf.set_fill_color(*GRADE_COLOR[item.grade])
                 pdf.set_text_color(*WHITE)
                 pdf.set_font("Ko", "B", 6.2)
                 grade_name = _grade_label(item.grade)
-                pdf.cell(8.0, 4.0, f"{rank_idx}", fill=True, align="C")
+                pdf.cell(7.0, 4.0, f"{rank_idx}", fill=True, align="C")
 
-                # 등급 뱃지
-                pdf.set_xy(right_x + 11.5, row_y)
+                # 시설 위험등급 뱃지 (Risk Badge 계열)
+                pdf.set_xy(right_x + 10.5, row_y)
                 pdf.set_fill_color(*GRADE_TINT[item.grade])
                 pdf.set_text_color(*GRADE_COLOR[item.grade])
                 pdf.set_font("Ko", "B", 6.0)
                 pdf.cell(6.5, 4.0, grade_name, fill=True, align="C")
 
-                # 시설명
-                pdf.set_xy(right_x + 18.5, row_y)
+                # 시설명 (최대 12자 안전 표출)
+                pdf.set_xy(right_x + 17.5, row_y)
                 pdf.set_font("Ko", "B", 6.8)
                 pdf.set_text_color(*INK)
-                pdf.cell(29.0, 4.0, _short(item.facility.name, 12))
+                pdf.cell(28.0, 4.0, _short(item.facility.name, 12))
 
-                # 특보 단계 문구 (ex: 호우·경보, 폭염·주의)
+                # 특보 단계 문구 (ex: 호우 · 경보, 폭염 · 주의보)
                 def _format_warning_step(r: RiskReason) -> str:
-                    lvl = "경보" if "경보" in r.raw_level else "주의" if "주의" in r.raw_level else r.raw_level
-                    return f"{r.warning_type}·{lvl}"
+                    lvl = r.raw_level
+                    if "경보" in lvl:
+                        lvl_clean = "경보"
+                    elif "주의" in lvl:
+                        lvl_clean = "주의보"
+                    else:
+                        lvl_clean = lvl
+                    return f"{r.warning_type} · {lvl_clean}" if lvl_clean else r.warning_type
 
                 warn_text = ", ".join(dict.fromkeys(_format_warning_step(r) for r in item.reasons))
-                pdf.set_xy(right_x + 48.0, row_y)
-                pdf.set_font("Ko", "", 6.0)
+                pdf.set_xy(right_x + 46.0, row_y)
+                pdf.set_font("Ko", "", 5.8)
                 pdf.set_text_color(*MUTED)
-                pdf.cell(right_w - 51.0, 4.0, _short(warn_text, 7), align="R")
+                pdf.cell(right_w - 49.0, 4.0, _short(warn_text, 8), align="R")
                 row_y += 4.8
 
         # 3-2. 하단 카드: 발효 특보별 핵심 안전관리 요령 (Action Items 불릿 목록)

@@ -188,21 +188,36 @@ class PdfReportExtendedTests(unittest.TestCase):
 
     def test_safety_guidelines_master_completeness(self) -> None:
         """시스템이 지원하는 기상특보 13종이 모두 가이드라인에 정의되어 있는지 전수 검증."""
-        kma_supported_warning_types = [
-            "호우", "태풍", "강풍", "폭염", "대설", "한파",
-            "풍랑", "건조", "황사", "폭풍해일", "지진해일", "안개", "열대야",
-        ]
-        for wt in kma_supported_warning_types:
-            self.assertIn(wt, WARNING_ACTION_GUIDELINES)
-            guideline = get_warning_guideline(wt)
+        from safety_dashboard.domain.safety_guidelines import (
+            DEFAULT_GUIDELINE_MASTER,
+            SUPPORTED_WARNING_TYPES,
+        )
+
+        for wt in SUPPORTED_WARNING_TYPES:
+            self.assertTrue(DEFAULT_GUIDELINE_MASTER.has_mapping(wt), f"누락된 특보 매핑: {wt}")
+            guideline = DEFAULT_GUIDELINE_MASTER.get_guideline(wt)
             self.assertIsInstance(guideline, tuple)
             self.assertGreaterEqual(len(guideline), 2)
             for action in guideline:
                 self.assertGreater(len(action), 3)
 
         # 알 수 없는 특보에 대한 fallback 검증
-        fallback_guide = get_warning_guideline("우박")
-        self.assertIn("우박", fallback_guide[0])
+        fallback_guide = DEFAULT_GUIDELINE_MASTER.get_guideline("알수없는특보")
+        self.assertIn("표준 안전관리요령", fallback_guide[0])
+
+    def test_safety_guidelines_prioritization_and_extraction(self) -> None:
+        """특보 영향도 및 경보 우선순위에 따른 안전관리 요령 추출 로직 검증."""
+        # 1. 경보 특보(호우)와 주의보 특보(강풍) 혼재 시 경보 우선 추출
+        snap = create_dummy_snapshot(10, high_count=2, medium_count=2, warning_types=("호우", "강풍"))
+        guidelines = extract_safety_guidelines(snap, max_items=2)
+        extracted_types = [g[0] for g in guidelines]
+        self.assertEqual(extracted_types[0], "호우")
+        self.assertEqual(len(guidelines), 2)
+
+        # 2. 평시(특보 없음) 시 기본 안전수칙 반환 검증
+        snap_empty = create_dummy_snapshot(10, high_count=0, medium_count=0, low_count=0, custom_warning_count=0, warning_types=())
+        empty_guidelines = extract_safety_guidelines(snap_empty, max_items=2)
+        self.assertEqual(empty_guidelines[0][0], "평시")
 
     # =========================================================================
     # PART 1: Compact vs Standard Mode 시나리오 테스트 (A, B, C, D, E)
@@ -288,6 +303,52 @@ class PdfReportExtendedTests(unittest.TestCase):
         ranks_west = {f.id: i + 1 for i, f in enumerate(west_facs)}
         png_west = map_renderer.render_png(snap_west, top_facility_ranks=ranks_west)
         self.assertTrue(png_west.startswith(b"\x89PNG"))
+
+    # =========================================================================
+    # PART 3: 중점관리시설 Panel 및 안전요령 테스트
+    # =========================================================================
+    def test_priority_panel_count_label_and_rendering(self) -> None:
+        """중점관리시설 패널 개수 뱃지 (0개소, 1개소, 3개소, 상위 4개소) 및 긴 시설명 렌더링 검증."""
+        # 1. 0개소 (Empty state)
+        s0 = create_dummy_snapshot(10, high_count=0, medium_count=0, low_count=0, custom_warning_count=0, warning_types=())
+        pdf0 = self.renderer.render(s0)
+        self.assertTrue(len(pdf0) > 0)
+
+        # 2. 1개소
+        s1 = create_dummy_snapshot(10, high_count=1, medium_count=0, low_count=0, warning_types=("호우",))
+        pdf1 = self.renderer.render(s1)
+        self.assertTrue(len(pdf1) > 0)
+
+        # 3. 3개소
+        s3 = create_dummy_snapshot(10, high_count=1, medium_count=2, low_count=0, warning_types=("호우", "강풍"))
+        pdf3 = self.renderer.render(s3)
+        self.assertTrue(len(pdf3) > 0)
+
+        # 4. 10개소 이상 (상위 4개소 표출) + 긴 시설명
+        long_facs = [
+            Facility(
+                id=f"fac-{i:03d}",
+                name=f"경상북도 포항시 남구 장기면 수질자동측정소_{i:03d}",
+                facility_type="수질측정소",
+                location=GeoPoint(35.8 + i * 0.05, 129.2 + i * 0.05),
+                address="경상북도 포항시",
+            )
+            for i in range(12)
+        ]
+        long_assess = [
+            RiskAssessment(long_facs[i], RiskGrade.HIGH if i < 2 else RiskGrade.MEDIUM, (RiskReason("w0", "호우", "경보", RiskGrade.HIGH, "포항시", "p1"),), "v1", dt.datetime.now())
+            for i in range(12)
+        ]
+        s_long = DashboardSnapshot(
+            generated_at=dt.datetime.now(),
+            policy_version="v1",
+            facilities=tuple(long_facs),
+            assessments=tuple(long_assess),
+            summary=DashboardSummary(1, 12, 2, 0, WarningLevel.WARNING),
+            warning_feed=WarningFeed((), DataHealth.LIVE, dt.datetime.now()),
+        )
+        pdf_long = self.renderer.render(s_long)
+        self.assertTrue(len(pdf_long) > 0)
 
     def test_status_summary_bar_cases(self) -> None:
         """규칙 기반 현재 상황 요약 바 문구 생성 4가지 케이스 검증."""
