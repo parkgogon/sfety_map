@@ -35,9 +35,14 @@ def create_scenario_pdf(name: str, snapshot: DashboardSnapshot) -> tuple[int, Pa
     pdf_bytes = renderer.render(snapshot)
     pdf_path = OUTPUT_DIR / f"{name}.pdf"
     pdf_path.write_bytes(pdf_bytes)
-    info = subprocess.run(["pdfinfo", str(pdf_path)], capture_output=True, text=True, check=True).stdout
-    match = re.search(r"Pages:\s+(\d+)", info)
-    num_pages = int(match.group(1)) if match else 1
+    import shutil
+    if shutil.which("pdfinfo"):
+        info = subprocess.run(["pdfinfo", str(pdf_path)], capture_output=True, text=True, check=True).stdout
+        match = re.search(r"Pages:\s+(\d+)", info)
+        if match:
+            return int(match.group(1)), pdf_path
+    matches = re.findall(rb"/Type\s*/Page\b(?!\s*s)", pdf_bytes)
+    num_pages = len(matches) if matches else 1
     return num_pages, pdf_path
 
 

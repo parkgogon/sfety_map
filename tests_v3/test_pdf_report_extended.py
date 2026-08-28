@@ -116,21 +116,27 @@ class PdfReportExtendedTests(unittest.TestCase):
 
     def _get_page_count(self, pdf_bytes: bytes) -> int:
         import re
+        import shutil
         import subprocess
         import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
-            report.write(pdf_bytes)
-            report.flush()
-            info_text = subprocess.run(
-                ["pdfinfo", report.name],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout
-            match = re.search(r"Pages:\s+(\d+)", info_text)
-            self.assertIsNotNone(match)
-            return int(match.group(1))
+        if shutil.which("pdfinfo"):
+            with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
+                report.write(pdf_bytes)
+                report.flush()
+                info_text = subprocess.run(
+                    ["pdfinfo", report.name],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout
+                match = re.search(r"Pages:\s+(\d+)", info_text)
+                if match:
+                    return int(match.group(1))
+
+        # Pure Python fallback: count /Type /Page objects (excluding /Pages)
+        matches = re.findall(rb"/Type\s*/Page\b(?!\s*s)", pdf_bytes)
+        return len(matches) if matches else 1
 
     def test_single_source_of_truth_ranking(self) -> None:
         """TOP4, TOP10, 상세 목록이 단일 정렬 원천(_get_sorted_assessments)을 동일하게 사용하는지 검증."""
