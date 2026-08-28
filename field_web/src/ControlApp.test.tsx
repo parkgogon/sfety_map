@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import ControlApp from "./ControlApp";
+import ControlApp, { AnalysisMobileFacilityList, resolveSelectedFacilityScope } from "./ControlApp";
 import type { Facility, MonitoringResponse } from "./types";
 
 const mockMonitoringData: MonitoringResponse = {
@@ -147,5 +147,31 @@ describe("ControlApp 중앙관제 대시보드", () => {
     } finally {
       mockMonitoringData.facilities.pop();
     }
+  });
+
+  it("PDF와 수동 상황전파가 같은 시설 ID와 시설 객체 범위를 사용한다", () => {
+    const scope = resolveSelectedFacilityScope(
+      mockMonitoringData.facilities,
+      new Set(["F-3", "F-1"]),
+    );
+    expect(scope.ids).toEqual(["F-1", "F-3"]);
+    expect(scope.facilities.map((facility) => facility.id)).toEqual(scope.ids);
+  });
+
+  it("모바일 카드 목록에 데스크톱 표와 같은 시설 범위를 모두 제공한다", () => {
+    const html = renderToStaticMarkup(
+      <AnalysisMobileFacilityList
+        facilities={mockMonitoringData.facilities}
+        selectedIds={new Set(["F-1"])}
+        focusedFacilityId="F-2"
+        onToggle={() => undefined}
+      />,
+    );
+    expect(html).toContain('aria-label="모바일 전파 대상 시설 목록"');
+    for (const facility of mockMonitoringData.facilities) {
+      expect(html).toContain(facility.name);
+    }
+    expect(html).toContain("analysis-mobile-card selected");
+    expect(html).toContain("analysis-mobile-card focused");
   });
 });

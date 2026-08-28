@@ -31,6 +31,66 @@ type ControlWorkspace = "overview" | "analysis" | "history";
 
 const KMA_OFFICIAL_WARNING_URL = "https://www.weather.go.kr/w/special-report/overall.do";
 
+export function resolveSelectedFacilityScope(
+  facilities: readonly Facility[],
+  selectedIds: ReadonlySet<string>,
+): { ids: string[]; facilities: Facility[] } {
+  const selectedFacilities = facilities.filter((facility) => selectedIds.has(facility.id));
+  return {
+    ids: selectedFacilities.map((facility) => facility.id),
+    facilities: selectedFacilities,
+  };
+}
+
+interface AnalysisMobileFacilityListProps {
+  facilities: readonly Facility[];
+  selectedIds: ReadonlySet<string>;
+  focusedFacilityId: string;
+  onToggle: (facilityId: string) => void;
+}
+
+export function AnalysisMobileFacilityList({
+  facilities,
+  selectedIds,
+  focusedFacilityId,
+  onToggle,
+}: AnalysisMobileFacilityListProps) {
+  return (
+    <div className="analysis-mobile-list" aria-label="모바일 전파 대상 시설 목록">
+      {facilities.map((facility) => {
+        const isSelected = selectedIds.has(facility.id);
+        return (
+          <label
+            key={facility.id}
+            className={[
+              "analysis-mobile-card",
+              isSelected ? "selected" : "",
+              facility.id === focusedFacilityId ? "focused" : "",
+            ].filter(Boolean).join(" ")}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onToggle(facility.id)}
+              aria-label={`${facility.name} 선택`}
+            />
+            <span className="grade-badge" style={{ backgroundColor: facility.grade_color }}>
+              {facility.grade_label}
+            </span>
+            <span className="analysis-mobile-facility">
+              <strong>{facility.name}</strong>
+              <span className={facility.reasons.length > 0 ? "warning-tag active" : "warning-tag"}>
+                {uniqueWarningText(facility)}
+              </span>
+              <small>{facility.type} · {facility.address}</small>
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 function todayYMD(): string {
   const now = new Date();
   return now.toISOString().slice(0, 10);
@@ -187,10 +247,10 @@ export default function ControlApp() {
     setSelectedFacilityIds(new Set());
   };
 
-  // 선택된 시설 객체 목록
-  const selectedFacilitiesList = useMemo(() => {
-    if (!data) return [];
-    return data.facilities.filter((f) => selectedFacilityIds.has(f.id));
+  // PDF와 수동 상황전파가 공유하는 단일 선택 범위
+  const selectedFacilityScope = useMemo(() => {
+    if (!data) return { ids: [], facilities: [] };
+    return resolveSelectedFacilityScope(data.facilities, selectedFacilityIds);
   }, [data, selectedFacilityIds]);
 
   const handleMapFacilitySelect = useCallback((facility: Facility) => {
@@ -211,7 +271,7 @@ export default function ControlApp() {
       setLoginModalOpen(true);
       return;
     }
-    const selectedIds = Array.from(selectedFacilityIds);
+    const selectedIds = selectedFacilityScope.ids;
     const scopeLabel = selectedIds.length === data.facilities.length
       ? "전체 소관시설"
       : `선택 ${selectedIds.length}개소`;
@@ -570,13 +630,16 @@ export default function ControlApp() {
             </div>
             <div className="selection-buttons">
               <button type="button" className="secondary-button" onClick={selectAffectedFacilities}>
-                특보 영향 시설만 선택 ({activeWarningCount})
+                <span className="btn-text-full">특보 영향 시설만 선택 ({activeWarningCount})</span>
+                <span className="btn-text-short">영향시설 ({activeWarningCount})</span>
               </button>
               <button type="button" className="secondary-button" onClick={selectAllFacilities}>
-                전체 선택 (103)
+                <span className="btn-text-full">전체 선택 ({data.facilities.length})</span>
+                <span className="btn-text-short">전체 ({data.facilities.length})</span>
               </button>
               <button type="button" className="secondary-button" onClick={clearFacilitySelection}>
-                선택 해제
+                <span className="btn-text-full">선택 해제</span>
+                <span className="btn-text-short">해제</span>
               </button>
             </div>
             <div className="action-buttons">
@@ -586,7 +649,12 @@ export default function ControlApp() {
                 onClick={handlePdfDownload}
                 disabled={selectedFacilityIds.size === 0 || pdfLoading}
               >
-                {pdfLoading ? "PDF 생성 중..." : "PDF 초동보고서 다운로드 ⤓"}
+                {pdfLoading ? "PDF 생성 중..." : (
+                  <>
+                    <span className="btn-text-full">PDF 초동보고서 다운로드 ⤓</span>
+                    <span className="btn-text-short">PDF 보고서 ⤓</span>
+                  </>
+                )}
               </button>
 
               <button
@@ -601,7 +669,8 @@ export default function ControlApp() {
                 }}
                 disabled={selectedFacilityIds.size === 0}
               >
-                수동 Telegram 상황전파 📢
+                <span className="btn-text-full">수동 Telegram 상황전파 📢</span>
+                <span className="btn-text-short">수동 상황전파 📢</span>
               </button>
             </div>
           </div>
@@ -610,7 +679,7 @@ export default function ControlApp() {
             <div className="analysis-map-card">
               <div className="map-card-header">
                 <h3>소관시설 관제 지도</h3>
-                <small>마커를 클릭하면 우측 목록에서 해당 시설로 포커스됩니다.</small>
+                <small>마커를 클릭하면 대상 목록의 해당 시설이 강조됩니다.</small>
               </div>
               <div className="control-map-container">
                 <KakaoMap
@@ -684,6 +753,12 @@ export default function ControlApp() {
                   </tbody>
                 </table>
               </div>
+              <AnalysisMobileFacilityList
+                facilities={prioritySortedFacilities}
+                selectedIds={selectedFacilityIds}
+                focusedFacilityId={focusedFacilityId}
+                onToggle={toggleFacilitySelection}
+              />
             </div>
           </div>
         </section>
@@ -729,7 +804,7 @@ export default function ControlApp() {
       {dispatchModalOpen && (
         <ManualDispatchModal
 
-          facilities={selectedFacilitiesList}
+          facilities={selectedFacilityScope.facilities}
           adminToken={adminToken}
           monitoringMode={monitoringMode}
           onClose={() => setDispatchModalOpen(false)}
