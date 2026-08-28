@@ -239,6 +239,56 @@ class PdfReportExtendedTests(unittest.TestCase):
         pdf_bytes = self.renderer.render(snap)
         self.assertEqual(self._get_page_count(pdf_bytes), 1)
 
+    # =========================================================================
+    # PART 2: 지도 Callout / Leader Line 시나리오 테스트
+    # =========================================================================
+    def test_map_callout_scenarios(self) -> None:
+        """지도 Callout 및 Leader Line 시나리오 (1개, 4개, 좌/우 집중, 경계값 등) 검증."""
+        from safety_dashboard.adapters.static_map import StaticSafetyMapRenderer
+
+        map_renderer = StaticSafetyMapRenderer(font_path=FONT_PATH)
+
+        # Scenario A: TOP 시설 1개
+        snap_a = create_dummy_snapshot(10, high_count=1, medium_count=0, low_count=0)
+        png_a = map_renderer.render_png(snap_a, top_facility_ranks={snap_a.assessments[0].facility.id: 1})
+        self.assertTrue(png_a.startswith(b"\x89PNG"))
+
+        # Scenario B/C/F: TOP 시설 4개 (좌/우 분배 및 근접)
+        snap_b = create_dummy_snapshot(10, high_count=2, medium_count=2, low_count=0)
+        ranks_b = {snap_b.assessments[i].facility.id: i + 1 for i in range(4)}
+        png_b = map_renderer.render_png(snap_b, top_facility_ranks=ranks_b)
+        self.assertTrue(png_b.startswith(b"\x89PNG"))
+
+        # Scenario D/E: Left/Right Rail 집중 배치 시뮬레이션
+        # 임의의 좌표(모두 서쪽/모두 동쪽) 시설로 구성된 스냅샷 생성
+        west_facs = [
+            Facility(
+                id=f"w-{i}",
+                name=f"서부시설{i}",
+                facility_type="대기측정소",
+                location=GeoPoint(latitude=36.4 + i * 0.05, longitude=128.1),
+                address="경상북도 상주시 사벌국면",
+                department="대구경북환경본부",
+                manager="홍길동",
+            )
+            for i in range(4)
+        ]
+        west_assess = [
+            RiskAssessment(west_facs[i], RiskGrade.HIGH, (RiskReason("w0", "호우", "경보", RiskGrade.HIGH, "상주시", "p1"),), "v1", dt.datetime.now())
+            for i in range(4)
+        ]
+        snap_west = DashboardSnapshot(
+            generated_at=dt.datetime.now(),
+            policy_version="v1",
+            facilities=tuple(west_facs),
+            assessments=tuple(west_assess),
+            summary=DashboardSummary(1, 4, 4, 0, WarningLevel.WARNING),
+            warning_feed=WarningFeed((), DataHealth.LIVE, dt.datetime.now()),
+        )
+        ranks_west = {f.id: i + 1 for i, f in enumerate(west_facs)}
+        png_west = map_renderer.render_png(snap_west, top_facility_ranks=ranks_west)
+        self.assertTrue(png_west.startswith(b"\x89PNG"))
+
     def test_status_summary_bar_cases(self) -> None:
         """규칙 기반 현재 상황 요약 바 문구 생성 4가지 케이스 검증."""
         # CASE 1: high > 0

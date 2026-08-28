@@ -210,7 +210,7 @@ class StaticSafetyMapRenderer:
             draw.ellipse((cx - 2.5, cy - 2.5, cx + 2.5, cy + 2.5), fill=(148, 163, 184, 255))
             draw.text((cx + 4, cy - 6), name, font=city_font, fill=(100, 116, 139, 220))
 
-        # 4. 소관시설 마커 렌더링 (단일 정렬 및 TOP4 번호 뱃지 연계)
+        # 4. 소관시설 마커 및 TOP 4 Callout 렌더링
         ranks = top_facility_ranks or {}
         ranking = {
             RiskGrade.NONE: 0,
@@ -224,6 +224,8 @@ class StaticSafetyMapRenderer:
             key=lambda a: (ranking.get(a.grade, 0), a.facility.name),
         )
 
+        top_callout_items: list[dict] = []
+
         for assessment in sorted_assessments:
             coord = assessment.facility.location
             if not coord:
@@ -233,35 +235,20 @@ class StaticSafetyMapRenderer:
             col = MARKER_COLOR.get(grade, MARKER_COLOR[RiskGrade.NONE])
             fid = assessment.facility.id
 
-            # TOP 4 시설 번호 뱃지 (Circle + 숫자 1,2,3,4: 흰색 배경 + 등급색 외곽선 + 등급색 숫자)
-            if fid in ranks:
-                rank_num = str(ranks[fid])
-                badge_r = 13.0
-                # 정적 Halo 외곽 링
-                draw.ellipse(
-                    (cx - badge_r - 4, cy - badge_r - 4, cx + badge_r + 4, cy + badge_r + 4),
-                    fill=(*col[:3], 65),
-                )
-                # 원형 뱃지 본체 (선명한 흰색 배경)
-                draw.ellipse(
-                    (cx - badge_r, cy - badge_r, cx + badge_r, cy + badge_r),
-                    fill=(255, 255, 255, 255),
-                    outline=col,
-                    width=3,
-                )
-                # 뱃지 내부 숫자 텍스트 중앙 정렬 (선명한 등급색 굵은 텍스트)
-                t_bbox = draw.textbbox((cx, cy), rank_num, font=badge_font)
-                tw = t_bbox[2] - t_bbox[0]
-                th = t_bbox[3] - t_bbox[1]
-                draw.text(
-                    (cx - tw / 2, cy - th / 2 - 2),
-                    rank_num,
-                    font=badge_font,
-                    fill=col,
-                )
+            if fid in ranks and 1 <= ranks[fid] <= 4:
+                # TOP 4 시설은 실제 위치에 앵커 마커를 남기고 Callout 목록에 등록
+                draw.ellipse((cx - 4.5, cy - 4.5, cx + 4.5, cy + 4.5), fill=col, outline=(255, 255, 255, 255), width=2)
+                top_callout_items.append({
+                    "fid": fid,
+                    "rank": ranks[fid],
+                    "rank_num": str(ranks[fid]),
+                    "cx": cx,
+                    "cy": cy,
+                    "grade": grade,
+                    "col": col,
+                })
             elif grade is RiskGrade.HIGH:
                 r = 8.5
-                # 정적 Halo 외곽 링
                 draw.ellipse((cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4), fill=(217, 45, 32, 70))
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=2)
             elif grade is RiskGrade.MEDIUM:
@@ -274,8 +261,96 @@ class StaticSafetyMapRenderer:
                 r = 3.0
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=1)
 
-        # 5. 특보 발효 구역 텍스트 뱃지 (거리 기반 겹침 방지)
+        # 4-1. TOP 4 Callout Badge 및 Leader Line 자동 배치 (Collision Avoidance)
+        badge_r = 11.5
+        min_v_gap = 26.0
+        mid_x = width / 2.0
+        left_rail_x = 32.0
+        right_rail_x = width - 32.0
+        min_y = 20.0
+        max_y = height - 20.0
+
         placed_boxes: list[tuple[int, int, int, int]] = []
+
+        # 좌/우 그룹 분류
+        left_group = [item for item in top_callout_items if item["cx"] < mid_x]
+        right_group = [item for item in top_callout_items if item["cx"] >= mid_x]
+
+        for side, group in (("LEFT", left_group), ("RIGHT", right_group)):
+            if not group:
+                continue
+            # Y좌표 순 정렬로 Leader Line 교차 방지
+            group.sort(key=lambda item: item["cy"])
+
+            # 1) 순방향(Forward) 간격 조정
+            placed_y: list[float] = []
+            for item in group:
+                orig_y = item["cy"]
+                y = max(min_y, orig_y)
+                if placed_y:
+                    prev_y = placed_y[-1]
+                    if y < prev_y + min_v_gap:
+                        y = prev_y + min_v_gap
+                placed_y.append(y)
+
+            # 2) 역방향(Backward) 오버플로우 밀어올림
+            if placed_y and placed_y[-1] > max_y:
+                placed_y[-1] = max_y
+                for i in range(len(placed_y) - 2, -1, -1):
+                    if placed_y[i] > placed_y[i + 1] - min_v_gap:
+                        placed_y[i] = placed_y[i + 1] - min_v_gap
+
+            # 3) 최종 클램프 및 렌더링
+            bx = left_rail_x if side == "LEFT" else right_rail_x
+            for item, by in zip(group, placed_y):
+                by = max(min_y, min(max_y, by))
+                cx, cy = item["cx"], item["cy"]
+                col = item["col"]
+                rank_num = item["rank_num"]
+
+                # Leader Line (지시선 Elbow 연결)
+                if side == "LEFT":
+                    edge_x = bx + badge_r
+                    elbow_x = min(cx - 8, max(edge_x + 8, (cx + edge_x) / 2))
+                    pts = [(cx, cy), (elbow_x, cy), (elbow_x, by), (edge_x, by)]
+                else:
+                    edge_x = bx - badge_r
+                    elbow_x = max(cx + 8, min(edge_x - 8, (cx + edge_x) / 2))
+                    pts = [(cx, cy), (elbow_x, cy), (elbow_x, by), (edge_x, by)]
+
+                # 지시선 그리기 (은은한 중립 그레이/저명도 선)
+                draw.line(pts, fill=(100, 116, 139, 210), width=2)
+
+                # 앵커 점 강조
+                draw.ellipse((cx - 4, cy - 4, cx + 4, cy + 4), fill=col, outline=(255, 255, 255, 255), width=1)
+
+                # Callout Badge 본체 (원형 + 흰색 배경 + 등급색 외곽선 + Halo)
+                draw.ellipse(
+                    (bx - badge_r - 3, by - badge_r - 3, bx + badge_r + 3, by + badge_r + 3),
+                    fill=(*col[:3], 55),
+                )
+                draw.ellipse(
+                    (bx - badge_r, by - badge_r, bx + badge_r, by + badge_r),
+                    fill=(255, 255, 255, 255),
+                    outline=col,
+                    width=2,
+                )
+
+                # 내부 숫자 중앙 렌더링
+                t_bbox = draw.textbbox((bx, by), rank_num, font=badge_font)
+                tw = t_bbox[2] - t_bbox[0]
+                th = t_bbox[3] - t_bbox[1]
+                draw.text(
+                    (bx - tw / 2, by - th / 2 - 2),
+                    rank_num,
+                    font=badge_font,
+                    fill=col,
+                )
+
+                # 특보 라벨 충돌 방지를 위해 Callout 뱃지 영역 등록
+                placed_boxes.append((int(bx - badge_r - 2), int(by - badge_r - 2), int(2 * badge_r + 4), int(2 * badge_r + 4)))
+
+        # 5. 특보 발효 구역 텍스트 뱃지 (거리 기반 겹침 방지)
         for cx, cy, reg_name, level, w_type in warning_centroids:
             sub_tag = f"{w_type} {'경보' if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else '주의보'}"
             full_text = f"{reg_name} [{sub_tag}]"
