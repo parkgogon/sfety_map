@@ -138,27 +138,33 @@ class PdfReportRenderer:
         has_warnings = len(snapshot.warning_feed.warnings) > 0
         warning_count = len(snapshot.warning_feed.warnings)
 
-        # 활성특보 섹션 예상 높이: 섹션헤더(6) + 요약바(6.5) + 테이블헤더(5.2) + 행당(4.8)
-        warning_section_height = 18.0 + warning_count * 4.8
-        remaining_space_page1 = pdf.page_break_trigger - pdf.get_y()
+        # Compact Mode 가드 상수 및 실제 가용 높이 계산
+        COMPACT_MAX_AFFECTED = 10
+        COMPACT_MAX_WARNINGS = 8
+        SAFETY_MARGIN_MM = 3.0
 
-        # Compact 1-Page Mode: 소량 데이터 (영향시설 <= 10개 & 활성특보 1페이지 잔여 공간 수용 가능)
+        # 활성특보 섹션 예상 높이: 타이틀(6.0) + 요약바(6.5) + 테이블헤더(5.2) + 행당(4.8) + 여백(4.0)
+        warning_section_height = 21.7 + (warning_count * 4.8)
+        remaining_height = pdf.page_break_trigger - pdf.get_y() - SAFETY_MARGIN_MM
+
+        # Compact 1-Page Mode 판정: 소량 데이터이고 1페이지 잔여 영역에 안전하게 수용 가능한 경우
         is_compact_mode = (
             not has_more_facilities
             and has_warnings
-            and warning_count <= 4
-            and warning_section_height + 4.0 <= remaining_space_page1
+            and len(sorted_assessments) <= COMPACT_MAX_AFFECTED
+            and warning_count <= COMPACT_MAX_WARNINGS
+            and warning_section_height <= remaining_height
         )
 
         if is_compact_mode:
-            # 1페이지 하단 여유 공간에 활성특보 Summary + 상세 테이블을 렌더링하고 1페이지로 완결
+            # [COMPACT MODE] 1페이지 하단 Flow Area에 활성특보 섹션을 렌더링하고 총 1페이지로 완결
             pdf.ln(2.5)
             self._section(pdf, "3", "활성 특보")
             self._warning_summary_bar(pdf, snapshot)
             pdf.ln(1.5)
             self._warning_table(pdf, snapshot)
         else:
-            # Standard Mode: 대량 데이터 (1페이지 상황판 + 2페이지 이후 상세)
+            # [STANDARD MODE] 대량 데이터 (1페이지 상황판 + 2페이지 이후 상세현황)
             if has_more_facilities:
                 pdf.add_page()
                 self._section(pdf, "2", "영향시설 우선순위", continued=True)

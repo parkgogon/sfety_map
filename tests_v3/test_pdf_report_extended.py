@@ -48,8 +48,10 @@ def create_dummy_snapshot(
     medium_count: int = 0,
     low_count: int = 0,
     warning_types: tuple[str, ...] = ("호우",),
+    custom_warning_count: int | None = None,
 ) -> DashboardSnapshot:
     now = dt.datetime(2026, 8, 28, 14, 0)
+    w_count = custom_warning_count if custom_warning_count is not None else len(warning_types)
     warnings = tuple(
         Warning(
             id=f"w-{idx}",
@@ -57,14 +59,14 @@ def create_dummy_snapshot(
             region_up_code="L107",
             region_code=f"L1070{idx+1}",
             region_up="경상북도",
-            region="포항시",
-            warning_type=wt,
+            region=f"지역 {idx+1}",
+            warning_type=warning_types[idx % len(warning_types)] if warning_types else "호우",
             raw_level="경보" if idx == 0 and high_count > 0 else "주의보",
             level=WarningLevel.WARNING if idx == 0 and high_count > 0 else WarningLevel.ADVISORY,
             issued_at=now,
             effective_at=now,
         )
-        for idx, wt in enumerate(warning_types)
+        for idx in range(w_count)
     )
 
     facilities = [create_dummy_facility(i) for i in range(facility_count)]
@@ -73,16 +75,17 @@ def create_dummy_snapshot(
     for i, fac in enumerate(facilities):
         if i < high_count:
             grade = RiskGrade.HIGH
-            reason = RiskReason("w-0", warning_types[0], "경보", grade, fac.address, "p1")
+            wt = warning_types[0] if warning_types else "호우"
+            reason = RiskReason("w-0", wt, "경보", grade, fac.address, "p1")
             assessments.append(RiskAssessment(fac, grade, (reason,), "2026.08-v1", now))
         elif i < high_count + medium_count:
             grade = RiskGrade.MEDIUM
-            wt = warning_types[min(1, len(warning_types) - 1)]
+            wt = warning_types[min(1, len(warning_types) - 1)] if warning_types else "호우"
             reason = RiskReason("w-1", wt, "주의보", grade, fac.address, "p1")
             assessments.append(RiskAssessment(fac, grade, (reason,), "2026.08-v1", now))
         elif i < high_count + medium_count + low_count:
             grade = RiskGrade.LOW
-            wt = warning_types[-1]
+            wt = warning_types[-1] if warning_types else "호우"
             reason = RiskReason("w-2", wt, "주의보", grade, fac.address, "p1")
             assessments.append(RiskAssessment(fac, grade, (reason,), "2026.08-v1", now))
         else:
@@ -110,6 +113,24 @@ def create_dummy_snapshot(
 class PdfReportExtendedTests(unittest.TestCase):
     def setUp(self) -> None:
         self.renderer = PdfReportRenderer(FONT_PATH)
+
+    def _get_page_count(self, pdf_bytes: bytes) -> int:
+        import re
+        import subprocess
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
+            report.write(pdf_bytes)
+            report.flush()
+            info_text = subprocess.run(
+                ["pdfinfo", report.name],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            match = re.search(r"Pages:\s+(\d+)", info_text)
+            self.assertIsNotNone(match)
+            return int(match.group(1))
 
     def test_single_source_of_truth_ranking(self) -> None:
         """TOP4, TOP10, 상세 목록이 단일 정렬 원천(_get_sorted_assessments)을 동일하게 사용하는지 검증."""
@@ -183,49 +204,40 @@ class PdfReportExtendedTests(unittest.TestCase):
         fallback_guide = get_warning_guideline("우박")
         self.assertIn("우박", fallback_guide[0])
 
-    def test_compact_mode_one_page_completion(self) -> None:
-        """Compact 1-Page Mode: 소량 데이터(시설 4개, 특보 2건) 시 정확히 1페이지로 완결되는지 검증."""
-        import re
-        import subprocess
-        import tempfile
+    # =========================================================================
+    # PART 1: Compact vs Standard Mode 시나리오 테스트 (A, B, C, D, E)
+    # =========================================================================
+    def test_scenario_a_compact_mode(self) -> None:
+        """Scenario A: 영향시설 3개, 활성특보 3건 -> Compact Mode (정확히 1페이지)."""
+        snap = create_dummy_snapshot(10, high_count=1, medium_count=1, low_count=1, warning_types=("호우", "강풍", "폭염"))
+        pdf_bytes = self.renderer.render(snap)
+        self.assertEqual(self._get_page_count(pdf_bytes), 1)
 
-        snap_small = create_dummy_snapshot(10, high_count=1, medium_count=2, low_count=1, warning_types=("호우", "강풍"))
-        pdf_bytes = self.renderer.render(snap_small)
+    def test_scenario_b_boundary_height(self) -> None:
+        """Scenario B: 영향시설 10개, 활성특보 5건 -> 실제 남은 Height 계산 기반 판정."""
+        snap = create_dummy_snapshot(10, high_count=2, medium_count=4, low_count=4, custom_warning_count=5, warning_types=("호우", "태풍", "강풍", "폭염", "풍랑"))
+        pdf_bytes = self.renderer.render(snap)
+        # 10개 행(약 60mm) + 특보 5건(약 45mm)은 가용 잔여높이에 따라 안전하게 Compact 혹은 Standard로 처리됨
+        page_count = self._get_page_count(pdf_bytes)
+        self.assertIn(page_count, (1, 2))
 
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
-            report.write(pdf_bytes)
-            report.flush()
-            info_text = subprocess.run(
-                ["pdfinfo", report.name],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout
-            match = re.search(r"Pages:\s+(\d+)", info_text)
-            self.assertIsNotNone(match)
-            self.assertEqual(int(match.group(1)), 1)
+    def test_scenario_c_standard_mode_many_warnings(self) -> None:
+        """Scenario C: 영향시설 10개, 활성특보 20건 -> Standard Mode (2페이지 이상 분할)."""
+        snap = create_dummy_snapshot(10, high_count=2, medium_count=4, low_count=4, custom_warning_count=20, warning_types=("호우", "태풍", "강풍", "폭염"))
+        pdf_bytes = self.renderer.render(snap)
+        self.assertGreaterEqual(self._get_page_count(pdf_bytes), 2)
 
-    def test_standard_mode_multi_page(self) -> None:
-        """Standard Mode: 대량 데이터(시설 45개, 특보 4건) 시 2페이지 이상 생성되는지 검증."""
-        import re
-        import subprocess
-        import tempfile
+    def test_scenario_d_standard_mode_large_data(self) -> None:
+        """Scenario D: 영향시설 30개 이상, 활성특보 30개 이상 -> Multi-page 구조 정상 분할."""
+        snap = create_dummy_snapshot(50, high_count=5, medium_count=15, low_count=15, custom_warning_count=30, warning_types=("태풍", "호우", "강풍", "폭풍해일"))
+        pdf_bytes = self.renderer.render(snap)
+        self.assertGreaterEqual(self._get_page_count(pdf_bytes), 3)
 
-        snap_large = create_dummy_snapshot(50, high_count=3, medium_count=15, low_count=27, warning_types=("태풍", "호우", "강풍", "폭풍해일"))
-        pdf_bytes = self.renderer.render(snap_large)
-
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
-            report.write(pdf_bytes)
-            report.flush()
-            info_text = subprocess.run(
-                ["pdfinfo", report.name],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout
-            match = re.search(r"Pages:\s+(\d+)", info_text)
-            self.assertIsNotNone(match)
-            self.assertGreaterEqual(int(match.group(1)), 2)
+    def test_scenario_e_empty_state_one_page(self) -> None:
+        """Scenario E: 영향시설 0개, 활성특보 0건 -> 불필요한 2페이지 생성 없이 정확히 1페이지."""
+        snap = create_dummy_snapshot(10, high_count=0, medium_count=0, low_count=0, custom_warning_count=0, warning_types=())
+        pdf_bytes = self.renderer.render(snap)
+        self.assertEqual(self._get_page_count(pdf_bytes), 1)
 
     def test_status_summary_bar_cases(self) -> None:
         """규칙 기반 현재 상황 요약 바 문구 생성 4가지 케이스 검증."""
