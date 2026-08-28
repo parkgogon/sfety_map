@@ -133,27 +133,26 @@ class StaticSafetyMapRenderer:
         snapshot: DashboardSnapshot,
         width: int = 760,
         height: int = 550,
+        top_facility_ranks: dict[str, int] | None = None,
     ) -> bytes:
-        """DashboardSnapshot을 바탕으로 영남권 지명과 정갈한 특보 라벨이 표기된 와이드 지도를 생성합니다."""
+        """DashboardSnapshot을 바탕으로 영남권 지명, 정갈한 특보 라벨, TOP4 번호 뱃지가 표기된 와이드 지도를 생성합니다."""
         img = Image.new("RGBA", (width, height), BG_COLOR)
         draw = ImageDraw.Draw(img, "RGBA")
 
         city_font = self._get_font(12, bold=False)
         warning_tag_font = self._get_font(12, bold=True)
-        facility_tag_font = self._get_font(11, bold=True)
+        badge_font = self._get_font(13, bold=True)
 
-        # 1. 특보 구역 매핑 & 발효 구역 수집
-        active_warning_zones: dict[str, tuple[str, WarningLevel]] = {}
+        # 1. 특보 구역 매핑 & 발효 구역 수집 (복수 특보 집계)
+        zone_warnings: dict[str, list[tuple[str, WarningLevel]]] = {}
         for warning in snapshot.warning_feed.warnings:
             level = warning.level
             w_type = warning.warning_type
-            if warning.region_code:
-                active_warning_zones[warning.region_code] = (w_type, level)
-            if warning.region:
-                active_warning_zones[warning.region] = (w_type, level)
+            for key in (warning.region_code, warning.region):
+                if key:
+                    zone_warnings.setdefault(key, []).append((w_type, level))
 
         warning_centroids: list[tuple[int, int, str, WarningLevel, str]] = []
-        warned_city_names: set[str] = set()
 
         # 2. 영남권 시·군·구 폴리곤 렌더링
         for feature in self._zone_features:
@@ -162,9 +161,26 @@ class StaticSafetyMapRenderer:
             reg_name = str(props.get("name") or props.get("regName") or "")
             geom = shape(feature.get("geometry", {}))
 
-            warn_info = active_warning_zones.get(reg_id) or active_warning_zones.get(reg_name)
-            warning_level = warn_info[1] if warn_info else None
-            warning_type = warn_info[0] if warn_info else ""
+            warn_list = zone_warnings.get(reg_id) or zone_warnings.get(reg_name) or []
+
+            warning_level = None
+            warning_types_str = ""
+            if warn_list:
+                # 가장 높은 단계 기준 (경보 우선)
+                levels = [l for _, l in warn_list]
+                if any(l in (WarningLevel.WARNING, WarningLevel.CRITICAL) for l in levels):
+                    warning_level = WarningLevel.WARNING
+                else:
+                    warning_level = WarningLevel.ADVISORY
+
+                # 특보 종류 텍스트 조합 (최대 2종 + 외 N건)
+                types = list(dict.fromkeys(t for t, _ in warn_list))
+                if len(types) == 1:
+                    warning_types_str = types[0]
+                elif len(types) == 2:
+                    warning_types_str = f"{types[0]}·{types[1]}"
+                else:
+                    warning_types_str = f"{types[0]}·{types[1]} 외 {len(types) - 2}건"
 
             fill_col = WARNING_FILL.get(warning_level, ZONE_BG_COLOR)
             stroke_col = WARNING_STROKE.get(warning_level, ZONE_BORDER_COLOR)
@@ -186,17 +202,16 @@ class StaticSafetyMapRenderer:
                 centroid = geom.centroid
                 cx, cy = self._project(centroid.x, centroid.y, width, height)
                 clean_name = reg_name.replace("경상북도", "").replace("경상남도", "").strip()
-                warned_city_names.add(clean_name)
-                warning_centroids.append((cx, cy, clean_name, warning_level, warning_type))
+                warning_centroids.append((cx, cy, clean_name, warning_level, warning_types_str))
 
         # 3. 주요 도시 지명 텍스트 라벨링 (배경 가이드)
         for name, lat, lon in MAJOR_CITIES:
-            # 특보 뱃지와 겹치지 않는 도시는 기본 라벨 표시
             cx, cy = self._project(lon, lat, width, height)
             draw.ellipse((cx - 2.5, cy - 2.5, cx + 2.5, cy + 2.5), fill=(148, 163, 184, 255))
             draw.text((cx + 4, cy - 6), name, font=city_font, fill=(100, 116, 139, 220))
 
-        # 4. 소관시설 마커 렌더링
+        # 4. 소관시설 마커 렌더링 (단일 정렬 및 TOP4 번호 뱃지 연계)
+        ranks = top_facility_ranks or {}
         ranking = {
             RiskGrade.NONE: 0,
             RiskGrade.UNASSESSED: 1,
@@ -216,22 +231,47 @@ class StaticSafetyMapRenderer:
             cx, cy = self._project(coord.longitude, coord.latitude, width, height)
             grade = assessment.grade
             col = MARKER_COLOR.get(grade, MARKER_COLOR[RiskGrade.NONE])
+            fid = assessment.facility.id
 
-            if grade is RiskGrade.HIGH:
-                r = 9.5
-                draw.ellipse((cx - r - 3, cy - r - 3, cx + r + 3, cy + r + 3), fill=(217, 45, 32, 85))
+            # TOP 4 시설 번호 뱃지 (Circle + 숫자 1,2,3,4)
+            if fid in ranks:
+                rank_num = str(ranks[fid])
+                badge_r = 10.5
+                # 외곽 강조 링
+                draw.ellipse(
+                    (cx - badge_r - 3, cy - badge_r - 3, cx + badge_r + 3, cy + badge_r + 3),
+                    fill=(*col[:3], 90),
+                )
+                # 원형 뱃지 본체
+                draw.ellipse(
+                    (cx - badge_r, cy - badge_r, cx + badge_r, cy + badge_r),
+                    fill=col,
+                    outline=(255, 255, 255, 255),
+                    width=2,
+                )
+                # 뱃지 내부 숫자 텍스트 중앙 정렬
+                t_bbox = draw.textbbox((cx, cy), rank_num, font=badge_font)
+                tw = t_bbox[2] - t_bbox[0]
+                th = t_bbox[3] - t_bbox[1]
+                draw.text(
+                    (cx - tw / 2, cy - th / 2 - 2),
+                    rank_num,
+                    font=badge_font,
+                    fill=(255, 255, 255, 255),
+                )
+            elif grade is RiskGrade.HIGH:
+                r = 8.5
+                # 정적 Halo 외곽 링
+                draw.ellipse((cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4), fill=(217, 45, 32, 70))
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=2)
-                # 위험 상 시설명 라벨
-                fname = assessment.facility.name.replace(" 대기측정소", "").replace(" 수질측정소", "")
-                draw.text((cx + 12, cy - 7), f"{fname}", font=facility_tag_font, fill=(185, 28, 28, 255))
             elif grade is RiskGrade.MEDIUM:
-                r = 7.5
-                draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=2)
+                r = 6.5
+                draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=1)
             elif grade is RiskGrade.LOW:
-                r = 5.5
+                r = 4.5
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=1)
             else:
-                r = 3.5
+                r = 3.0
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=1)
 
         # 5. 특보 발효 구역 텍스트 뱃지 (거리 기반 겹침 방지)
@@ -239,10 +279,10 @@ class StaticSafetyMapRenderer:
         for cx, cy, reg_name, level, w_type in warning_centroids:
             sub_tag = f"{w_type} {'경보' if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else '주의보'}"
             full_text = f"{reg_name} [{sub_tag}]"
-            
+
             tag_col = (185, 28, 28, 255) if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else (194, 65, 12, 255)
             bg_col = (255, 241, 242, 245) if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else (255, 247, 237, 245)
-            
+
             bbox = draw.textbbox((cx, cy), full_text, font=warning_tag_font)
             bw = bbox[2] - bbox[0] + 10
             bh = bbox[3] - bbox[1] + 6

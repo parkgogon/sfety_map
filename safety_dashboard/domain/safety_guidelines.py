@@ -19,22 +19,31 @@ WARNING_ACTION_GUIDELINES: dict[str, str] = {
     "건조": "사업소 및 측정소 주변 인화물질 제거, 소화 장비 점검",
     "황사": "대기측정장비 흡입구 오염 점검 및 실내 환기 필터 관리",
     "폭풍해일": "해안 저지대 시설물 사전 통제 및 침수 대비",
+    "지진해일": "해안 인접 시설 즉시 대피 유도 및 긴급 차단시설 점검",
     "안개": "현장 이동 차량 안전운행 및 시야 제한 취약 시설 주의",
+    "열대야": "통신·전력설비 과열 방지 점검 및 야간 비상대기 체계 확인",
 }
 
 # 기본 평시 안전 수칙
 DEFAULT_SAFETY_GUIDELINE = "시설별 정기 안전점검 수칙 준수 및 비상연락체계 상시 유지"
 
 
+def get_warning_guideline(warning_type: str) -> str:
+    """특보 종류에 맞는 안전관리 요령을 반환합니다. 등록되지 않은 특보는 기본 지침을 조합하여 반환합니다."""
+    return WARNING_ACTION_GUIDELINES.get(
+        warning_type,
+        f"{warning_type} 특보 대응 시설별 안전점검 및 비상연락체계 유지",
+    )
+
+
 def extract_safety_guidelines(
-    snapshot: DashboardSnapshot, max_items: int = 2
+    snapshot: DashboardSnapshot, max_items: int = 3
 ) -> list[tuple[str, str]]:
     """현재 발효된 특보 중 영향도가 큰 특보들의 핵심 안전관리 요령을 추출합니다.
 
     Returns:
         list of (특보명, 행동요령 문구)
     """
-    # 1. 활성 특보 중 영향시설이 있는 특보 유형들을 수집
     active_warning_types: list[str] = []
 
     # 위험도 [상], [중] 시설에 걸린 특보 우선 추출
@@ -42,13 +51,13 @@ def extract_safety_guidelines(
         if assessment.grade in (RiskGrade.HIGH, RiskGrade.MEDIUM):
             for reason in assessment.reasons:
                 wt = reason.warning_type
-                if wt in WARNING_ACTION_GUIDELINES and wt not in active_warning_types:
+                if wt and wt not in active_warning_types:
                     active_warning_types.append(wt)
 
     # 전체 활성 특보 피드에서도 보충
     for warning in snapshot.warning_feed.warnings:
         wt = getattr(warning, "warning_type", str(warning))
-        if wt in WARNING_ACTION_GUIDELINES and wt not in active_warning_types:
+        if wt and wt not in active_warning_types:
             active_warning_types.append(wt)
 
     if not active_warning_types:
@@ -56,5 +65,5 @@ def extract_safety_guidelines(
 
     results: list[tuple[str, str]] = []
     for wt in active_warning_types[:max_items]:
-        results.append((wt, WARNING_ACTION_GUIDELINES[wt]))
+        results.append((wt, get_warning_guideline(wt)))
     return results
