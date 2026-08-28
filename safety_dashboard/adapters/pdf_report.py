@@ -91,10 +91,15 @@ class PdfReportRenderer:
 
         simulation = snapshot.warning_feed.health is DataHealth.SIMULATION
         created_at = dt.datetime.now().astimezone()
+        # 데이터 기준시각: KMA Feed 및 위험도 평가가 반영된 Snapshot 생성 시각 (Single Source of Truth)
+        data_ref_time = snapshot.generated_at or snapshot.warning_feed.fetched_at or created_at
+        data_ref_label = data_ref_time.strftime("%Y-%m-%d %H:%M")
+
         pdf = _ReportPdf(
             simulation=simulation,
             temporary_policy=temporary_policy,
             generated_label=created_at.strftime("%Y-%m-%d %H:%M"),
+            data_ref_label=data_ref_label,
             policy_version=snapshot.policy_version,
             scope_label=scope_label,
             orientation="P",
@@ -570,7 +575,7 @@ class PdfReportRenderer:
             return
 
         for index, item in enumerate(top10_rows, 1):
-            self._render_assessment_row(pdf, index, item, widths)
+            self._render_assessment_row(pdf, index, item, widths, is_page1=True)
 
     def _assessment_table_remaining(
         self,
@@ -599,7 +604,7 @@ class PdfReportRenderer:
                 pdf.add_page()
                 self._section(pdf, "2", "영향시설 우선순위", continued=True)
                 self._table_header(pdf, widths, labels)
-            self._render_assessment_row(pdf, index, item, widths)
+            self._render_assessment_row(pdf, index, item, widths, is_page1=False)
 
     def _render_assessment_row(
         self,
@@ -607,6 +612,7 @@ class PdfReportRenderer:
         index: int,
         item: RiskAssessment,
         widths: tuple[int, ...],
+        is_page1: bool = False,
     ) -> None:
         warnings = ", ".join(
             dict.fromkeys(f"{reason.warning_type} {reason.raw_level}" for reason in item.reasons)
@@ -619,7 +625,13 @@ class PdfReportRenderer:
             warnings,
         )
         limits = (4, 8, 20, 13, 20)
-        contact = public_contact(item.facility).replace(" · ", "\n", 1)
+
+        # 1페이지에서는 Display Name(핵심 부서명)과 전화번호가 정제된 담당자를 사용하여 공간 최적화
+        if is_page1:
+            contact = _format_facility_contact_page1(item.facility)
+        else:
+            contact = public_contact(item.facility).replace(" · ", "\n", 1)
+
         pdf.set_font("Ko", "", 6.2)
         contact_lines = pdf.multi_cell(
             widths[-1] - 2,
@@ -779,6 +791,7 @@ class _ReportPdf(FPDF):
         simulation: bool,
         temporary_policy: bool,
         generated_label: str,
+        data_ref_label: str,
         policy_version: str,
         scope_label: str,
         **kwargs,
@@ -787,6 +800,7 @@ class _ReportPdf(FPDF):
         self.simulation = simulation
         self.temporary_policy = temporary_policy
         self.generated_label = generated_label
+        self.data_ref_label = data_ref_label
         self.policy_version = policy_version
         self.scope_label = scope_label
 
@@ -821,11 +835,11 @@ class _ReportPdf(FPDF):
             self.set_font("Ko", "B", 6.8)
             self.cell(14, 4.2, "임시정책", fill=True, align="C")
 
-        # 4. 우측 메타 라인 (발행일시)
-        self.set_xy(self.w - self.r_margin - 50, 9.5)
-        self.set_font("Ko", "", 7.2)
+        # 4. 우측 메타 라인 (발행일시 및 데이터 기준시각 명확히 분리 표출)
+        self.set_xy(self.w - self.r_margin - 90, 9.5)
+        self.set_font("Ko", "", 6.5)
         self.set_text_color(*MUTED)
-        self.cell(50, 5, f"발행일시: {self.generated_label}", align="R")
+        self.cell(90, 5, f"발행: {self.generated_label}  |  데이터 기준: {self.data_ref_label}", align="R")
 
         # 5. 서브 메타 정보
         self.set_xy(self.l_margin, 15.2)
@@ -852,6 +866,40 @@ class _ReportPdf(FPDF):
             f"K-ECO 스마트 안전관제 시스템  |  페이지 {self.page_no()} / {{nb}}",
             align="C",
         )
+
+
+def _format_facility_contact_page1(facility: Facility) -> str:
+    """1페이지 영향시설 테이블용 담당부서 및 담당자 요약 문자열을 생성합니다."""
+    from safety_dashboard.application.contacts import _clean_part, _MOBILE_PHONE
+
+    raw_dept = _clean_part(facility.department)
+    raw_mgr = _clean_part(_MOBILE_PHONE.sub("", str(facility.manager or "")))
+
+    # 이미 Snapshot 직렬화 등으로 '부서명 · 담당자' 형태로 합쳐져 있는 경우 분리 처리
+    if " · " in raw_dept:
+        dept_part, _, mgr_part = raw_dept.partition(" · ")
+        short_dept = _format_department_display(dept_part)
+        mgr = raw_mgr if raw_mgr and raw_mgr != "-" else mgr_part
+        parts = [p for p in (short_dept, mgr) if p and p != "-"]
+        return " · ".join(parts) if parts else "-"
+
+    short_dept = _format_department_display(raw_dept)
+    parts = [p for p in (short_dept, raw_mgr) if p and p != "-"]
+    return " · ".join(parts) if parts else "-"
+
+
+def _format_department_display(department: str) -> str:
+    """1페이지 테이블을 위해 조직 경로에서 핵심 부서 단위(Display Name)를 추출합니다."""
+    if not department or department == "-":
+        return "-"
+    tokens = department.strip().split()
+    if not tokens:
+        return "-"
+    # 마지막 어절이 '부', '팀', '과', '소', '실', '센터' 등으로 끝나면 해당 어절 반환
+    last = tokens[-1]
+    if any(last.endswith(suffix) for suffix in ("부", "팀", "과", "소", "실", "센터", "처", "본부")):
+        return last
+    return last
 
 
 def _short(text: str, limit: int) -> str:

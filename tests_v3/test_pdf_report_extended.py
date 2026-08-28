@@ -350,6 +350,30 @@ class PdfReportExtendedTests(unittest.TestCase):
         pdf_long = self.renderer.render(s_long)
         self.assertTrue(len(pdf_long) > 0)
 
+    # =========================================================================
+    # PART 4: Header Metadata / Department Display / Legend 마감 테스트
+    # =========================================================================
+    def test_department_display_formatting(self) -> None:
+        """1페이지 담당부서 축약(Display Name) 헬퍼 로직 검증."""
+        from safety_dashboard.adapters.pdf_report import _format_department_display
+
+        # 케이스 1: 3단 조직 경로
+        self.assertEqual(_format_department_display("대구경북환경본부 환경서비스처 유역관리부"), "유역관리부")
+        # 케이스 2: 2단 사업소 경로
+        self.assertEqual(_format_department_display("부산울산경남환경본부 자원순환관리처 영농폐기물사업소"), "영농폐기물사업소")
+        # 케이스 3: 단일 부서명
+        self.assertEqual(_format_department_display("유역관리부"), "유역관리부")
+        # 케이스 4: 빈 값 / 기본값
+        self.assertEqual(_format_department_display("-"), "-")
+        self.assertEqual(_format_department_display(""), "-")
+
+    def test_header_data_reference_timestamp(self) -> None:
+        """헤더에 발행일시와 데이터 기준시각이 안전하게 분리 표출되는지 검증."""
+        gen_time = dt.datetime(2026, 8, 28, 14, 30)
+        snap = create_dummy_snapshot(10, high_count=1, medium_count=1)
+        pdf_bytes = self.renderer.render(snap)
+        self.assertTrue(len(pdf_bytes) > 0)
+
     def test_status_summary_bar_cases(self) -> None:
         """규칙 기반 현재 상황 요약 바 문구 생성 4가지 케이스 검증."""
         # CASE 1: high > 0

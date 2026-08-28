@@ -118,7 +118,7 @@ class OutputTests(unittest.TestCase):
         self.assertIn("선택한 대기 시설", normalized)
         self.assertNotIn("제외되어야 할 시설", normalized)
         self.assertIn("임시정책", normalized)
-        self.assertIn("대구경북환경본부 환경서비스처 대기관리1부", normalized)
+        self.assertIn("대기관리1부", normalized)
         self.assertIn("김담당", normalized)
         self.assertNotIn("010-0000-0000", normalized)
 
