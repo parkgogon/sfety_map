@@ -98,22 +98,21 @@ class PdfReportRenderer:
         pdf.set_title(("[모의훈련] " if simulation else "") + title)
         pdf.add_page()
 
-        # 1. 관제 요약 지표 카드 & 위험등급/특보 정의 가이드
-        self._section(pdf, "1", "관제 요약 및 위험등급 기준")
+        # 1. 관제 요약 지표 카드 및 권역 지도
+        self._section(pdf, "1", "관제 요약")
         self._summary_cards(pdf, snapshot)
-        self._risk_grade_definition_bar(pdf)
-        pdf.ln(3)
+        pdf.ln(3.5)
 
-        # 2. 권역 지도 + 중점관리 TOP 3 & 안전관리 요령
+        # 권역 지도(와이드+통합범례) + 중점관리 TOP 4 & 안전관리 요령
         self._map_and_highlights(pdf, snapshot)
         pdf.ln(3.5)
 
-        # 3. 영향시설 점검 우선순위 목록
+        # 2. 영향시설 점검 우선순위 목록
         self._section(pdf, "2", "영향시설 우선순위")
         self._assessment_table(pdf, snapshot)
         pdf.ln(3)
 
-        # 4. 활성 특보 현황
+        # 3. 활성 특보 현황
         self._ensure_space(pdf, 22)
         self._section(pdf, "3", "활성 특보")
         self._warning_table(pdf, snapshot)
@@ -178,201 +177,178 @@ class PdfReportRenderer:
 
         pdf.set_y(start_y + 17.5)
 
-    @staticmethod
-    def _risk_grade_definition_bar(pdf: FPDF) -> None:
-        """위험등급 및 특보 구역 정의 설명 바."""
-        y = pdf.get_y()
-        total_w = pdf.w - 2 * pdf.l_margin
-        pdf.set_xy(pdf.l_margin, y)
-        pdf.set_fill_color(241, 245, 249) # #F1F5F9
-        pdf.set_draw_color(*LINE)
-        pdf.rect(pdf.l_margin, y, total_w, 6.2, style="DF")
-
-        # 등급 정의 텍스트
-        pdf.set_xy(pdf.l_margin + 2.5, y + 1.2)
-        pdf.set_font("Ko", "B", 6.8)
-        pdf.set_text_color(*NAVY)
-        pdf.cell(16, 3.8, "등급·구역 안내:")
-
-        # 상
-        pdf.set_font("Ko", "B", 6.6)
-        pdf.set_text_color(*GRADE_COLOR[RiskGrade.HIGH])
-        pdf.cell(15, 3.8, "● 위험 [상]:")
-        pdf.set_font("Ko", "", 6.4)
-        pdf.set_text_color(*INK)
-        pdf.cell(27, 3.8, "즉시 현장 점검·조치 |")
-
-        # 중
-        pdf.set_font("Ko", "B", 6.6)
-        pdf.set_text_color(*GRADE_COLOR[RiskGrade.MEDIUM])
-        pdf.cell(15, 3.8, "● 위험 [중]:")
-        pdf.set_font("Ko", "", 6.4)
-        pdf.set_text_color(*INK)
-        pdf.cell(25, 3.8, "사전 예찰·비상대기 |")
-
-        # 하
-        pdf.set_font("Ko", "B", 6.6)
-        pdf.set_text_color(*GRADE_COLOR[RiskGrade.LOW])
-        pdf.cell(15, 3.8, "● 위험 [하]:")
-        pdf.set_font("Ko", "", 6.4)
-        pdf.set_text_color(*INK)
-        pdf.cell(22, 3.8, "기상 모니터링 |")
-
-        # 특보 구역
-        pdf.set_font("Ko", "B", 6.6)
-        pdf.set_text_color(*BLUE)
-        pdf.cell(16, 3.8, "■ 특보구역:")
-        pdf.set_font("Ko", "", 6.4)
-        pdf.set_text_color(*INK)
-        pdf.cell(32, 3.8, "기상청 경보(적)·주의보(주)")
-
-        pdf.set_y(y + 7.5)
-
     def _map_and_highlights(self, pdf: FPDF, snapshot: DashboardSnapshot) -> None:
-        """좌측: 영남권 정적 지도 (지명/특보 라벨 포함) / 우측: 중점관리 TOP 3 & 안전관리 요령."""
+        """좌측: 대형 와이드 지도 + 일체형 통합 범례 푸터 / 우측: 일체형 인포 패널."""
         start_y = pdf.get_y()
-        left_w = 90
-        right_w = 92.7
+        left_w = 116.0
+        right_w = 66.7
         gap = 3.3
         right_x = pdf.l_margin + left_w + gap
 
-        # 1. 좌측: 지도 타이틀 & 지도 렌더링
-        pdf.set_xy(pdf.l_margin, start_y)
-        pdf.set_font("Ko", "B", 8.6)
-        pdf.set_text_color(*NAVY)
-        pdf.cell(left_w, 4.2, "소관 권역 기상특보 & 시설 분포", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        map_h = 83.5
+        legend_h = 8.5
+        total_left_h = map_h + legend_h
 
-        map_y = pdf.get_y() + 0.5
+        # 1. 좌측: 대형 와이드 지도 렌더링
+        map_y = start_y
         try:
-            map_png = self.map_renderer.render_png(snapshot, width=640, height=540)
+            map_png = self.map_renderer.render_png(snapshot, width=760, height=550)
             map_stream = io.BytesIO(map_png)
-            pdf.image(map_stream, x=pdf.l_margin, y=map_y, w=left_w, h=71)
+            pdf.image(map_stream, x=pdf.l_margin, y=map_y, w=left_w, h=map_h)
         except Exception:
             pdf.set_xy(pdf.l_margin, map_y)
             pdf.set_fill_color(*CARD_BG)
             pdf.set_draw_color(*LINE)
-            pdf.rect(pdf.l_margin, map_y, left_w, 71, style="DF")
-            pdf.set_xy(pdf.l_margin, map_y + 30)
+            pdf.rect(pdf.l_margin, map_y, left_w, map_h, style="DF")
+            pdf.set_xy(pdf.l_margin, map_y + 35)
             pdf.set_font("Ko", "", 8)
             pdf.set_text_color(*MUTED)
             pdf.cell(left_w, 5, "지도 렌더링 준비 중", align="C")
 
-        # 지도 하단 선명한 컬러 범례 칩 렌더링 (괄호 안 색상명 제거)
-        legend_y = map_y + 72.2
+        # 2. 좌측 하단: 지도 일체형 통합 범례 푸터
+        legend_y = map_y + map_h
         pdf.set_xy(pdf.l_margin, legend_y)
+        pdf.set_fill_color(241, 245, 249) # #F1F5F9 (지도와 일체화된 연한 그레이 배경)
+        pdf.set_draw_color(*LINE)
+        pdf.rect(pdf.l_margin, legend_y, left_w, legend_h, style="DF")
+
+        # 범례 1행: 마커 등급별 행동 요령 안내
+        row1_y = legend_y + 1.2
+        pdf.set_xy(pdf.l_margin + 2.5, row1_y)
         
-        # 🔴 상
+        # 🔴 상: 즉시점검
         pdf.set_fill_color(*GRADE_COLOR[RiskGrade.HIGH])
-        pdf.ellipse(pdf.l_margin + 2, legend_y + 0.5, 3.2, 3.2, style="F")
-        pdf.set_xy(pdf.l_margin + 6, legend_y)
-        pdf.set_font("Ko", "B", 7.0)
+        pdf.ellipse(pdf.l_margin + 2.5, row1_y + 0.6, 2.6, 2.6, style="F")
+        pdf.set_xy(pdf.l_margin + 5.8, row1_y)
+        pdf.set_font("Ko", "B", 6.2)
+        pdf.set_text_color(*GRADE_COLOR[RiskGrade.HIGH])
+        pdf.cell(10, 3.2, "상(집중):")
+        pdf.set_font("Ko", "", 6.0)
         pdf.set_text_color(*INK)
-        pdf.cell(7, 4, "상")
+        pdf.cell(17, 3.2, "즉시현장조치 |")
 
-        # 🟠 중
+        # 🟠 중: 사전예찰
         pdf.set_fill_color(*GRADE_COLOR[RiskGrade.MEDIUM])
-        pdf.ellipse(pdf.l_margin + 15, legend_y + 0.5, 3.2, 3.2, style="F")
-        pdf.set_xy(pdf.l_margin + 19, legend_y)
-        pdf.cell(7, 4, "중")
-
-        # 🟡 하
-        pdf.set_fill_color(*GRADE_COLOR[RiskGrade.LOW])
-        pdf.ellipse(pdf.l_margin + 28, legend_y + 0.5, 3.2, 3.2, style="F")
-        pdf.set_xy(pdf.l_margin + 32, legend_y)
-        pdf.cell(7, 4, "하")
-
-        # 구분선
-        pdf.set_xy(pdf.l_margin + 41, legend_y)
-        pdf.set_text_color(*MUTED)
-        pdf.cell(4, 4, "|")
-
-        # 🟥 경보구역
-        pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.WARNING])
-        pdf.rect(pdf.l_margin + 46, legend_y + 0.5, 3.4, 3.4, style="F")
-        pdf.set_xy(pdf.l_margin + 50.5, legend_y)
+        pdf.ellipse(pdf.l_margin + 34.0, row1_y + 0.6, 2.6, 2.6, style="F")
+        pdf.set_xy(pdf.l_margin + 37.3, row1_y)
+        pdf.set_font("Ko", "B", 6.2)
+        pdf.set_text_color(*GRADE_COLOR[RiskGrade.MEDIUM])
+        pdf.cell(10, 3.2, "중(주의):")
+        pdf.set_font("Ko", "", 6.0)
         pdf.set_text_color(*INK)
-        pdf.cell(16, 4, "경보구역")
+        pdf.cell(17, 3.2, "사전예찰대기 |")
 
-        # 🟧 주의보구역
-        pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.ADVISORY])
-        pdf.rect(pdf.l_margin + 68, legend_y + 0.5, 3.4, 3.4, style="F")
-        pdf.set_xy(pdf.l_margin + 72.5, legend_y)
-        pdf.cell(17, 4, "주의보구역")
+        # 🟡 하: 모니터링
+        pdf.set_fill_color(*GRADE_COLOR[RiskGrade.LOW])
+        pdf.ellipse(pdf.l_margin + 65.5, row1_y + 0.6, 2.6, 2.6, style="F")
+        pdf.set_xy(pdf.l_margin + 68.8, row1_y)
+        pdf.set_font("Ko", "B", 6.2)
+        pdf.set_text_color(*GRADE_COLOR[RiskGrade.LOW])
+        pdf.cell(10, 3.2, "하(관심):")
+        pdf.set_font("Ko", "", 6.0)
+        pdf.set_text_color(*INK)
+        pdf.cell(15, 3.2, "상황모니터링")
 
-        # 2. 우측 상단: 중점 관리 대상 시설 (TOP 3) 카드
-        pdf.set_xy(right_x, start_y)
-        pdf.set_font("Ko", "B", 8.6)
+        # 범례 2행: 기상특보 발효 구역 안내
+        row2_y = legend_y + 4.8
+        pdf.set_xy(pdf.l_margin + 2.5, row2_y)
+        pdf.set_font("Ko", "B", 6.0)
         pdf.set_text_color(*NAVY)
-        pdf.cell(right_w, 4.2, "중점 관리 대상 시설 (TOP 3)", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(14, 3.0, "■ 특보구역:")
 
-        top_box_y = start_y + 4.7
-        pdf.set_xy(right_x, top_box_y)
+        # 🟥 경보
+        pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.WARNING])
+        pdf.rect(pdf.l_margin + 17.5, row2_y + 0.4, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 20.8, row2_y)
+        pdf.set_font("Ko", "", 5.8)
+        pdf.set_text_color(*INK)
+        pdf.cell(20, 3.0, "경보 (중대위험) |")
+
+        # 🟧 주의보
+        pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.ADVISORY])
+        pdf.rect(pdf.l_margin + 42.0, row2_y + 0.4, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 45.3, row2_y)
+        pdf.set_font("Ko", "", 5.8)
+        pdf.set_text_color(*INK)
+        pdf.cell(20, 3.0, "주의보 (주의위험)")
+
+        # 3. 우측: 일체형 인포 패널 (TOP 4 + 핵심 안전관리 요령)
+        # 3-1. 상단 카드: 중점 관리 대상 시설 (TOP 4)
+        top_h = 44.0
+        pdf.set_xy(right_x, start_y)
         pdf.set_fill_color(*CARD_BG)
         pdf.set_draw_color(*LINE)
-        pdf.rect(right_x, top_box_y, right_w, 33.5, style="DF")
+        pdf.rect(right_x, start_y, right_w, top_h, style="DF")
+
+        # 헤더 라벨
+        pdf.set_xy(right_x + 3, start_y + 2.0)
+        pdf.set_font("Ko", "B", 8.0)
+        pdf.set_text_color(*NAVY)
+        pdf.cell(right_w - 6, 4.0, "중점 관리 대상 시설 (TOP 4)")
 
         ranking = {RiskGrade.HIGH: 0, RiskGrade.MEDIUM: 1, RiskGrade.LOW: 2, RiskGrade.UNASSESSED: 3}
         priority_rows = sorted(
             (item for item in snapshot.assessments if item.grade in (RiskGrade.HIGH, RiskGrade.MEDIUM, RiskGrade.LOW)),
             key=lambda item: (ranking.get(item.grade, 9), item.facility.name),
-        )[:3]
+        )[:4]
 
         if not priority_rows:
-            pdf.set_xy(right_x, top_box_y + 13.5)
-            pdf.set_font("Ko", "", 7.5)
+            pdf.set_xy(right_x, start_y + 18)
+            pdf.set_font("Ko", "", 7.2)
             pdf.set_text_color(*MUTED)
-            pdf.cell(right_w, 5, "현재 특보 영향권 시설이 없습니다 (안전)", align="C")
+            pdf.cell(right_w, 5, "현재 특보 영향 시설이 없습니다 (안전)", align="C")
         else:
-            row_y = top_box_y + 2.5
+            row_y = start_y + 6.8
             for idx, item in enumerate(priority_rows, 1):
                 pdf.set_xy(right_x + 3, row_y)
                 pdf.set_fill_color(*GRADE_COLOR[item.grade])
                 pdf.set_text_color(*WHITE)
-                pdf.set_font("Ko", "B", 6.8)
+                pdf.set_font("Ko", "B", 6.5)
                 grade_name = _grade_label(item.grade)
-                pdf.cell(11, 4.4, f"{idx}. {grade_name}", fill=True, align="C")
+                pdf.cell(10, 4.2, f"{idx}.{grade_name}", fill=True, align="C")
 
-                pdf.set_xy(right_x + 16, row_y)
-                pdf.set_font("Ko", "B", 7.6)
+                pdf.set_xy(right_x + 14, row_y)
+                pdf.set_font("Ko", "B", 7.2)
                 pdf.set_text_color(*INK)
-                pdf.cell(44, 4.4, _short(item.facility.name, 15))
+                pdf.cell(32, 4.2, _short(item.facility.name, 11))
 
-                warn_text = ", ".join(dict.fromkeys(f"{r.warning_type} {r.raw_level}" for r in item.reasons))
-                pdf.set_xy(right_x + 60, row_y)
-                pdf.set_font("Ko", "", 7.0)
+                warn_text = ", ".join(dict.fromkeys(f"{r.warning_type}" for r in item.reasons))
+                pdf.set_xy(right_x + 46, row_y)
+                pdf.set_font("Ko", "", 6.6)
                 pdf.set_text_color(*MUTED)
-                pdf.cell(right_w - 63, 4.4, _short(warn_text, 14), align="R")
-                row_y += 5.8
+                pdf.cell(right_w - 49, 4.2, _short(warn_text, 8), align="R")
+                row_y += 5.2
 
-        # 3. 우측 하단: 발효 특보별 핵심 안전관리 요령 카드
-        bot_title_y = top_box_y + 36.0
-        pdf.set_xy(right_x, bot_title_y)
-        pdf.set_font("Ko", "B", 8.6)
-        pdf.set_text_color(*NAVY)
-        pdf.cell(right_w, 4.2, "발효 특보별 핵심 안전관리 요령", new_x=XPos.RIGHT, new_y=YPos.TOP)
-
-        bot_box_y = bot_title_y + 4.7
-        pdf.set_xy(right_x, bot_box_y)
+        # 3-2. 하단 카드: 발효 특보별 핵심 안전관리 요령
+        bot_y = start_y + top_h + 3.0
+        bot_h = total_left_h - (top_h + 3.0)
+        pdf.set_xy(right_x, bot_y)
         pdf.set_fill_color(*(240, 249, 255)) # 연한 아이스 블루
         pdf.set_draw_color(186, 230, 253)    # 하늘색 보더
-        pdf.rect(right_x, bot_box_y, right_w, 32.5, style="DF")
+        pdf.rect(right_x, bot_y, right_w, bot_h, style="DF")
 
-        guidelines = extract_safety_guidelines(snapshot, max_items=2)
-        g_y = bot_box_y + 2.5
+        # 헤더 라벨
+        pdf.set_xy(right_x + 3, bot_y + 2.0)
+        pdf.set_font("Ko", "B", 8.0)
+        pdf.set_text_color(*NAVY)
+        pdf.cell(right_w - 6, 4.0, "발효 특보별 핵심 안전관리 요령")
+
+        guidelines = extract_safety_guidelines(snapshot, max_items=3)
+        g_y = bot_y + 6.8
         for w_type, g_text in guidelines:
             pdf.set_xy(right_x + 3, g_y)
             pdf.set_fill_color(*BLUE)
             pdf.set_text_color(*WHITE)
-            pdf.set_font("Ko", "B", 6.8)
-            pdf.cell(13, 4.2, f"[{w_type}]", fill=True, align="C")
+            pdf.set_font("Ko", "B", 6.4)
+            pdf.cell(11.5, 3.8, f"[{w_type}]", fill=True, align="C")
 
-            pdf.set_xy(right_x + 18, g_y)
-            pdf.set_font("Ko", "", 7.2)
+            pdf.set_xy(right_x + 15.5, g_y)
+            pdf.set_font("Ko", "", 6.8)
             pdf.set_text_color(*INK)
-            pdf.multi_cell(right_w - 20, 4.0, g_text, wrapmode=WrapMode.CHAR)
-            g_y = pdf.get_y() + 1.5
+            pdf.multi_cell(right_w - 18, 3.6, g_text, wrapmode=WrapMode.CHAR)
+            g_y = pdf.get_y() + 1.2
 
-        pdf.set_y(start_y + 79)
+        pdf.set_y(start_y + total_left_h)
 
     @staticmethod
     def _table_header(

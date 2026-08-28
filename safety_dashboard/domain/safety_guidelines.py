@@ -47,7 +47,7 @@ def extract_safety_guidelines(
 
     # 전체 활성 특보 피드에서도 보충
     for warning in snapshot.warning_feed.warnings:
-        wt = warning.warning_type
+        wt = getattr(warning, "warning_type", str(warning))
         if wt in WARNING_ACTION_GUIDELINES and wt not in active_warning_types:
             active_warning_types.append(wt)
 
