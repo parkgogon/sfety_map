@@ -19,7 +19,6 @@ export const GRADE_HELP: Record<RiskGrade, string> = {
   UNASSESSED: "기준 미등록 특보로 위험등급 판정불가",
   UNAVAILABLE: "기상청 데이터 미수신으로 위험등급 판정불가",
 };
-export const GRADE_HELP_FOOTER = "영향 없음은 절대적인 안전을 의미하지 않습니다.";
 
 export const WARNING_ZONE_LEGENDS = [
   { key: "WARNING", label: "경보", color: "#D92D20", desc: "심각한 재해 위험 특보 (호우/폭염/태풍 등)" },
@@ -170,7 +169,6 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
                   </div>
                 ))}
               </dl>
-              <p className="help-subtext">{GRADE_HELP_FOOTER}</p>
             </div>
 
             <div className="help-divider" />
@@ -195,4 +193,3 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
     </div>
   );
 }
-

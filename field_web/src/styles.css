@@ -798,12 +798,6 @@ input:focus-visible {
   margin: var(--space-2) 0;
 }
 
-.help-subtext {
-  color: var(--color-status-stale);
-  font-size: .65rem;
-  margin: 6px 0 0;
-}
-
 .grade-help-popover > strong {
   display: block;
   font-size: var(--font-size-sm);
@@ -848,15 +842,6 @@ input:focus-visible {
   font-size: .7rem;
   line-height: 1.4;
   margin: 0;
-}
-
-.grade-help-popover p {
-  border-top: 1px solid var(--color-border);
-  color: var(--color-status-stale);
-  font-size: .7rem;
-  font-weight: 700;
-  margin: var(--space-2) 0 0;
-  padding-top: var(--space-2);
 }
 
 .facility-sheet {
@@ -1653,24 +1638,86 @@ input:focus-visible {
 
 @media (max-width: 700px) {
   .grade-legend:not(.grade-legend-collapsed) {
+    bottom: 82px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 24px;
     left: var(--space-3);
     max-width: none;
     right: var(--space-3);
   }
 
   .grade-options {
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    min-width: 0;
+    row-gap: 3px;
   }
 
   .grade-options > button {
-    font-size: .64rem;
-    gap: 3px;
-    padding: 3px 4px;
+    font-size: .58rem;
+    gap: 2px;
+    justify-content: center;
+    min-height: 25px;
+    min-width: 0;
+    padding: 2px 1px;
+    white-space: nowrap;
+  }
+
+  .grade-options > button > span {
+    height: 6px;
+    width: 6px;
+  }
+
+  .grade-legend-divider {
+    display: none;
+  }
+
+  .zone-legend-group {
+    border-top: 1px solid var(--color-border);
+    grid-column: 1 / -1;
+    justify-content: center;
+    margin: 0;
+    min-height: 24px;
+    padding-top: 3px;
+  }
+
+  .zone-legend-label,
+  .zone-legend-chip {
+    font-size: .6rem;
+  }
+
+  .zone-legend-chip {
+    padding: 1px 6px;
+  }
+
+  .grade-legend .grade-legend-collapse {
+    padding: 0 3px;
+  }
+
+  .grade-legend .grade-help-button {
+    height: 22px;
+    min-height: 22px;
+    width: 22px;
   }
 
   .grade-legend.grade-legend-collapsed {
     left: auto;
     right: var(--space-3);
+  }
+
+  .empty-sheet {
+    font-size: var(--font-size-xs);
+    min-height: 72px;
+    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+    padding-top: 7px;
+  }
+
+  .empty-sheet .sheet-handle {
+    margin-bottom: 5px;
+  }
+
+  .empty-sheet b {
+    font-size: var(--font-size-sm);
   }
 }
 
@@ -2808,6 +2855,5 @@ input:focus-visible {
     height: 380px;
   }
 }
-
 
 

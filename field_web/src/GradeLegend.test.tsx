@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GRADE_HELP, GRADE_HELP_FOOTER, GradeLegend, WARNING_ZONE_LEGENDS } from "./GradeLegend";
+import { GRADE_HELP, GradeLegend, WARNING_ZONE_LEGENDS } from "./GradeLegend";
 import { GRADE_DISPLAY_ORDER } from "./utils";
 
 describe("위험등급 범례", () => {
@@ -22,7 +22,7 @@ describe("위험등급 범례", () => {
     expect(markup).toContain('aria-expanded="true"');
   });
 
-  it("모든 등급의 설명과 특보구역 안내, 영향 없음 주의 문구를 제공한다", () => {
+  it("모든 등급의 설명과 특보구역 안내를 제공한다", () => {
     expect(GRADE_HELP).toEqual({
       HIGH: "즉시 확인이 필요한 높은 위험",
       MEDIUM: "주의 깊은 확인이 필요한 위험",
@@ -34,7 +34,6 @@ describe("위험등급 범례", () => {
     expect(WARNING_ZONE_LEGENDS).toHaveLength(2);
     expect(WARNING_ZONE_LEGENDS[0].label).toBe("경보");
     expect(WARNING_ZONE_LEGENDS[1].label).toBe("주의보");
-    expect(GRADE_HELP_FOOTER).toBe("영향 없음은 절대적인 안전을 의미하지 않습니다.");
+    expect(JSON.stringify(GRADE_HELP)).not.toContain("절대적인 안전");
   });
 });
-
