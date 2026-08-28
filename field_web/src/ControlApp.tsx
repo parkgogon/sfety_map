@@ -385,48 +385,46 @@ export default function ControlApp() {
       {/* 탭 1: 운영 상황 */}
       {workspace === "overview" && (
         <section className="control-content">
-          <div className="kpi-grid">
-            <div className="kpi-card total-card">
-              <span className="kpi-label">소관시설 전체</span>
-              <strong className="kpi-value">{data.facilities.length}<span>개소</span></strong>
-              <small>대구·경북·부산·울산·경남</small>
+          <section className="overview-summary-panel" aria-label="관제 현황 요약">
+            <div className="overview-primary-summary">
+              <div className="overview-primary-item">
+                <span>소관시설 전체</span>
+                <strong>{data.facilities.length}<small>개소</small></strong>
+              </div>
+              <div className="overview-primary-item affected">
+                <span>특보 영향 시설</span>
+                <strong>{activeWarningCount}<small>개소</small></strong>
+              </div>
             </div>
-            <div className="kpi-card warning-card">
-              <span className="kpi-label">특보 영향 시설</span>
-              <strong className="kpi-value" style={{ color: "var(--color-risk-high)" }}>
-                {activeWarningCount}<span>개소</span>
-              </strong>
-              <small>발효 특보 대조 결과</small>
+
+            <div className="overview-grade-summary" aria-label="위험등급별 시설 수">
+              {(["HIGH", "MEDIUM", "LOW", "NONE"] as const).map((grade) => (
+                <div className="overview-grade-item" key={grade} aria-label={`${GRADE_LABELS[grade]} ${gradeCounts[grade]}개소`}>
+                  <span className="overview-grade-dot" style={{ backgroundColor: GRADE_COLORS[grade] }} aria-hidden="true" />
+                  <span>{GRADE_LABELS[grade]}</span>
+                  <strong>{gradeCounts[grade]}</strong>
+                </div>
+              ))}
             </div>
-            <div className="kpi-card grade-card" style={{ borderColor: GRADE_COLORS.HIGH }}>
-              <span className="kpi-label">위험등급 [상]</span>
-              <strong className="kpi-value" style={{ color: GRADE_COLORS.HIGH }}>
-                {gradeCounts.HIGH}<span>개소</span>
-              </strong>
-              <small>즉시 점검 필요</small>
-            </div>
-            <div className="kpi-card grade-card" style={{ borderColor: GRADE_COLORS.MEDIUM }}>
-              <span className="kpi-label">위험등급 [중]</span>
-              <strong className="kpi-value" style={{ color: GRADE_COLORS.MEDIUM }}>
-                {gradeCounts.MEDIUM}<span>개소</span>
-              </strong>
-              <small>상황 확인 필요</small>
-            </div>
-            <div className="kpi-card grade-card" style={{ borderColor: GRADE_COLORS.LOW }}>
-              <span className="kpi-label">위험등급 [하]</span>
-              <strong className="kpi-value" style={{ color: GRADE_COLORS.LOW }}>
-                {gradeCounts.LOW}<span>개소</span>
-              </strong>
-              <small>주의 관찰</small>
-            </div>
-            <div className="kpi-card grade-card" style={{ borderColor: GRADE_COLORS.NONE }}>
-              <span className="kpi-label">영향 없음</span>
-              <strong className="kpi-value" style={{ color: "var(--color-text-secondary)" }}>
-                {gradeCounts.NONE}<span>개소</span>
-              </strong>
-              <small>정상 운영</small>
-            </div>
-          </div>
+
+            {(gradeCounts.UNASSESSED > 0 || gradeCounts.UNAVAILABLE > 0) && (
+              <div className="overview-exception-summary" aria-label="판정 예외 시설">
+                <span className="overview-exception-label">확인 필요</span>
+                {gradeCounts.UNASSESSED > 0 && (
+                  <span className="overview-exception-item">
+                    <i style={{ backgroundColor: GRADE_COLORS.UNASSESSED }} aria-hidden="true" />
+                    미판정 <b>{gradeCounts.UNASSESSED}</b>
+                  </span>
+                )}
+                {gradeCounts.UNAVAILABLE > 0 && (
+                  <span className="overview-exception-item">
+                    <i style={{ backgroundColor: GRADE_COLORS.UNAVAILABLE }} aria-hidden="true" />
+                    조회 불가 <b>{gradeCounts.UNAVAILABLE}</b>
+                  </span>
+                )}
+              </div>
+            )}
+          </section>
 
           {/* 시스템 자동 감시 상태 요약 (관리자 토큰 연동 시) */}
           {overview.data && (

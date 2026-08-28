@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import ControlApp from "./ControlApp";
-import type { MonitoringResponse } from "./types";
+import type { Facility, MonitoringResponse } from "./types";
 
 const mockMonitoringData: MonitoringResponse = {
   api_version: "v1",
@@ -103,13 +103,18 @@ vi.mock("./controlApi", () => ({
 }));
 
 describe("ControlApp 중앙관제 대시보드", () => {
-  it("중앙관제 헤더와 워크스페이스 탭, KPI 카드를 정상 렌더링한다", () => {
+  it("중앙관제 헤더와 워크스페이스 탭, 비조작형 관제 요약을 정상 렌더링한다", () => {
     const html = renderToStaticMarkup(<ControlApp />);
     expect(html).toContain("중앙 관제");
+    expect(html).toContain('aria-label="관제 현황 요약"');
     expect(html).toContain("소관시설 전체");
     expect(html).toContain("특보 영향 시설");
-    expect(html).toContain("위험등급 [상]");
-    expect(html).toContain("위험등급 [중]");
+    expect(html).toContain('aria-label="상 1개소"');
+    expect(html).toContain('aria-label="중 1개소"');
+    expect(html).toContain('aria-label="하 0개소"');
+    expect(html).toContain('aria-label="영향 없음 1개소"');
+    expect(html).not.toContain("확인 필요");
+    expect(html).not.toContain("overview-exception-summary");
     expect(html).toContain("운영 상황");
     expect(html).toContain("대상 분석·전파");
     expect(html).toContain("실적·이력");
@@ -122,5 +127,25 @@ describe("ControlApp 중앙관제 대시보드", () => {
     expect(html).toContain("포항 대기측정소");
     expect(html).toContain("안동 수질측정소");
     expect(html).toContain("col-rank");
+  });
+
+  it("미판정이나 조회 불가 시설은 값이 있을 때만 확인 필요 항목으로 표시한다", () => {
+    const unassessedFacility: Facility = {
+      ...mockMonitoringData.facilities[2],
+      id: "F-4",
+      name: "기준 미등록 시험시설",
+      grade: "UNASSESSED",
+      grade_label: "미판정",
+      grade_color: "#7c3aed",
+    };
+    mockMonitoringData.facilities.push(unassessedFacility);
+    try {
+      const html = renderToStaticMarkup(<ControlApp />);
+      expect(html).toContain('aria-label="판정 예외 시설"');
+      expect(html).toContain("미판정 <b>1</b>");
+      expect(html).not.toContain("조회 불가 <b>");
+    } finally {
+      mockMonitoringData.facilities.pop();
+    }
   });
 });
