@@ -282,7 +282,7 @@ export async function dispatchManualTelegram(
 }
 
 export function getReportPdfUrl(
-  token: string,
+  token: string = "",
   mode: "live" | "simulation" = "live",
   facilityIds: string[] = [],
   scopeLabel = "전체 소관시설",
@@ -300,7 +300,7 @@ export function getReportPdfUrl(
 }
 
 export async function downloadReportPdf(
-  token: string,
+  token: string = "",
   mode: "live" | "simulation" = "live",
   facilityIds: string[] = [],
   scopeLabel = "전체 소관시설",
@@ -312,17 +312,18 @@ export async function downloadReportPdf(
   });
   if (!response.ok) {
     const errorJson = (await response.json().catch(() => ({ detail: "" }))) as { detail?: string };
-    throw new Error(errorJson.detail || "PDF 보고서를 다운로드하지 못했습니다. 관리자 인증 상태를 확인해 주세요.");
+    throw new Error(errorJson.detail || "PDF 보고서를 다운로드하지 못했습니다.");
   }
   const blob = await response.blob();
   const downloadUrl = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = downloadUrl;
-  const nowStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  a.download = `keco_safety_report_${nowStr}.pdf`;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  a.download = `keco_safety_report_${dateStr}.pdf`;
   document.body.appendChild(a);
   a.click();
-  a.remove();
+  document.body.removeChild(a);
   window.URL.revokeObjectURL(downloadUrl);
 }
 

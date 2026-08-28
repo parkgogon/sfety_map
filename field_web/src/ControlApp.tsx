@@ -263,14 +263,10 @@ export default function ControlApp() {
     });
   }, []);
 
-  // PDF 다운로드 실행
+  // PDF 다운로드 실행 (관리자 권한 불필요)
   const [pdfLoading, setPdfLoading] = useState(false);
   const handlePdfDownload = async () => {
     if (!data || pdfLoading) return;
-    if (!adminToken) {
-      setLoginModalOpen(true);
-      return;
-    }
     const selectedIds = selectedFacilityScope.ids;
     const scopeLabel = selectedIds.length === data.facilities.length
       ? "전체 소관시설"
