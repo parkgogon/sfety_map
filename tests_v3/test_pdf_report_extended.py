@@ -174,11 +174,58 @@ class PdfReportExtendedTests(unittest.TestCase):
         for wt in kma_supported_warning_types:
             self.assertIn(wt, WARNING_ACTION_GUIDELINES)
             guideline = get_warning_guideline(wt)
-            self.assertTrue(len(guideline) > 5)
+            self.assertIsInstance(guideline, tuple)
+            self.assertGreaterEqual(len(guideline), 2)
+            for action in guideline:
+                self.assertGreater(len(action), 3)
 
         # 알 수 없는 특보에 대한 fallback 검증
         fallback_guide = get_warning_guideline("우박")
-        self.assertIn("우박", fallback_guide)
+        self.assertIn("우박", fallback_guide[0])
+
+    def test_compact_mode_one_page_completion(self) -> None:
+        """Compact 1-Page Mode: 소량 데이터(시설 4개, 특보 2건) 시 정확히 1페이지로 완결되는지 검증."""
+        import re
+        import subprocess
+        import tempfile
+
+        snap_small = create_dummy_snapshot(10, high_count=1, medium_count=2, low_count=1, warning_types=("호우", "강풍"))
+        pdf_bytes = self.renderer.render(snap_small)
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
+            report.write(pdf_bytes)
+            report.flush()
+            info_text = subprocess.run(
+                ["pdfinfo", report.name],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            match = re.search(r"Pages:\s+(\d+)", info_text)
+            self.assertIsNotNone(match)
+            self.assertEqual(int(match.group(1)), 1)
+
+    def test_standard_mode_multi_page(self) -> None:
+        """Standard Mode: 대량 데이터(시설 45개, 특보 4건) 시 2페이지 이상 생성되는지 검증."""
+        import re
+        import subprocess
+        import tempfile
+
+        snap_large = create_dummy_snapshot(50, high_count=3, medium_count=15, low_count=27, warning_types=("태풍", "호우", "강풍", "폭풍해일"))
+        pdf_bytes = self.renderer.render(snap_large)
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as report:
+            report.write(pdf_bytes)
+            report.flush()
+            info_text = subprocess.run(
+                ["pdfinfo", report.name],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            match = re.search(r"Pages:\s+(\d+)", info_text)
+            self.assertIsNotNone(match)
+            self.assertGreaterEqual(int(match.group(1)), 2)
 
     def test_status_summary_bar_cases(self) -> None:
         """규칙 기반 현재 상황 요약 바 문구 생성 4가지 케이스 검증."""
@@ -205,3 +252,4 @@ class PdfReportExtendedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

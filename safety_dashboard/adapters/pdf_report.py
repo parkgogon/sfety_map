@@ -127,31 +127,53 @@ class PdfReportRenderer:
         self._map_and_highlights(pdf, snapshot, sorted_assessments)
         pdf.ln(2.5)
 
-        # 2. 1페이지 하단: 영향시설 점검 우선순위 TOP 10
+        # 2. 1페이지 하단: 영향시설 점검 우선순위 TOP 10 (Flow Area 시작)
         self._section(pdf, "2", "영향시설 우선순위")
         self._assessment_table_top10(pdf, sorted_assessments)
 
         # =========================================================================
-        # 2페이지 이후: 실무 확인용 상세현황 (데이터 완결성 보장)
+        # 모드 결정: Compact 1-Page Mode vs Standard Multi-Page Mode
         # =========================================================================
         has_more_facilities = len(sorted_assessments) > 10
         has_warnings = len(snapshot.warning_feed.warnings) > 0
+        warning_count = len(snapshot.warning_feed.warnings)
 
-        if has_more_facilities:
-            pdf.add_page()
-            self._section(pdf, "2", "영향시설 우선순위", continued=True)
-            self._assessment_table_remaining(pdf, sorted_assessments)
-            pdf.ln(3.0)
+        # 활성특보 섹션 예상 높이: 섹션헤더(6) + 요약바(6.5) + 테이블헤더(5.2) + 행당(4.8)
+        warning_section_height = 18.0 + warning_count * 4.8
+        remaining_space_page1 = pdf.page_break_trigger - pdf.get_y()
 
-        if has_warnings:
-            if has_more_facilities:
-                self._ensure_space(pdf, 25)
-            else:
-                pdf.add_page()
+        # Compact 1-Page Mode: 소량 데이터 (영향시설 <= 10개 & 활성특보 1페이지 잔여 공간 수용 가능)
+        is_compact_mode = (
+            not has_more_facilities
+            and has_warnings
+            and warning_count <= 4
+            and warning_section_height + 4.0 <= remaining_space_page1
+        )
+
+        if is_compact_mode:
+            # 1페이지 하단 여유 공간에 활성특보 Summary + 상세 테이블을 렌더링하고 1페이지로 완결
+            pdf.ln(2.5)
             self._section(pdf, "3", "활성 특보")
             self._warning_summary_bar(pdf, snapshot)
             pdf.ln(1.5)
             self._warning_table(pdf, snapshot)
+        else:
+            # Standard Mode: 대량 데이터 (1페이지 상황판 + 2페이지 이후 상세)
+            if has_more_facilities:
+                pdf.add_page()
+                self._section(pdf, "2", "영향시설 우선순위", continued=True)
+                self._assessment_table_remaining(pdf, sorted_assessments)
+                pdf.ln(3.0)
+
+            if has_warnings:
+                if has_more_facilities:
+                    self._ensure_space(pdf, 25)
+                else:
+                    pdf.add_page()
+                self._section(pdf, "3", "활성 특보")
+                self._warning_summary_bar(pdf, snapshot)
+                pdf.ln(1.5)
+                self._warning_table(pdf, snapshot)
 
         return bytes(pdf.output())
 
@@ -183,28 +205,24 @@ class PdfReportRenderer:
             border_col = (252, 165, 165) # 적색 보더
             text_col = (185, 28, 28)     # 진한 적색
             badge_bg = (220, 38, 38)
-            badge_txt = "긴급대응"
         elif medium_count > 0:
             msg = f"긴급조치 대상 없음 · 사전예찰 {medium_count}개소 · 상황모니터링 {low_count}개소"
             fill_col = (255, 247, 237)   # 연주황
             border_col = (253, 186, 116) # 주황 보더
             text_col = (194, 65, 12)     # 진한 주황
             badge_bg = (234, 88, 12)
-            badge_txt = "사전예찰"
         elif affected_count > 0:
             msg = f"긴급조치·사전예찰 대상 없음 · 특보 영향 {affected_count}개소 상황모니터링"
             fill_col = (240, 249, 255)   # 연청색
             border_col = (186, 230, 253) # 청색 보더
             text_col = (3, 105, 161)     # 진한 청색
             badge_bg = (2, 132, 199)
-            badge_txt = "상황주시"
         else:
             msg = "현재 기상특보 영향시설 없음 (전 소관시설 정상 운영 중)"
             fill_col = (248, 250, 252)   # 뉴트럴 그레이
             border_col = (226, 232, 240)
             text_col = (71, 85, 105)
             badge_bg = (100, 116, 139)
-            badge_txt = "정상운영"
 
         x = pdf.l_margin
         y = pdf.get_y()
@@ -216,12 +234,12 @@ class PdfReportRenderer:
         pdf.set_line_width(0.3)
         pdf.rect(x, y, w, h, style="DF")
 
-        # 상태 뱃지
+        # 상태 뱃지 ([현재상황] 고정으로 문구 중복 방지)
         pdf.set_xy(x + 2.0, y + 1.1)
         pdf.set_fill_color(*badge_bg)
         pdf.set_text_color(*WHITE)
         pdf.set_font("Ko", "B", 6.2)
-        pdf.cell(14.0, 4.0, badge_txt, fill=True, align="C")
+        pdf.cell(14.0, 4.0, "현재상황", fill=True, align="C")
 
         # 상황 요약 텍스트
         pdf.set_xy(x + 18.0, y + 1.1)
@@ -342,71 +360,70 @@ class PdfReportRenderer:
 
         # 범례 1행: 마커 등급별 행동 요령 안내
         row1_y = legend_y + 1.2
-        pdf.set_xy(pdf.l_margin + 2.0, row1_y)
-
         # 🔴 상: 즉시점검
         pdf.set_fill_color(*GRADE_COLOR[RiskGrade.HIGH])
-        pdf.ellipse(pdf.l_margin + 2.0, row1_y + 0.5, 2.4, 2.4, style="F")
-        pdf.set_xy(pdf.l_margin + 5.0, row1_y)
-        pdf.set_font("Ko", "B", 5.8)
+        pdf.ellipse(pdf.l_margin + 2.5, row1_y + 0.4, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 5.5, row1_y)
+        pdf.set_font("Ko", "B", 6.0)
         pdf.set_text_color(*GRADE_COLOR[RiskGrade.HIGH])
-        pdf.cell(8.5, 3.0, "상:")
-        pdf.set_font("Ko", "", 5.8)
+        pdf.cell(7.5, 3.0, "상:")
+        pdf.set_font("Ko", "", 6.0)
         pdf.set_text_color(*INK)
-        pdf.cell(16.5, 3.0, "즉시현장조치 |")
+        pdf.cell(17.5, 3.0, "즉시현장조치 |")
 
         # 🟠 중: 사전예찰
         pdf.set_fill_color(*GRADE_COLOR[RiskGrade.MEDIUM])
-        pdf.ellipse(pdf.l_margin + 31.0, row1_y + 0.5, 2.4, 2.4, style="F")
-        pdf.set_xy(pdf.l_margin + 34.0, row1_y)
-        pdf.set_font("Ko", "B", 5.8)
+        pdf.ellipse(pdf.l_margin + 32.5, row1_y + 0.4, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 35.5, row1_y)
+        pdf.set_font("Ko", "B", 6.0)
         pdf.set_text_color(*GRADE_COLOR[RiskGrade.MEDIUM])
-        pdf.cell(8.5, 3.0, "중:")
-        pdf.set_font("Ko", "", 5.8)
+        pdf.cell(7.5, 3.0, "중:")
+        pdf.set_font("Ko", "", 6.0)
         pdf.set_text_color(*INK)
-        pdf.cell(16.5, 3.0, "사전예찰대기 |")
+        pdf.cell(17.5, 3.0, "사전예찰대기 |")
 
         # 🟡 하: 모니터링
         pdf.set_fill_color(*GRADE_COLOR[RiskGrade.LOW])
-        pdf.ellipse(pdf.l_margin + 60.0, row1_y + 0.5, 2.4, 2.4, style="F")
-        pdf.set_xy(pdf.l_margin + 63.0, row1_y)
-        pdf.set_font("Ko", "B", 5.8)
+        pdf.ellipse(pdf.l_margin + 62.5, row1_y + 0.4, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 65.5, row1_y)
+        pdf.set_font("Ko", "B", 6.0)
         pdf.set_text_color(*GRADE_COLOR[RiskGrade.LOW])
-        pdf.cell(8.5, 3.0, "하:")
-        pdf.set_font("Ko", "", 5.8)
+        pdf.cell(7.5, 3.0, "하:")
+        pdf.set_font("Ko", "", 6.0)
         pdf.set_text_color(*INK)
-        pdf.cell(16.5, 3.0, "상황모니터링 |")
+        pdf.cell(17.5, 3.0, "상황모니터링")
 
-        # ■ 특보구역
-        pdf.set_xy(pdf.l_margin + 88.0, row1_y)
-        pdf.set_font("Ko", "B", 5.6)
+        # 범례 2행: 특보구역 범례
+        row2_y = legend_y + 4.5
+        pdf.set_xy(pdf.l_margin + 2.5, row2_y)
+        pdf.set_font("Ko", "B", 5.8)
         pdf.set_text_color(*NAVY)
-        pdf.cell(11.0, 3.0, "특보구역:")
+        pdf.cell(13.0, 3.0, "■ 특보구역:")
 
         # 경보 박스 + 텍스트
         pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.WARNING])
-        pdf.rect(pdf.l_margin + 100.0, row1_y + 0.6, 2.2, 2.2, style="F")
-        pdf.set_xy(pdf.l_margin + 103.0, row1_y)
-        pdf.set_font("Ko", "", 5.4)
+        pdf.rect(pdf.l_margin + 16.5, row2_y + 0.5, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 19.5, row2_y)
+        pdf.set_font("Ko", "", 5.8)
         pdf.set_text_color(*INK)
-        pdf.cell(7.0, 3.0, "경보")
+        pdf.cell(8.0, 3.0, "경보")
 
         # 주의보 박스 + 텍스트
         pdf.set_fill_color(*LEVEL_COLOR[WarningLevel.ADVISORY])
-        pdf.rect(pdf.l_margin + 110.5, row1_y + 0.6, 2.2, 2.2, style="F")
-        pdf.set_xy(pdf.l_margin + 113.5, row1_y)
-        pdf.set_font("Ko", "", 5.4)
+        pdf.rect(pdf.l_margin + 28.5, row2_y + 0.5, 2.4, 2.4, style="F")
+        pdf.set_xy(pdf.l_margin + 31.5, row2_y)
+        pdf.set_font("Ko", "", 5.8)
         pdf.set_text_color(*INK)
-        pdf.cell(8.0, 3.0, "주의보")
+        pdf.cell(9.0, 3.0, "주의보")
 
-        # 범례 2행: 공식 고정 안내문 (특보 단계와 시설 위험등급 혼동 방지)
-        row2_y = legend_y + 4.8
-        pdf.set_xy(pdf.l_margin + 2.0, row2_y)
-        pdf.set_font("Ko", "", 5.2)
+        # 범례 3행: 공식 고정 안내문 (특보 단계와 시설 위험등급 혼동 방지)
+        row3_y = legend_y + 7.6
+        pdf.set_xy(pdf.l_margin + 2.0, row3_y)
+        pdf.set_font("Ko", "", 5.4)
         pdf.set_text_color(*MUTED)
         pdf.cell(
             left_w - 4.0,
-            3.2,
+            3.0,
             "※ 시설 위험등급은 기상특보 단계가 아닌 시설별 재난영향도 평가 결과임.",
         )
 
@@ -450,17 +467,21 @@ class PdfReportRenderer:
                 pdf.set_xy(right_x + 18.5, row_y)
                 pdf.set_font("Ko", "B", 6.8)
                 pdf.set_text_color(*INK)
-                pdf.cell(28.0, 4.0, _short(item.facility.name, 11))
+                pdf.cell(29.0, 4.0, _short(item.facility.name, 12))
 
-                # 특보 문구
-                warn_text = ", ".join(dict.fromkeys(f"{r.warning_type}" for r in item.reasons))
-                pdf.set_xy(right_x + 46.5, row_y)
-                pdf.set_font("Ko", "", 6.2)
+                # 특보 단계 문구 (ex: 호우·경보, 폭염·주의)
+                def _format_warning_step(r: RiskReason) -> str:
+                    lvl = "경보" if "경보" in r.raw_level else "주의" if "주의" in r.raw_level else r.raw_level
+                    return f"{r.warning_type}·{lvl}"
+
+                warn_text = ", ".join(dict.fromkeys(_format_warning_step(r) for r in item.reasons))
+                pdf.set_xy(right_x + 48.0, row_y)
+                pdf.set_font("Ko", "", 6.0)
                 pdf.set_text_color(*MUTED)
-                pdf.cell(right_w - 49.5, 4.0, _short(warn_text, 7), align="R")
+                pdf.cell(right_w - 51.0, 4.0, _short(warn_text, 7), align="R")
                 row_y += 4.8
 
-        # 3-2. 하단 카드: 발효 특보별 핵심 안전관리 요령
+        # 3-2. 하단 카드: 발효 특보별 핵심 안전관리 요령 (Action Items 불릿 목록)
         bot_y = start_y + top_h + 2.5
         bot_h = total_left_h - (top_h + 2.5)
         pdf.set_xy(right_x, bot_y)
@@ -474,20 +495,23 @@ class PdfReportRenderer:
         pdf.set_text_color(*NAVY)
         pdf.cell(right_w - 6.0, 3.8, "발효 특보별 핵심 안전관리 요령")
 
-        guidelines = extract_safety_guidelines(snapshot, max_items=3)
-        g_y = bot_y + 6.2
-        for w_type, g_text in guidelines:
+        guidelines = extract_safety_guidelines(snapshot, max_items=2)
+        g_y = bot_y + 5.8
+        for w_type, action_items in guidelines:
             pdf.set_xy(right_x + 3.0, g_y)
             pdf.set_fill_color(*BLUE)
             pdf.set_text_color(*WHITE)
-            pdf.set_font("Ko", "B", 6.0)
-            pdf.cell(11.0, 3.6, f"[{w_type}]", fill=True, align="C")
+            pdf.set_font("Ko", "B", 5.8)
+            pdf.cell(11.0, 3.4, f"[{w_type}]", fill=True, align="C")
 
-            pdf.set_xy(right_x + 14.5, g_y)
-            pdf.set_font("Ko", "", 6.2)
-            pdf.set_text_color(*INK)
-            pdf.multi_cell(right_w - 17.5, 3.2, g_text, wrapmode=WrapMode.CHAR)
-            g_y = pdf.get_y() + 1.0
+            item_y = g_y
+            for action_text in action_items:
+                pdf.set_xy(right_x + 15.0, item_y)
+                pdf.set_font("Ko", "", 5.8)
+                pdf.set_text_color(*INK)
+                pdf.cell(right_w - 18.0, 3.2, f"• {action_text}")
+                item_y += 3.3
+            g_y = max(g_y + 4.0, item_y + 1.0)
 
         pdf.set_y(start_y + total_left_h)
 

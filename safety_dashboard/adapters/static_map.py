@@ -233,23 +233,23 @@ class StaticSafetyMapRenderer:
             col = MARKER_COLOR.get(grade, MARKER_COLOR[RiskGrade.NONE])
             fid = assessment.facility.id
 
-            # TOP 4 시설 번호 뱃지 (Circle + 숫자 1,2,3,4)
+            # TOP 4 시설 번호 뱃지 (Circle + 숫자 1,2,3,4: 흰색 배경 + 등급색 외곽선 + 등급색 숫자)
             if fid in ranks:
                 rank_num = str(ranks[fid])
-                badge_r = 10.5
-                # 외곽 강조 링
+                badge_r = 13.0
+                # 정적 Halo 외곽 링
                 draw.ellipse(
-                    (cx - badge_r - 3, cy - badge_r - 3, cx + badge_r + 3, cy + badge_r + 3),
-                    fill=(*col[:3], 90),
+                    (cx - badge_r - 4, cy - badge_r - 4, cx + badge_r + 4, cy + badge_r + 4),
+                    fill=(*col[:3], 65),
                 )
-                # 원형 뱃지 본체
+                # 원형 뱃지 본체 (선명한 흰색 배경)
                 draw.ellipse(
                     (cx - badge_r, cy - badge_r, cx + badge_r, cy + badge_r),
-                    fill=col,
-                    outline=(255, 255, 255, 255),
-                    width=2,
+                    fill=(255, 255, 255, 255),
+                    outline=col,
+                    width=3,
                 )
-                # 뱃지 내부 숫자 텍스트 중앙 정렬
+                # 뱃지 내부 숫자 텍스트 중앙 정렬 (선명한 등급색 굵은 텍스트)
                 t_bbox = draw.textbbox((cx, cy), rank_num, font=badge_font)
                 tw = t_bbox[2] - t_bbox[0]
                 th = t_bbox[3] - t_bbox[1]
@@ -257,7 +257,7 @@ class StaticSafetyMapRenderer:
                     (cx - tw / 2, cy - th / 2 - 2),
                     rank_num,
                     font=badge_font,
-                    fill=(255, 255, 255, 255),
+                    fill=col,
                 )
             elif grade is RiskGrade.HIGH:
                 r = 8.5
