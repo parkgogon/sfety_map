@@ -216,8 +216,8 @@ class FirestoreAlertQueryTests(unittest.TestCase):
         self.assertEqual(doc["status"], "RESOLVED")
         self.assertIn("resolved_at", doc)
         self.assertEqual(
-            doc["delete_after"].date(),
-            (NOW + dt.timedelta(days=7)).date(),
+            doc["delete_after"],
+            doc["resolved_at"] + dt.timedelta(days=7),
         )
 
     def test_due_telegram_queries_only_pending_and_keeps_due_rules(self) -> None:
