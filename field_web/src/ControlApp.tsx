@@ -263,17 +263,14 @@ export default function ControlApp() {
     });
   }, []);
 
-  // PDF 다운로드 실행 (관리자 권한 불필요)
+  // PDF 다운로드 실행 (기본 전체 소관시설 103개소 종합보고서)
   const [pdfLoading, setPdfLoading] = useState(false);
   const handlePdfDownload = async () => {
     if (!data || pdfLoading) return;
-    const selectedIds = selectedFacilityScope.ids;
-    const scopeLabel = selectedIds.length === data.facilities.length
-      ? "전체 소관시설"
-      : `선택 ${selectedIds.length}개소`;
     setPdfLoading(true);
     try {
-      await downloadReportPdf(adminToken, monitoringMode, selectedIds, scopeLabel);
+      // 헤더의 초동보고서는 전체 103개 소관시설 기준 종합 보고서로 발행
+      await downloadReportPdf(adminToken, monitoringMode, [], "전체 소관시설");
     } catch (err) {
       alert(err instanceof Error ? err.message : "PDF 다운로드에 실패했습니다.");
     } finally {

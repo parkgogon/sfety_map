@@ -138,9 +138,13 @@ class PdfReportRenderer:
         medium_count = sum(1 for a in snapshot.assessments if a.grade is RiskGrade.MEDIUM)
         affected_count = summary.affected_facility_count
         total_count = len(snapshot.facilities) if snapshot.facilities else 103
+        is_partial = total_count < 103
+
+        first_label = "보고 대상 시설" if is_partial else "소관시설 전체"
+        first_sub = f"전체 103개소 중 선택" if is_partial else "영남권 소관 사업장"
 
         cards = (
-            ("소관시설 전체", f"{total_count}개소", "영남권 소관 사업장", CARD_BG, NAVY),
+            (first_label, f"{total_count}개소", first_sub, CARD_BG, NAVY),
             ("특보 영향시설", f"{affected_count}개소", "기상특보 발효 권역 내", (238, 246, 255), BLUE),
             ("위험 [상] 집중", f"{high_count}개소", "경보 발효 등 긴급 점검", GRADE_TINT[RiskGrade.HIGH], GRADE_COLOR[RiskGrade.HIGH]),
             ("위험 [중] 주의", f"{medium_count}개소", "주의보 발효 등 사전 예찰", GRADE_TINT[RiskGrade.MEDIUM], GRADE_COLOR[RiskGrade.MEDIUM]),
