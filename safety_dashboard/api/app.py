@@ -338,18 +338,17 @@ def create_app(
             "snapshot": dashboard_snapshot_to_document(snapshot),
         }
 
+    @application.get("/api/v1/monitoring/report.pdf")
     @application.get("/internal/v1/monitoring/report.pdf")
     def internal_monitoring_report_pdf(
         mode: Literal["live", "simulation"] = Query("live"),
         facility_ids: str = Query("", description="콤마로 구분된 시설 ID 목록"),
         scope_label: str = Query("전체 소관시설", max_length=100),
-        token: str = Query("", description="관리자 세션 토큰"),
+        token: str = Query("", description="관리자 세션 토큰 (선택)"),
         x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
         cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
     ) -> Response:
-        """관제 snapshot 기반 A4 가로형 PDF 초동보고서를 생성하여 다운로드합니다."""
-        effective_token = x_alert_admin_token or token
-        _authorized_admin(notification_admin(), effective_token, cookie_session, session_manager)
+        """관제 snapshot 기반 A4 세로형 PDF 현황보고서를 생성하여 다운로드합니다 (공개 접근 허용)."""
         snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
 
 

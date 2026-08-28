@@ -202,7 +202,7 @@ Firestore TTL 정책 설정 가이드를 `docs/FIELD_MAP_DEPLOYMENT.md`에 추�
 - **점검 우선순위 목록**: 위험등급 높은 순 및 발효 특보 단계 순으로 정렬된 시설 테이블을 제공하며, 등급별/유형별 필터 및 검색 기능을 지원합니다.
 - **관리자 관제 지도 & 대상 다중 선택**: 103개 시설의 위치와 특보 경계를 실시간 조망하는 `KakaoMap`을 연동하고, 체크박스 다중 선택(`특보 영향 시설만 선택`, `전체 선택`, `선택 해제`)을 제공합니다.
 - **수동 Telegram 상황전파 모달 (`ManualDispatchModal`)**: 재공지/정정/추가안내/모의훈련 분류, 관리자 메모(필수 검증), 문안 자동 미리보기, 중복 발송 방지 최종 확인 및 Cloud Run 관리자 API(`POST /internal/v1/notifications/manual`) 호출을 완벽 연동했습니다.
-- **A4 가로형 PDF 초동보고서 다운로드 API**: 백엔드에 `GET /internal/v1/monitoring/report.pdf` 엔드포인트를 추가하여 선택 시설 범위의 공식 보고서를 원클릭으로 스트리밍 다운로드합니다.
+- **A4 세로형 PDF 현황보고서 다운로드 API (공개 접근)**: 백엔드 `GET /internal/v1/monitoring/report.pdf` 및 `GET /api/v1/monitoring/report.pdf` 엔드포인트를 통해 영남권 특보·시설 정적 지도와 안전수칙이 포함된 공식 보고서를 관리자 인증 없이도 누구나 원클릭으로 스트리밍 다운로드할 수 있도록 공개 전환했습니다.
 - **위험도 정책 설정 화면 (`SettingsApp.tsx`) & API**: 백엔드 `GET /internal/v1/policy`를 통해 기본 위험도 정책을 조회하고, 14종 특보 × 3단계(주의보·경보·중대) 위험등급(상·중·하·미판정·없음) 매트릭스 편집 그리드, 발효 특보 상단 하이라이트, 변경 셀 하이라이트 및 브라우저 세션 로컬 저장을 지원합니다.
 - **7단계 관리자 잠금 고도화**:
   - HMAC-SHA256 서명 기반 `AdminSessionManager`([session.py](file:///home/dev2/바탕화면/dev2_workfolder/260723_safetydashboard/safety_dashboard/admin/session.py))를 구현하여 안전한 시간 기반 서명 세션 토큰을 생성 및 엄격 검증합니다.

@@ -275,7 +275,7 @@ class MonitoringApiTests(unittest.TestCase):
         )
         self.assertEqual(service.snapshot_calls, [False, False])
 
-    def test_internal_report_pdf_route_is_protected_and_renders_pdf(self):
+    def test_report_pdf_route_is_public_and_renders_pdf(self):
         service = _SnapshotApiService(self.snapshot())
         client = TestClient(create_app(
             service,
@@ -283,20 +283,22 @@ class MonitoringApiTests(unittest.TestCase):
         ))
         url = "/internal/v1/monitoring/report.pdf"
 
-        self.assertEqual(client.get(url).status_code, 403)
-        response = client.get(
-            url,
-            headers={"X-Alert-Admin-Token": "admin-token"},
-        )
+        # 관리자 헤더 없이도 공개 다운로드 가능
+        response = client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["content-type"], "application/pdf")
         self.assertTrue(response.content.startswith(b"%PDF"))
         self.assertIn("attachment; filename=\"safety_monitoring_report_", response.headers["content-disposition"])
 
+        # 공개 경로 /api/v1/monitoring/report.pdf 도 정상 작동
+        public_url = "/api/v1/monitoring/report.pdf"
+        public_res = client.get(public_url)
+        self.assertEqual(public_res.status_code, 200)
+        self.assertTrue(public_res.content.startswith(b"%PDF"))
+
         # 특정 시설 필터링 테스트
         filtered_response = client.get(
             f"{url}?facility_ids=F-1&scope_label=선택시설",
-            headers={"X-Alert-Admin-Token": "admin-token"},
         )
         self.assertEqual(filtered_response.status_code, 200)
         self.assertTrue(filtered_response.content.startswith(b"%PDF"))
