@@ -1,4 +1,4 @@
-"""소관권역(영남권) 특보 발효 현황 및 소관시설 위험도 정적 지도 렌더러."""
+"""소관권역(영남권) 특보 발효 현황 및 소관시설 위험도 정적 지도 렌더러 (지명 및 특보 라벨 포함)."""
 
 from __future__ import annotations
 
@@ -28,13 +28,13 @@ DEFAULT_ZONE_PATH = Path(__file__).parents[2] / "data" / "kma_warning_zones.geoj
 
 # 색상 상수 (RGBA)
 BG_COLOR = (248, 250, 252, 255)          # #F8FAFC
-ZONE_BG_COLOR = (241, 245, 249, 255)     # #F1F5F9 (영남권 시군구 기본 배경)
+ZONE_BG_COLOR = (243, 246, 249, 255)     # #F3F6F9 (영남권 시군구 기본 배경)
 ZONE_BORDER_COLOR = (203, 213, 225, 255) # #CBD5E1 (시군구 경계선)
 
 WARNING_FILL = {
-    WarningLevel.CRITICAL: (217, 45, 32, 100),  # 경보/중대 (연한 빨강 반투명)
-    WarningLevel.WARNING: (217, 45, 32, 85),    # 경보
-    WarningLevel.ADVISORY: (217, 119, 6, 75),   # 주의보 (연한 주황 반투명)
+    WarningLevel.CRITICAL: (217, 45, 32, 110),  # 경보/중대 (연한 빨강 반투명)
+    WarningLevel.WARNING: (217, 45, 32, 95),    # 경보
+    WarningLevel.ADVISORY: (217, 119, 6, 85),   # 주의보 (연한 주황 반투명)
 }
 WARNING_STROKE = {
     WarningLevel.CRITICAL: (185, 28, 28, 255),
@@ -50,17 +50,37 @@ MARKER_COLOR = {
     RiskGrade.NONE: (100, 116, 139, 255),      # #64748B
 }
 
+# 영남권 주요 거점 지명 좌표 (위도, 경도)
+MAJOR_CITIES = [
+    ("대구", 35.87, 128.60),
+    ("부산", 35.18, 129.07),
+    ("울산", 35.54, 129.31),
+    ("포항", 36.02, 129.36),
+    ("안동", 36.56, 128.73),
+    ("구미", 36.12, 128.34),
+    ("경주", 35.85, 129.22),
+    ("창원", 35.23, 128.68),
+    ("진주", 35.18, 128.08),
+    ("통영", 34.85, 128.43),
+    ("거제", 34.89, 128.62),
+    ("김천", 36.14, 128.11),
+    ("상주", 36.41, 128.16),
+    ("영주", 36.80, 128.62),
+    ("밀양", 35.50, 128.75),
+    ("거창", 35.68, 127.91),
+    ("울진", 36.99, 129.40),
+]
+
 
 class StaticSafetyMapRenderer:
     """영남권 103개 시설 및 특보 구역을 렌더링하는 정적 지도 생성기."""
 
-    def __init__(self, zone_geojson_path: Path | str | None = None) -> None:
+    def __init__(self, zone_geojson_path: Path | str | None = None, font_path: Path | str | None = None) -> None:
         self.zone_path = Path(zone_geojson_path) if zone_geojson_path else DEFAULT_ZONE_PATH
+        self.font_path = Path(font_path) if font_path else Path(__file__).parents[2] / "fonts" / "NotoSansKR-Regular.ttf"
+        self.bold_font_path = Path(__file__).parents[2] / "fonts" / "NotoSansKR-Bold.ttf"
         self._zone_features: list[dict[str, Any]] = []
         self._load_zones()
-
-    def _load_zones() -> None:
-        pass
 
     def _load_zones(self) -> None:
         if not self.zone_path.exists():
@@ -83,16 +103,14 @@ class StaticSafetyMapRenderer:
             self._zone_features = []
 
     @staticmethod
-    def _project(lon: float, lat: float, width: int, height: int, pad: int = 18) -> tuple[int, int]:
+    def _project(lon: float, lat: float, width: int, height: int, pad: int = 16) -> tuple[int, int]:
         """위경도 종횡비(Equirectangular projection)를 보정하여 픽셀 좌표로 변환."""
         w_avail = width - 2 * pad
         h_avail = height - 2 * pad
 
-        # 실제 물리적 거리 비율 계산
         geo_w = (MAX_LON - MIN_LON) * ASPECT_CORRECTION
         geo_h = (MAX_LAT - MIN_LAT)
 
-        # 캔버스 중앙에 꽉 차게 스케일링
         scale = min(w_avail / geo_w, h_avail / geo_h)
         offset_x = pad + (w_avail - geo_w * scale) / 2.0
         offset_y = pad + (h_avail - geo_h * scale) / 2.0
@@ -101,25 +119,41 @@ class StaticSafetyMapRenderer:
         y = offset_y + (MAX_LAT - lat) * scale
         return int(round(x)), int(round(y))
 
+    def _get_font(self, size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+        target_path = self.bold_font_path if bold and self.bold_font_path.exists() else self.font_path
+        if target_path.exists():
+            try:
+                return ImageFont.truetype(str(target_path), size)
+            except Exception:
+                pass
+        return ImageFont.load_default()
+
     def render_png(
         self,
         snapshot: DashboardSnapshot,
-        width: int = 600,
-        height: int = 540,
+        width: int = 640,
+        height: int = 560,
     ) -> bytes:
-        """DashboardSnapshot을 바탕으로 영남권 안전지도 PNG 이미지를 생성합니다."""
+        """DashboardSnapshot을 바탕으로 영남권 지명과 특보가 표기된 정적 지도를 생성합니다."""
         img = Image.new("RGBA", (width, height), BG_COLOR)
         draw = ImageDraw.Draw(img, "RGBA")
 
-        # 1. 특보 구역 매핑
-        active_warning_zones: dict[str, WarningLevel] = {}
+        city_font = self._get_font(11, bold=False)
+        warning_tag_font = self._get_font(12, bold=True)
+        facility_tag_font = self._get_font(11, bold=True)
+
+        # 1. 특보 구역 매핑 & 발효 구역 수집
+        active_warning_zones: dict[str, tuple[str, WarningLevel]] = {}
         for warning in snapshot.warning_feed.warnings:
-            code = warning.region_code
-            if code:
-                active_warning_zones[code] = warning.level
-            name = warning.region
-            if name:
-                active_warning_zones[name] = warning.level
+            level = warning.level
+            w_type = warning.warning_type
+            if warning.region_code:
+                active_warning_zones[warning.region_code] = (w_type, level)
+            if warning.region:
+                active_warning_zones[warning.region] = (w_type, level)
+
+        warning_centroids: list[tuple[int, int, str, WarningLevel, str]] = []
+        warned_city_names: set[str] = set()
 
         # 2. 영남권 시·군·구 폴리곤 렌더링
         for feature in self._zone_features:
@@ -128,10 +162,9 @@ class StaticSafetyMapRenderer:
             reg_name = str(props.get("name") or props.get("regName") or "")
             geom = shape(feature.get("geometry", {}))
 
-            warning_level = (
-                active_warning_zones.get(reg_id)
-                or active_warning_zones.get(reg_name)
-            )
+            warn_info = active_warning_zones.get(reg_id) or active_warning_zones.get(reg_name)
+            warning_level = warn_info[1] if warn_info else None
+            warning_type = warn_info[0] if warn_info else ""
 
             fill_col = WARNING_FILL.get(warning_level, ZONE_BG_COLOR)
             stroke_col = WARNING_STROKE.get(warning_level, ZONE_BORDER_COLOR)
@@ -148,7 +181,24 @@ class StaticSafetyMapRenderer:
                 if len(pts) >= 3:
                     draw.polygon(pts, fill=fill_col, outline=stroke_col, width=stroke_w)
 
-        # 3. 소관시설 마커 렌더링
+            # 특보 발효 구역 중심점 저장
+            if warning_level and not geom.is_empty:
+                centroid = geom.centroid
+                cx, cy = self._project(centroid.x, centroid.y, width, height)
+                clean_name = reg_name.replace("경상북도", "").replace("경상남도", "").strip()
+                warned_city_names.add(clean_name)
+                warning_centroids.append((cx, cy, clean_name, warning_level, warning_type))
+
+        # 3. 주요 도시 지명 텍스트 라벨링 (특보 뱃지와 겹치지 않는 경우만 표시)
+        for name, lat, lon in MAJOR_CITIES:
+            # 특보가 발효된 시·군은 5번 특보 뱃지에서 더 크고 뚜렷하게 표출되므로 기본 도시 라벨은 생략
+            if any(name[:2] in warned[:2] for warned in warned_city_names):
+                continue
+            cx, cy = self._project(lon, lat, width, height)
+            draw.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill=(148, 163, 184, 255))
+            draw.text((cx + 4, cy - 6), name, font=city_font, fill=(100, 116, 139, 210))
+
+        # 4. 소관시설 마커 렌더링
         ranking = {
             RiskGrade.NONE: 0,
             RiskGrade.UNASSESSED: 1,
@@ -170,11 +220,11 @@ class StaticSafetyMapRenderer:
             col = MARKER_COLOR.get(grade, MARKER_COLOR[RiskGrade.NONE])
 
             if grade is RiskGrade.HIGH:
-                r = 8
-                draw.ellipse((cx - r - 2, cy - r - 2, cx + r + 2, cy + r + 2), fill=(217, 45, 32, 80))
+                r = 9
+                draw.ellipse((cx - r - 3, cy - r - 3, cx + r + 3, cy + r + 3), fill=(217, 45, 32, 80))
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=2)
             elif grade is RiskGrade.MEDIUM:
-                r = 6.5
+                r = 7
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=2)
             elif grade is RiskGrade.LOW:
                 r = 5
@@ -183,7 +233,24 @@ class StaticSafetyMapRenderer:
                 r = 3.5
                 draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col, outline=(255, 255, 255, 255), width=1)
 
-        # 4. 지도 외곽 보더
+        # 5. 특보 발효 구역 텍스트 뱃지 라벨링 (마커 위에 뚜렷하게 표출)
+        for cx, cy, reg_name, level, w_type in warning_centroids[:8]:
+            tag_text = f"{reg_name}"
+            sub_tag = f"{w_type} {'경보' if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else '주의보'}"
+            full_text = f"{tag_text} [{sub_tag}]"
+            
+            tag_col = (185, 28, 28, 255) if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else (194, 65, 12, 255)
+            bg_col = (255, 241, 242, 245) if level in (WarningLevel.WARNING, WarningLevel.CRITICAL) else (255, 247, 237, 245)
+            
+            bbox = draw.textbbox((cx, cy), full_text, font=warning_tag_font)
+            bw = bbox[2] - bbox[0] + 10
+            bh = bbox[3] - bbox[1] + 6
+            bx = cx - bw // 2
+            by = (cy - 10) - bh // 2
+            draw.rounded_rectangle((bx, by, bx + bw, by + bh), radius=4, fill=bg_col, outline=tag_col, width=1)
+            draw.text((bx + 5, by + 2), full_text, font=warning_tag_font, fill=tag_col)
+
+        # 6. 지도 외곽 보더
         draw.rectangle((0, 0, width - 1, height - 1), outline=(203, 213, 225, 255), width=1)
 
         buf = io.BytesIO()
