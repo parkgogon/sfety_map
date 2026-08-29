@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-29 12:34 KST
-> 기준 배포 Git: `main` (`3e1f65f`) / STALE·ERROR 출력 차단 운영 배포 및 검증 완료
+> 마지막 정리: 2026-08-29 12:44 KST
+> 기준 배포 Git: `main` (`35b7b25`) / 단계적 모의훈련 계획·문서 정리 운영 배포 및 검증 완료
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -30,6 +30,8 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
   (`verify_all.sh`) 통과
 - 정리: 낡은 직원용 안내서·AI 원문 규칙은 현행 문서 목록에서 제거하고,
   생성 PDF·렌더·임시 산출물은 `.trash/obsolete_artifacts_20260829/`로 이동
+- 배포 확인: `35b7b25`의 CI 테스트, Cloud Run API·Worker, Firebase Hosting,
+  uptime monitoring 작업이 모두 성공했고 공개 웹·health가 HTTP 200임을 확인
 
 **다음 작업 하나**: [`SIMULATION_IMPROVEMENT_PLAN.md`](SIMULATION_IMPROVEMENT_PLAN.md)를
 코드·테스트와 다시 대조한 뒤, 현장지도·중앙관제의 모의훈련 모드를
@@ -138,6 +140,11 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 - 공개 PDF 실시간·모의훈련 생성은 정상이며, `3e1f65f`의
   `STALE`·`ERROR` 출력 차단은 Cloud Run API·Worker와 Firebase Hosting에
   배포됐습니다. GitHub Actions 실행 `33227585812`는 전체 성공했습니다.
+
+2026-08-29 12:44 KST에 문서·인수인계 정리 commit `35b7b25`를 배포했습니다.
+GitHub Actions 실행 `33231923435`의 테스트, API·Worker, 웹, uptime monitoring
+작업이 모두 성공했고 공개 웹과 `/api/v1/health`는 HTTP 200이었습니다. 앱 기능
+코드는 `3e1f65f` 이후 변경되지 않았습니다.
 
 ## 4. 구현 완료 상태
 
