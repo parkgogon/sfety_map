@@ -7,7 +7,6 @@
 
 0. [HANDOFF.md](HANDOFF.md) — 새 작업자가 실제 Git·코드와 대조할 현재 상태와 다음 작업
 0. [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md) — 운영형 구조로 단계적으로 개선하는 확정 로드맵
-0. [SIMULATION_IMPROVEMENT_PLAN.md](SIMULATION_IMPROVEMENT_PLAN.md) — 현재 다음 작업인 모의훈련 통합 개선 계획
 1. [PRODUCT.md](PRODUCT.md) — 누구를 위해 어떤 문제를 해결하는가
 2. [FEATURE_INVENTORY.md](FEATURE_INVENTORY.md) — 무엇을 유지·변경·제외할 것인가
 3. [DOMAIN_RULES.md](DOMAIN_RULES.md) — 같은 입력이 항상 같은 결과를 내도록 하는 규칙

@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-29 13:33 KST
-> 기준 배포 Git: `main` (`3ed4bfd`) / 모의훈련 단계 1~4 전체 배포 완료, clean working tree
+> 마지막 정리: 2026-08-29 21:44 KST
+> 기준 배포 Git: `main` (`3ed4bfd`) / 모의훈련 단계 1~4 배포 완료, 후속 회귀 테스트·문서 정리 미커밋
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -26,7 +26,7 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
 - 완료 (운영 배포): 공개 PDF와 수동 상황전파가 `STALE`·`ERROR`
   snapshot에서도 실행될 수 있던 누락을 PDF 렌더러·API·관리자
   서비스·React UI에서 차단하고 `3e1f65f`로 배포
-- 완료: 전체 Python 단위 테스트 255개, React 44개 및 5단계 무결성 검증
+- 완료: 전체 Python 단위 테스트 256개, React 44개 및 5단계 무결성 검증
   (`verify_all.sh`) 통과
 - 정리: 낡은 직원용 안내서·AI 원문 규칙은 현행 문서 목록에서 제거하고,
   생성 PDF·렌더·임시 산출물은 `.trash/obsolete_artifacts_20260829/`로 이동
@@ -35,9 +35,18 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
 - 완료 (모의훈련 단계 1): 현장지도 ↔ 중앙관제 `mode=simulation` 보존, ControlApp 훈련 배너 및 진입 패널 추가, React 단위 테스트 42개 통과
 - 완료 (모의훈련 단계 2): 단일 시나리오 정의(`scenarios.py`), 결정적 기상 레이어 provider(`SimulationWeatherLayerProvider`), API `mode` 쿼리 파라미터 및 캐시 격리, Python 단위 테스트 252개 통과
 - 완료 (모의훈련 단계 3): React hook/API `mode` 및 캐시 분리, `recommendedWeatherLayer` 자동 선택 및 실시간 복귀 시 정리, 중앙관제 관제 지도 기상 레이어 칩/범례 연동, 훈련 범례 `(모의훈련 가정)` 및 `실제 관측이 아님` 명시, React 단위 테스트 44개 통과
-- 완료 (모의훈련 단계 4): 종합 일치성(특보 4건, 영향 31개소, 상 10개소), PDF 모의훈련 표식 유지, 결정적 기상 레이어 격리, Worker/운영 baseline 비오염 검증(`test_simulation_isolation.py`), 설계 문서(`UI_FLOW.md`, `DOMAIN_RULES.md`, `ARCHITECTURE.md`) 갱신 및 전체 검증 통과
+- 완료 (모의훈련 단계 4): 종합 일치성(특보 4건, 영향 31개소, 상 10개소),
+  PDF 전체 페이지 모의훈련 표식, 결정적 기상 레이어 격리, Worker의 live snapshot
+  강제 사용을 `test_simulation_isolation.py` 4개 테스트로 검증했습니다. 2페이지
+  훈련 PDF도 렌더링해 두 페이지 모두 배지가 보임을 확인했고 전체 검증을
+  통과했습니다. 설계 문서(`UI_FLOW.md`, `DOMAIN_RULES.md`, `ARCHITECTURE.md`)도
+  현재 구현에 맞게 갱신했습니다.
 
-**다음 작업 하나**: 사용자의 명시적 요청이 있을 때 모의훈련 개선 전체 작업(단계 1~4)의 working tree 변경사항을 확인하고 커밋·push 또는 배포를 진행한다. 수용 조건은 `scripts/verify_all.sh` 전체 통과 및 사용자 승인이다.
+**다음 작업 하나**: 브라우저가 연결된 세션에서 운영 현장지도와 중앙관제의
+모의훈련 흐름을 PC·모바일 실화면으로 확인한다. 수용 조건은 화면 이동 시
+`mode=simulation` 보존, 두 화면의 훈련 배너, 태풍 시 바람 레이어 기본 선택,
+`실제 관측이 아님` 범례, 실시간 복귀 시 훈련 레이어 제거다. 현재 세션은
+브라우저 목록이 비어 있어 이 실화면 검수만 수행하지 못했습니다.
 
 
 ## 1. 프로젝트 한 문장
@@ -145,6 +154,10 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 GitHub Actions 실행 `33231923435`의 테스트, API·Worker, 웹, uptime monitoring
 작업이 모두 성공했고 공개 웹과 `/api/v1/health`는 HTTP 200이었습니다. 앱 기능
 코드는 `3e1f65f` 이후 변경되지 않았습니다.
+
+2026-08-29 21:44 KST 공개 모의훈련 API를 재확인한 결과 특보 4건, 영향시설
+31개소, 상 위험 10개소였고 바람 레이어는 `SIMULATION`, `actual_data=false`,
+시나리오 `multi_hazard_demo`, 격자 1,244개를 반환했습니다.
 
 ## 4. 구현 완료 상태
 
@@ -324,6 +337,8 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 - 생성 PDF·렌더·제작 중간물은 2026-08-29 사용자 요청으로
   `.trash/obsolete_artifacts_20260829/`로 이동했습니다. `.trash/`, `output/`,
   `tmp/`는 Git에서 제외하며 요청 없이 삭제·커밋하지 않습니다.
+- 2026-08-29 21:44 KST working tree에는 모의훈련 PDF·Worker 회귀 테스트 보강,
+  완료된 임시 계획서 제거와 관련 문서 정리가 미커밋 상태로 남아 있습니다.
 - `.streamlit/secrets.toml`, `field_web/.env.local`, 전화번호 명부는 Git에서
   제외됩니다.
 - KMA, Kakao, Telegram, SOLAPI, 관리자 토큰·비밀번호는 GitHub/Google Secret
