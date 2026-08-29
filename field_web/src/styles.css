@@ -2374,6 +2374,14 @@ input:focus-visible {
   gap: var(--space-3);
 }
 
+.analysis-action-warning {
+  color: var(--color-status-error);
+  flex-basis: 100%;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  margin: 0;
+}
+
 .pdf-button {
   border-color: var(--color-brand-300);
   color: var(--color-brand-800);

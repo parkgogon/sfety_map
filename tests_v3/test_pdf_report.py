@@ -1,5 +1,6 @@
 """A4 세로형 PDF 보고서 및 정적 지도 렌더러 단위 테스트."""
 
+import dataclasses
 import datetime as dt
 import io
 from pathlib import Path
@@ -94,6 +95,21 @@ class PdfReportTests(unittest.TestCase):
         pdf_bytes = renderer.render(snapshot, scope_label="전체 소관시설")
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
         self.assertGreater(len(pdf_bytes), 5000)
+
+    def test_report_rejects_stale_or_error_snapshot(self):
+        renderer = PdfReportRenderer(FONT_PATH)
+        source = sample_snapshot()
+        for health in (DataHealth.STALE, DataHealth.ERROR):
+            with self.subTest(health=health):
+                snapshot = dataclasses.replace(
+                    source,
+                    warning_feed=dataclasses.replace(
+                        source.warning_feed,
+                        health=health,
+                    ),
+                )
+                with self.assertRaisesRegex(ValueError, "정상인 경우"):
+                    renderer.render(snapshot)
 
 
 if __name__ == "__main__":

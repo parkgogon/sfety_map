@@ -22,10 +22,10 @@ from safety_dashboard.alerts.domain import (
     TelegramOutboxItem,
     TelegramPurpose,
 )
-from safety_dashboard.domain.models import OutgoingTelegramMessage
-from safety_dashboard.domain.models import DashboardSnapshot
 from safety_dashboard.alerts.ports import SystemHealthProbe
 from safety_dashboard.alerts.settings import AlertSettings
+from safety_dashboard.domain.enums import DataHealth
+from safety_dashboard.domain.models import DashboardSnapshot, OutgoingTelegramMessage
 
 
 class AlertAdminConfigurationError(RuntimeError):
@@ -347,6 +347,14 @@ class AlertAdminService:
             raise AlertAdminConfigurationError(
                 f"현재 관제 대상을 확인하지 못했습니다 ({type(exc).__name__})."
             ) from exc
+        if snapshot.warning_feed.health not in {
+            DataHealth.LIVE,
+            DataHealth.SIMULATION,
+        }:
+            raise ManualDispatchValidationError(
+                "KMA 실시간 자료가 정상이 아닌 상태에서는 "
+                "수동 상황전파를 실행할 수 없습니다."
+            )
         warnings_by_id = {
             item.id: f"{item.region_code}|{item.warning_type}"
             for item in snapshot.warning_feed.warnings

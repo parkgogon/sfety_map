@@ -49,7 +49,7 @@ from safety_dashboard.alerts.domain import (
     ManualTelegramDispatch,
 )
 from safety_dashboard.alerts.settings import AlertSettings
-from safety_dashboard.domain.enums import WeatherLayerKind
+from safety_dashboard.domain.enums import DataHealth, WeatherLayerKind
 from safety_dashboard.domain.models import OutgoingTelegramMessage
 from safety_dashboard.monitoring.snapshot import (
     MONITORING_SNAPSHOT_SCHEMA_VERSION,
@@ -350,7 +350,17 @@ def create_app(
     ) -> Response:
         """관제 snapshot 기반 A4 세로형 PDF 현황보고서를 생성하여 다운로드합니다 (공개 접근 허용)."""
         snapshot = monitoring_service.snapshot(simulation=mode == "simulation")
-
+        if snapshot.warning_feed.health not in {
+            DataHealth.LIVE,
+            DataHealth.SIMULATION,
+        }:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "KMA 실시간 자료가 정상이 아닌 상태에서는 "
+                    "새 PDF 보고서를 생성할 수 없습니다."
+                ),
+            )
 
         target_snapshot = snapshot
         if facility_ids.strip():
@@ -627,4 +637,3 @@ def _authorized_admin(
 
 
 app = create_app()
-

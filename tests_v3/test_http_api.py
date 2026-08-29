@@ -303,6 +303,19 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(filtered_response.status_code, 200)
         self.assertTrue(filtered_response.content.startswith(b"%PDF"))
 
+    def test_report_pdf_route_rejects_stale_or_error_snapshot(self):
+        for health in (DataHealth.STALE, DataHealth.ERROR):
+            with self.subTest(health=health):
+                service = _SnapshotApiService(self.snapshot(health))
+                client = TestClient(create_app(
+                    service,
+                    alert_admin_service=_AdminAuthorizer(),
+                ))
+                response = client.get("/api/v1/monitoring/report.pdf")
+                self.assertEqual(response.status_code, 409)
+                self.assertIn("새 PDF", response.json()["detail"])
+                self.assertNotEqual(response.headers["content-type"], "application/pdf")
+
     def test_internal_policy_route_is_protected_and_returns_matrix(self):
         service = _SnapshotApiService(self.snapshot())
         client = TestClient(create_app(

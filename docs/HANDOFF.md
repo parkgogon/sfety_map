@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-29 10:33 KST
-> 기준 Git: `main` (`ed1637c`) / PDF 보고서 5단계 고도화(PART 1~5 및 운영 배포) 완료
+> 마지막 정리: 2026-08-29 10:46 KST
+> 기준 Git: `main` (`17ff0fe`) / PDF 운영 실물 검수 완료, STALE·ERROR 출력 차단은 현재 working tree에 반영
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -11,17 +11,27 @@ Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간
 
 ## 0. 현재 진행 중인 개선
 
-K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PART 5)가 모두 완료되고, **Cloud Run API 및 Firebase Hosting 운영 배포가 성공적으로 완료**되었습니다.
+K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PART 5)는 운영에
+배포됐고, 공개 운영 엔드포인트에서 실시간·모의훈련 PDF를 직접 내려받아 전체
+페이지를 렌더링 검수했습니다.
 
 - 완료 (PART 1: Compact/Standard Mode): 소량 데이터(영향시설 <= 10개 & 활성특보 잔여공간 수용 가능) 시 활성특보까지 1페이지 하단에 수용하여 1페이지 완결
 - 완료 (PART 2: 지도 Callout & Leader Line): TOP 1~4 마커 원형 번호 뱃지 + 좌우 레일 배치 + 엘보 지시선 자동 배치로 충돌 방지 및 위치 시인성 극대화
 - 완료 (PART 3: 안전관리요령 Master & Panel): 13종 공식 특보 100% 매핑 `SafetyGuidelineMaster`, 핵심 Action Items 불릿 표출, 중점관리시설 카운트 뱃지(`0개소`/`N개소`/`상위 4개소`) 및 특보단계(`호우 · 경보`) 명시
 - 완료 (PART 4: Header Metadata & Department Display): Header에 `발행: YYYY-MM-DD HH:MM | 데이터 기준: YYYY-MM-DD HH:MM` 분리 표출, 1페이지 테이블 담당부서 Display Name(마지막 단위 부서명) 축약 처리, 지도 범례 3행 구조 흑백/컬러 가독성 최적화
 - 완료 (PART 5: Scenario A ~ O 통합검증 & 운영 배포): 15개 재난 시나리오 전수 검증 및 CI/CD(Cloud Run API, Firebase Hosting) 배포 완료
-- 완료: PDF 확장 단위 테스트 15개, 전체 단위 테스트 222개 및 5단계 무결성 검증(`verify_all.sh`) 100% 통과
+- 완료 (운영 실물 검수): 2026-08-29 10:36 KST 실시간 평시 PDF는 A4 1페이지,
+  모의훈련 PDF는 A4 2페이지로 생성됐고 지도 callout·TOP 4·안전요령·표·페이지
+  번호에 겹침, 잘림, 깨진 한글, 전화번호 노출이 없음을 확인
+- 보완 (미배포): 공개 PDF와 수동 상황전파가 `STALE`·`ERROR` snapshot에서도
+  실행될 수 있던 누락을 발견해 PDF 렌더러·API·관리자 서비스·React UI에서 차단
+- 완료: 전체 Python 단위 테스트 246개, React 35개 및 5단계 무결성 검증
+  (`verify_all.sh`) 통과
 - 보존: `output/`, `tmp/`는 untracked 상태 그대로 보존
 
-**다음 작업 하나**: 운영 환경(`https://keco-safety-map.web.app/control`)에서 실시간 기상특보 상황 또는 모의훈련 모드로 `PDF 초동보고서 다운로드`를 실행하여 실제 운영 품질을 점검한다.
+**다음 작업 하나**: 현재 STALE·ERROR 출력 차단 변경을 검토·커밋·배포한 뒤,
+운영 `/control`에서 `전체 103개소 PDF 보고서` 버튼과 공개 실시간·모의훈련 PDF
+다운로드가 정상인지 확인한다. 배포는 사용자의 명시적 승인 후 수행한다.
 
 
 ## 1. 프로젝트 한 문장
@@ -72,7 +82,7 @@ KMA 특보 → 시설 위치 대조 → 위험도·우선순위 → 담당자 �
 - GitHub `main` push는 테스트 성공 후 API·Worker·Firebase를 자동 배포합니다.
 - 외부 uptime check는 사용자 웹과 최근 Worker 실행을 감시합니다.
 
-## 3. 운영 설정 — 2026-08-28 확인
+## 3. 운영 설정 — 2026-08-29 확인
 
 - 자동관제 모드: `live`
 - 시설담당자 전달 방식: `telegram`
@@ -114,9 +124,15 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
   `2026.08-v1`이었습니다.
 - 따라서 위 2026-08-27 KMA 통신 장애는 현재 복구된 상태입니다. 재발 가능성과
   장애 중 미관측 사건 한계는 계속 주의합니다.
-- 운영 `/` HTML은 아직 기본 `Cache-Control: max-age=3600` 응답이었습니다.
-  로컬 `firebase.json`에는 SPA 진입 경로 무캐시 규칙을 추가했으며 아직 push·배포하지
-  않았으므로 배포 후 응답 헤더를 다시 확인합니다.
+
+2026-08-29 10:35 KST 재확인 결과:
+
+- 공개 API와 운영 준비 상태는 HTTP 200이었고, KMA·특보구역 모두 `LIVE`, 시설
+  103개, 활성 특보 0건, 정책 `2026.08-v1`이었습니다.
+- `/`, `/control`, `/settings` HTML은 모두
+  `Cache-Control: no-cache, no-store, must-revalidate`가 적용됐습니다.
+- 공개 PDF 실시간·모의훈련 생성은 정상이며, 이번 working tree의
+  `STALE`·`ERROR` 차단 보완은 아직 운영에 배포하지 않았습니다.
 
 ## 4. 구현 완료 상태
 
@@ -130,7 +146,7 @@ KMA 복구 여부를 다시 확인합니다. KMA 장애 중 새로 발효됐다�
 - 5분 자동감시, 발효·격상·해제, 중복 방지, KMA 장애 상태 보존
 - 관리자 09:00/18:00 상태보고와 KMA 장애 추정 진단
 - 중앙관제 수동 전파의 분류·훈련·중복 확인·감사 기록·재시도
-- 선택 시설과 연결 특보만 포함하는 A4 가로 PDF 보고서
+- 전체 103개 소관시설과 활성 특보를 포함하는 A4 세로 PDF 종합보고서
 - SOLAPI SMS 우선 경로, 비용 상한, 웹훅 최종 결과와 Telegram 대체 경로
 - 공통 Firestore `MonitoringSnapshot`을 React API·자동알림·Streamlit이 공유
 - 관리자 임시 비밀번호 잠금과 외부 uptime monitoring
@@ -197,20 +213,20 @@ Firestore TTL 정책 설정 가이드를 `docs/FIELD_MAP_DEPLOYMENT.md`에 추�
   - 세션 유효성 확인(`GET /internal/v1/admin/session`), 로그아웃(`POST /internal/v1/admin/logout`) 엔드포인트를 추가하고, 모든 보호된 내부 API(`_authorized_admin`)에서 헤더 토큰 및 쿠키 세션을 모두 지원합니다.
   - 관리자 접근 성공/실패/잠금 및 로그아웃 시 구조화된 보안 감사 로그(`LOGGER`)를 체계적으로 기록합니다.
 - **9단계 지속적 품질 관리**:
-  - `scripts/verify_all.sh` 5단계 통합 검증 스크립트를 작성하여 103개 시설 무결성 검증, Python 단위 테스트 226개, 바이트코드 컴파일, React Vitest 34개 테스트, TypeScript strict 타입 검사 및 프로덕션 번들 빌드를 원클릭으로 통과하도록 체계화했습니다.
+  - `scripts/verify_all.sh` 5단계 통합 검증 스크립트를 작성하여 103개 시설 무결성 검증, Python 단위 테스트 246개, 바이트코드 컴파일, React Vitest 35개 테스트, TypeScript strict 타입 검사 및 프로덕션 번들 빌드를 원클릭으로 통과하도록 체계화했습니다.
   - GitHub Actions CI/CD(`.github/workflows/ci-deploy.yml`) 검증 환경과 로컬 검증 체계를 100% 일치시켰습니다.
   - React·Vite·TypeScript·Vitest의 `latest` 범위를 제거하고 현재 잠금파일에서
     검증한 정확한 버전을 `package.json`과 `package-lock.json`에 기록했습니다.
 
-2026-08-28 11:18 KST에 `scripts/verify_all.sh` 5단계 전체 검증(Python 226개,
-React 34개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모두 통과했습니다.
+2026-08-29 10:45 KST에 `scripts/verify_all.sh` 5단계 전체 검증(Python 246개,
+React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모두 통과했습니다.
 
 ## 5. 현재 운영 상태 및 최종 인수인계
 
 개선 로드맵([`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md))의 1~9단계와
-10단계 구현·자동 검증은 완료했습니다. 자동 검증(Python 226개, React Vitest
-34개, 데이터 103개, TypeScript/Vite 프로덕션 빌드)은 성공했으며, 10단계의
-배포 실화면 검증만 남아 있습니다.
+10단계 구현·자동 검증은 완료했습니다. PDF 5단계 고도화와 운영 산출물 시각
+검수도 완료했습니다. 실제 브라우저 버튼 클릭 검증과 이번 STALE·ERROR 차단
+변경의 배포만 남아 있습니다.
 
 
 ### 주요 시스템 구성 및 서비스 현황
@@ -221,7 +237,8 @@ React 34개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 2. **중앙관제 대시보드 (`/control`)**:
    - SPA 경로 분기와 정적 import 단일 번들
    - 103개 시설 실시간 관제 KPI 요약, 점검 우선순위 목록, 관제 지도 및 다중 시설 선택 바
-   - 수동 Telegram 상황전파 모달 (`ManualDispatchModal`) 및 A4 가로형 PDF 초동보고서 스트리밍 다운로드
+   - 수동 Telegram 상황전파 모달(`ManualDispatchModal`)과 선택 상태와 독립된
+     A4 세로형 전체 103개소 PDF 종합보고서 다운로드
    - 5분 자동감시 진단, 실적/이력 탭 및 CSV 내보내기
 3. **위험도 정책 설정 (`/settings`)**:
    - SPA 경로 분기와 정적 import 단일 번들

@@ -15,7 +15,13 @@ import {
 import { KakaoMap } from "./KakaoMap";
 import { ManualDispatchModal } from "./ManualDispatchModal";
 import { navigate } from "./router";
-import type { Facility, MapFocusRequest, MonitoringMode, RiskGrade } from "./types";
+import type {
+  Facility,
+  MapFocusRequest,
+  MonitoringMode,
+  MonitoringResponse,
+  RiskGrade,
+} from "./types";
 import {
   filterFacilities,
   formatReferenceTime,
@@ -30,6 +36,12 @@ import {
 type ControlWorkspace = "overview" | "analysis" | "history";
 
 const KMA_OFFICIAL_WARNING_URL = "https://www.weather.go.kr/w/special-report/overall.do";
+
+export function monitoringOutputsAvailable(
+  health: MonitoringResponse["status"]["health"],
+): boolean {
+  return health === "LIVE" || health === "SIMULATION";
+}
 
 export function resolveSelectedFacilityScope(
   facilities: readonly Facility[],
@@ -247,7 +259,7 @@ export default function ControlApp() {
     setSelectedFacilityIds(new Set());
   };
 
-  // PDF와 수동 상황전파가 공유하는 단일 선택 범위
+  // 수동 상황전파가 사용하는 확정 선택 범위
   const selectedFacilityScope = useMemo(() => {
     if (!data) return { ids: [], facilities: [] };
     return resolveSelectedFacilityScope(data.facilities, selectedFacilityIds);
@@ -267,6 +279,12 @@ export default function ControlApp() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const handlePdfDownload = async () => {
     if (!data || pdfLoading) return;
+    if (!monitoringOutputsAvailable(data.status.health)) {
+      alert(
+        "KMA 실시간 자료가 정상이 아닌 상태에서는 새 PDF 보고서를 생성할 수 없습니다.",
+      );
+      return;
+    }
     setPdfLoading(true);
     try {
       // 헤더의 초동보고서는 전체 103개 소관시설 기준 종합 보고서로 발행
@@ -324,6 +342,7 @@ export default function ControlApp() {
   const simulation = data.status.health === "SIMULATION";
   const live = data.status.health === "LIVE";
   const stale = data.status.health === "STALE";
+  const actionsBlocked = !monitoringOutputsAvailable(data.status.health);
 
   return (
     <div className="control-shell">
@@ -640,12 +659,13 @@ export default function ControlApp() {
                 type="button"
                 className="secondary-button pdf-button"
                 onClick={handlePdfDownload}
-                disabled={selectedFacilityIds.size === 0 || pdfLoading}
+                disabled={pdfLoading || actionsBlocked}
+                title="선택 상태와 무관하게 전체 103개 소관시설 종합보고서를 다운로드합니다."
               >
                 {pdfLoading ? "PDF 생성 중..." : (
                   <>
-                    <span className="btn-text-full">PDF 초동보고서 다운로드 ⤓</span>
-                    <span className="btn-text-short">PDF 보고서 ⤓</span>
+                    <span className="btn-text-full">전체 103개소 PDF 보고서 ⤓</span>
+                    <span className="btn-text-short">전체 PDF ⤓</span>
                   </>
                 )}
               </button>
@@ -660,12 +680,17 @@ export default function ControlApp() {
                   }
                   setDispatchModalOpen(true);
                 }}
-                disabled={selectedFacilityIds.size === 0}
+                disabled={selectedFacilityIds.size === 0 || actionsBlocked}
               >
                 <span className="btn-text-full">수동 Telegram 상황전파 📢</span>
                 <span className="btn-text-short">수동 상황전파 📢</span>
               </button>
             </div>
+            {actionsBlocked && (
+              <p className="analysis-action-warning" role="alert">
+                KMA 실시간 자료가 정상이 아닌 상태에서는 PDF와 수동 상황전파를 사용할 수 없습니다.
+              </p>
+            )}
           </div>
 
           <div className="analysis-split-layout">

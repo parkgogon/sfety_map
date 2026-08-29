@@ -1,3 +1,4 @@
+import dataclasses
 import datetime as dt
 import unittest
 
@@ -248,6 +249,30 @@ def test_manual_scope_must_match_current_affected_facilities_and_warnings():
         ManualDispatchValidationError, "영향시설"
     ):
         service.dispatch_manual(invalid)
+
+
+def test_manual_scope_rejects_stale_or_error_snapshot():
+    source = snapshot()
+    for health in (DataHealth.STALE, DataHealth.ERROR):
+        user = Telegram()
+        unavailable = dataclasses.replace(
+            source,
+            warning_feed=dataclasses.replace(
+                source.warning_feed,
+                health=health,
+            ),
+        )
+        service = admin_service(
+            InMemoryAlertStore(),
+            user,
+            snapshot_provider=lambda **_: unavailable,
+        )
+        with unittest.TestCase().assertRaisesRegex(
+            ManualDispatchValidationError,
+            "정상이 아닌 상태",
+        ):
+            service.dispatch_manual(dispatch(request_id=f"manual-{health.value}"))
+        assert user.batches == []
 
 
 def test_manual_api_requires_token_and_accepts_valid_request():

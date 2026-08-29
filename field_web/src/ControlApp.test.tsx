@@ -1,6 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import ControlApp, { AnalysisMobileFacilityList, resolveSelectedFacilityScope } from "./ControlApp";
+import ControlApp, {
+  AnalysisMobileFacilityList,
+  monitoringOutputsAvailable,
+  resolveSelectedFacilityScope,
+} from "./ControlApp";
 import type { Facility, MonitoringResponse } from "./types";
 
 const mockMonitoringData: MonitoringResponse = {
@@ -103,6 +107,14 @@ vi.mock("./controlApi", () => ({
 }));
 
 describe("ControlApp 중앙관제 대시보드", () => {
+  it("LIVE와 모의훈련 외 자료에서는 PDF와 수동 전파를 차단한다", () => {
+    expect(monitoringOutputsAvailable("LIVE")).toBe(true);
+    expect(monitoringOutputsAvailable("SIMULATION")).toBe(true);
+    expect(monitoringOutputsAvailable("STALE")).toBe(false);
+    expect(monitoringOutputsAvailable("ERROR")).toBe(false);
+    expect(monitoringOutputsAvailable("FALLBACK")).toBe(false);
+  });
+
   it("중앙관제 헤더와 워크스페이스 탭, 비조작형 관제 요약을 정상 렌더링한다", () => {
     const html = renderToStaticMarkup(<ControlApp />);
     expect(html).toContain("중앙 관제");
@@ -149,7 +161,7 @@ describe("ControlApp 중앙관제 대시보드", () => {
     }
   });
 
-  it("PDF와 수동 상황전파가 같은 시설 ID와 시설 객체 범위를 사용한다", () => {
+  it("수동 상황전파 선택범위가 같은 시설 ID와 시설 객체를 사용한다", () => {
     const scope = resolveSelectedFacilityScope(
       mockMonitoringData.facilities,
       new Set(["F-3", "F-1"]),

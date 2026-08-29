@@ -125,7 +125,7 @@ Firestore        관제 상태·알림·실적·감사 이력
 
 ### 9단계 — 지속적 품질 관리
 
-- [x] Python 단위 테스트 226개 및 데이터 무결성 검증을 표준화했다.
+- [x] Python 단위 테스트 246개 및 데이터 무결성 검증을 표준화했다.
 - [x] React Vitest 단위 테스트 및 TypeScript strict 타입 검사를 구축했다.
 - [x] `scripts/verify_all.sh` 원클릭 5단계 통합 검증 스크립트를 작성하여 CI와 로컬 검증 체계를 일치시켰다.
 - [x] React·Vite·TypeScript와 배포 의존성 버전을 명시적으로 관리하고 프로덕션 번들 빌드를 검증했다.
@@ -215,7 +215,8 @@ Firestore        관제 상태·알림·실적·감사 이력
   실적·이력 탭 및 CSV 다운로드 연동 완료
 - [x] React 중앙관제 전환 2차: `[대상 분석·전파]` 워크스페이스에 관리자 관제 지도(`KakaoMap`),
   다중 시설 선택(체크박스, 영향 시설 선택, 전체 선택), 수동 Telegram 상황전파 모달(`ManualDispatchModal`),
-  백엔드 A4 가로형 PDF 초동보고서 스트리밍 다운로드 API(`GET /internal/v1/monitoring/report.pdf`) 연동 완료
+  백엔드 A4 세로형 전체 103개소 PDF 스트리밍 다운로드 API
+  (`GET /api/v1/monitoring/report.pdf`) 연동 완료
 - [x] React 중앙관제 전환 3차: `/settings` 위험도 정책 설정 화면(`SettingsApp`),
   14종 특보 × 3단계 위험등급 매트릭스 편집 그리드, 발효 특보 하이라이트,
   임시 정책 브라우저 로컬 저장 및 백엔드 정책 조회 API(`GET /internal/v1/policy`) 연동 완료 (6단계 전체 완료)
@@ -225,7 +226,7 @@ Firestore        관제 상태·알림·실적·감사 이력
 - [x] 8단계 Streamlit 종료 및 레거시 격리: React 기능 동등성(현장 지도, 중앙관제, 수동전파, PDF, 정책 설정) 100% 확보 확인,
   도메인 모델 색상 상수(`RISK_GRADE_COLORS`) 독립화, `app.py` 공식 React 웹 앱 안내 모드 전환 및 시스템 아키텍처 최신화 완료
 - [x] 9단계 지속적 품질 관리: `scripts/verify_all.sh` 5단계 원클릭 검증 스크립트 구축,
-  Python 226개 테스트·데이터 검증·바이트코드 컴파일·React 34개 Vitest·TypeScript strict 타입 검사 및 프로덕션 번들 빌드 통과 확인
+  Python 246개 테스트·데이터 검증·바이트코드 컴파일·React 35개 Vitest·TypeScript strict 타입 검사 및 프로덕션 번들 빌드 통과 확인
 
 ### 2026-08-28
 
@@ -236,6 +237,5 @@ Firestore        관제 상태·알림·실적·감사 이력
 - [ ] 10단계 모바일 UI 밀도 개선 (5차): `UI_FLOW.md` 및 `DESIGN_SYSTEM.md`
   반응형 문서화, Firestore TTL 테스트 안정화, 원클릭 5단계 통합 검증은 완료.
   실제 390px·430px 스마트폰과 PC 배포 실화면 확인은 남음
-
 
 

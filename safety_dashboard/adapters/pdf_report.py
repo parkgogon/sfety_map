@@ -86,6 +86,14 @@ class PdfReportRenderer:
         scope_label: str = "전체 소관시설",
         temporary_policy: bool = False,
     ) -> bytes:
+        if snapshot.warning_feed.health not in {
+            DataHealth.LIVE,
+            DataHealth.SIMULATION,
+        }:
+            raise ValueError(
+                "KMA 실시간 또는 모의훈련 자료가 정상인 경우에만 "
+                "PDF 보고서를 생성할 수 있습니다."
+            )
         if not self.font_path.exists():
             raise ValueError(f"PDF 한글 폰트가 없습니다: {self.font_path}")
 
