@@ -71,7 +71,7 @@ export interface WeatherLayerPoint {
 export interface WeatherLayerResponse {
   api_version: "v1";
   layer: WeatherLayerKind;
-  status: "LIVE" | "STALE" | "ERROR";
+  status: "LIVE" | "STALE" | "ERROR" | "SIMULATION";
   observed_at: string;
   fetched_at: string;
   unit: string;
@@ -79,7 +79,9 @@ export interface WeatherLayerResponse {
   detail: string;
   source: string;
   scope: string;
-  actual_data: true;
+  actual_data: boolean;
+  scenario_id?: string;
+  scenario_label?: string;
 }
 
 export interface NearbyCctv {

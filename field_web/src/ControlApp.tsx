@@ -14,13 +14,16 @@ import {
 } from "./controlApi";
 import { KakaoMap } from "./KakaoMap";
 import { ManualDispatchModal } from "./ManualDispatchModal";
-import { navigate } from "./router";
+import { WeatherLayerLegend } from "./WeatherLayerControls";
+import { useWeatherLayer } from "./weatherLayerApi";
+import { navigate, navigateWithMode } from "./router";
 import type {
   Facility,
   MapFocusRequest,
   MonitoringMode,
   MonitoringResponse,
   RiskGrade,
+  WeatherLayerKind,
 } from "./types";
 import {
   filterFacilities,
@@ -29,8 +32,10 @@ import {
   GRADE_DISPLAY_ORDER,
   GRADE_LABELS,
   GRADE_PRIORITY_ORDER,
+  recommendedWeatherLayer,
   requestedMonitoringMode,
   uniqueWarningText,
+  WEATHER_LAYER_LABELS,
 } from "./utils";
 
 type ControlWorkspace = "overview" | "analysis" | "history";
@@ -114,11 +119,19 @@ function daysAgoYMD(days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+function setModeQuery(mode: MonitoringMode) {
+  const url = new URL(window.location.href);
+  if (mode === "simulation") url.searchParams.set("mode", "simulation");
+  else url.searchParams.delete("mode");
+  window.history.replaceState({}, "", url);
+}
+
 export default function ControlApp() {
   const [workspace, setWorkspace] = useState<ControlWorkspace>("overview");
   const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
     requestedMonitoringMode(typeof window !== "undefined" ? window.location.search : ""),
   );
+  const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
   const { data, loading, refreshing, error, refresh } = useMonitoringData(monitoringMode);
 
   // 관리자 인증
@@ -168,6 +181,7 @@ export default function ControlApp() {
   const overview = useControlOverview(adminToken);
   const metrics = useAlertMetrics(adminToken, fromDate, toDate);
   const events = useAlertEvents(adminToken, fromDate, toDate);
+  const weatherLayer = useWeatherLayer(weatherLayerKind, monitoringMode);
 
 
   // 초기 특보 영향 시설 자동 선택
@@ -195,6 +209,17 @@ export default function ControlApp() {
       setAuthError(err instanceof Error ? err.message : "인증 실패");
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  const changeMonitoringMode = (mode: MonitoringMode) => {
+    setModeQuery(mode);
+    setMonitoringMode(mode);
+    if (mode === "simulation") {
+      const recommended = recommendedWeatherLayer(data?.warnings ?? []) ?? "wind";
+      setWeatherLayerKind(recommended);
+    } else {
+      setWeatherLayerKind(null);
     }
   };
 
@@ -374,7 +399,7 @@ export default function ControlApp() {
           <button
             className="secondary-button"
             type="button"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigateWithMode("/settings")}
             title="위험도 정책 기준 설정"
           >
             ⚙ <span className="btn-text-full">위험도 설정</span><span className="btn-text-short">설정</span>
@@ -382,7 +407,7 @@ export default function ControlApp() {
           <button
             className="secondary-button"
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigateWithMode("/")}
             title="스마트폰 현장 안전지도로 이동"
           >
             <span className="btn-text-full">현장 지도 보기 ↗</span><span className="btn-text-short">현장지도 ↗</span>
@@ -399,6 +424,17 @@ export default function ControlApp() {
         </div>
       </header>
 
+      {monitoringMode === "simulation" && (
+        <div className="simulation-banner" role="alert">
+          <div>
+            <strong>모의훈련</strong>
+            <span>실제 상황이 아닙니다</span>
+          </div>
+          <button type="button" onClick={() => changeMonitoringMode("live")}>
+            실시간으로 돌아가기
+          </button>
+        </div>
+      )}
 
       {/* 상태 스트립 */}
       <div
@@ -531,6 +567,29 @@ export default function ControlApp() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 모의훈련 시작·종료 진입점 */}
+          {monitoringMode !== "simulation" ? (
+            <div className="simulation-entry-panel">
+              <div>
+                <strong>모의훈련</strong>
+                <span>특보 발생 시 화면을 미리 확인합니다. 실제 운영에 영향 없이 고정된 훈련 특보를 표시합니다.</span>
+              </div>
+              <button className="secondary-button" type="button" onClick={() => changeMonitoringMode("simulation")}>
+                모의훈련 시작
+              </button>
+            </div>
+          ) : (
+            <div className="simulation-entry-panel active">
+              <div>
+                <strong>모의훈련 진행 중</strong>
+                <span>현재 고정된 훈련 특보를 표시하고 있습니다. 자동감시·운영 지표는 실제 운영 참고입니다.</span>
+              </div>
+              <button className="secondary-button" type="button" onClick={() => changeMonitoringMode("live")}>
+                실시간 화면으로 돌아가기
+              </button>
             </div>
           )}
 
@@ -696,8 +755,22 @@ export default function ControlApp() {
           <div className="analysis-split-layout">
             <div className="analysis-map-card">
               <div className="map-card-header">
-                <h3>소관시설 관제 지도</h3>
-                <small>마커를 클릭하면 대상 목록의 해당 시설이 강조됩니다.</small>
+                <div>
+                  <h3>소관시설 관제 지도</h3>
+                  <small>마커를 클릭하면 대상 목록의 해당 시설이 강조됩니다.</small>
+                </div>
+                <div className="control-layer-buttons" role="group" aria-label="기상 레이어 선택">
+                  {(["rainfall", "wind", "temperature"] as const).map((kind) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      className={`control-layer-chip ${weatherLayerKind === kind ? "active" : ""}`}
+                      onClick={() => setWeatherLayerKind(weatherLayerKind === kind ? null : kind)}
+                    >
+                      {WEATHER_LAYER_LABELS[kind]}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="control-map-container">
                 <KakaoMap
@@ -707,11 +780,25 @@ export default function ControlApp() {
                   cctvs={[]}
                   selectedCctvId=""
                   focusRequest={focusRequest}
-                  weatherLayer={null}
+                  weatherLayer={
+                    weatherLayer.data?.status !== "ERROR" ? weatherLayer.data : null
+                  }
                   onSelect={handleMapFacilitySelect}
                   onSelectGroup={() => {}}
                   onSelectCctv={() => {}}
                 />
+                {weatherLayerKind && (
+                  <div className="control-map-legend-wrapper">
+                    <WeatherLayerLegend
+                      kind={weatherLayerKind}
+                      data={weatherLayer.data}
+                      loading={weatherLayer.loading}
+                      error={weatherLayer.error}
+                      simulation={monitoringMode === "simulation"}
+                      onRetry={weatherLayer.retry}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

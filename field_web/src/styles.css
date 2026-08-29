@@ -252,6 +252,48 @@ input:focus-visible {
   padding: 0 var(--space-3);
 }
 
+.simulation-entry-panel {
+  align-items: center;
+  background: var(--color-bg-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 12px);
+  justify-content: space-between;
+  margin-top: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+}
+
+.simulation-entry-panel > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.simulation-entry-panel strong {
+  font-size: var(--font-size-sm, 0.8125rem);
+  color: var(--color-text-primary, #1e293b);
+}
+
+.simulation-entry-panel span {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary, #64748b);
+}
+
+.simulation-entry-panel.active {
+  background: #f4ebff;
+  border-color: #d6bbfb;
+}
+
+.simulation-entry-panel.active strong {
+  color: #5925a9;
+}
+
+.simulation-entry-panel.active span {
+  color: #7c3aed;
+}
+
 .notice-stack {
   background: var(--color-bg-canvas);
   display: grid;
@@ -436,6 +478,50 @@ input:focus-visible {
 
 .weather-layer-legend.stale {
   border-color: var(--color-status-stale);
+}
+
+.weather-layer-legend.simulation {
+  border-color: #d6bbfb;
+  background: rgba(253, 250, 255, 0.96);
+}
+
+.control-layer-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.control-layer-chip {
+  background: var(--color-bg-canvas, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-pill, 9999px);
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+  padding: 2px 8px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.control-layer-chip:hover {
+  border-color: var(--color-brand-primary, #1e40af);
+  color: var(--color-text-primary, #0f172a);
+}
+
+.control-layer-chip.active {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #ffffff;
+}
+
+.control-map-container {
+  position: relative;
+}
+
+.control-map-legend-wrapper {
+  bottom: 12px;
+  left: 12px;
+  position: absolute;
+  z-index: 10;
 }
 
 .weather-layer-legend-title {

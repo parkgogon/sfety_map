@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-29 12:44 KST
-> 기준 배포 Git: `main` (`35b7b25`) / 단계적 모의훈련 계획·문서 정리 운영 배포 및 검증 완료
+> 마지막 정리: 2026-08-29 13:26 KST
+> 기준 배포 Git: `main` (`01190d6`) / 모의훈련 단계 1~4 전체 구현 및 검증 완료, 미커밋
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -26,18 +26,18 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
 - 완료 (운영 배포): 공개 PDF와 수동 상황전파가 `STALE`·`ERROR`
   snapshot에서도 실행될 수 있던 누락을 PDF 렌더러·API·관리자
   서비스·React UI에서 차단하고 `3e1f65f`로 배포
-- 완료: 전체 Python 단위 테스트 246개, React 35개 및 5단계 무결성 검증
+- 완료: 전체 Python 단위 테스트 255개, React 44개 및 5단계 무결성 검증
   (`verify_all.sh`) 통과
 - 정리: 낡은 직원용 안내서·AI 원문 규칙은 현행 문서 목록에서 제거하고,
   생성 PDF·렌더·임시 산출물은 `.trash/obsolete_artifacts_20260829/`로 이동
 - 배포 확인: `35b7b25`의 CI 테스트, Cloud Run API·Worker, Firebase Hosting,
   uptime monitoring 작업이 모두 성공했고 공개 웹·health가 HTTP 200임을 확인
+- 완료 (모의훈련 단계 1): 현장지도 ↔ 중앙관제 `mode=simulation` 보존, ControlApp 훈련 배너 및 진입 패널 추가, React 단위 테스트 42개 통과
+- 완료 (모의훈련 단계 2): 단일 시나리오 정의(`scenarios.py`), 결정적 기상 레이어 provider(`SimulationWeatherLayerProvider`), API `mode` 쿼리 파라미터 및 캐시 격리, Python 단위 테스트 252개 통과
+- 완료 (모의훈련 단계 3): React hook/API `mode` 및 캐시 분리, `recommendedWeatherLayer` 자동 선택 및 실시간 복귀 시 정리, 중앙관제 관제 지도 기상 레이어 칩/범례 연동, 훈련 범례 `(모의훈련 가정)` 및 `실제 관측이 아님` 명시, React 단위 테스트 44개 통과
+- 완료 (모의훈련 단계 4): 종합 일치성(특보 4건, 영향 31개소, 상 10개소), PDF 모의훈련 표식 유지, 결정적 기상 레이어 격리, Worker/운영 baseline 비오염 검증(`test_simulation_isolation.py`), 설계 문서(`UI_FLOW.md`, `DOMAIN_RULES.md`, `ARCHITECTURE.md`) 갱신 및 전체 검증 통과
 
-**다음 작업 하나**: [`SIMULATION_IMPROVEMENT_PLAN.md`](SIMULATION_IMPROVEMENT_PLAN.md)를
-코드·테스트와 다시 대조한 뒤, 현장지도·중앙관제의 모의훈련 모드를
-통합하고 특보에 연관된 훈련 기상 그래픽을 구현한다. 수용 조건은
-모드 이동·PDF·수동 훈련 일치, 훈련·실황 표식 분리, 자동알림 baseline
-불변, `scripts/verify_all.sh` 통과다.
+**다음 작업 하나**: 사용자의 명시적 요청이 있을 때 모의훈련 개선 전체 작업(단계 1~4)의 working tree 변경사항을 확인하고 커밋·push 또는 배포를 진행한다. 수용 조건은 `scripts/verify_all.sh` 전체 통과 및 사용자 승인이다.
 
 
 ## 1. 프로젝트 한 문장

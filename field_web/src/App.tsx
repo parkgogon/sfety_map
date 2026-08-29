@@ -7,7 +7,7 @@ import { GradeLegend } from "./GradeLegend";
 import { KakaoMap } from "./KakaoMap";
 import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
-import { navigate } from "./router";
+import { navigate, navigateWithMode } from "./router";
 import type {
   Facility,
   MapFocusRequest,
@@ -23,6 +23,7 @@ import {
   formatElapsedTime,
   formatReferenceTime,
   GRADE_DISPLAY_ORDER,
+  recommendedWeatherLayer,
   requestedFacilityId,
   requestedMonitoringMode,
   searchFacilities,
@@ -124,7 +125,7 @@ export default function App() {
   );
   const selectedFacility = data?.facilities.find((item) => item.id === selectedId) ?? null;
   const weather = useFacilityWeather(selectedFacility?.id ?? "");
-  const weatherLayer = useWeatherLayer(weatherLayerKind);
+  const weatherLayer = useWeatherLayer(weatherLayerKind, monitoringMode);
   const cctv = useFacilityCctv(selectedFacility?.id ?? "");
   const cctvItems = cctvEnabled ? cctv.data?.cctvs ?? [] : [];
   const selectedCctv = cctvItems.find((item) => item.id === selectedCctvId) ?? null;
@@ -196,6 +197,12 @@ export default function App() {
     setModeQuery(mode);
     setMonitoringMode(mode);
     setFilterOpen(false);
+    if (mode === "simulation") {
+      const recommended = recommendedWeatherLayer(data?.warnings ?? []) ?? "wind";
+      setWeatherLayerKind(recommended);
+    } else {
+      setWeatherLayerKind(null);
+    }
   };
 
   if (loading && !data) {
@@ -234,7 +241,7 @@ export default function App() {
           <button
             className="secondary-button header-control-link"
             type="button"
-            onClick={() => navigate("/control")}
+            onClick={() => navigateWithMode("/control")}
             title="중앙관제 관리자 대시보드로 이동"
           >
             중앙관제 🖥️
@@ -406,6 +413,7 @@ export default function App() {
       {weatherLayerOpen && (
         <WeatherLayerSheet
           active={weatherLayerKind}
+          simulation={simulation}
           onSelect={(kind) => {
             setWeatherLayerKind(kind);
             setWeatherLayerOpen(false);

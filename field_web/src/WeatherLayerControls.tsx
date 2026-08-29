@@ -19,11 +19,12 @@ const OPTIONS: Array<{
 
 interface WeatherLayerSheetProps {
   active: WeatherLayerKind | null;
+  simulation?: boolean;
   onSelect: (kind: WeatherLayerKind | null) => void;
   onClose: () => void;
 }
 
-export function WeatherLayerSheet({ active, onSelect, onClose }: WeatherLayerSheetProps) {
+export function WeatherLayerSheet({ active, simulation, onSelect, onClose }: WeatherLayerSheetProps) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
@@ -36,8 +37,8 @@ export function WeatherLayerSheet({ active, onSelect, onClose }: WeatherLayerShe
         <span className="sheet-handle" aria-hidden="true" />
         <div className="filter-title-row">
           <div>
-            <h2 id="weather-layer-title">기상 실황</h2>
-            <p>지도에 표시할 자료 하나를 선택하세요.</p>
+            <h2 id="weather-layer-title">{simulation ? "기상 가정" : "기상 실황"}</h2>
+            <p>{simulation ? "모의훈련 특보에 연관된 기상 가정값 하나를 선택하세요." : "지도에 표시할 자료 하나를 선택하세요."}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="기상 선택 닫기">×</button>
         </div>
@@ -64,7 +65,9 @@ export function WeatherLayerSheet({ active, onSelect, onClose }: WeatherLayerShe
           기상 그래픽 끄기
         </button>
         <small className="weather-layer-caveat">
-          기상청 격자 실황 참고정보이며 시설 위험등급에는 반영하지 않습니다.
+          {simulation
+            ? "모의훈련 특보에 연관된 기상 가정값입니다. 실제 관측이 아니며 시설 위험등급에는 반영하지 않습니다."
+            : "기상청 격자 실황 참고정보이며 시설 위험등급에는 반영하지 않습니다."}
         </small>
       </section>
     </div>
@@ -100,26 +103,27 @@ export function WeatherLayerLegend({
   simulation,
   onRetry,
 }: WeatherLayerLegendProps) {
+  const isSimulation = simulation || data?.status === "SIMULATION";
   const failed = error || data?.status === "ERROR";
   const noRain = kind === "rainfall"
     && data?.status !== "ERROR"
     && data?.points.every((point) => (point.value ?? 0) <= 0);
   const values = legendValues(kind);
   return (
-    <aside className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""}`} aria-live="polite">
+    <aside className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""} ${isSimulation ? "simulation" : ""}`} aria-live="polite">
       <div className="weather-layer-legend-title">
         <div>
-          <b>{WEATHER_LAYER_LABELS[kind]} 실황</b>
-          {simulation && <span>실제 현재 정보</span>}
+          <b>{WEATHER_LAYER_LABELS[kind]} {isSimulation ? "(모의훈련 가정)" : "실황"}</b>
+          {isSimulation && <span>실제 관측이 아님</span>}
         </div>
         {data && (
           <small>
             {data.status === "STALE" ? "지연 · " : ""}
-            {formatReferenceTime(data.observed_at)}
+            {isSimulation ? (data.scenario_label || "모의훈련 시나리오") : formatReferenceTime(data.observed_at)}
           </small>
         )}
       </div>
-      {loading && !data && <p>기상 격자를 불러오는 중…</p>}
+      {loading && !data && <p>{isSimulation ? "기상 가정을 생성하는 중…" : "기상 격자를 불러오는 중…"}</p>}
       {failed && !data?.points.length ? (
         <div className="weather-layer-error">
           <span>{error || data?.detail}</span>
@@ -139,9 +143,10 @@ export function WeatherLayerLegend({
           {failed && data.points.length > 0 && (
             <p>갱신 실패 · 이전 정상 자료를 표시하고 있습니다.</p>
           )}
-          {noRain && <p>현재 관제 권역에 표시할 강수가 없습니다.</p>}
+          {noRain && <p>{isSimulation ? "모의훈련 시나리오에 강수가 없습니다." : "현재 관제 권역에 표시할 강수가 없습니다."}</p>}
         </>
       ) : null}
     </aside>
   );
 }
+

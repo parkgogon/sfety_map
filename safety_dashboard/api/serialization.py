@@ -79,7 +79,9 @@ def serialize_weather_layer(feed: WeatherLayerFeed) -> dict[str, Any]:
         else:
             base["value"] = item.value
         points.append(base)
-    return {
+
+    is_simulation = feed.health is DataHealth.SIMULATION
+    result: dict[str, Any] = {
         "api_version": "v1",
         "layer": feed.kind.value,
         "status": feed.health.value,
@@ -88,10 +90,14 @@ def serialize_weather_layer(feed: WeatherLayerFeed) -> dict[str, Any]:
         "unit": feed.unit,
         "points": points,
         "detail": feed.message,
-        "source": "기상청 동네예보 격자 실황",
+        "source": "모의훈련 시나리오" if is_simulation else "기상청 동네예보 격자 실황",
         "scope": "대구·경북·부산·울산·경남",
-        "actual_data": True,
+        "actual_data": not is_simulation,
     }
+    if is_simulation:
+        result["scenario_id"] = feed.scenario_id or "multi_hazard_demo"
+        result["scenario_label"] = feed.scenario_label or "종합 기상재난 모의훈련"
+    return result
 
 
 def serialize_cctv(

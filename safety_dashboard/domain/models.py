@@ -106,6 +106,8 @@ class WeatherLayerFeed:
     unit: str
     points: tuple[WeatherGridPoint, ...]
     message: str = ""
+    scenario_id: str = ""
+    scenario_label: str = ""
 
 
 @dataclass(frozen=True)

@@ -144,6 +144,10 @@ safety_dashboard/
 │   ├── region_matcher.py
 │   ├── telegram.py
 │   └── pdf_report.py
+├── simulation/
+│   ├── __init__.py
+│   ├── scenarios.py
+│   └── weather_layers.py
 └── ui/
     ├── dialogs.py
     ├── map_view.py

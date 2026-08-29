@@ -25,6 +25,18 @@ export function navigate(path: string, search = ""): void {
   window.scrollTo(0, 0);
 }
 
+/**
+ * Navigate to `path` while preserving the current URL's `mode` query parameter.
+ * Other query parameters (e.g. `facility_id`) are intentionally dropped so that
+ * page-specific state does not leak between screens.
+ */
+export function navigateWithMode(path: string): void {
+  if (typeof window === "undefined") return;
+  const currentMode = new URLSearchParams(window.location.search).get("mode");
+  const search = currentMode === "simulation" ? "?mode=simulation" : "";
+  navigate(path, search);
+}
+
 
 export function useLocation(): RouteLocation {
   const [location, setLocation] = useState<RouteLocation>(getCurrentLocation);

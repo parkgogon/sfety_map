@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WeatherLayerKind, WeatherLayerResponse } from "./types";
+import type { MonitoringMode, WeatherLayerKind, WeatherLayerResponse } from "./types";
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -17,9 +17,11 @@ export interface WeatherLayerState {
 
 export async function fetchWeatherLayer(
   kind: WeatherLayerKind,
+  mode: MonitoringMode = "live",
   signal?: AbortSignal,
 ): Promise<WeatherLayerResponse> {
-  const response = await fetch(`/api/v1/weather/layers/${kind}`, {
+  const query = mode === "simulation" ? "?mode=simulation" : "";
+  const response = await fetch(`/api/v1/weather/layers/${kind}${query}`, {
     cache: "no-store",
     signal,
     headers: { Accept: "application/json" },
@@ -36,12 +38,15 @@ export async function fetchWeatherLayer(
   return payload;
 }
 
-export function useWeatherLayer(kind: WeatherLayerKind | null): WeatherLayerState {
+export function useWeatherLayer(
+  kind: WeatherLayerKind | null,
+  mode: MonitoringMode = "live",
+): WeatherLayerState {
   const [data, setData] = useState<WeatherLayerResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const cache = useRef(new Map<WeatherLayerKind, CachedLayer>());
+  const cache = useRef(new Map<string, CachedLayer>());
   const running = useRef<AbortController | null>(null);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
@@ -55,14 +60,15 @@ export function useWeatherLayer(kind: WeatherLayerKind | null): WeatherLayerStat
       return;
     }
 
-    const cached = cache.current.get(kind);
+    const cacheKey = `${mode}:${kind}`;
+    const cached = cache.current.get(cacheKey);
     if (cached) setData(cached.data);
     else setData(null);
     setError("");
 
     let timer = 0;
     const load = async (force = false) => {
-      const current = cache.current.get(kind);
+      const current = cache.current.get(cacheKey);
       if (!force && current && Date.now() < current.expiresAt) {
         setData(current.data);
         return;
@@ -72,9 +78,9 @@ export function useWeatherLayer(kind: WeatherLayerKind | null): WeatherLayerStat
       running.current = controller;
       setLoading(true);
       try {
-        const next = await fetchWeatherLayer(kind, controller.signal);
+        const next = await fetchWeatherLayer(kind, mode, controller.signal);
         if (controller.signal.aborted) return;
-        cache.current.set(kind, {
+        cache.current.set(cacheKey, {
           data: next,
           expiresAt: Date.now() + REFRESH_INTERVAL_MS,
         });
@@ -97,7 +103,7 @@ export function useWeatherLayer(kind: WeatherLayerKind | null): WeatherLayerStat
       if (document.visibilityState === "visible") void load(true);
     }, REFRESH_INTERVAL_MS);
     const onVisibility = () => {
-      const current = cache.current.get(kind);
+      const current = cache.current.get(cacheKey);
       if (
         document.visibilityState === "visible"
         && (!current || Date.now() >= current.expiresAt)
@@ -109,7 +115,8 @@ export function useWeatherLayer(kind: WeatherLayerKind | null): WeatherLayerStat
       document.removeEventListener("visibilitychange", onVisibility);
       running.current?.abort();
     };
-  }, [attempt, kind]);
+  }, [attempt, kind, mode]);
 
   return { data, loading, error, retry };
 }
+

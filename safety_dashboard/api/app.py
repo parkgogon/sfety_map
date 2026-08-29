@@ -293,9 +293,10 @@ def create_app(
     def weather_layer(
         layer: WeatherLayerKind,
         response: Response,
+        mode: Literal["live", "simulation"] = Query("live"),
     ) -> dict:
         response.headers["Cache-Control"] = "private, no-store"
-        return weather_layers.layer(layer)
+        return weather_layers.layer(layer, mode=mode)
 
     @application.post("/api/v1/webhooks/solapi")
     def solapi_webhook(

@@ -8,6 +8,7 @@ import {
   GRADE_COLORS,
   GRADE_DISPLAY_ORDER,
   GRADE_PRIORITY_ORDER,
+  recommendedWeatherLayer,
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
@@ -173,5 +174,16 @@ describe("현장 지도 필터", () => {
       UNAVAILABLE: "var(--color-risk-unavailable)",
     });
     expect(new Set(Object.values(GRADE_COLORS))).toHaveLength(6);
+  });
+
+  it("특보 종류에 따라 추천 기상 레이어를 올바르게 판정한다", () => {
+    expect(recommendedWeatherLayer([{ warning_type: "태풍" }, { warning_type: "호우" }])).toBe("wind");
+    expect(recommendedWeatherLayer([{ warning_type: "강풍" }])).toBe("wind");
+    expect(recommendedWeatherLayer([{ warning_type: "호우" }, { warning_type: "폭염" }])).toBe("rainfall");
+    expect(recommendedWeatherLayer([{ warning_type: "대설" }])).toBe("rainfall");
+    expect(recommendedWeatherLayer([{ warning_type: "폭염" }])).toBe("temperature");
+    expect(recommendedWeatherLayer([{ warning_type: "한파" }])).toBe("temperature");
+    expect(recommendedWeatherLayer([{ warning_type: "건조" }])).toBeNull();
+    expect(recommendedWeatherLayer([])).toBeNull();
   });
 });

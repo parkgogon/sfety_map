@@ -232,23 +232,9 @@ class FeedWarningProvider:
 
 
 def simulation_warnings(policy: RiskPolicy) -> tuple[Warning, ...]:
-    now = dt.datetime.now().replace(minute=0, second=0, microsecond=0)
-    values = (
-        ("L1070000", "L1072400", "경상북도", "포항시", "호우", "경보"),
-        ("L1070000", "L1070300", "경상북도", "구미시", "강풍", "주의보"),
-        ("L1140000", "L1140100", "대구광역시", "대구중부", "폭염", "경보"),
-        ("L1070000", "L1072700", "경상북도", "안동시", "태풍", "경보"),
-    )
-    return tuple(
-        Warning(
-            id=f"simulation-{index}", source="모의훈련", region_up_code=up_code,
-            region_code=code, region_up=up_name, region=region,
-            warning_type=kind, raw_level=level,
-            level=policy.normalize_level(level), command="발표",
-            issued_at=now, effective_at=now,
-        )
-        for index, (up_code, code, up_name, region, kind, level) in enumerate(values, 1)
-    )
+    from safety_dashboard.simulation.scenarios import create_simulation_warnings
+
+    return create_simulation_warnings(policy)
 
 
 def _parse_datetime(value: object) -> dt.datetime | None:

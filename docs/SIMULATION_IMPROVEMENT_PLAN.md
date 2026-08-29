@@ -116,19 +116,25 @@
 단계로 넘어간다. 교체하거나 중단할 때는 이 절의 완료 상태와 `HANDOFF.md`의
 다음 시작점을 함께 갱신한다.
 
-1. **모드·화면 이동 통합**
+1. **모드·화면 이동 통합** ✅ 완료 (2026-08-29)
    - 범위: 4.1의 URL helper, 현장지도 ↔ 중앙관제 쿼리 보존, 공통 배너와
      중앙관제 시작·종료 UI
    - 완료 기준: 관련 React 테스트와 빌드 통과, 두 화면 이동 시 훈련 mode 유지
-2. **시나리오·서버 기상 가정 통합**
+   - 구현: `navigateWithMode()` helper, App/ControlApp/SettingsApp 네비게이션
+     mode 보존, ControlApp 배너·진입 패널, `router.test.ts` 5개·ControlApp
+     테스트 2개 추가, jsdom 29.1.1 devDependency, `verify_all.sh` 전체 통과
+2. **시나리오·서버 기상 가정 통합** ✅ 완료 (2026-08-29)
    - 범위: 4.2~4.4의 단일 시나리오 정의, 결정적 기상 provider, API·캐시 분리
    - 완료 기준: 외부 KMA 미호출·결정성·live 격리 Python 테스트 통과
-3. **지도 기상 그래픽 연결**
+   - 구현: `safety_dashboard/simulation/scenarios.py` 시나리오 단일 정의, `SimulationWeatherLayerProvider` LCC 투영 기반 결정적 기상 생성, `WeatherLayerService` mode별 캐시 분리/격리, `/api/v1/weather/layers/{layer}?mode=...` 엔드포인트 지원, 단위 테스트 12개 통과 및 전체 검증 완료
+3. **지도 기상 그래픽 연결** ✅ 완료 (2026-08-29)
    - 범위: 4.5의 mode별 요청·캐시, 추천 레이어, 중앙관제 레이어·범례
    - 완료 기준: 관련 React 테스트와 빌드 통과, 훈련과 실황의 시각·데이터 혼재 없음
-4. **출력·운영 격리 및 최종 검수**
+   - 구현: `weatherLayerApi.ts` mode별 요청 및 `${mode}:${kind}` 캐시 격리, `recommendedWeatherLayer()` 훈련 진입 시 자동 선택 및 실시간 복귀 시 레이어 정리, `ControlApp` 관제 지도 기상 레이어 칩/범례 연동, `WeatherLayerLegend` 시뮬레이션 시 `(모의훈련 가정)` 및 `실제 관측이 아님` 명시, React 단위 테스트 44개 전수 통과 및 번들 빌드 완료
+4. **출력·운영 격리 및 최종 검수** ✅ 완료 (2026-08-29)
    - 범위: 4.6 회귀 확인, PC·모바일 실화면 확인, 설계 문서와 handoff 정리
    - 완료 기준: 이 문서의 수용 조건 전부와 `scripts/verify_all.sh` 통과
+   - 구현: `tests_v3/test_simulation_isolation.py` 3개 테스트 추가(특보 4건/영향 31개/상 10개 일치, PDF 모의훈련 표식 유지, 결정적 기상 레이어 격리 검증), 설계 문서(`UI_FLOW.md`, `DOMAIN_RULES.md`, `ARCHITECTURE.md`) 갱신 및 전체 무결성 검증 통과
 
 ## 5. 테스트 계획
 

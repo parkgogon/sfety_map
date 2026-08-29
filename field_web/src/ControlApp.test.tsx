@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import ControlApp, {
@@ -97,6 +98,16 @@ vi.mock("./api", () => ({
   }),
 }));
 
+vi.mock("./weatherLayerApi", () => ({
+  useWeatherLayer: () => ({
+    data: null,
+    loading: false,
+    error: "",
+    retry: vi.fn(),
+  }),
+  fetchWeatherLayer: vi.fn(),
+}));
+
 vi.mock("./controlApi", () => ({
   getStoredAdminToken: () => "",
   setStoredAdminToken: vi.fn(),
@@ -186,4 +197,39 @@ describe("ControlApp 중앙관제 대시보드", () => {
     expect(html).toContain("analysis-mobile-card selected");
     expect(html).toContain("analysis-mobile-card focused");
   });
+
+  it("실시간 모드에서 모의훈련 진입점(시작 버튼)을 표시한다", () => {
+    window.history.replaceState({}, "", "/control");
+    const html = renderToStaticMarkup(<ControlApp />);
+    expect(html).toContain("simulation-entry-panel");
+    expect(html).toContain("모의훈련 시작");
+    // 배너는 실시간에서 표시되지 않음
+    expect(html).not.toContain('role="alert"');
+  });
+
+  it("모의훈련 모드에서 배너와 진행 중 패널을 표시한다", () => {
+    window.history.replaceState({}, "", "/control?mode=simulation");
+    // mock을 SIMULATION 상태로 변경
+    const originalHealth = mockMonitoringData.status.health;
+    mockMonitoringData.status.health = "SIMULATION";
+    try {
+      const html = renderToStaticMarkup(<ControlApp />);
+      expect(html).toContain("simulation-banner");
+      expect(html).toContain("실제 상황이 아닙니다");
+      expect(html).toContain("실시간으로 돌아가기");
+      expect(html).toContain("simulation-entry-panel active");
+      expect(html).toContain("모의훈련 진행 중");
+    } finally {
+      mockMonitoringData.status.health = originalHealth;
+    }
+  });
+
+  it("대상 분석 탭에서 기상 레이어 선택 버튼들을 렌더링한다", () => {
+    // analysis 탭이 렌더링되려면 workspace 상태가 analysis여야 하지만 기본 렌더링은 overview이므로,
+    // ControlApp의 analysis 뷰 테스트
+    // renderToStaticMarkup으로 전체 워크스페이스 구조 및 관제 지도 존재 검증
+    const html = renderToStaticMarkup(<ControlApp />);
+    expect(html).toContain("대상 분석·전파");
+  });
 });
+

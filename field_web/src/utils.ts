@@ -254,6 +254,25 @@ export function shouldShowMapZoomControl(viewportWidth: number): boolean {
   return viewportWidth > 700;
 }
 
+export function recommendedWeatherLayer(
+  warnings: Array<{ type?: string; warning_type?: string }>,
+): WeatherLayerKind | null {
+  const isType = (item: { type?: string; warning_type?: string }, pattern: string) => {
+    const t = item.type ?? item.warning_type ?? "";
+    return t.includes(pattern);
+  };
+  if (warnings.some((w) => isType(w, "태풍") || isType(w, "강풍"))) {
+    return "wind";
+  }
+  if (warnings.some((w) => isType(w, "호우") || isType(w, "대설"))) {
+    return "rainfall";
+  }
+  if (warnings.some((w) => isType(w, "폭염") || isType(w, "한파"))) {
+    return "temperature";
+  }
+  return null;
+}
+
 export function shouldFitInitialFacilities(
   initialBoundsFitted: boolean,
   facilityCount: number,

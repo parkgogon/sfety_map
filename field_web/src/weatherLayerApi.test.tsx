@@ -44,11 +44,30 @@ describe("기상 레이어 API", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/weather/layers/wind");
   });
 
-  it("종류가 다른 응답은 화면에 적용하지 않는다", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+  it("모의훈련 모드에서는 simulation 쿼리 파라미터를 붙여 호출한다", async () => {
+    const payload = {
+      api_version: "v1",
+      layer: "rainfall",
+      status: "SIMULATION",
+      observed_at: "2026-08-29T12:00:00+09:00",
+      fetched_at: "2026-08-29T12:00:00+09:00",
+      unit: "mm",
+      points: [],
+      detail: "모의훈련 기상 시나리오",
+      source: "모의훈련 시나리오",
+      scope: "관제 권역",
+      actual_data: false,
+      scenario_id: "multi_hazard_demo",
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ api_version: "v1", layer: "rainfall", points: [] }),
-    }));
-    await expect(fetchWeatherLayer("temperature")).rejects.toThrow("잘못된");
+      json: async () => payload,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchWeatherLayer("rainfall", "simulation");
+    expect(result.status).toBe("SIMULATION");
+    expect(result.actual_data).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/weather/layers/rainfall?mode=simulation");
   });
 });

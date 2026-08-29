@@ -11,7 +11,7 @@ import {
   useRiskPolicy,
   verifyAdminPassword,
 } from "./controlApi";
-import { navigate } from "./router";
+import { navigateWithMode } from "./router";
 import { GRADE_LABELS } from "./utils";
 
 export const LEVEL_LABELS = {
@@ -229,10 +229,10 @@ export default function SettingsApp() {
             <h1>위험도 정책 설정</h1>
           </div>
           <div className="control-header-actions">
-            <button className="secondary-button" type="button" onClick={() => navigate("/control")}>
+            <button className="secondary-button" type="button" onClick={() => navigateWithMode("/control")}>
               <span className="btn-text-full">중앙 관제 ↗</span><span className="btn-text-short">관제 ↗</span>
             </button>
-            <button className="secondary-button" type="button" onClick={() => navigate("/")}>
+            <button className="secondary-button" type="button" onClick={() => navigateWithMode("/")}>
               <span className="btn-text-full">현장 지도 ↗</span><span className="btn-text-short">지도 ↗</span>
             </button>
           </div>
@@ -292,10 +292,10 @@ export default function SettingsApp() {
           <h1>위험도 정책 설정</h1>
         </div>
         <div className="control-header-actions">
-          <button className="secondary-button" type="button" onClick={() => navigate("/control")}>
+          <button className="secondary-button" type="button" onClick={() => navigateWithMode("/control")}>
             <span className="btn-text-full">중앙 관제 ↗</span><span className="btn-text-short">관제 ↗</span>
           </button>
-          <button className="secondary-button" type="button" onClick={() => navigate("/")}>
+          <button className="secondary-button" type="button" onClick={() => navigateWithMode("/")}>
             <span className="btn-text-full">현장 지도 ↗</span><span className="btn-text-short">지도 ↗</span>
           </button>
           <button className="secondary-button" type="button" onClick={handleLogout}>
