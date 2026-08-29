@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-28 22:42 KST
-> 기준 Git: `main` / PDF 보고서 4단계 고도화(PART 1 Compact Mode, PART 2 지도 Callout, PART 3 Action Items & Guidelines, PART 4 Header Metadata & Department Display) 완료
+> 마지막 정리: 2026-08-29 10:33 KST
+> 기준 Git: `main` (`ed1637c`) / PDF 보고서 5단계 고도화(PART 1~5 및 운영 배포) 완료
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -11,16 +11,17 @@ Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간
 
 ## 0. 현재 진행 중인 개선
 
-K-ECO 기상재난 시설 영향 보고서 PDF의 4단계 고도화(PART 1 ~ PART 4)가 모두 성공적으로 완료되었습니다.
+K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PART 5)가 모두 완료되고, **Cloud Run API 및 Firebase Hosting 운영 배포가 성공적으로 완료**되었습니다.
 
-- 완료 (PART 1: Compact/Standard Mode): 소량 데이터(영향시설 <= 10개 & 활성특보 잔여공간 수용 가능) 시 활성특보까지 1페이지 하단에 수용하여 1페이지로 완결
+- 완료 (PART 1: Compact/Standard Mode): 소량 데이터(영향시설 <= 10개 & 활성특보 잔여공간 수용 가능) 시 활성특보까지 1페이지 하단에 수용하여 1페이지 완결
 - 완료 (PART 2: 지도 Callout & Leader Line): TOP 1~4 마커 원형 번호 뱃지 + 좌우 레일 배치 + 엘보 지시선 자동 배치로 충돌 방지 및 위치 시인성 극대화
 - 완료 (PART 3: 안전관리요령 Master & Panel): 13종 공식 특보 100% 매핑 `SafetyGuidelineMaster`, 핵심 Action Items 불릿 표출, 중점관리시설 카운트 뱃지(`0개소`/`N개소`/`상위 4개소`) 및 특보단계(`호우 · 경보`) 명시
 - 완료 (PART 4: Header Metadata & Department Display): Header에 `발행: YYYY-MM-DD HH:MM | 데이터 기준: YYYY-MM-DD HH:MM` 분리 표출, 1페이지 테이블 담당부서 Display Name(마지막 단위 부서명) 축약 처리, 지도 범례 3행 구조 흑백/컬러 가독성 최적화
-- 완료: PDF 확장 단위 테스트 15개 및 5단계 전체 무결성 검증(`verify_all.sh`) 100% 통과
+- 완료 (PART 5: Scenario A ~ O 통합검증 & 운영 배포): 15개 재난 시나리오 전수 검증 및 CI/CD(Cloud Run API, Firebase Hosting) 배포 완료
+- 완료: PDF 확장 단위 테스트 15개, 전체 단위 테스트 222개 및 5단계 무결성 검증(`verify_all.sh`) 100% 통과
 - 보존: `output/`, `tmp/`는 untracked 상태 그대로 보존
 
-**다음 작업 하나**: 운영 배포 후 실시간 기상특보 상황에서 중앙관제 헤더의 `PDF 초동보고서 다운로드`를 실행하여 최종 발행 품질을 확인한다.
+**다음 작업 하나**: 운영 환경(`https://keco-safety-map.web.app/control`)에서 실시간 기상특보 상황 또는 모의훈련 모드로 `PDF 초동보고서 다운로드`를 실행하여 실제 운영 품질을 점검한다.
 
 
 ## 1. 프로젝트 한 문장
