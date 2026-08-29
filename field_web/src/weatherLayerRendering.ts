@@ -1,10 +1,9 @@
 import type {
-  Facility,
   WeatherLayerKind,
   WeatherLayerPoint,
   WeatherLayerResponse,
 } from "./types";
-import { rainfallColor, temperatureColor, windSpeedColor } from "./utils";
+import { weatherColorChannels, windSpeedColor } from "./utils";
 
 export interface ScreenWeatherPoint {
   source: WeatherLayerPoint;
@@ -12,17 +11,43 @@ export interface ScreenWeatherPoint {
   y: number;
 }
 
+type ScalarLayerKind = WeatherLayerKind;
+
+interface ScalarPointWithValue extends ScreenWeatherPoint {
+  value: number;
+}
+
+interface ScalarSpatialIndex {
+  bucketSize: number;
+  buckets: Map<string, ScalarPointWithValue[]>;
+}
+
+export interface ScalarInterpolation {
+  value: number;
+  coverage: number;
+  nearestDistance: number;
+}
+
+export interface ScalarRaster {
+  width: number;
+  height: number;
+  step: number;
+  pixels: Uint8ClampedArray;
+}
+
+export const MIN_SCALAR_RASTER_STEP = 4;
+export const MAX_SCALAR_RASTER_SAMPLES = 120_000;
+const SCALAR_FULL_COVERAGE_RATIO = 0.9;
+const SCALAR_EDGE_COVERAGE_RATIO = 1.75;
+const SCALAR_NEIGHBOR_LIMIT = 4;
+
 export function median(values: number[]): number {
   if (!values.length) return 12;
   const ordered = [...values].sort((left, right) => left - right);
   return ordered[Math.floor(ordered.length / 2)];
 }
 
-/**
- * 기온·강수 스칼라 레이어의 격자 반경을 계산합니다.
- * 인접점 간격의 약 0.54배(0.50~0.58 범위)를 사용하여 과도한 겹침과 바둑판 무늬를 방지합니다.
- */
-export function scalarCellRadius(points: ScreenWeatherPoint[]): number {
+export function scalarNeighborSpacing(points: ScreenWeatherPoint[]): number {
   const byGrid = new Map(
     points.map((point) => [`${point.source.grid_x}:${point.source.grid_y}`, point]),
   );
@@ -33,60 +58,197 @@ export function scalarCellRadius(points: ScreenWeatherPoint[]): number {
       byGrid.get(`${point.source.grid_x}:${point.source.grid_y + 1}`);
     if (!neighbor) continue;
     distances.push(Math.hypot(point.x - neighbor.x, point.y - neighbor.y));
-    if (distances.length >= 80) break;
   }
-  return Math.min(90, Math.max(5, median(distances) * 0.54));
+  return Math.max(1, median(distances));
 }
 
 /**
  * 레이어 종류별 화면 전체 합성 불투명도(alpha)를 반환합니다.
- * - 기온: 0.28 (0.26~0.32 범위)
- * - 강수: 0.34 (0.30~0.38 범위)
- * - 바람: 1.0 (별도 선명한 화살표 렌더링)
+ * - 기온: 0.24
+ * - 강수: 0.28
+ * - 바람: 0.12 (저채도 풍속 색면, 화살표는 별도 렌더링)
  */
 export function scalarLayerAlpha(layer: WeatherLayerKind): number {
-  if (layer === "temperature") return 0.28;
-  if (layer === "rainfall") return 0.34;
-  return 1.0;
+  if (layer === "temperature") return 0.24;
+  if (layer === "rainfall") return 0.28;
+  return 0.12;
 }
 
-/**
- * 스칼라 레이어에서 무효값 또는 강수량 0 이하 점을 생략할지 여부를 판정합니다.
- */
+/** 보간 입력에서 무효값과 음수 강수·풍속을 제외합니다. 0은 경계 보간에 사용합니다. */
 export function shouldSkipScalarPoint(
   kind: WeatherLayerKind,
   value: number | undefined,
 ): boolean {
   if (value === undefined || !Number.isFinite(value)) return true;
-  if (kind === "rainfall" && value <= 0) return true;
+  if ((kind === "rainfall" || kind === "wind") && value < 0) return true;
   return false;
 }
 
-/**
- * 화면 영역 안쪽에 유효한 스칼라 포인트만 필터링합니다.
- */
-export function filterScalarPoints(
+function scalarPointValue(point: ScreenWeatherPoint, kind: ScalarLayerKind): number | undefined {
+  return kind === "wind" ? point.source.speed_ms : point.source.value;
+}
+
+function scalarPointsWithValues(
   points: ScreenWeatherPoint[],
-  layer: WeatherLayerResponse,
-  width: number,
-  height: number,
-  radius: number,
-): ScreenWeatherPoint[] {
-  return points.filter((point) => {
-    if (shouldSkipScalarPoint(layer.layer, point.source.value)) return false;
-    return (
-      point.x >= -radius &&
-      point.x <= width + radius &&
-      point.y >= -radius &&
-      point.y <= height + radius
-    );
+  kind: ScalarLayerKind,
+): ScalarPointWithValue[] {
+  return points.flatMap((point) => {
+    const value = scalarPointValue(point, kind);
+    if (shouldSkipScalarPoint(kind, value)) return [];
+    return [{ ...point, value: value as number }];
   });
 }
 
-/**
- * 기온·강수 스칼라 레이어를 offscreen canvas에 먼저 렌더링한 후,
- * visible canvas에 레이어별 단일 alpha로 합성하여 불투명도 누적 폭증을 방지합니다.
- */
+export function calculateScalarRasterStep(width: number, height: number): number {
+  const safeWidth = Math.max(1, Math.ceil(width));
+  const safeHeight = Math.max(1, Math.ceil(height));
+  let step = Math.max(
+    MIN_SCALAR_RASTER_STEP,
+    Math.ceil(Math.sqrt((safeWidth * safeHeight) / MAX_SCALAR_RASTER_SAMPLES)),
+  );
+  while (Math.ceil(safeWidth / step) * Math.ceil(safeHeight / step) > MAX_SCALAR_RASTER_SAMPLES) {
+    step += 1;
+  }
+  return step;
+}
+
+export function scalarCoverage(nearestDistance: number, spacing: number): number {
+  if (!Number.isFinite(nearestDistance)) return 0;
+  const safeSpacing = Math.max(1, spacing);
+  const fullDistance = safeSpacing * SCALAR_FULL_COVERAGE_RATIO;
+  const edgeDistance = safeSpacing * SCALAR_EDGE_COVERAGE_RATIO;
+  if (nearestDistance <= fullDistance) return 1;
+  if (nearestDistance >= edgeDistance) return 0;
+  const ratio = (nearestDistance - fullDistance) / (edgeDistance - fullDistance);
+  const smooth = ratio * ratio * (3 - 2 * ratio);
+  return 1 - smooth;
+}
+
+function compareScalarCandidates(
+  left: { point: ScalarPointWithValue; distance: number },
+  right: { point: ScalarPointWithValue; distance: number },
+): number {
+  if (left.distance !== right.distance) return left.distance - right.distance;
+  if (left.point.source.grid_x !== right.point.source.grid_x) {
+    return left.point.source.grid_x - right.point.source.grid_x;
+  }
+  return left.point.source.grid_y - right.point.source.grid_y;
+}
+
+function interpolateScalarCandidates(
+  candidates: ScalarPointWithValue[],
+  x: number,
+  y: number,
+  spacing: number,
+): ScalarInterpolation | null {
+  const edgeDistance = Math.max(1, spacing) * SCALAR_EDGE_COVERAGE_RATIO;
+  const nearest = candidates
+    .map((point) => ({ point, distance: Math.hypot(point.x - x, point.y - y) }))
+    .filter((candidate) => candidate.distance <= edgeDistance)
+    .sort(compareScalarCandidates)
+    .slice(0, SCALAR_NEIGHBOR_LIMIT);
+  if (!nearest.length) return null;
+  if (nearest[0].distance < 0.001) {
+    return { value: nearest[0].point.value, coverage: 1, nearestDistance: 0 };
+  }
+
+  let weightedValue = 0;
+  let totalWeight = 0;
+  nearest.forEach(({ point, distance }) => {
+    const weight = 1 / (distance * distance + 1);
+    weightedValue += point.value * weight;
+    totalWeight += weight;
+  });
+  const nearestDistance = nearest[0].distance;
+  return {
+    value: weightedValue / totalWeight,
+    coverage: scalarCoverage(nearestDistance, spacing),
+    nearestDistance,
+  };
+}
+
+export function interpolateScalarAt(
+  points: ScreenWeatherPoint[],
+  kind: ScalarLayerKind,
+  x: number,
+  y: number,
+  spacing = scalarNeighborSpacing(points),
+): ScalarInterpolation | null {
+  return interpolateScalarCandidates(scalarPointsWithValues(points, kind), x, y, spacing);
+}
+
+function buildScalarSpatialIndex(
+  points: ScalarPointWithValue[],
+  spacing: number,
+): ScalarSpatialIndex {
+  const bucketSize = Math.max(MIN_SCALAR_RASTER_STEP, spacing * SCALAR_EDGE_COVERAGE_RATIO);
+  const buckets = new Map<string, ScalarPointWithValue[]>();
+  points.forEach((point) => {
+    const key = `${Math.floor(point.x / bucketSize)}:${Math.floor(point.y / bucketSize)}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(point);
+    else buckets.set(key, [point]);
+  });
+  return { bucketSize, buckets };
+}
+
+function scalarCandidatesNear(
+  index: ScalarSpatialIndex,
+  x: number,
+  y: number,
+): ScalarPointWithValue[] {
+  const centerX = Math.floor(x / index.bucketSize);
+  const centerY = Math.floor(y / index.bucketSize);
+  const result: ScalarPointWithValue[] = [];
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      const bucket = index.buckets.get(`${centerX + offsetX}:${centerY + offsetY}`);
+      if (bucket) result.push(...bucket);
+    }
+  }
+  return result;
+}
+
+export function buildScalarRaster(
+  points: ScreenWeatherPoint[],
+  kind: ScalarLayerKind,
+  width: number,
+  height: number,
+): ScalarRaster | null {
+  const validPoints = scalarPointsWithValues(points, kind);
+  if (!validPoints.length || width <= 0 || height <= 0) return null;
+  const spacing = scalarNeighborSpacing(points);
+  const index = buildScalarSpatialIndex(validPoints, spacing);
+  const step = calculateScalarRasterStep(width, height);
+  const rasterWidth = Math.max(1, Math.ceil(width / step));
+  const rasterHeight = Math.max(1, Math.ceil(height / step));
+  const pixels = new Uint8ClampedArray(rasterWidth * rasterHeight * 4);
+
+  for (let row = 0; row < rasterHeight; row += 1) {
+    const sampleY = Math.min(height, (row + 0.5) * step);
+    for (let column = 0; column < rasterWidth; column += 1) {
+      const sampleX = Math.min(width, (column + 0.5) * step);
+      const interpolation = interpolateScalarCandidates(
+        scalarCandidatesNear(index, sampleX, sampleY),
+        sampleX,
+        sampleY,
+        spacing,
+      );
+      if (!interpolation || interpolation.coverage <= 0) continue;
+      if (kind === "rainfall" && interpolation.value < 0.1) continue;
+      const color = weatherColorChannels(kind, interpolation.value);
+      const offset = (row * rasterWidth + column) * 4;
+      pixels[offset] = color[0];
+      pixels[offset + 1] = color[1];
+      pixels[offset + 2] = color[2];
+      pixels[offset + 3] = Math.round(interpolation.coverage * 255);
+    }
+  }
+
+  return { width: rasterWidth, height: rasterHeight, step, pixels };
+}
+
+/** 저해상도 IDW raster를 고품질 확대해 점무늬 없는 연속 기상장으로 합성합니다. */
 export function drawScalarLayer(
   visibleContext: CanvasRenderingContext2D,
   width: number,
@@ -94,17 +256,15 @@ export function drawScalarLayer(
   points: ScreenWeatherPoint[],
   layer: WeatherLayerResponse,
 ): void {
-  const radius = scalarCellRadius(points);
-  const visible = filterScalarPoints(points, layer, width, height, radius);
-  if (!visible.length) return;
+  const raster = buildScalarRaster(points, layer.layer, width, height);
+  if (!raster) return;
 
-  // Offscreen canvas 생성
   let offscreen: HTMLCanvasElement | OffscreenCanvas | null = null;
   let offCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
 
   if (typeof OffscreenCanvas !== "undefined") {
     try {
-      offscreen = new OffscreenCanvas(Math.max(1, width), Math.max(1, height));
+      offscreen = new OffscreenCanvas(raster.width, raster.height);
       offCtx = offscreen.getContext("2d");
     } catch {
       offscreen = null;
@@ -114,45 +274,33 @@ export function drawScalarLayer(
 
   if (!offCtx && typeof document !== "undefined") {
     const docCanvas = document.createElement("canvas");
-    docCanvas.width = Math.max(1, width);
-    docCanvas.height = Math.max(1, height);
+    docCanvas.width = raster.width;
+    docCanvas.height = raster.height;
     offscreen = docCanvas;
     offCtx = docCanvas.getContext("2d");
   }
 
-  if (!offCtx || !offscreen) {
-    // 캔버스 생성 불가 환경(SSR/테스트 등) fallback
-    return;
-  }
+  if (!offCtx || !offscreen) return;
 
-  visible.forEach((point) => {
-    const value = point.source.value;
-    if (value === undefined) return;
-    const color =
-      layer.layer === "temperature"
-        ? temperatureColor(value, 0.95)
-        : rainfallColor(value, 0.95);
+  const imageData = offCtx.createImageData(raster.width, raster.height);
+  imageData.data.set(raster.pixels);
+  offCtx.putImageData(imageData, 0, 0);
 
-    const gradient = offCtx.createRadialGradient(
-      point.x,
-      point.y,
-      0,
-      point.x,
-      point.y,
-      radius,
-    );
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.60, color);
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-
-    offCtx.fillStyle = gradient;
-    offCtx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
-  });
-
-  // Visible canvas에 단일 불투명도로 합성
   visibleContext.save();
   visibleContext.globalAlpha = scalarLayerAlpha(layer.layer);
-  visibleContext.drawImage(offscreen as CanvasImageSource, 0, 0);
+  visibleContext.imageSmoothingEnabled = true;
+  visibleContext.imageSmoothingQuality = "high";
+  visibleContext.drawImage(
+    offscreen as CanvasImageSource,
+    0,
+    0,
+    raster.width,
+    raster.height,
+    0,
+    0,
+    width,
+    height,
+  );
   visibleContext.restore();
 }
 
@@ -173,6 +321,18 @@ export function calculateWindSpacing(
 }
 
 export const WIND_EDGE_INSET = 22;
+export const WIND_ARROW_MIN_LENGTH = 14;
+export const WIND_ARROW_MAX_LENGTH = 30;
+export const WIND_ARROW_OUTLINE_WIDTH = 3.6;
+export const WIND_ARROW_LINE_WIDTH = 2;
+
+export function windArrowLength(speed: number): number {
+  const finiteSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0;
+  return Math.min(
+    WIND_ARROW_MAX_LENGTH,
+    Math.max(WIND_ARROW_MIN_LENGTH, WIND_ARROW_MIN_LENGTH + finiteSpeed * 0.64),
+  );
+}
 
 /**
  * 보이는 바람 점들을 격자로 묶고, 각 셀에서 중심 거리와 풍속을 고려해
@@ -271,7 +431,7 @@ export function drawWindArrow(
   const speed = point.source.speed_ms;
   const direction = point.source.direction_to_deg;
   if (speed === undefined || direction === undefined) return;
-  const length = Math.min(34, Math.max(15, 15 + speed * 0.9));
+  const length = windArrowLength(speed);
   const radians = (direction * Math.PI) / 180;
   context.save();
   context.translate(point.x, point.y);
@@ -284,11 +444,11 @@ export function drawWindArrow(
   context.lineTo(-4.5, -length / 2 + 6);
   context.moveTo(0, -length / 2);
   context.lineTo(4.5, -length / 2 + 6);
-  context.strokeStyle = "rgba(255,255,255,.92)";
-  context.lineWidth = 5;
+  context.strokeStyle = "rgba(255,255,255,.78)";
+  context.lineWidth = WIND_ARROW_OUTLINE_WIDTH;
   context.stroke();
   context.strokeStyle = windSpeedColor(speed, 0.96);
-  context.lineWidth = 2.2;
+  context.lineWidth = WIND_ARROW_LINE_WIDTH;
   context.stroke();
   context.restore();
 }
@@ -307,34 +467,4 @@ export function drawWindLayer(
   sampled.forEach((point) => {
     drawWindArrow(context, point);
   });
-}
-
-/**
- * 시설 주변 마커 가독성을 위해 기상 레이어를 잘라냅니다.
- */
-export function clearAroundFacilities(
-  context: CanvasRenderingContext2D,
-  kakao: any,
-  map: any,
-  facilities: Facility[],
-  selectedFacilityId: string,
-): void {
-  const projection = map.getProjection();
-  context.save();
-  context.globalCompositeOperation = "destination-out";
-  facilities.forEach((facility) => {
-    const point = projection.containerPointFromCoords(
-      new kakao.maps.LatLng(facility.latitude, facility.longitude),
-    );
-    context.beginPath();
-    context.arc(
-      point.x,
-      point.y,
-      facility.id === selectedFacilityId ? 28 : 23,
-      0,
-      Math.PI * 2,
-    );
-    context.fill();
-  });
-  context.restore();
 }

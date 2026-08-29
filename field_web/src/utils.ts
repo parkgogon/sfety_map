@@ -104,7 +104,7 @@ function hexRgb(value: string): [number, number, number] {
   ];
 }
 
-function scaleColor(value: number, stops: readonly ColorStop[], alpha: number): string {
+function scaleColorChannels(value: number, stops: readonly ColorStop[]): [number, number, number] {
   const finite = Number.isFinite(value) ? value : stops[0][0];
   let lower = stops[0];
   let upper = stops[stops.length - 1];
@@ -120,9 +120,22 @@ function scaleColor(value: number, stops: readonly ColorStop[], alpha: number): 
   const ratio = Math.min(1, Math.max(0, (finite - lower[0]) / span));
   const left = hexRgb(designColor(lower[1], lower[2]));
   const right = hexRgb(designColor(upper[1], upper[2]));
-  const channels = left.map((channel, index) =>
-    Math.round(channel + (right[index] - channel) * ratio));
+  return left.map((channel, index) =>
+    Math.round(channel + (right[index] - channel) * ratio)) as [number, number, number];
+}
+
+function scaleColor(value: number, stops: readonly ColorStop[], alpha: number): string {
+  const channels = scaleColorChannels(value, stops);
   return `rgba(${channels[0]},${channels[1]},${channels[2]},${alpha})`;
+}
+
+export function weatherColorChannels(
+  kind: WeatherLayerKind,
+  value: number,
+): [number, number, number] {
+  if (kind === "temperature") return scaleColorChannels(value, TEMPERATURE_STOPS);
+  if (kind === "rainfall") return scaleColorChannels(value, RAINFALL_STOPS);
+  return scaleColorChannels(value, WIND_STOPS);
 }
 
 export function temperatureColor(value: number, alpha = 1): string {
@@ -295,4 +308,3 @@ export function uniqueWarningText(facility: Facility): string {
   }
   return [...new Set(activeReasons.map((item) => `${item.type} ${item.raw_level}`))].join(" · ");
 }
-

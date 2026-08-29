@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./kakao";
+import {
+  CLUSTER_GRID_SIZE,
+  CLUSTER_MARKER_SIZE,
+  CLUSTER_MIN_LEVEL,
+  CLUSTER_MIN_SIZE,
+  MAP_MARKER_Z_INDEX,
+  facilityMarkerSize,
+} from "./mapVisuals";
 import type {
   Facility,
   MapFocusRequest,
@@ -16,7 +24,6 @@ import {
   shouldShowMapZoomControl,
 } from "./utils";
 import {
-  clearAroundFacilities,
   drawScalarLayer,
   drawWindLayer,
   type ScreenWeatherPoint,
@@ -55,8 +62,6 @@ function renderWeatherCanvas(
   kakao: any,
   map: any,
   layer: WeatherLayerResponse | null,
-  facilities: Facility[],
-  selectedFacilityId: string,
 ) {
   const width = element.clientWidth;
   const height = element.clientHeight;
@@ -74,12 +79,10 @@ function renderWeatherCanvas(
     return;
   }
   const points = projectedWeatherPoints(kakao, map, layer.points);
+  drawScalarLayer(context, width, height, points, layer);
   if (layer.layer === "wind") {
     drawWindLayer(context, width, height, points, map.getLevel());
-  } else {
-    drawScalarLayer(context, width, height, points, layer);
   }
-  clearAroundFacilities(context, kakao, map, facilities, selectedFacilityId);
   canvas.style.opacity = "1";
 }
 
@@ -99,7 +102,7 @@ function strongest(facilities: Facility[]): Facility {
 function markerImage(kakao: any, facilities: Facility[], selected: boolean): any {
   const primary = strongest(facilities);
   const count = facilities.length > 1 ? String(facilities.length) : "";
-  const size = selected ? 48 : primary.grade === "NONE" ? 30 : 38;
+  const size = facilityMarkerSize(facilities.length, selected);
   const radius = size / 2 - 3;
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
@@ -230,20 +233,28 @@ export function KakaoMap({
       const clusterer = new kakao.maps.MarkerClusterer({
         map,
         averageCenter: true,
-        minLevel: 8,
+        gridSize: CLUSTER_GRID_SIZE,
+        minLevel: CLUSTER_MIN_LEVEL,
+        minClusterSize: CLUSTER_MIN_SIZE,
         disableClickZoom: false,
         styles: [{
-          width: "42px",
-          height: "42px",
+          width: `${CLUSTER_MARKER_SIZE}px`,
+          height: `${CLUSTER_MARKER_SIZE}px`,
           background: "rgba(20,39,70,.9)",
           border: "3px solid white",
           borderRadius: "50%",
+          boxSizing: "border-box",
           color: "white",
           textAlign: "center",
           fontWeight: "700",
-          lineHeight: "36px",
+          lineHeight: `${CLUSTER_MARKER_SIZE - 6}px`,
           boxShadow: "0 2px 8px rgba(20,39,70,.22)",
         }],
+      });
+      kakao.maps.event.addListener(clusterer, "clustered", (clusters: any[]) => {
+        clusters.forEach((cluster) => {
+          cluster.getClusterMarker()?.setZIndex(MAP_MARKER_Z_INDEX);
+        });
       });
       clustererRef.current = clusterer;
       const bounds = new kakao.maps.LatLngBounds();
@@ -253,6 +264,7 @@ export function KakaoMap({
         const marker = new kakao.maps.Marker({
           position,
           title: group.length === 1 ? first.name : `같은 위치의 시설 ${group.length}개`,
+          zIndex: MAP_MARKER_Z_INDEX,
           image: markerImage(
             kakao,
             group,
@@ -363,8 +375,6 @@ export function KakaoMap({
           kakao,
           map,
           weatherLayer,
-          facilities,
-          selectedFacilityId,
         );
       });
     };
@@ -391,7 +401,7 @@ export function KakaoMap({
         kakao.maps.event.removeListener(map, "idle", draw);
       }
     };
-  }, [facilities, selectedFacilityId, weatherLayer]);
+  }, [weatherLayer]);
 
 
   return (
