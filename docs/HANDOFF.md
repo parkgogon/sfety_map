@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-29 21:44 KST
-> 기준 배포 Git: `main` (`3ed4bfd`) / 모의훈련 단계 1~4 배포 완료, 후속 회귀 테스트·문서 정리 미커밋
+> 마지막 정리: 2026-08-29 21:55 KST
+> 기준 배포 Git: `main` (`2c32273`) / 모의훈련 회귀 테스트·문서 정리 운영 배포 완료
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -158,6 +158,11 @@ GitHub Actions 실행 `33231923435`의 테스트, API·Worker, 웹, uptime monit
 2026-08-29 21:44 KST 공개 모의훈련 API를 재확인한 결과 특보 4건, 영향시설
 31개소, 상 위험 10개소였고 바람 레이어는 `SIMULATION`, `actual_data=false`,
 시나리오 `multi_hazard_demo`, 격자 1,244개를 반환했습니다.
+
+2026-08-29 21:55 KST에 모의훈련 PDF 전 페이지 표식과 Worker live 격리 회귀
+테스트를 보강한 `2c32273`을 배포했습니다. GitHub Actions 실행 `33253501956`의
+테스트, API·Worker, 웹, uptime monitoring 작업이 모두 성공했고 공개 웹·health는
+HTTP 200이었습니다. 모의훈련 관제 수치와 바람 레이어도 위 확인값을 유지했습니다.
 
 ## 4. 구현 완료 상태
 
@@ -337,8 +342,6 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 - 생성 PDF·렌더·제작 중간물은 2026-08-29 사용자 요청으로
   `.trash/obsolete_artifacts_20260829/`로 이동했습니다. `.trash/`, `output/`,
   `tmp/`는 Git에서 제외하며 요청 없이 삭제·커밋하지 않습니다.
-- 2026-08-29 21:44 KST working tree에는 모의훈련 PDF·Worker 회귀 테스트 보강,
-  완료된 임시 계획서 제거와 관련 문서 정리가 미커밋 상태로 남아 있습니다.
 - `.streamlit/secrets.toml`, `field_web/.env.local`, 전화번호 명부는 Git에서
   제외됩니다.
 - KMA, Kakao, Telegram, SOLAPI, 관리자 토큰·비밀번호는 GitHub/Google Secret
