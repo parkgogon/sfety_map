@@ -67,6 +67,8 @@ export default function App() {
   const [selectedCctvId, setSelectedCctvId] = useState("");
   const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
   const [weatherLayerOpen, setWeatherLayerOpen] = useState(false);
+  const autoSelectedSimulationRef = useRef(false);
+  const userSelectedLayerRef = useRef(false);
   const initializedGroups = useRef(false);
   const handledDeepLink = useRef(false);
   const focusRevision = useRef(0);
@@ -193,15 +195,37 @@ export default function App() {
       return next;
     });
   };
+  // 모의훈련 snapshot 도착 시 특보 기반 추천 레이어 1회 자동 선택
+  useEffect(() => {
+    if (monitoringMode !== "simulation") {
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
+      return;
+    }
+    if (!data || data.status.health !== "SIMULATION") return;
+    if (!autoSelectedSimulationRef.current && !userSelectedLayerRef.current) {
+      autoSelectedSimulationRef.current = true;
+      const recommended = recommendedWeatherLayer(data.warnings) ?? "wind";
+      setWeatherLayerKind(recommended);
+    }
+  }, [data, monitoringMode]);
+
+  const handleSelectWeatherLayer = useCallback((kind: WeatherLayerKind | null) => {
+    userSelectedLayerRef.current = true;
+    setWeatherLayerKind(kind);
+  }, []);
+
   const changeMonitoringMode = (mode: MonitoringMode) => {
     setModeQuery(mode);
     setMonitoringMode(mode);
     setFilterOpen(false);
-    if (mode === "simulation") {
-      const recommended = recommendedWeatherLayer(data?.warnings ?? []) ?? "wind";
-      setWeatherLayerKind(recommended);
-    } else {
+    if (mode === "live") {
       setWeatherLayerKind(null);
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
+    } else {
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
     }
   };
 
@@ -415,7 +439,7 @@ export default function App() {
           active={weatherLayerKind}
           simulation={simulation}
           onSelect={(kind) => {
-            setWeatherLayerKind(kind);
+            handleSelectWeatherLayer(kind);
             setWeatherLayerOpen(false);
           }}
           onClose={() => setWeatherLayerOpen(false)}

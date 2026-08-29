@@ -207,9 +207,8 @@ describe("ControlApp 중앙관제 대시보드", () => {
     expect(html).not.toContain('role="alert"');
   });
 
-  it("모의훈련 모드에서 배너와 진행 중 패널을 표시한다", () => {
+  it("모의훈련 모드에서 상단 배너에 단일 실시간 복귀 동작을 제공하고 하단 중복 패널은 노출하지 않는다", () => {
     window.history.replaceState({}, "", "/control?mode=simulation");
-    // mock을 SIMULATION 상태로 변경
     const originalHealth = mockMonitoringData.status.health;
     mockMonitoringData.status.health = "SIMULATION";
     try {
@@ -217,17 +216,18 @@ describe("ControlApp 중앙관제 대시보드", () => {
       expect(html).toContain("simulation-banner");
       expect(html).toContain("실제 상황이 아닙니다");
       expect(html).toContain("실시간으로 돌아가기");
-      expect(html).toContain("simulation-entry-panel active");
-      expect(html).toContain("모의훈련 진행 중");
+      // 하단 중복 패널은 노출되지 않음
+      expect(html).not.toContain("simulation-entry-panel");
+      expect(html).not.toContain("모의훈련 진행 중");
+      // '실시간으로 돌아가기' 버튼이 정확히 1개만 존재함을 검증
+      const exitButtonMatches = html.match(/실시간으로 돌아가기/g);
+      expect(exitButtonMatches?.length).toBe(1);
     } finally {
       mockMonitoringData.status.health = originalHealth;
     }
   });
 
   it("대상 분석 탭에서 기상 레이어 선택 버튼들을 렌더링한다", () => {
-    // analysis 탭이 렌더링되려면 workspace 상태가 analysis여야 하지만 기본 렌더링은 overview이므로,
-    // ControlApp의 analysis 뷰 테스트
-    // renderToStaticMarkup으로 전체 워크스페이스 구조 및 관제 지도 존재 검증
     const html = renderToStaticMarkup(<ControlApp />);
     expect(html).toContain("대상 분석·전파");
   });

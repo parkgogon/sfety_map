@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMonitoringData } from "./api";
 import {
   checkAdminSession,
@@ -132,6 +132,8 @@ export default function ControlApp() {
     requestedMonitoringMode(typeof window !== "undefined" ? window.location.search : ""),
   );
   const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
+  const autoSelectedSimulationRef = useRef(false);
+  const userSelectedLayerRef = useRef(false);
   const { data, loading, refreshing, error, refresh } = useMonitoringData(monitoringMode);
 
   // 관리자 인증
@@ -212,14 +214,36 @@ export default function ControlApp() {
     }
   };
 
+  // 모의훈련 snapshot 도착 시 특보 기반 추천 레이어 1회 자동 선택
+  useEffect(() => {
+    if (monitoringMode !== "simulation") {
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
+      return;
+    }
+    if (!data || data.status.health !== "SIMULATION") return;
+    if (!autoSelectedSimulationRef.current && !userSelectedLayerRef.current) {
+      autoSelectedSimulationRef.current = true;
+      const recommended = recommendedWeatherLayer(data.warnings) ?? "wind";
+      setWeatherLayerKind(recommended);
+    }
+  }, [data, monitoringMode]);
+
+  const handleSelectWeatherLayer = useCallback((kind: WeatherLayerKind | null) => {
+    userSelectedLayerRef.current = true;
+    setWeatherLayerKind(kind);
+  }, []);
+
   const changeMonitoringMode = (mode: MonitoringMode) => {
     setModeQuery(mode);
     setMonitoringMode(mode);
-    if (mode === "simulation") {
-      const recommended = recommendedWeatherLayer(data?.warnings ?? []) ?? "wind";
-      setWeatherLayerKind(recommended);
-    } else {
+    if (mode === "live") {
       setWeatherLayerKind(null);
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
+    } else {
+      autoSelectedSimulationRef.current = false;
+      userSelectedLayerRef.current = false;
     }
   };
 
@@ -570,8 +594,8 @@ export default function ControlApp() {
             </div>
           )}
 
-          {/* 모의훈련 시작·종료 진입점 */}
-          {monitoringMode !== "simulation" ? (
+          {/* 모의훈련 시작 진입점 (실시간 모드에서만 표시, 훈련 중에는 상단 보라색 배너 1곳으로 복귀 단일화) */}
+          {monitoringMode !== "simulation" && (
             <div className="simulation-entry-panel">
               <div>
                 <strong>모의훈련</strong>
@@ -579,16 +603,6 @@ export default function ControlApp() {
               </div>
               <button className="secondary-button" type="button" onClick={() => changeMonitoringMode("simulation")}>
                 모의훈련 시작
-              </button>
-            </div>
-          ) : (
-            <div className="simulation-entry-panel active">
-              <div>
-                <strong>모의훈련 진행 중</strong>
-                <span>현재 고정된 훈련 특보를 표시하고 있습니다. 자동감시·운영 지표는 실제 운영 참고입니다.</span>
-              </div>
-              <button className="secondary-button" type="button" onClick={() => changeMonitoringMode("live")}>
-                실시간 화면으로 돌아가기
               </button>
             </div>
           )}
@@ -765,7 +779,7 @@ export default function ControlApp() {
                       key={kind}
                       type="button"
                       className={`control-layer-chip ${weatherLayerKind === kind ? "active" : ""}`}
-                      onClick={() => setWeatherLayerKind(weatherLayerKind === kind ? null : kind)}
+                      onClick={() => handleSelectWeatherLayer(weatherLayerKind === kind ? null : kind)}
                     >
                       {WEATHER_LAYER_LABELS[kind]}
                     </button>

@@ -37,7 +37,7 @@ describe("기상 실황 범례", () => {
     expect(markup).not.toContain("weather-scale-labels");
   });
 
-  it("모의훈련에서는 모의훈련 기상 가정과 실제 관측이 아님 배지를 표시한다", () => {
+  it("모의훈련에서는 간결한 훈련값 표기와 스크린리더 안전 접근성 레이블을 제공한다", () => {
     const simData: WeatherLayerResponse = {
       ...data,
       status: "SIMULATION",
@@ -55,9 +55,9 @@ describe("기상 실황 범례", () => {
         onRetry={() => undefined}
       />,
     );
-    expect(markup).toContain("기온 (모의훈련 가정)");
-    expect(markup).toContain("실제 관측이 아님");
-    expect(markup).toContain("종합 기상재난 모의훈련");
+    expect(markup).toContain("기온 · 훈련값");
+    expect(markup).toContain('aria-label="기온 모의훈련 기상 가정 (실제 관측이 아님)"');
+    expect(markup).not.toContain("종합 기상재난 모의훈련");
     expect(markup).not.toContain("기온 실황");
   });
 });

@@ -110,16 +110,19 @@ export function WeatherLayerLegend({
     && data?.points.every((point) => (point.value ?? 0) <= 0);
   const values = legendValues(kind);
   return (
-    <aside className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""} ${isSimulation ? "simulation" : ""}`} aria-live="polite">
+    <aside
+      className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""} ${isSimulation ? "simulation" : ""}`}
+      aria-live="polite"
+      aria-label={isSimulation ? `${WEATHER_LAYER_LABELS[kind]} 모의훈련 기상 가정 (실제 관측이 아님)` : `${WEATHER_LAYER_LABELS[kind]} 범례`}
+    >
       <div className="weather-layer-legend-title">
         <div>
-          <b>{WEATHER_LAYER_LABELS[kind]} {isSimulation ? "(모의훈련 가정)" : "실황"}</b>
-          {isSimulation && <span>실제 관측이 아님</span>}
+          <b>{WEATHER_LAYER_LABELS[kind]}{isSimulation ? " · 훈련값" : " 실황"}</b>
         </div>
-        {data && (
+        {data && !isSimulation && (
           <small>
             {data.status === "STALE" ? "지연 · " : ""}
-            {isSimulation ? (data.scenario_label || "모의훈련 시나리오") : formatReferenceTime(data.observed_at)}
+            {formatReferenceTime(data.observed_at)}
           </small>
         )}
       </div>

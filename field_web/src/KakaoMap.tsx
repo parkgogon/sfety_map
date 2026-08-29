@@ -12,12 +12,15 @@ import type {
 import {
   cctvDirectionText,
   GRADE_PRIORITY_ORDER,
-  rainfallColor,
   shouldFitInitialFacilities,
   shouldShowMapZoomControl,
-  temperatureColor,
-  windSpeedColor,
 } from "./utils";
+import {
+  clearAroundFacilities,
+  drawScalarLayer,
+  drawWindLayer,
+  type ScreenWeatherPoint,
+} from "./weatherLayerRendering";
 
 interface KakaoMapProps {
   facilities: Facility[];
@@ -32,18 +35,6 @@ interface KakaoMapProps {
   onSelectCctv: (cctv: NearbyCctv) => void;
 }
 
-interface ScreenWeatherPoint {
-  source: WeatherLayerPoint;
-  x: number;
-  y: number;
-}
-
-function median(values: number[]): number {
-  if (!values.length) return 12;
-  const ordered = [...values].sort((left, right) => left - right);
-  return ordered[Math.floor(ordered.length / 2)];
-}
-
 function projectedWeatherPoints(
   kakao: any,
   map: any,
@@ -56,130 +47,6 @@ function projectedWeatherPoints(
     );
     return { source, x: pixel.x, y: pixel.y };
   });
-}
-
-function scalarCellRadius(points: ScreenWeatherPoint[]): number {
-  const byGrid = new Map(points.map((point) => [
-    `${point.source.grid_x}:${point.source.grid_y}`,
-    point,
-  ]));
-  const distances: number[] = [];
-  for (const point of points) {
-    const neighbor = byGrid.get(`${point.source.grid_x + 1}:${point.source.grid_y}`)
-      ?? byGrid.get(`${point.source.grid_x}:${point.source.grid_y + 1}`);
-    if (!neighbor) continue;
-    distances.push(Math.hypot(point.x - neighbor.x, point.y - neighbor.y));
-    if (distances.length >= 80) break;
-  }
-  return Math.min(110, Math.max(6, median(distances) * 0.78));
-}
-
-function drawScalarLayer(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  points: ScreenWeatherPoint[],
-  layer: WeatherLayerResponse,
-) {
-  const radius = scalarCellRadius(points);
-  const visible = points.filter((point) =>
-    point.x >= -radius && point.x <= width + radius
-    && point.y >= -radius && point.y <= height + radius);
-  visible.forEach((point) => {
-    const value = point.source.value;
-    if (value === undefined || !Number.isFinite(value)) return;
-    if (layer.layer === "rainfall" && value <= 0) return;
-    const color = layer.layer === "temperature"
-      ? temperatureColor(value, 0.48)
-      : rainfallColor(value, 0.62);
-    const gradient = context.createRadialGradient(
-      point.x,
-      point.y,
-      0,
-      point.x,
-      point.y,
-      radius,
-    );
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.68, color);
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    context.fillStyle = gradient;
-    context.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
-  });
-}
-
-function drawWindArrow(
-  context: CanvasRenderingContext2D,
-  point: ScreenWeatherPoint,
-) {
-  const speed = point.source.speed_ms;
-  const direction = point.source.direction_to_deg;
-  if (speed === undefined || direction === undefined) return;
-  const length = Math.min(34, Math.max(15, 15 + speed * 0.9));
-  const radians = direction * Math.PI / 180;
-  context.save();
-  context.translate(point.x, point.y);
-  context.rotate(radians);
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.beginPath();
-  context.moveTo(0, length / 2);
-  context.lineTo(0, -length / 2);
-  context.lineTo(-4.5, -length / 2 + 6);
-  context.moveTo(0, -length / 2);
-  context.lineTo(4.5, -length / 2 + 6);
-  context.strokeStyle = "rgba(255,255,255,.92)";
-  context.lineWidth = 5;
-  context.stroke();
-  context.strokeStyle = windSpeedColor(speed, 0.96);
-  context.lineWidth = 2.2;
-  context.stroke();
-  context.restore();
-}
-
-function drawWindLayer(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  points: ScreenWeatherPoint[],
-  mapLevel: number,
-) {
-  const spacing = mapLevel >= 9 ? 54 : mapLevel >= 7 ? 48 : 42;
-  const occupied = new Set<string>();
-  points.forEach((point) => {
-    if (point.x < -20 || point.x > width + 20 || point.y < -20 || point.y > height + 20) return;
-    const cell = `${Math.floor(point.x / spacing)}:${Math.floor(point.y / spacing)}`;
-    if (occupied.has(cell)) return;
-    occupied.add(cell);
-    drawWindArrow(context, point);
-  });
-}
-
-function clearAroundFacilities(
-  context: CanvasRenderingContext2D,
-  kakao: any,
-  map: any,
-  facilities: Facility[],
-  selectedFacilityId: string,
-) {
-  const projection = map.getProjection();
-  context.save();
-  context.globalCompositeOperation = "destination-out";
-  facilities.forEach((facility) => {
-    const point = projection.containerPointFromCoords(
-      new kakao.maps.LatLng(facility.latitude, facility.longitude),
-    );
-    context.beginPath();
-    context.arc(
-      point.x,
-      point.y,
-      facility.id === selectedFacilityId ? 28 : 23,
-      0,
-      Math.PI * 2,
-    );
-    context.fill();
-  });
-  context.restore();
 }
 
 function renderWeatherCanvas(
@@ -215,7 +82,6 @@ function renderWeatherCanvas(
   clearAroundFacilities(context, kakao, map, facilities, selectedFacilityId);
   canvas.style.opacity = "1";
 }
-
 
 const GRADE_RANK = new Map<RiskGrade, number>(
   GRADE_PRIORITY_ORDER.map((grade, index) => [
