@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-30 08:37 KST
-> 기준 배포 Git: `main` (`40e0ddd`) / 지도 마커·연속 기상 그래픽 개선 배포 완료
+> 마지막 정리: 2026-08-30 08:47 KST
+> 기준 배포 Git: `main` (`a34bbda`) / 지도 이동 동기화·바람 파티클 배포 완료
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -80,11 +80,17 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
   reduced-motion·새 범례 기준으로 현행화했습니다. 연결 가능한 브라우저가 없어
   PC·모바일의 실제 panning·zoom·밀도·장시간 성능은 확인하지 않았으며 임시 계획서를
   사용자 실화면 확인 전까지 유지합니다.
+- 완료 (운영 배포): 기능 커밋 `a34bbda`를 `main`에 push했고 GitHub Actions
+  `33281586514`의 test, Cloud Run API·Worker·5분 Scheduler, Firebase Hosting,
+  uptime monitoring이 모두 성공했습니다. 2026-08-30 08:47 KST에 운영 `/`,
+  `/control`, `/settings`, `/api/v1/health`, `/api/v1/health/operations`가 모두
+  HTTP 200임을 확인했습니다. PC·모바일 실화면 검수는 아직 남아 있습니다.
 
-**다음 작업 하나**: 사용자가 요청하면 현재 검증된 working tree를 커밋·push·배포한
-뒤 [`WIND_PARTICLE_PANNING_PLAN.md`](WIND_PARTICLE_PANNING_PLAN.md)의 PC·모바일
-실화면 확인 항목을 사용자에게 안내한다. 사용자 확인 전에는 계획서를 삭제하거나
-실화면·성능 검수를 완료로 표시하지 않는다.
+**다음 작업 하나**: 인앱 브라우저로
+[`WIND_PARTICLE_PANNING_PLAN.md`](WIND_PARTICLE_PANNING_PLAN.md)의 PC·모바일
+실화면 항목만 검수한다. 실시간·모의훈련의 현장지도·중앙관제에서 바람
+파티클·panning·zoom·마커 클릭·범례·PC·모바일 성능을 확인하고 증거 캡처와
+재현 절차를 보고한다. 사용자 확인 전에는 계획서를 삭제하지 않는다.
 
 
 ## 1. 프로젝트 한 문장
@@ -295,14 +301,15 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 개선 로드맵([`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md))의 1~9단계와
 10단계 구현·자동 검증은 완료했습니다. PDF 5단계 고도화와 운영 산출물 시각
 검수도 완료했습니다. STALE·ERROR 차단 변경도 운영에 배포했고,
-지도 이동 동기화·바람 파티클 working tree는 전체 자동 검증을 통과했지만 아직
-커밋·배포하지 않았고, 배포 뒤 PC·모바일 실화면·성능 확인이 남아 있습니다.
+지도 이동 동기화·바람 파티클도 `a34bbda`로 운영에 배포했습니다. 자동
+검증과 공개 엔드포인트 응답은 정상이며 PC·모바일 실화면·성능 확인만 남아
+있습니다.
 
 
 ### 주요 시스템 구성 및 서비스 현황
 1. **현장 안전지도 (`/`)**:
-   - 스마트폰 최적화 React SPA (관리자 화면을 포함한 단일 JS 280.60kB,
-     gzip 83.42kB)
+   - 스마트폰 최적화 React SPA (관리자 화면을 포함한 단일 JS 293.61kB,
+     gzip 87.81kB)
    - Kakao 지도 기반 103개 시설 위험등급 마커, 원클릭 필터/검색, 실시간 KMA 특보 및 지연 경과시간 표출
 2. **중앙관제 대시보드 (`/control`)**:
    - SPA 경로 분기와 정적 import 단일 번들
@@ -388,12 +395,12 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 
 - 기준 branch는 `main`, remote는 GitHub `parkgogon/sfety_map`입니다.
 - 지도 시각 개선 구현 `40e0ddd`는 배포 및 사용자 PC·모바일 확인까지 완료됐습니다.
-- 2026-08-30 `431486c`를 기준으로 바람 파티클 1~3단계 구현과 4단계 자동 통합
-  검증·설계 문서 현행화가 working tree에 있습니다. 새 애플리케이션 파일은
+- 바람 파티클 1~3단계 구현과 4단계 자동 통합 검증·설계 문서 현행화는
+  `a34bbda`로 커밋·push·배포했습니다. 새 애플리케이션 파일은
   `weatherCanvasMotion.ts`, `windParticleField.ts`, `windParticleAnimation.ts`와 각각의
   테스트이며 `KakaoMap.tsx`, `WeatherLayerControls.tsx`, `weatherLayerRendering.ts`,
-  `utils.ts`, `styles.css`도 변경됐습니다.
-  커밋·push·배포는 하지 않았습니다.
+  `utils.ts`, `styles.css`도 변경됐습니다. GitHub Actions `33281586514`와
+  공개 웹·health HTTP 200을 확인했습니다.
 - 2026-08-27 문서 작업 시작 시 tracked 변경은 없었습니다.
 - 생성 PDF·렌더·제작 중간물은 2026-08-29 사용자 요청으로
   `.trash/obsolete_artifacts_20260829/`로 이동했습니다. `.trash/`, `output/`,
