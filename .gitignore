@@ -9,3 +9,7 @@ field_web/.env.local
 field_web/*.tsbuildinfo
 private_contacts*.csv
 recipients_private*.csv
+/output/
+/tmp/
+/.trash/
+/.pytest_cache/
