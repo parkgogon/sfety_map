@@ -1,9 +1,8 @@
 import type {
   WeatherLayerKind,
   WeatherLayerPoint,
-  WeatherLayerResponse,
 } from "./types";
-import { weatherColorChannels, windSpeedColor } from "./utils";
+import { weatherColorChannels } from "./utils";
 
 export interface ScreenWeatherPoint {
   source: WeatherLayerPoint;
@@ -11,7 +10,7 @@ export interface ScreenWeatherPoint {
   y: number;
 }
 
-type ScalarLayerKind = WeatherLayerKind;
+type ScalarLayerKind = Exclude<WeatherLayerKind, "wind">;
 
 interface ScalarPointWithValue extends ScreenWeatherPoint {
   value: number;
@@ -66,26 +65,20 @@ export function scalarNeighborSpacing(points: ScreenWeatherPoint[]): number {
  * 레이어 종류별 화면 전체 합성 불투명도(alpha)를 반환합니다.
  * - 기온: 0.24
  * - 강수: 0.28
- * - 바람: 0.12 (저채도 풍속 색면, 화살표는 별도 렌더링)
  */
-export function scalarLayerAlpha(layer: WeatherLayerKind): number {
+export function scalarLayerAlpha(layer: ScalarLayerKind): number {
   if (layer === "temperature") return 0.24;
-  if (layer === "rainfall") return 0.28;
-  return 0.12;
+  return 0.28;
 }
 
-/** 보간 입력에서 무효값과 음수 강수·풍속을 제외합니다. 0은 경계 보간에 사용합니다. */
+/** 보간 입력에서 무효값과 음수 강수를 제외합니다. 0은 경계 보간에 사용합니다. */
 export function shouldSkipScalarPoint(
-  kind: WeatherLayerKind,
+  kind: ScalarLayerKind,
   value: number | undefined,
 ): boolean {
   if (value === undefined || !Number.isFinite(value)) return true;
-  if ((kind === "rainfall" || kind === "wind") && value < 0) return true;
+  if (kind === "rainfall" && value < 0) return true;
   return false;
-}
-
-function scalarPointValue(point: ScreenWeatherPoint, kind: ScalarLayerKind): number | undefined {
-  return kind === "wind" ? point.source.speed_ms : point.source.value;
 }
 
 function scalarPointsWithValues(
@@ -93,7 +86,7 @@ function scalarPointsWithValues(
   kind: ScalarLayerKind,
 ): ScalarPointWithValue[] {
   return points.flatMap((point) => {
-    const value = scalarPointValue(point, kind);
+    const value = point.source.value;
     if (shouldSkipScalarPoint(kind, value)) return [];
     return [{ ...point, value: value as number }];
   });
@@ -254,9 +247,9 @@ export function drawScalarLayer(
   width: number,
   height: number,
   points: ScreenWeatherPoint[],
-  layer: WeatherLayerResponse,
+  kind: ScalarLayerKind,
 ): void {
-  const raster = buildScalarRaster(points, layer.layer, width, height);
+  const raster = buildScalarRaster(points, kind, width, height);
   if (!raster) return;
 
   let offscreen: HTMLCanvasElement | OffscreenCanvas | null = null;
@@ -287,7 +280,7 @@ export function drawScalarLayer(
   offCtx.putImageData(imageData, 0, 0);
 
   visibleContext.save();
-  visibleContext.globalAlpha = scalarLayerAlpha(layer.layer);
+  visibleContext.globalAlpha = scalarLayerAlpha(kind);
   visibleContext.imageSmoothingEnabled = true;
   visibleContext.imageSmoothingQuality = "high";
   visibleContext.drawImage(
@@ -302,169 +295,4 @@ export function drawScalarLayer(
     height,
   );
   visibleContext.restore();
-}
-
-/**
- * 화면 너비와 지도 레벨에 따라 바람 화살표의 최적 격자 간격(spacing)을 계산합니다.
- * - PC (가로 >= 768px): 가로 약 7~12개 격자
- * - 모바일 (가로 < 768px): 가로 약 5~8개 격자
- */
-export function calculateWindSpacing(
-  width: number,
-  _height: number,
-  mapLevel: number,
-): number {
-  const isMobile = width < 768;
-  const targetCols = isMobile ? (mapLevel >= 9 ? 5 : 6) : mapLevel >= 9 ? 8 : 10;
-  const rawSpacing = width / Math.max(1, targetCols);
-  return Math.min(120, Math.max(48, Math.round(rawSpacing)));
-}
-
-export const WIND_EDGE_INSET = 22;
-export const WIND_ARROW_MIN_LENGTH = 14;
-export const WIND_ARROW_MAX_LENGTH = 30;
-export const WIND_ARROW_OUTLINE_WIDTH = 3.6;
-export const WIND_ARROW_LINE_WIDTH = 2;
-
-export function windArrowLength(speed: number): number {
-  const finiteSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0;
-  return Math.min(
-    WIND_ARROW_MAX_LENGTH,
-    Math.max(WIND_ARROW_MIN_LENGTH, WIND_ARROW_MIN_LENGTH + finiteSpeed * 0.64),
-  );
-}
-
-/**
- * 보이는 바람 점들을 격자로 묶고, 각 셀에서 중심 거리와 풍속을 고려해
- * 결정적(deterministic)인 대표점을 1개씩 선별합니다.
- * 원본 배열의 순서와 무관하게 동일한 결과를 보장합니다.
- */
-export function sampleWindPoints(
-  width: number,
-  height: number,
-  points: ScreenWeatherPoint[],
-  mapLevel: number,
-): ScreenWeatherPoint[] {
-  const inset = WIND_EDGE_INSET;
-  const validWidth = width - inset * 2;
-  const validHeight = height - inset * 2;
-  if (validWidth <= 0 || validHeight <= 0) return [];
-
-  const spacing = calculateWindSpacing(width, height, mapLevel);
-  const cells = new Map<string, ScreenWeatherPoint[]>();
-
-  // 1. Inset 영역 내 유효한 풍향·풍속 점들을 격자별로 수집
-  points.forEach((point) => {
-    const speed = point.source.speed_ms;
-    const dir = point.source.direction_to_deg;
-    if (speed === undefined || dir === undefined || !Number.isFinite(speed)) return;
-    if (
-      point.x < inset ||
-      point.x > width - inset ||
-      point.y < inset ||
-      point.y > height - inset
-    ) {
-      return;
-    }
-
-    const cellX = Math.floor((point.x - inset) / spacing);
-    const cellY = Math.floor((point.y - inset) / spacing);
-    const key = `${cellX}:${cellY}`;
-
-    const list = cells.get(key);
-    if (list) list.push(point);
-    else cells.set(key, [point]);
-  });
-
-  const selected: ScreenWeatherPoint[] = [];
-
-  // 2. 각 셀에서 중심 거리 + 풍속 대표성 + 결정적 tie-breaker로 최고점 선택
-  cells.forEach((candidates, key) => {
-    const [cellXStr, cellYStr] = key.split(":");
-    const cellX = Number.parseInt(cellXStr, 10);
-    const cellY = Number.parseInt(cellYStr, 10);
-    const centerX = inset + (cellX + 0.5) * spacing;
-    const centerY = inset + (cellY + 0.5) * spacing;
-    const maxDistance = spacing * 0.7071; // 대각선 반길이
-
-    let bestPoint = candidates[0];
-    let bestScore = -Infinity;
-
-    candidates.forEach((pt) => {
-      const dist = Math.hypot(pt.x - centerX, pt.y - centerY);
-      const distRatio = Math.min(1, dist / Math.max(1, maxDistance));
-      const speed = pt.source.speed_ms ?? 0;
-      // 중심에 가까울수록 높은 점수(0.6 비중) + 유의미한 풍속 가중치(0.4 비중)
-      const score = (1 - distRatio) * 0.6 + Math.min(1, speed / 20) * 0.4;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestPoint = pt;
-      } else if (Math.abs(score - bestScore) < 1e-6) {
-        // Tie breaker: 고유 grid 좌표로 100% 결정성 보장
-        if (
-          pt.source.grid_x < bestPoint.source.grid_x ||
-          (pt.source.grid_x === bestPoint.source.grid_x &&
-            pt.source.grid_y < bestPoint.source.grid_y)
-        ) {
-          bestPoint = pt;
-        }
-      }
-    });
-
-    selected.push(bestPoint);
-  });
-
-  return selected.sort((a, b) => {
-    if (a.source.grid_x !== b.source.grid_x) return a.source.grid_x - b.source.grid_x;
-    return a.source.grid_y - b.source.grid_y;
-  });
-}
-
-/**
- * 단일 바람 화살표를 그립니다.
- */
-export function drawWindArrow(
-  context: CanvasRenderingContext2D,
-  point: ScreenWeatherPoint,
-): void {
-  const speed = point.source.speed_ms;
-  const direction = point.source.direction_to_deg;
-  if (speed === undefined || direction === undefined) return;
-  const length = windArrowLength(speed);
-  const radians = (direction * Math.PI) / 180;
-  context.save();
-  context.translate(point.x, point.y);
-  context.rotate(radians);
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.beginPath();
-  context.moveTo(0, length / 2);
-  context.lineTo(0, -length / 2);
-  context.lineTo(-4.5, -length / 2 + 6);
-  context.moveTo(0, -length / 2);
-  context.lineTo(4.5, -length / 2 + 6);
-  context.strokeStyle = "rgba(255,255,255,.78)";
-  context.lineWidth = WIND_ARROW_OUTLINE_WIDTH;
-  context.stroke();
-  context.strokeStyle = windSpeedColor(speed, 0.96);
-  context.lineWidth = WIND_ARROW_LINE_WIDTH;
-  context.stroke();
-  context.restore();
-}
-
-/**
- * 바람 격자 레이어를 그립니다.
- */
-export function drawWindLayer(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  points: ScreenWeatherPoint[],
-  mapLevel: number,
-): void {
-  const sampled = sampleWindPoints(width, height, points, mapLevel);
-  sampled.forEach((point) => {
-    drawWindArrow(context, point);
-  });
 }

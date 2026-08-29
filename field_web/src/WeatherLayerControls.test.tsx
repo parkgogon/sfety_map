@@ -60,4 +60,38 @@ describe("기상 실황 범례", () => {
     expect(markup).not.toContain("종합 기상재난 모의훈련");
     expect(markup).not.toContain("기온 실황");
   });
+
+  it("바람은 위험색 풍속표 대신 입자 방향·속도·꼬리의 의미를 안내한다", () => {
+    const windData: WeatherLayerResponse = {
+      ...data,
+      layer: "wind",
+      unit: "m/s",
+      points: [{
+        grid_x: 89,
+        grid_y: 91,
+        latitude: 36.1,
+        longitude: 128.4,
+        u_ms: 8,
+        v_ms: 3,
+        speed_ms: 8.5,
+        direction_to_deg: 69.4,
+      }],
+    };
+    const markup = renderToStaticMarkup(
+      <WeatherLayerLegend
+        kind="wind"
+        data={windData}
+        loading={false}
+        error=""
+        simulation={false}
+        onRetry={() => undefined}
+      />,
+    );
+    expect(markup).toContain("바람 실황");
+    expect(markup).toContain("입자 방향=풍향, 이동 속도·꼬리=풍속");
+    expect(markup).toContain('class="weather-particle-key"');
+    expect(markup).toContain('aria-label="바람 범례. 입자 방향=풍향, 이동 속도·꼬리=풍속"');
+    expect(markup).not.toContain("weather-color-scale");
+    expect(markup).not.toContain("25m/s");
+  });
 });

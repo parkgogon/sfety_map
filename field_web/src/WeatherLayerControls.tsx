@@ -4,7 +4,6 @@ import {
   rainfallColor,
   temperatureColor,
   WEATHER_LAYER_LABELS,
-  windSpeedColor,
 } from "./utils";
 
 const OPTIONS: Array<{
@@ -13,7 +12,7 @@ const OPTIONS: Array<{
   description: string;
 }> = [
   { kind: "rainfall", icon: "◉", description: "1시간 강수량 분포" },
-  { kind: "wind", icon: "↗", description: "향하는 방향과 풍속" },
+  { kind: "wind", icon: "≈", description: "입자 방향·속도·꼬리로 보는 바람" },
   { kind: "temperature", icon: "°", description: "현재 기온 분포" },
 ];
 
@@ -83,16 +82,16 @@ interface WeatherLayerLegendProps {
   onRetry: () => void;
 }
 
-const legendValues = (kind: WeatherLayerKind): number[] => {
+type ScalarLegendKind = Exclude<WeatherLayerKind, "wind">;
+
+const legendValues = (kind: ScalarLegendKind): number[] => {
   if (kind === "temperature") return [-10, 0, 10, 20, 30, 40];
-  if (kind === "rainfall") return [0.1, 1, 5, 15, 30, 60];
-  return [0, 4, 8, 14, 20, 25];
+  return [0.1, 1, 5, 15, 30, 60];
 };
 
-const colorFor = (kind: WeatherLayerKind, value: number): string => {
+const colorFor = (kind: ScalarLegendKind, value: number): string => {
   if (kind === "temperature") return temperatureColor(value);
-  if (kind === "rainfall") return rainfallColor(value);
-  return windSpeedColor(value);
+  return rainfallColor(value);
 };
 
 export function WeatherLayerLegend({
@@ -108,12 +107,16 @@ export function WeatherLayerLegend({
   const noRain = kind === "rainfall"
     && data?.status !== "ERROR"
     && data?.points.every((point) => (point.value ?? 0) <= 0);
-  const values = legendValues(kind);
+  const windMeaning = "입자 방향=풍향, 이동 속도·꼬리=풍속";
+  const labelPrefix = isSimulation
+    ? `${WEATHER_LAYER_LABELS[kind]} 모의훈련 기상 가정 (실제 관측이 아님)`
+    : `${WEATHER_LAYER_LABELS[kind]} 범례`;
+  const values = kind === "wind" ? null : legendValues(kind);
   return (
     <aside
       className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""} ${isSimulation ? "simulation" : ""}`}
       aria-live="polite"
-      aria-label={isSimulation ? `${WEATHER_LAYER_LABELS[kind]} 모의훈련 기상 가정 (실제 관측이 아님)` : `${WEATHER_LAYER_LABELS[kind]} 범례`}
+      aria-label={kind === "wind" ? `${labelPrefix}. ${windMeaning}` : labelPrefix}
     >
       <div className="weather-layer-legend-title">
         <div>
@@ -134,15 +137,24 @@ export function WeatherLayerLegend({
         </div>
       ) : data ? (
         <>
-          <div className="weather-scale-row" aria-label={`${WEATHER_LAYER_LABELS[kind]} 범례`}>
-            <span>{values[0]}</span>
-            <div className="weather-color-scale">
-              {values.map((value) => (
-                <span key={value} style={{ backgroundColor: colorFor(kind, value) }} />
-              ))}
+          {kind === "wind" ? (
+            <div className="weather-particle-key" role="img" aria-label={windMeaning}>
+              <span className="weather-particle-swatch" aria-hidden="true">
+                <i /><i /><i />
+              </span>
+              <span>{windMeaning}</span>
             </div>
-            <span>{values.at(-1)}{data.unit}</span>
-          </div>
+          ) : values ? (
+            <div className="weather-scale-row" aria-label={`${WEATHER_LAYER_LABELS[kind]} 범례`}>
+              <span>{values[0]}</span>
+              <div className="weather-color-scale">
+                {values.map((value) => (
+                  <span key={value} style={{ backgroundColor: colorFor(kind, value) }} />
+                ))}
+              </div>
+              <span>{values.at(-1)}{data.unit}</span>
+            </div>
+          ) : null}
           {failed && data.points.length > 0 && (
             <p>갱신 실패 · 이전 정상 자료를 표시하고 있습니다.</p>
           )}
@@ -152,4 +164,3 @@ export function WeatherLayerLegend({
     </aside>
   );
 }
-

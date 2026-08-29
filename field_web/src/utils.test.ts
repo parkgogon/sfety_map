@@ -18,7 +18,6 @@ import {
   shouldShowMapZoomControl,
   temperatureColor,
   weatherSummary,
-  windSpeedColor,
   windDirectionLabel,
 } from "./utils";
 
@@ -150,7 +149,6 @@ describe("현장 지도 필터", () => {
     expect(rainfallColor(0)).toBe("rgba(0,0,0,0)");
     expect(rainfallColor(5)).toMatch(/^rgba\(/);
     expect(temperatureColor(30, 0.4)).toContain(",0.4)");
-    expect(windSpeedColor(12)).toMatch(/^rgba\(/);
     expect(temperatureColor(-100)).not.toContain("NaN");
   });
 

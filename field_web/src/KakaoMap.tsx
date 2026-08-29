@@ -23,11 +23,29 @@ import {
   shouldFitInitialFacilities,
   shouldShowMapZoomControl,
 } from "./utils";
+import { drawScalarLayer, type ScreenWeatherPoint } from "./weatherLayerRendering";
 import {
-  drawScalarLayer,
-  drawWindLayer,
-  type ScreenWeatherPoint,
-} from "./weatherLayerRendering";
+  calculateWeatherCanvasLayout,
+  calculateWeatherPanTranslation,
+  createAnimationFrameScheduler,
+  offsetWeatherCanvasPoint,
+  weatherCanvasTransform,
+  type WeatherCanvasLayout,
+  type WeatherCanvasPoint,
+} from "./weatherCanvasMotion";
+import {
+  calculateWindParticleCount,
+  createWindParticleAnimation,
+  drawStaticWindFlow,
+  drawWindParticleFrame,
+  type WindParticleAnimationController,
+} from "./windParticleAnimation";
+import {
+  advanceWindParticleSystem,
+  buildWindVectorField,
+  initializeWindParticleSystem,
+  type WindVectorField,
+} from "./windParticleField";
 
 interface KakaoMapProps {
   facilities: Facility[];
@@ -42,17 +60,25 @@ interface KakaoMapProps {
   onSelectCctv: (cctv: NearbyCctv) => void;
 }
 
+interface WindCanvasRenderResult {
+  context: CanvasRenderingContext2D;
+  field: WindVectorField;
+  layout: WeatherCanvasLayout;
+}
+
 function projectedWeatherPoints(
   kakao: any,
   map: any,
   points: WeatherLayerPoint[],
+  layout: WeatherCanvasLayout,
 ): ScreenWeatherPoint[] {
   const projection = map.getProjection();
   return points.map((source) => {
     const pixel = projection.containerPointFromCoords(
       new kakao.maps.LatLng(source.latitude, source.longitude),
     );
-    return { source, x: pixel.x, y: pixel.y };
+    const bufferPoint = offsetWeatherCanvasPoint(pixel, layout);
+    return { source, x: bufferPoint.x, y: bufferPoint.y };
   });
 }
 
@@ -62,28 +88,49 @@ function renderWeatherCanvas(
   kakao: any,
   map: any,
   layer: WeatherLayerResponse | null,
-) {
-  const width = element.clientWidth;
-  const height = element.clientHeight;
+): WindCanvasRenderResult | null {
+  const layout = calculateWeatherCanvasLayout(
+    element.clientWidth,
+    element.clientHeight,
+  );
   const ratio = Math.min(2, window.devicePixelRatio || 1);
-  canvas.width = Math.max(1, Math.round(width * ratio));
-  canvas.height = Math.max(1, Math.round(height * ratio));
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  canvas.width = Math.max(1, Math.round(layout.bufferWidth * ratio));
+  canvas.height = Math.max(1, Math.round(layout.bufferHeight * ratio));
+  canvas.style.left = `${-layout.overscan}px`;
+  canvas.style.top = `${-layout.overscan}px`;
+  canvas.style.width = `${layout.bufferWidth}px`;
+  canvas.style.height = `${layout.bufferHeight}px`;
   const context = canvas.getContext("2d");
-  if (!context) return;
+  if (!context) return null;
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
-  context.clearRect(0, 0, width, height);
+  context.clearRect(0, 0, layout.bufferWidth, layout.bufferHeight);
   if (!layer || !layer.points.length) {
     canvas.style.opacity = "0";
-    return;
+    return null;
   }
-  const points = projectedWeatherPoints(kakao, map, layer.points);
-  drawScalarLayer(context, width, height, points, layer);
+  const points = projectedWeatherPoints(kakao, map, layer.points, layout);
   if (layer.layer === "wind") {
-    drawWindLayer(context, width, height, points, map.getLevel());
+    const field = buildWindVectorField(
+      points,
+      layout.bufferWidth,
+      layout.bufferHeight,
+    );
+    if (!field) {
+      canvas.style.opacity = "0";
+      return null;
+    }
+    canvas.style.opacity = "1";
+    return { context, field, layout };
   }
+  drawScalarLayer(
+    context,
+    layout.bufferWidth,
+    layout.bufferHeight,
+    points,
+    layer.layer,
+  );
   canvas.style.opacity = "1";
+  return null;
 }
 
 const GRADE_RANK = new Map<RiskGrade, number>(
@@ -360,45 +407,145 @@ export function KakaoMap({
   }, [warningZones]);
 
   useEffect(() => {
-    let frame = 0;
-    const draw = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
+    let dragging = false;
+    let zooming = false;
+    let panAnchor: { coordinate: any; startPoint: WeatherCanvasPoint } | null = null;
+    let windAnimation: WindParticleAnimationController | null = null;
+    const requestFrame = window.requestAnimationFrame.bind(window);
+    const cancelFrame = window.cancelAnimationFrame.bind(window);
+    const motionQuery = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)")
+      : null;
+
+    const stopWindAnimation = () => {
+      windAnimation?.dispose();
+      windAnimation = null;
+    };
+
+    const startWindAnimation = (result: WindCanvasRenderResult) => {
+      let state = initializeWindParticleSystem(
+        result.field,
+        calculateWindParticleCount(
+          result.layout.viewportWidth,
+          result.layout.viewportHeight,
+        ),
+        0x4b45434f,
+      );
+      if (!state.particles.length) return;
+      drawStaticWindFlow(result.context, result.field, state.particles);
+      if (motionQuery?.matches) return;
+      windAnimation = createWindParticleAnimation({
+        requestFrame,
+        cancelFrame,
+        onFrame(deltaSeconds) {
+          state = advanceWindParticleSystem(result.field, state, deltaSeconds);
+          drawWindParticleFrame(
+            result.context,
+            result.layout.bufferWidth,
+            result.layout.bufferHeight,
+            state.particles,
+          );
+        },
+      });
+      if (!document.hidden && !zooming) windAnimation.start();
+    };
+
+    const resetPan = () => {
+      dragging = false;
+      panAnchor = null;
+      const canvas = weatherCanvasRef.current;
+      if (canvas) canvas.style.transform = weatherCanvasTransform({ x: 0, y: 0 });
+    };
+
+    const panScheduler = createAnimationFrameScheduler(
+      requestFrame,
+      cancelFrame,
+      () => {
+        const canvas = weatherCanvasRef.current;
+        const map = mapRef.current;
+        if (!canvas || !map || !dragging || !panAnchor) return;
+        const currentPoint = map
+          .getProjection()
+          .containerPointFromCoords(panAnchor.coordinate);
+        canvas.style.transform = weatherCanvasTransform(
+          calculateWeatherPanTranslation(panAnchor.startPoint, currentPoint),
+        );
+      },
+    );
+
+    const drawScheduler = createAnimationFrameScheduler(
+      requestFrame,
+      cancelFrame,
+      () => {
         const canvas = weatherCanvasRef.current;
         const element = elementRef.current;
         const kakao = kakaoRef.current;
         const map = mapRef.current;
         if (!canvas || !element || !kakao || !map) return;
-        renderWeatherCanvas(
-          canvas,
-          element,
-          kakao,
-          map,
-          weatherLayer,
-        );
-      });
+        panScheduler.cancel();
+        const result = renderWeatherCanvas(canvas, element, kakao, map, weatherLayer);
+        resetPan();
+        if (result) startWindAnimation(result);
+      },
+    );
+    const draw = () => {
+      stopWindAnimation();
+      drawScheduler.schedule();
     };
-    const hide = () => {
+
+    const startPan = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const coordinate = map.getCenter();
+      const startPoint = map.getProjection().containerPointFromCoords(coordinate);
+      dragging = true;
+      panAnchor = { coordinate, startPoint };
+    };
+    const movePan = () => {
+      if (dragging && panAnchor) panScheduler.schedule();
+    };
+    const hideForZoom = () => {
+      zooming = true;
+      stopWindAnimation();
+      panScheduler.cancel();
+      resetPan();
       if (weatherCanvasRef.current) weatherCanvasRef.current.style.opacity = "0";
+    };
+    const settleMap = () => {
+      zooming = false;
+      draw();
+    };
+    const handleVisibilityChange = () => {
+      if (document.hidden) windAnimation?.pause();
+      else if (!zooming) windAnimation?.start();
     };
     const kakao = kakaoRef.current;
     const map = mapRef.current;
     if (kakao && map) {
-      kakao.maps.event.addListener(map, "dragstart", hide);
-      kakao.maps.event.addListener(map, "zoom_start", hide);
-      kakao.maps.event.addListener(map, "idle", draw);
+      kakao.maps.event.addListener(map, "dragstart", startPan);
+      kakao.maps.event.addListener(map, "center_changed", movePan);
+      kakao.maps.event.addListener(map, "zoom_start", hideForZoom);
+      kakao.maps.event.addListener(map, "idle", settleMap);
     }
     draw();
     window.addEventListener("resize", draw);
     window.addEventListener("keco-map-ready", draw);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    motionQuery?.addEventListener?.("change", draw);
     return () => {
-      window.cancelAnimationFrame(frame);
+      stopWindAnimation();
+      drawScheduler.cancel();
+      panScheduler.cancel();
+      resetPan();
       window.removeEventListener("resize", draw);
       window.removeEventListener("keco-map-ready", draw);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      motionQuery?.removeEventListener?.("change", draw);
       if (kakao && map) {
-        kakao.maps.event.removeListener(map, "dragstart", hide);
-        kakao.maps.event.removeListener(map, "zoom_start", hide);
-        kakao.maps.event.removeListener(map, "idle", draw);
+        kakao.maps.event.removeListener(map, "dragstart", startPan);
+        kakao.maps.event.removeListener(map, "center_changed", movePan);
+        kakao.maps.event.removeListener(map, "zoom_start", hideForZoom);
+        kakao.maps.event.removeListener(map, "idle", settleMap);
       }
     };
   }, [weatherLayer]);
