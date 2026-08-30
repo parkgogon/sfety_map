@@ -8,16 +8,17 @@ const LEVEL_WEIGHT: Record<string, number> = {
   UNKNOWN: 1,
 };
 
-/** ISO 시각 문자열을 'MM.DD HH:mm' 형태로 변환합니다. */
+/** ISO 시각 문자열을 KST(UTC+9) 기준 'MM.DD HH:mm' 형태로 변환합니다. */
 export function formatWarningTime(isoTime?: string | null): string {
   if (!isoTime) return "";
   try {
     const date = new Date(isoTime);
     if (Number.isNaN(date.getTime())) return "";
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    const month = String(kstDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(kstDate.getUTCDate()).padStart(2, "0");
+    const hours = String(kstDate.getUTCHours()).padStart(2, "0");
+    const minutes = String(kstDate.getUTCMinutes()).padStart(2, "0");
     return `${month}.${day} ${hours}:${minutes}`;
   } catch {
     return "";

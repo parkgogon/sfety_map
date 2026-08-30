@@ -25,9 +25,9 @@ describe("buildInfo 단위 테스트", () => {
   });
 
   describe("formatBuildTime", () => {
-    it("ISO 날짜 문자열을 'MM.DD HH:mm' 포맷으로 정상 변환한다", () => {
+    it("UTC ISO 날짜 문자열을 KST(UTC+9) 기준 'MM.DD HH:mm' 포맷으로 정상 변환한다", () => {
       const formatted = formatBuildTime("2026-08-30T02:00:00Z");
-      expect(formatted).toMatch(/^\d{2}\.\d{2} \d{2}:\d{2}$/);
+      expect(formatted).toBe("08.30 11:00");
     });
 
     it("null, undefined, 잘못된 날짜 문자열은 빈 문자열을 반환한다", () => {
