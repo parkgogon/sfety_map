@@ -75,6 +75,15 @@ const RAINFALL_STOPS: readonly ColorStop[] = [
   [30, "--color-weather-rain-severe", "#be123c"],
   [60, "--color-weather-rain-extreme", "#7f1d1d"],
 ];
+export const WIND_SPEED_LEGEND_VALUES = [0, 5, 10, 15, 20, 25] as const;
+const WIND_SPEED_STOPS: readonly ColorStop[] = [
+  [0, "--color-weather-wind-calm", "#EEF4F8"],
+  [5, "--color-weather-wind-light", "#C9DDEC"],
+  [10, "--color-weather-wind-moderate", "#8DB8D8"],
+  [15, "--color-weather-wind-fresh", "#568FBC"],
+  [20, "--color-weather-wind-strong", "#2F669B"],
+  [25, "--color-weather-wind-severe", "#183D70"],
+];
 const DESIGN_COLOR_CACHE = new Map<string, string>();
 
 function designColor(token: string, fallback: string): string {
@@ -136,6 +145,14 @@ export function temperatureColor(value: number, alpha = 1): string {
 export function rainfallColor(value: number, alpha = 1): string {
   if (!Number.isFinite(value) || value <= 0) return "rgba(0,0,0,0)";
   return scaleColor(value, RAINFALL_STOPS, alpha);
+}
+
+export function windSpeedColorChannels(value: number): [number, number, number] {
+  return scaleColorChannels(value, WIND_SPEED_STOPS);
+}
+
+export function windSpeedColor(value: number, alpha = 1): string {
+  return scaleColor(value, WIND_SPEED_STOPS, alpha);
 }
 
 export function normalizeSearch(value: string): string {

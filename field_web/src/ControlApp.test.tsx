@@ -231,5 +231,11 @@ describe("ControlApp 중앙관제 대시보드", () => {
     const html = renderToStaticMarkup(<ControlApp />);
     expect(html).toContain("대상 분석·전파");
   });
+
+  it("헤더에 웹 배포 버전 및 빌드 메타데이터 레이블을 표시한다", () => {
+    const html = renderToStaticMarkup(<ControlApp />);
+    expect(html).toContain("build-info-label");
+    expect(html).toContain("control-title-row");
+  });
 });
 

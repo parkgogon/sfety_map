@@ -61,7 +61,7 @@ describe("기상 실황 범례", () => {
     expect(markup).not.toContain("기온 실황");
   });
 
-  it("바람은 위험색 풍속표 대신 입자 방향·속도·꼬리의 의미를 안내한다", () => {
+  it("바람은 푸른 풍속 숫자 범례와 중립 입자의 의미를 함께 안내한다", () => {
     const windData: WeatherLayerResponse = {
       ...data,
       layer: "wind",
@@ -90,8 +90,12 @@ describe("기상 실황 범례", () => {
     expect(markup).toContain("바람 실황");
     expect(markup).toContain("입자 방향=풍향, 이동 속도·꼬리=풍속");
     expect(markup).toContain('class="weather-particle-key"');
-    expect(markup).toContain('aria-label="바람 범례. 입자 방향=풍향, 이동 속도·꼬리=풍속"');
-    expect(markup).not.toContain("weather-color-scale");
-    expect(markup).not.toContain("25m/s");
+    expect(markup).toContain(
+      'aria-label="바람 범례. 풍속 색면 0에서 25m/s 이상. 입자 방향=풍향, 이동 속도·꼬리=풍속"',
+    );
+    expect(markup).toContain('aria-label="풍속 색면 범례: 0에서 25m/s 이상"');
+    expect(markup).toContain('class="weather-color-scale"');
+    expect(markup).toContain("25m/s+");
+    expect(markup).not.toMatch(/(?:#dc2626|#f97316|#eab308)/i);
   });
 });

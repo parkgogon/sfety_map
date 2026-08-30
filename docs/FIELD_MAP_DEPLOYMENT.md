@@ -220,11 +220,22 @@ gcloud firestore fields ttls list --project=keco-safety-map
 ## 배포 전 확인
 
 ```bash
+bash scripts/verify_all.sh
+```
+
+또는 개별 검증:
+
+```bash
 .venv/bin/python -m safety_dashboard.api.validate_data
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s tests_v3 -v
 cd field_web && npm test && npm run build
 ```
+
+Firebase Hosting 배포 빌드 시에는 CI 환경변수 `VITE_APP_VERSION="${GITHUB_SHA:-}"`와
+`VITE_BUILD_TIME="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"`가 주입되어 중앙관제 화면
+헤더에 배포 커밋(7자리)과 배포 시각이 표시됩니다. 로컬 실행에서는 `개발 빌드`로
+안전하게 fallback합니다.
 
 시설 CSV 검증은 시설 ID 중복, 필수값 누락, 좌표 범위와 시설 그룹별 개수를
 확인한다. 배포 후에는 390px 스마트폰에서 검색·필터·동일 좌표 시설 선택과

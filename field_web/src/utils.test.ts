@@ -18,6 +18,9 @@ import {
   shouldShowMapZoomControl,
   temperatureColor,
   weatherSummary,
+  WIND_SPEED_LEGEND_VALUES,
+  windSpeedColor,
+  windSpeedColorChannels,
   windDirectionLabel,
 } from "./utils";
 
@@ -150,6 +153,23 @@ describe("현장 지도 필터", () => {
     expect(rainfallColor(5)).toMatch(/^rgba\(/);
     expect(temperatureColor(30, 0.4)).toContain(",0.4)");
     expect(temperatureColor(-100)).not.toContain("NaN");
+  });
+
+  it("풍속은 위험색과 겹치지 않는 0~25m/s 푸른 연속 색상을 사용한다", () => {
+    expect(WIND_SPEED_LEGEND_VALUES).toEqual([0, 5, 10, 15, 20, 25]);
+    expect(windSpeedColor(0)).toBe("rgba(238,244,248,1)");
+    expect(windSpeedColorChannels(12.5)).toEqual([114, 164, 202]);
+    expect(windSpeedColor(25)).toBe("rgba(24,61,112,1)");
+    expect(windSpeedColor(100)).toBe("rgba(24,61,112,1)");
+    expect(windSpeedColor(Number.NaN)).not.toContain("NaN");
+    expect([
+      windSpeedColor(0),
+      windSpeedColor(5),
+      windSpeedColor(10),
+      windSpeedColor(15),
+      windSpeedColor(20),
+      windSpeedColor(25),
+    ].join(" ")).not.toMatch(/(?:220,38,38|249,115,22|234,179,8)/);
   });
 
   it("범례 표시 순서와 운영 우선순위를 독립적으로 유지한다", () => {

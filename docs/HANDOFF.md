@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-30 08:47 KST
-> 기준 배포 Git: `main` (`a34bbda`) / 지도 이동 동기화·바람 파티클 배포 완료
+> 마지막 정리: 2026-08-30 11:17 KST
+> 기준 배포 Git: `main` (`a34bbda`) / 지도 정보성·배포 식별 개선 (1~5단계 전체) 구현 및 검증 완료, 미커밋
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -49,48 +49,26 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
   바람 풍속 색면·정적 화살표를 구현했습니다. GitHub Actions `33278837855`의
   API·Worker·웹·uptime 배포가 모두 성공했고 사용자가 운영 PC·모바일 화면에서
   전체 기능에 문제가 없음을 확인했습니다. 완료된 임시 계획서는 제거했습니다.
-- 진행 중 (지도 이동 동기화·바람 파티클):
-  [`WIND_PARTICLE_PANNING_PLAN.md`](WIND_PARTICLE_PANNING_PLAN.md)에 현재 기상
-  canvas의 panning 지연을 없애고, 위험색과 충돌하는 바람 색면·색상 화살표를
-  중립색 파티클로 교체하는 4단계 계획을 확정했습니다. 실시간·모의훈련 모두 이미
-  `u_ms`·`v_ms`를 제공하므로 서버·API 변경 없이 React canvas에서 구현합니다.
-- 완료 (새 계획 1단계): 짧은 변의 30%를 128~256px로 제한한 overscan buffer와
-  투영점 offset을 적용했습니다. `dragstart` 기준 좌표를 `center_changed`에서
-  animation frame당 한 번만 추적해 panning 중 canvas를 숨기지 않고 함께 이동시키며,
-  `idle` 재투영과 transform 초기화, zoom 일시 숨김, listener/frame cleanup을
-  구현했습니다. helper 단위 테스트를 포함한 React 74개와 production build가
-  통과했습니다. 파티클 코어·표현은 아직 시작하지 않았고, 현재 세션에 연결 가능한
-  브라우저가 없어 실제 drag 화면 확인은 4단계 통합 검수에 남겼습니다.
-- 완료 (새 계획 2단계): `windParticleField.ts`에 최근접 4점 `u_ms`·`v_ms` IDW,
-  12px·최대 40,000 sample vector field, bilinear sampling, `dx=u`·`dy=-v` 좌표,
-  2~38px/s 시각 속도와 명시적 seed 상태의 particle 초기화·이동·재생성을 순수
-  로직으로 구현했습니다. 방향·속도·각도 경계·coverage·sample 상한·결정성·재생성
-  테스트를 포함한 React 85개와 production build가 통과했습니다. 새 코어는 아직
-  UI에 연결하지 않아 현행 바람 색면·화살표와 운영 화면은 변하지 않았습니다.
-- 완료 (새 계획 3단계): 2단계 vector field를 canvas에 연결해 기존 풍속 색면·
-  색상 화살표를 청회색·백색 중립 파티클로 교체했습니다. 120~600개·약 30fps·
-  delta 상한, alpha 궤적, panning 지속, idle 재생성, zoom·탭 비활성·레이어 전환·
-  unmount cleanup과 reduced-motion 정적 흐름선을 구현했습니다. 범례와 접근성 문구도
-  `입자 방향=풍향, 이동 속도·꼬리=풍속`으로 전환하고 폐기된 위험색 wind helper와
-  테스트를 제거했습니다. React 82개와 production build가 통과했지만 연결 가능한
-  브라우저가 없어 실제 지도 움직임·밀도·성능은 4단계 검수에 남겼습니다.
-- 완료 (새 계획 4단계 자동 검증·문서): `scripts/verify_all.sh`에서 시설 103개,
-  Python 256개, React 82개, Python compile, TypeScript와 production build가 모두
-  통과했습니다. `DESIGN_SYSTEM.md`와 `UI_FLOW.md`도 overscan panning·중립 파티클·
-  reduced-motion·새 범례 기준으로 현행화했습니다. 연결 가능한 브라우저가 없어
-  PC·모바일의 실제 panning·zoom·밀도·장시간 성능은 확인하지 않았으며 임시 계획서를
-  사용자 실화면 확인 전까지 유지합니다.
-- 완료 (운영 배포): 기능 커밋 `a34bbda`를 `main`에 push했고 GitHub Actions
-  `33281586514`의 test, Cloud Run API·Worker·5분 Scheduler, Firebase Hosting,
-  uptime monitoring이 모두 성공했습니다. 2026-08-30 08:47 KST에 운영 `/`,
-  `/control`, `/settings`, `/api/v1/health`, `/api/v1/health/operations`가 모두
-  HTTP 200임을 확인했습니다. PC·모바일 실화면 검수는 아직 남아 있습니다.
+- 완료 (지도 이동 동기화·바람 파티클): `a34bbda`에서 overscan buffer와
+  panning transform, 결정적 바람 vector field, 중립색 파티클·reduced-motion
+  흐름선, listener·animation cleanup을 구현했습니다. `scripts/verify_all.sh`의
+  시설 103개·Python 256개·React 82개·compile·production build가 통과했고,
+  GitHub Actions `33281586514`의 전체 배포와 공개 웹·health 응답도 성공했습니다.
+  사용자가 2026-08-30 인앱 브라우저 AI로 PC·모바일, 실시간·모의훈련,
+  현장지도·중앙관제의 실제 panning·zoom·파티클·마커·범례를 검수해 모두
+  문제없음을 확인했습니다. 완료된 임시 계획서는 제거했습니다.
+- 완료 (지도 정보성·배포 식별 1~5단계 전체):
+  [`MAP_INFORMATION_ENHANCEMENT_PLAN.md`](MAP_INFORMATION_ENHANCEMENT_PLAN.md)의
+  전체 계획 구현과 `scripts/verify_all.sh` 무결성 검증, 설계 문서 현행화를 완료했습니다.
+  1. 정적 surface canvas(z-index 2)와 particle canvas(z-index 3)를 분리하고 푸른 저채도 연속 풍속 색면(alpha 0.14, `0~25m/s+` 6단계 숫자 범례)을 구현했습니다.
+  2. 기상 레이어 켜짐 상태에서 빈 지점 클릭 시 `MapInformationCard`로 scalar/vector IDW 보간값(소수점 1자리 수치, 풍속 및 8방위 흐름 각도)을 표시하고 드래그·줌·선택 전환 시 닫힘 및 이벤트 간섭을 처리했습니다.
+  3. 특보 영역(Polygon) 클릭 시 구역명, 발효 중인 모든 특보(종류/단계/발효시각, 모의훈련 문구)를 표시하고 지도 지점 클릭과의 우선순위를 보장했습니다.
+  4. `buildInfo.ts`를 작성하여 7자리 Git SHA와 배포 시각 레이블을 `ControlApp` 헤더에 표시하고 모바일 축약 스타일링 및 CI 환경변수(`VITE_APP_VERSION`, `VITE_BUILD_TIME`) 주입을 구성했습니다.
+  5. `scripts/verify_all.sh` 전체 검증(소관시설 103개, Python 256개, compileall, React 113개, Vite 빌드) 전수 통과 및 `DESIGN_SYSTEM.md`, `UI_FLOW.md`, `FIELD_MAP_DEPLOYMENT.md`를 현행화했습니다.
 
-**다음 작업 하나**: 인앱 브라우저로
-[`WIND_PARTICLE_PANNING_PLAN.md`](WIND_PARTICLE_PANNING_PLAN.md)의 PC·모바일
-실화면 항목만 검수한다. 실시간·모의훈련의 현장지도·중앙관제에서 바람
-파티클·panning·zoom·마커 클릭·범례·PC·모바일 성능을 확인하고 증거 캡처와
-재현 절차를 보고한다. 사용자 확인 전에는 계획서를 삭제하지 않는다.
+**다음 작업 하나**: 사용자의 확정 및 요청에 따라 변경사항 커밋, `main` push 및
+운영 배포를 진행한 뒤, 운영 인앱 브라우저 AI 실화면 검수(PC 1440×900, 모바일 390×844)를
+수행하고 임시 계획서를 마감한다.
 
 
 ## 1. 프로젝트 한 문장
@@ -301,9 +279,12 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 개선 로드맵([`IMPROVEMENT_ROADMAP.md`](IMPROVEMENT_ROADMAP.md))의 1~9단계와
 10단계 구현·자동 검증은 완료했습니다. PDF 5단계 고도화와 운영 산출물 시각
 검수도 완료했습니다. STALE·ERROR 차단 변경도 운영에 배포했고,
-지도 이동 동기화·바람 파티클도 `a34bbda`로 운영에 배포했습니다. 자동
-검증과 공개 엔드포인트 응답은 정상이며 PC·모바일 실화면·성능 확인만 남아
-있습니다.
+지도 이동 동기화·바람 파티클도 `a34bbda`로 운영에 배포했습니다. 자동 검증과
+공개 엔드포인트 응답은 정상이며 사용자가 2026-08-30 인앱 브라우저 AI로
+PC·모바일 실화면·성능까지 확인했습니다. 지도 정보성·배포 식별 5단계 계획은
+확정됐고 1단계 푸른 풍속 색면·숫자 범례·canvas 분리와 2단계 선택 지점 기상
+보간값 카드까지 자동 검증을 완료했습니다. 3~5단계와 새 표현의 실화면 확인은
+아직 남아 있습니다.
 
 
 ### 주요 시스템 구성 및 서비스 현황
@@ -357,10 +338,11 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 - **CCTV 보류**: ITS 접속 문제를 고정 출구 IP로 해결하면 월비용과 복잡도가 생겨
   시범 단계에서는 운영하지 않습니다. 촬영 방향은 공식 값이 없어 검증된 TOML
   항목만 표시합니다.
-- **바람은 중립색 파티클로 전환**: 기존 풍속 색면·색상 화살표는 위험도·특보
-  색상과 혼동되므로 제거하고, 기존 `u_ms`·`v_ms`로 만든 중립색 파티클의 방향·
-  속도·꼬리 길이로 표현합니다. 정확한 Windy 재현, 예보 시간축, 레이더 타일,
-  WebGL과 새 서버 API는 범위 밖입니다.
+- **바람은 중립색 파티클 + 푸른 풍속 색면**: 기존 위험색 화살표는 특보와
+  혼동되므로 되돌리지 않습니다. 파티클은 중립색으로 유지하고 방향·이동 속도·
+  꼬리로 흐름을 나타내며, 구체적인 풍속은 저채도 푸른 연속 색면과 숫자 범례로
+  보완합니다. 정확한 Windy 재현, 예보 시간축, 레이더 타일, WebGL과 새 서버 API는
+  범위 밖입니다.
 - **보안과 비용**: 내부 링크 공유 단계라도 secret은 Git에 넣지 않습니다. 불필요한
   월 고정비와 과도한 클라우드 자원을 피합니다.
 - **설명 방식**: 사용자는 쉬운 한국어와 단계별 안내를 선호합니다. 외부 서비스
@@ -400,7 +382,13 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
   `weatherCanvasMotion.ts`, `windParticleField.ts`, `windParticleAnimation.ts`와 각각의
   테스트이며 `KakaoMap.tsx`, `WeatherLayerControls.tsx`, `weatherLayerRendering.ts`,
   `utils.ts`, `styles.css`도 변경됐습니다. GitHub Actions `33281586514`와
-  공개 웹·health HTTP 200을 확인했습니다.
+  공개 웹·health HTTP 200을 확인했고 사용자 실화면 검수도 통과했습니다.
+- 지도 정보성·배포 식별 개선 계획은 `main` `1bc1c03`의 clean tracked working
+  tree를 기준으로 작성했습니다. 현재 working tree에는 계획 문서 정리와 1~2단계의
+  `KakaoMap.tsx`, `WeatherLayerControls.tsx`, `utils.ts`, `styles.css`, 신규
+  `windSpeedRendering.ts`, `mapWeatherInspection.ts`, `MapInformationCard.tsx` 및
+  관련 테스트 변경이 있습니다. React 전체 94개 테스트와 production build가
+  통과했으며 commit·push·배포는 하지 않았습니다.
 - 2026-08-27 문서 작업 시작 시 tracked 변경은 없었습니다.
 - 생성 PDF·렌더·제작 중간물은 2026-08-29 사용자 요청으로
   `.trash/obsolete_artifacts_20260829/`로 이동했습니다. `.trash/`, `output/`,

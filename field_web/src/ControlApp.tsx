@@ -16,6 +16,7 @@ import { KakaoMap } from "./KakaoMap";
 import { ManualDispatchModal } from "./ManualDispatchModal";
 import { WeatherLayerLegend } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
+import { getBuildLabel } from "./buildInfo";
 import { navigate, navigateWithMode } from "./router";
 import type {
   Facility,
@@ -398,7 +399,12 @@ export default function ControlApp() {
       <header className="control-header">
         <div className="control-brand">
           <span className="brand-mark">K-ECO SAFETY MONITORING</span>
-          <h1>중앙 관제</h1>
+          <div className="control-title-row">
+            <h1>중앙 관제</h1>
+            <span className="build-info-label" title={`웹 배포 버전: ${getBuildLabel()}`}>
+              {getBuildLabel()}
+            </span>
+          </div>
         </div>
         <div className="control-header-actions">
           {adminToken ? (
@@ -790,6 +796,8 @@ export default function ControlApp() {
                 <KakaoMap
                   facilities={data.facilities}
                   warningZones={data.warning_zones.features}
+                  warnings={data.warnings}
+                  isSimulation={simulation}
                   selectedFacilityId={focusedFacilityId}
                   cctvs={[]}
                   selectedCctvId=""

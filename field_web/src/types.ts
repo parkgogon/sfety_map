@@ -139,6 +139,20 @@ export interface WarningZoneFeature {
   };
 }
 
+export interface MonitoringWarningItem {
+  id: string;
+  source?: string;
+  region_code?: string;
+  region: string;
+  region_up?: string;
+  type: string;
+  raw_level: string;
+  level?: string;
+  command?: string;
+  issued_at?: string | null;
+  effective_at?: string | null;
+}
+
 export interface MonitoringResponse {
   api_version: "v1";
   generated_at: string;
@@ -158,12 +172,7 @@ export interface MonitoringResponse {
     highest_warning_level: string;
   };
   groups: FacilityGroup[];
-  warnings: Array<{
-    id: string;
-    region: string;
-    type: string;
-    raw_level: string;
-  }>;
+  warnings: MonitoringWarningItem[];
   warning_zones: {
     type: "FeatureCollection";
     features: WarningZoneFeature[];

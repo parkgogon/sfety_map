@@ -335,6 +335,8 @@ export default function App() {
         <KakaoMap
           facilities={visibleFacilities}
           warningZones={data.warning_zones.features}
+          warnings={data.warnings}
+          isSimulation={simulation}
           selectedFacilityId={selectedId}
           cctvs={cctvItems}
           selectedCctvId={selectedCctvId}
