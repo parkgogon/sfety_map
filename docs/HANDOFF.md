@@ -2,8 +2,8 @@
 
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
-> 마지막 정리: 2026-08-30 11:55 KST
-> 기준 배포 Git: `main` (`4bd781f`) / 지도 정보성·배포 식별 개선 운영 배포 및 실화면 검수 완료
+> 마지막 정리: 2026-09-03 06:30 KST
+> 기준 배포 Git: `main` (`c405018`) / 예비특보 제외 및 정규 발효 특보 일치화 완료, 미커밋
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -64,8 +64,13 @@ K-ECO 기상재난 시설 영향 보고서 PDF의 5단계 고도화(PART 1 ~ PAR
   4. `buildInfo.ts`를 작성하여 7자리 Git SHA와 배포 시각 레이블을 `ControlApp` 헤더에 표시하고 모바일 축약 스타일링 및 CI 환경변수(`VITE_APP_VERSION`, `VITE_BUILD_TIME`) 주입을 구성했습니다.
   5. `scripts/verify_all.sh` 전체 검증 통과 후 `4bd781f`로 배포 완료(GitHub Actions `33287694028` 성공)했습니다.
   6. 운영 환경(`https://keco-safety-map.web.app`)에서 인앱 브라우저 AI를 통해 PC(1440×900)·모바일(390×844)·태블릿(768×1024), 실시간·모의훈련 전 화면에서 중앙관제 빌드 버전(`v4bd781f · 08.30 11:22 배포`), 특보 상세 카드, 지점 기상 보간값 카드, 6단계 풍속 범례 렌더링이 100% 정상 작동함을 검증했습니다. 완료된 임시 계획서는 제거했습니다.
+- 완료 (예비특보 제외 및 정규 발효 특보 일치화):
+  1. 기상청 API 파서(`parse_warning_response` in `kma.py`)에서 사전 참고 정보인 예비특보(`raw_level` 또는 `warning_type`에 "예비" 포함)를 건너뛰어, 공식 발효 특보(경보·주의보)만 수집하도록 일치화했습니다.
+  2. `safety_dashboard/api/serialization.py` 및 `field_web/src/KakaoMap.tsx`에서 `UNKNOWN` 레벨 특보 구역 폴리곤 렌더링을 제외하는 2중 방어를 적용했습니다.
+  3. 예비특보로 인해 소관시설들이 `미판정 (보라색 마커)`으로 오분류되거나 지도에 범례에도 없는 회색 구역이 표출되던 현상을 원천 해소했습니다.
+  4. 단위 테스트(`test_kma_parser_excludes_preliminary_warnings`, `test_warning_zones_skips_unknown_level`) 및 전체 무결성 검증(`scripts/verify_all.sh`) 258개 테스트 전수 통과를 완료했습니다.
 
-**다음 작업 하나**: 사용자의 새로운 기능 요구사항 또는 운영 지침에 따라 후속 작업을 계획하고 수행한다.
+**다음 작업 하나**: 사용자의 요청에 따라 변경사항을 커밋, push 및 배포한다.
 
 
 ## 1. 프로젝트 한 문장
@@ -278,16 +283,16 @@ React 35개, 시설 데이터 103개, 컴파일 및 프로덕션 빌드)이 모�
 검수도 완료했습니다. STALE·ERROR 차단 변경도 운영에 배포했고,
 지도 이동 동기화·바람 파티클도 `a34bbda`로 운영에 배포했습니다. 자동 검증과
 공개 엔드포인트 응답은 정상이며 사용자가 2026-08-30 인앱 브라우저 AI로
-PC·모바일 실화면·성능까지 확인했습니다. 지도 정보성·배포 식별 5단계 계획은
-확정됐고 1단계 푸른 풍속 색면·숫자 범례·canvas 분리와 2단계 선택 지점 기상
-보간값 카드까지 자동 검증을 완료했습니다. 3~5단계와 새 표현의 실화면 확인은
-아직 남아 있습니다.
+PC·모바일 실화면·성능까지 확인했습니다. 지도 정보성·배포 식별 5단계도
+`d1678cc`에서 구현하고, CI 타임존과 무관하게 KST 배포 시각을 표시하도록
+`4bd781f`에서 보정한 뒤 운영 배포와 실화면 검수를 완료했습니다. 현재 진행 중인
+임시 계획은 없으며, 다음 작업은 새 사용자 요구사항에서 시작합니다.
 
 
 ### 주요 시스템 구성 및 서비스 현황
 1. **현장 안전지도 (`/`)**:
-   - 스마트폰 최적화 React SPA (관리자 화면을 포함한 단일 JS 293.61kB,
-     gzip 87.81kB)
+   - 스마트폰 최적화 React SPA (관리자 화면을 포함한 단일 JS 302.20kB,
+     gzip 90.62kB; 2026-08-31 로컬 프로덕션 빌드 기준)
    - Kakao 지도 기반 103개 시설 위험등급 마커, 원클릭 필터/검색, 실시간 KMA 특보 및 지연 경과시간 표출
 2. **중앙관제 대시보드 (`/control`)**:
    - SPA 경로 분기와 정적 import 단일 번들
@@ -381,11 +386,15 @@ PC·모바일 실화면·성능까지 확인했습니다. 지도 정보성·배�
   `utils.ts`, `styles.css`도 변경됐습니다. GitHub Actions `33281586514`와
   공개 웹·health HTTP 200을 확인했고 사용자 실화면 검수도 통과했습니다.
 - 지도 정보성·배포 식별 개선 계획은 `main` `1bc1c03`의 clean tracked working
-  tree를 기준으로 작성했습니다. 현재 working tree에는 계획 문서 정리와 1~2단계의
-  `KakaoMap.tsx`, `WeatherLayerControls.tsx`, `utils.ts`, `styles.css`, 신규
-  `windSpeedRendering.ts`, `mapWeatherInspection.ts`, `MapInformationCard.tsx` 및
-  관련 테스트 변경이 있습니다. React 전체 94개 테스트와 production build가
-  통과했으며 commit·push·배포는 하지 않았습니다.
+  tree를 기준으로 작성했습니다. 1~5단계 구현은 `d1678cc`, KST 배포 시각 보정은
+  `4bd781f`, 완료 문서 반영과 임시 계획서 삭제는 `c405018`에 포함됐습니다.
+  `main`, `origin/main`, `origin/HEAD`는 모두 `c405018`이며 상태 복구를 시작할 때
+  tracked working tree와 staged diff는 없었습니다.
+- 2026-08-31 `scripts/verify_all.sh`를 다시 실행해 시설 103개, Python 단위 테스트
+  256개(22+234), React 단위 테스트 113개, Python 컴파일, TypeScript 검사와
+  프로덕션 빌드가 모두 통과했습니다. GitHub Actions `33287694028`은
+  `4bd781f` 대상으로 성공 완료됐고, 공개 웹과 Hosting 경유 `/api/v1/health`도
+  같은 날 HTTP 200을 반환했습니다.
 - 2026-08-27 문서 작업 시작 시 tracked 변경은 없었습니다.
 - 생성 PDF·렌더·제작 중간물은 2026-08-29 사용자 요청으로
   `.trash/obsolete_artifacts_20260829/`로 이동했습니다. `.trash/`, `output/`,

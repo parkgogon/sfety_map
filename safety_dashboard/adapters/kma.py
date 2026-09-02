@@ -67,6 +67,9 @@ def parse_warning_response(
         issued_at = _parse_datetime(parts[4])
         effective_at = _parse_datetime(parts[5])
         warning_type, raw_level, command = parts[6:9]
+        # 예비특보는 사전 참고 정보이며 발효 특보가 아니므로 위험도 평가 및 관제 지도에서 제외합니다.
+        if "예비" in raw_level or "예비" in warning_type or "예비" in command:
+            continue
         identity = "|".join((code, warning_type, raw_level, parts[4], command))
         result.append(
             Warning(

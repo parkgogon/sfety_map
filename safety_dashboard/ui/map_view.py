@@ -361,6 +361,8 @@ def _add_warning_zones(
             grouped[warning.region_code].append(warning)
     for code, warnings in grouped.items():
         primary = max(warnings, key=lambda item: _level_rank(item.level))
+        if primary.level is WarningLevel.UNKNOWN:
+            continue
         color = {
             WarningLevel.CRITICAL: "#8F1010",
             WarningLevel.WARNING: "#D92D20",

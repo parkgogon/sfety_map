@@ -207,6 +207,27 @@ class MonitoringApiTests(unittest.TestCase):
         self.assertEqual(payload["warning_zones"]["features"][0]["properties"]["label"], "호우 경보")
         self.assertNotIn("internal", str(payload["warning_zones"]))
 
+    def test_warning_zones_skips_unknown_level(self):
+        snapshot = self.snapshot()
+        unknown_warning = Warning(
+            "unknown-1", "기상청", "L107", "L1070300", "경상북도", "구미시",
+            "강풍", "예비", WarningLevel.UNKNOWN,
+            issued_at=dt.datetime(2026, 8, 4, 6, 0),
+            effective_at=dt.datetime(2026, 8, 4, 6, 0),
+        )
+        snapshot = dataclasses.replace(
+            snapshot,
+            warning_feed=dataclasses.replace(
+                snapshot.warning_feed,
+                warnings=(unknown_warning,),
+            ),
+        )
+        payload = serialize_monitoring(
+            snapshot, self.catalog, self.policy,
+            TEST_ZONES, DataHealth.LIVE, "정상",
+        )
+        self.assertEqual(payload["warning_zones"]["features"], [])
+
     def test_kma_error_is_unavailable_not_no_impact(self):
         payload = serialize_monitoring(
             self.snapshot(DataHealth.ERROR), self.catalog, self.policy,

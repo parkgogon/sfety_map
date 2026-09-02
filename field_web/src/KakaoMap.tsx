@@ -455,6 +455,7 @@ export function KakaoMap({
       polygonRef.current = [];
       const warningMap = groupWarningsByRegion(warnings);
       warningZones.forEach((feature) => {
+        if (feature.properties?.level === "UNKNOWN") return;
         polygonPaths(kakao, feature).forEach((path) => {
           const polygon = new kakao.maps.Polygon({
             map,

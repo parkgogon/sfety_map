@@ -125,6 +125,17 @@ class ApplicationTests(unittest.TestCase):
         self.assertEqual(len(values), 1)
         self.assertEqual(values[0].level, WarningLevel.WARNING)
 
+    def test_kma_parser_excludes_preliminary_warnings(self):
+        text = "\n".join((
+            "L1070000,경상북도,L1072400,포항시,202608031000,202608031100,호우,경보,발표,0",
+            "L1080000,경상남도,L1082200,거제시,202609030430,202609041158,강풍,예비,발표,0",
+            "L1160000,울산광역시,L1082800,울산동부,202609030430,202609041158,강풍,예비특보,발표,0",
+        ))
+        values = parse_warning_response(text, POLICY)
+        self.assertEqual(len(values), 1)
+        self.assertEqual(values[0].warning_type, "호우")
+        self.assertEqual(values[0].raw_level, "경보")
+
     def test_real_facility_csv_has_stable_unique_ids(self):
         values = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
         self.assertGreater(len(values), 0)

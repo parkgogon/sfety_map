@@ -208,6 +208,8 @@ def _warning_zones(
     result = []
     for code, warnings in grouped.items():
         primary = max(warnings, key=lambda item: _level_rank(item.level))
+        if primary.level is WarningLevel.UNKNOWN:
+            continue
         source_feature = features[code]
         result.append(
             {
