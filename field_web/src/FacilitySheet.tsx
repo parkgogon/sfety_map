@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CctvResponse, Facility, NearbyCctv, WeatherResponse } from "./types";
 import {
   cctvDirectionText,
@@ -7,6 +7,21 @@ import {
   weatherSummary,
   windDirectionLabel,
 } from "./utils";
+
+function friendlyWeatherError(detail?: string): string {
+  if (!detail) return "기상청 실황 일시 수신 지연 (재시도 중)";
+  const raw = String(detail);
+  if (
+    raw.includes("Timeout") ||
+    raw.includes("ConnectTimeout") ||
+    raw.includes("연결하지 못했습니다") ||
+    raw.includes("격자") ||
+    raw.includes("RequestException")
+  ) {
+    return "기상청 실황 일시 수신 지연 (재시도 중)";
+  }
+  return raw;
+}
 
 interface FacilitySheetProps {
   facility: Facility | null;
@@ -88,8 +103,18 @@ export function FacilitySheet({
 }: FacilitySheetProps) {
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const lastSuccessWeatherRef = useRef<WeatherResponse | null>(null);
 
-  useEffect(() => setExpanded(false), [facility?.id]);
+  useEffect(() => {
+    setExpanded(false);
+    lastSuccessWeatherRef.current = null;
+  }, [facility?.id]);
+
+  if (weather && weather.status === "LIVE") {
+    lastSuccessWeatherRef.current = weather;
+  }
+  const lastSuccessWeather = lastSuccessWeatherRef.current;
+
   useEffect(() => {
     setNow(Date.now());
     if (cctvCooldownUntil <= Date.now()) return;
@@ -109,6 +134,8 @@ export function FacilitySheet({
 
   const cooldownSeconds = Math.max(0, Math.ceil((cctvCooldownUntil - now) / 1_000));
   const weatherLive = weather?.status === "LIVE";
+  const weatherFailing = !weatherLoading && (weatherError || (weather && !weatherLive));
+
   return (
     <section className={`facility-sheet ${expanded ? "expanded" : ""}`} aria-label="선택 시설 상세">
       <span className="sheet-handle" aria-hidden="true" />
@@ -142,9 +169,18 @@ export function FacilitySheet({
         {!weatherLoading && weatherLive && weather && (
           <FacilityWeather weather={weather} expanded={expanded} />
         )}
-        {!weatherLoading && (weatherError || (weather && !weatherLive)) && (
+        {weatherFailing && lastSuccessWeather && (
+          <>
+            <div className="weather-stale-banner">
+              <span>⚠️ 실시간 수신 지연으로 직전({formatObservationTime(lastSuccessWeather.observed_at)}) 관측값을 표시 중입니다</span>
+              <button type="button" onClick={onRetryWeather}>다시 시도</button>
+            </div>
+            <FacilityWeather weather={lastSuccessWeather} expanded={expanded} />
+          </>
+        )}
+        {weatherFailing && !lastSuccessWeather && (
           <div className="context-error">
-            <span>{weatherError || weather?.detail || "기상 자료를 확인할 수 없습니다."}</span>
+            <span>⚠️ {friendlyWeatherError(weatherError || weather?.detail)}</span>
             <button type="button" onClick={onRetryWeather}>다시 시도</button>
           </div>
         )}

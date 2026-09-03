@@ -136,7 +136,13 @@ export function WeatherLayerLegend({
       {loading && !data && <p>{isSimulation ? "기상 가정을 생성하는 중…" : "기상 격자를 불러오는 중…"}</p>}
       {failed && !data?.points.length ? (
         <div className="weather-layer-error">
-          <span>{error || data?.detail}</span>
+          <span>⚠️ {(() => {
+            const raw = String(error || data?.detail || "");
+            if (raw.includes("격자") || raw.includes("Timeout") || raw.includes("연결") || !raw) {
+              return "기상청 실황 격자 일시 수신 지연 (재시도 중)";
+            }
+            return raw;
+          })()}</span>
           <button type="button" onClick={onRetry}>다시 시도</button>
         </div>
       ) : data ? (

@@ -241,7 +241,7 @@ export default function SettingsApp() {
           <div className="admin-login-card">
             <h2>관리자 인증이 필요합니다</h2>
             <p>위험도 정책 기준 조회 및 브라우저 세션 편집을 위해 비밀번호를 입력해 주세요.</p>
-            <form onSubmit={handleLogin}>
+            <form className="login-form" onSubmit={handleLogin}>
               <input
                 type="password"
                 placeholder="관리자 비밀번호"
@@ -250,11 +250,11 @@ export default function SettingsApp() {
                 disabled={authLoading}
                 aria-label="관리자 비밀번호"
               />
-              {authError && <div className="notice error">{authError}</div>}
               <button className="primary-button" type="submit" disabled={authLoading}>
                 {authLoading ? "확인 중..." : "관리자 로그인"}
               </button>
             </form>
+            {authError && <div className="notice error" style={{ marginTop: "12px" }}>{authError}</div>}
           </div>
         </div>
       </div>

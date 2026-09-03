@@ -143,13 +143,15 @@ describe("ControlApp 중앙관제 대시보드", () => {
     expect(html).toContain("실적·이력");
   });
 
-  it("우선순위 목록에서 3개 시설을 모두 렌더링한다", () => {
+  it("우선순위 목록에서 3개 시설을 모두 렌더링한다 (데스크톱 표 및 모바일 카드 리스트)", () => {
     const html = renderToStaticMarkup(<ControlApp />);
     expect(html).toContain("점검 우선순위 시설 목록");
     expect(html).toContain("구미 수질측정소");
     expect(html).toContain("포항 대기측정소");
     expect(html).toContain("안동 수질측정소");
     expect(html).toContain("col-rank");
+    expect(html).toContain("priority-card-list");
+    expect(html).toContain("priority-card");
   });
 
   it("미판정이나 조회 불가 시설은 값이 있을 때만 확인 필요 항목으로 표시한다", () => {

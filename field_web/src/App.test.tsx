@@ -95,4 +95,18 @@ describe("App 모의훈련 및 기상 레이어 동작", () => {
       mockData.status.health = originalHealth;
     }
   });
+
+  it("KMA 수신 지연(STALE) 상태일 때 닫기 가능한 안내 배너를 렌더링한다", () => {
+    window.history.replaceState({}, "", "/");
+    const originalHealth = mockData.status.health;
+    mockData.status.health = "STALE";
+    try {
+      const html = renderToStaticMarkup(<App />);
+      expect(html).toContain("notice warning");
+      expect(html).toContain("KMA 특보 자료 수신이 지연되어");
+      expect(html).toContain("notice-dismiss-btn");
+    } finally {
+      mockData.status.health = originalHealth;
+    }
+  });
 });

@@ -67,6 +67,7 @@ export default function App() {
   const [selectedCctvId, setSelectedCctvId] = useState("");
   const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
   const [weatherLayerOpen, setWeatherLayerOpen] = useState(false);
+  const [dismissedNotices, setDismissedNotices] = useState<Set<string>>(new Set());
   const autoSelectedSimulationRef = useRef(false);
   const userSelectedLayerRef = useRef(false);
   const initializedGroups = useRef(false);
@@ -321,15 +322,54 @@ export default function App() {
         </div>
       )}
 
-      {(error || stale || !feedAvailable || data.status.zone_health === "FALLBACK" || deepLinkNotice) && (
-        <div className="notice-stack" aria-live="polite">
-          {error && <div className="notice warning">{error}</div>}
-          {stale && <div className="notice warning">{data.status.detail || "KMA 특보 자료 수신이 지연되어 마지막 정상 자료를 표시합니다."}</div>}
-          {!feedAvailable && <div className="notice error">{data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다."}</div>}
-          {data.status.zone_health === "FALLBACK" && <div className="notice info">최신 특보 경계 대신 검증된 내장 경계를 사용 중입니다.</div>}
-          {deepLinkNotice && <div className="notice info">{deepLinkNotice}</div>}
-        </div>
-      )}
+      {(() => {
+        const notices: Array<{ key: string; type: "warning" | "error" | "info"; text: string }> = [];
+        if (error && !dismissedNotices.has("error")) {
+          notices.push({ key: "error", type: "warning", text: error });
+        }
+        if (stale && !dismissedNotices.has("stale")) {
+          notices.push({
+            key: "stale",
+            type: "warning",
+            text: data.status.detail || "KMA 특보 자료 수신이 지연되어 마지막 정상 자료를 표시합니다.",
+          });
+        }
+        if (!feedAvailable && !dismissedNotices.has("feed_unavailable")) {
+          notices.push({
+            key: "feed_unavailable",
+            type: "error",
+            text: data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다.",
+          });
+        }
+        if (data.status.zone_health === "FALLBACK" && !dismissedNotices.has("zone_fallback")) {
+          notices.push({
+            key: "zone_fallback",
+            type: "info",
+            text: "최신 특보 경계 대신 검증된 내장 경계를 사용 중입니다.",
+          });
+        }
+        if (deepLinkNotice && !dismissedNotices.has("deeplink")) {
+          notices.push({ key: "deeplink", type: "info", text: deepLinkNotice });
+        }
+        if (notices.length === 0) return null;
+        return (
+          <div className="notice-stack" aria-live="polite">
+            {notices.map((n) => (
+              <div key={n.key} className={`notice ${n.type}`}>
+                <span className="notice-content">{n.text}</span>
+                <button
+                  type="button"
+                  className="notice-dismiss-btn"
+                  onClick={() => setDismissedNotices((prev) => new Set(prev).add(n.key))}
+                  aria-label="안내 배너 닫기"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       <main className={`map-stage ${selectedFacility ? "has-selection" : ""}`}>
         <KakaoMap

@@ -707,6 +707,52 @@ export default function ControlApp() {
                 </tbody>
               </table>
             </div>
+
+            {/* 모바일 최적화 점검 우선순위 카드 리스트 */}
+            <div className="priority-card-list" role="list" aria-label="점검 우선순위 시설 모바일 카드 목록">
+              {filteredPriorityFacilities.length > 0 ? (
+                filteredPriorityFacilities.map((facility, index) => (
+                  <div
+                    key={facility.id}
+                    className={`priority-card ${facility.grade === "HIGH" ? "card-high" : ""}`}
+                    role="listitem"
+                  >
+                    <div className="priority-card-top">
+                      <div className="priority-card-rank-grade">
+                        <span className="priority-rank">{index + 1}위</span>
+                        <span
+                          className="grade-badge"
+                          style={{ backgroundColor: facility.grade_color }}
+                        >
+                          {facility.grade_label}
+                        </span>
+                        <strong className="priority-name">{facility.name}</strong>
+                      </div>
+                      <span className="priority-type">{facility.type}</span>
+                    </div>
+
+                    <div className="priority-card-body">
+                      <div className="priority-row">
+                        <span className="priority-label">특보</span>
+                        <span className={facility.reasons.length > 0 ? "warning-tag active" : "warning-tag"}>
+                          {uniqueWarningText(facility)}
+                        </span>
+                      </div>
+                      <div className="priority-row">
+                        <span className="priority-label">위치</span>
+                        <span className="priority-value">{facility.address}</span>
+                      </div>
+                      <div className="priority-row">
+                        <span className="priority-label">담당</span>
+                        <span className="priority-value">{facility.public_contact || "—"}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="priority-card-empty">일치하는 시설이 없습니다.</div>
+              )}
+            </div>
           </div>
         </section>
       )}
