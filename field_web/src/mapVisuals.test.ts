@@ -26,8 +26,8 @@ describe("지도 마커 시각 규칙", () => {
   });
 
   it("클러스터를 한 단계 늦게 만들고 묶음 범위를 줄인다", () => {
-    expect(CLUSTER_MIN_LEVEL).toBe(9);
-    expect(CLUSTER_GRID_SIZE).toBe(48);
+    expect(CLUSTER_MIN_LEVEL).toBe(10);
+    expect(CLUSTER_GRID_SIZE).toBe(35);
     expect(CLUSTER_MIN_SIZE).toBe(2);
     expect(CLUSTER_MARKER_SIZE).toBe(38);
   });
