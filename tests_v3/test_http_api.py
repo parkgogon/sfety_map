@@ -556,7 +556,7 @@ class MonitoringApiTests(unittest.TestCase):
         )
         builds = []
 
-        def build_payload(_now, *, simulation=False):
+        def build_payload(_now, *, simulation=False, **_kwargs):
             builds.append(simulation)
             return {"build": len(builds), "simulation": simulation}
 

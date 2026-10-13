@@ -33,7 +33,7 @@ class _SnapshotProvider:
         self.service = service
 
     def fetch(self):
-        return self.service.snapshot(simulation=False)
+        return self.service.snapshot(simulation=False, bypass_stored=True)
 
 
 @lru_cache(maxsize=1)

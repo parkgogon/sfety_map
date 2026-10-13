@@ -108,7 +108,7 @@ class SimulationIsolationTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.simulation_calls: list[bool] = []
 
-            def snapshot(self, *, simulation: bool = False) -> object:
+            def snapshot(self, *, simulation: bool = False, **_kwargs) -> object:
                 self.simulation_calls.append(simulation)
                 return object()
 

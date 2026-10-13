@@ -97,9 +97,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!data || initializedGroups.current) return;
-    setSelectedGroups(new Set(data.groups.map((group) => group.id)));
-    initializedGroups.current = true;
+    if (!data) return;
+    if (!initializedGroups.current) {
+      setSelectedGroups(new Set(data.groups.map((group) => group.id)));
+      initializedGroups.current = true;
+      return;
+    }
+    setSelectedGroups((current) => {
+      const missing = data.groups.filter((group) => !current.has(group.id));
+      if (missing.length === 0) return current;
+      return new Set([...current, ...missing.map((group) => group.id)]);
+    });
   }, [data]);
 
   useEffect(() => {

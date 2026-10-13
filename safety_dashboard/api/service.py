@@ -79,7 +79,11 @@ class MonitoringApiService:
             now = self._monotonic()
             if self._can_reuse_payload(now, force_refresh, simulation):
                 return self._payloads[simulation]
-            payload = self._build_payload(now, simulation=simulation)
+            payload = self._build_payload(
+                now,
+                simulation=simulation,
+                bypass_stored=force_refresh,
+            )
             self._payloads[simulation] = payload
             self._payload_expires_at[simulation] = (
                 now + self.settings.monitoring_cache_seconds
@@ -106,9 +110,14 @@ class MonitoringApiService:
         monotonic_now: float,
         *,
         simulation: bool = False,
+        bypass_stored: bool = False,
     ) -> dict[str, Any]:
         snapshot, catalog, policy, zone_data, zone_health, zone_detail = (
-            self._build_snapshot(monotonic_now, simulation=simulation)
+            self._build_snapshot(
+                monotonic_now,
+                simulation=simulation,
+                bypass_stored=bypass_stored,
+            )
         )
         if snapshot.warning_feed.health in {
             DataHealth.LIVE,
@@ -131,13 +140,19 @@ class MonitoringApiService:
             zone_detail,
         )
 
-    def snapshot(self, *, simulation: bool = False) -> DashboardSnapshot:
+    def snapshot(
+        self,
+        *,
+        simulation: bool = False,
+        bypass_stored: bool = False,
+    ) -> DashboardSnapshot:
         """자동 작업자가 직렬화 이전의 동일 관제 결과를 사용하게 합니다."""
 
         with self._lock:
             snapshot, _, _, _, _, _ = self._build_snapshot(
                 self._monotonic(),
                 simulation=simulation,
+                bypass_stored=bypass_stored,
             )
             return snapshot
 
@@ -146,6 +161,7 @@ class MonitoringApiService:
         monotonic_now: float,
         *,
         simulation: bool,
+        bypass_stored: bool = False,
     ) -> tuple[
         DashboardSnapshot,
         FacilityGroupCatalog,
@@ -156,10 +172,11 @@ class MonitoringApiService:
     ]:
         policy = RiskPolicy.load(self.settings.policy_path)
         catalog = FacilityGroupCatalog.load(self.settings.group_path)
+        facilities = CsvFacilityRepository(self.settings.facility_path)
         zone_data, zone_health, zone_detail = self._zones(monotonic_now)
         stored_snapshot = (
             None
-            if simulation
+            if simulation or bypass_stored
             else self._load_monitoring_snapshot(policy.version)
         )
         if stored_snapshot is not None and self._snapshot_is_fresh(stored_snapshot):
@@ -171,8 +188,6 @@ class MonitoringApiService:
                 zone_health,
                 zone_detail,
             )
-
-        facilities = CsvFacilityRepository(self.settings.facility_path)
         zone_index = WarningZoneIndex.from_geojson(zone_data)
         warning_provider = (
             StaticWarningProvider(simulation_warnings(policy))
