@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./kakao";
+import { facilityMarkerIconSvg } from "./facilityIcons";
 import {
   MapInformationCard,
   type MapInformationCardContent,
@@ -175,9 +176,13 @@ function strongest(facilities: Facility[]): Facility {
 
 function markerImage(kakao: any, facilities: Facility[], selected: boolean): any {
   const primary = strongest(facilities);
-  const count = facilities.length > 1 ? String(facilities.length) : "";
   const size = facilityMarkerSize(facilities.length, selected);
   const radius = size / 2 - 3;
+  const content = facilities.length > 1
+    ? `<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial,sans-serif" font-size="${size < 38 ? 10 : 12}" font-weight="700"
+        fill="white">${facilities.length}</text>`
+    : facilityMarkerIconSvg(primary.group_id, size / 2, size / 2, selected ? 22 : 15);
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
       <circle cx="${size / 2}" cy="${size / 2}" r="${radius + (selected ? 1 : 0)}"
@@ -185,9 +190,7 @@ function markerImage(kakao: any, facilities: Facility[], selected: boolean): any
         stroke-width="${selected ? 4 : 1.5}"/>
       <circle cx="${size / 2}" cy="${size / 2}" r="${Math.max(7, radius - 4)}"
         fill="${primary.grade_color}"/>
-      ${count ? `<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-        font-family="Arial,sans-serif" font-size="${size < 38 ? 10 : 12}" font-weight="700"
-        fill="white">${count}</text>` : ""}
+      ${content}
     </svg>`;
   const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   return new kakao.maps.MarkerImage(

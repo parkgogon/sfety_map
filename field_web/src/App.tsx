@@ -5,6 +5,7 @@ import { CctvModal } from "./CctvModal";
 import { FacilitySheet } from "./FacilitySheet";
 import { GradeLegend } from "./GradeLegend";
 import { KakaoMap } from "./KakaoMap";
+import { FacilityIcon } from "./facilityIcons";
 import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
 import { navigate, navigateWithMode } from "./router";
@@ -508,6 +509,7 @@ export default function App() {
               {data.groups.map((group) => (
                 <label key={group.id}>
                   <input type="checkbox" checked={selectedGroups.has(group.id)} onChange={() => toggleGroup(group.id)} />
+                  <FacilityIcon groupId={group.id} size={16} className="group-option-icon" />
                   <span>{group.label}</span><b>{group.count}</b>
                 </label>
               ))}

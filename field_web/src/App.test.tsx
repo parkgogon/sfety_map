@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { getFacilityIconPath } from "./facilityIcons";
 import App from "./App";
 import type { MonitoringResponse } from "./types";
 
@@ -107,6 +110,52 @@ describe("App 모의훈련 및 기상 레이어 동작", () => {
       expect(html).toContain("notice-dismiss-btn");
     } finally {
       mockData.status.health = originalHealth;
+    }
+  });
+});
+
+describe("시설 범례 아이콘과 필터", () => {
+  it("모든 범례에 16px 장식 아이콘을 표시하고 라벨 클릭으로 필터를 토글한다", async () => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    window.history.replaceState({}, "", "/");
+    const originalGroups = mockData.groups;
+    mockData.groups = ["wastewater", "air", "water", "site", "farming_collection", "farming_plastic", "other", "new_group"]
+      .map((id) => ({ id, label: id === "water" ? "수질측정소" : id, count: id === "water" ? 1 : 0 }));
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<App />));
+      await act(async () => container.querySelector<HTMLButtonElement>(".filter-button")!.click());
+      const labels = Array.from(container.querySelectorAll<HTMLLabelElement>(".group-options label"));
+      expect(labels).toHaveLength(mockData.groups.length);
+      labels.forEach((label, index) => {
+        const icon = label.querySelector("svg")!;
+        expect(icon.getAttribute("width")).toBe("16");
+        expect(icon.getAttribute("height")).toBe("16");
+        expect(icon.getAttribute("aria-hidden")).toBe("true");
+        expect(icon.getAttribute("focusable")).toBe("false");
+        expect(icon.getAttribute("color")).toBe("currentColor");
+        expect(icon.querySelector("path")?.getAttribute("d")).toBe(
+          getFacilityIconPath(mockData.groups[index].id).match(/d="([^"]+)"/)![1],
+        );
+        expect(label.children[0].tagName).toBe("INPUT");
+        expect(label.children[1]).toBe(icon);
+      });
+      const waterLabel = labels[2];
+      const checkbox = waterLabel.querySelector<HTMLInputElement>("input")!;
+      expect(checkbox.checked).toBe(true);
+      await act(async () => waterLabel.click());
+      expect(checkbox.checked).toBe(false);
+      expect(container.textContent).toContain("현재 필터 조건에 해당하는 시설이 없습니다.");
+      await act(async () => waterLabel.click());
+      expect(checkbox.checked).toBe(true);
+      expect(container.textContent).not.toContain("현재 필터 조건에 해당하는 시설이 없습니다.");
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+      mockData.groups = originalGroups;
+      vi.unstubAllGlobals();
     }
   });
 });

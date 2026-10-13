@@ -1740,16 +1740,24 @@ input:focus-visible {
 
 .group-options input {
   accent-color: var(--color-brand-700);
+  flex-shrink: 0;
   height: 22px;
   width: 22px;
 }
 
+.group-option-icon {
+  flex-shrink: 0;
+}
+
 .group-options span {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .group-options b {
   color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .training-option {
