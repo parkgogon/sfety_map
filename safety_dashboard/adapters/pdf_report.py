@@ -275,11 +275,11 @@ class PdfReportRenderer:
         high_count = summary.high_risk_count
         medium_count = sum(1 for a in snapshot.assessments if a.grade is RiskGrade.MEDIUM)
         affected_count = summary.affected_facility_count
-        total_count = len(snapshot.facilities) if snapshot.facilities else 103
-        is_partial = total_count < 103
+        total_count = len(snapshot.facilities) if snapshot.facilities else 195
+        is_partial = total_count < 195
 
         first_label = "보고 대상 시설" if is_partial else "소관시설 전체"
-        first_sub = f"전체 103개소 중 선택" if is_partial else "영남권 소관 사업장"
+        first_sub = f"소관 사업장 중 선택" if is_partial else "영남권 소관 사업장"
 
         # 위험 [상], [중]이 0개일 때는 Neutral 톤으로 과도한 경계감 방지
         high_accent = GRADE_COLOR[RiskGrade.HIGH] if high_count > 0 else (148, 163, 184)

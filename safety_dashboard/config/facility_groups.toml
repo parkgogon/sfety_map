@@ -21,6 +21,10 @@ facility_types = ["영농폐비닐 재활용시설"]
 label = "공공하수처리시설"
 facility_types = ["공공하수처리시설"]
 
+[groups.site]
+label = "시설현장"
+facility_types = ["시설현장"]
+
 # 위 그룹에 명시되지 않은 기존·신규 유형은 모두 이 그룹에 포함됩니다.
 [groups.other]
 label = "기타시설"

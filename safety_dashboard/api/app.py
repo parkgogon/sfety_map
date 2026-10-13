@@ -77,7 +77,7 @@ class ManualTelegramDispatchRequest(BaseModel):
     category: ManualTelegramCategory
     mode: Literal["live", "simulation"]
     note: str = Field(default="", max_length=200)
-    facility_ids: list[str] = Field(min_length=1, max_length=103)
+    facility_ids: list[str] = Field(min_length=1, max_length=300)
     warning_keys: list[str] = Field(min_length=1, max_length=200)
     messages: list[ManualTelegramMessageRequest] = Field(min_length=1, max_length=30)
     policy_version: str = Field(default="", max_length=80)

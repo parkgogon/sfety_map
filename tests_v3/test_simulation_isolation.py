@@ -30,24 +30,24 @@ class SimulationIsolationTests(unittest.TestCase):
         cls.scope = load_monitoring_scope(cls.settings.zone_fallback_path)
 
     def test_simulation_snapshot_counts_and_consistency(self):
-        """수용조건 2: 종합 시나리오 기준 특보 4건, 영향시설 31개소, 상 위험 10개소가 정확히 일치한다."""
+        """수용조건 2: 종합 시나리오 기준 특보 4건, 영향시설 55개소, 상 위험 30개소가 정확히 일치한다."""
         payload = self.service.monitoring(simulation=True)
 
         self.assertEqual(payload["status"]["health"], "SIMULATION")
         self.assertIsNotNone(payload["summary"])
         self.assertEqual(payload["summary"]["active_warning_count"], 4)
-        self.assertEqual(payload["summary"]["affected_facility_count"], 31)
-        self.assertEqual(payload["summary"]["high_risk_count"], 10)
+        self.assertEqual(payload["summary"]["affected_facility_count"], 55)
+        self.assertEqual(payload["summary"]["high_risk_count"], 30)
 
         high_facilities = [
             f for f in payload["facilities"] if f["grade"] == "HIGH"
         ]
-        self.assertEqual(len(high_facilities), 10)
+        self.assertEqual(len(high_facilities), 30)
 
         affected_facilities = [
             f for f in payload["facilities"] if f["grade"] not in {"NONE", "UNASSESSED", "UNAVAILABLE"}
         ]
-        self.assertEqual(len(affected_facilities), 31)
+        self.assertEqual(len(affected_facilities), 55)
 
     @unittest.skipUnless(shutil.which("pdftotext"), "pdftotext is required")
     def test_simulation_pdf_rendering_contains_simulation_badge(self):

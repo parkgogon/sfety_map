@@ -484,7 +484,7 @@ export default function ControlApp() {
           기상청 특보 <span aria-hidden="true">↗</span>
         </a>
         <span className="facility-count">
-          · 총 103개소 중 <b>{activeWarningCount}개소</b> 특보 영향
+          · 총 {data?.facilities.length ?? 195}개소 중 <b>{activeWarningCount}개소</b> 특보 영향
         </span>
       </div>
 
@@ -619,7 +619,7 @@ export default function ControlApp() {
             <div className="priority-header">
               <div>
                 <h2>점검 우선순위 시설 목록</h2>
-                <p>위험등급과 특보 단계에 따라 정렬된 103개 시설입니다.</p>
+                <p>위험등급과 특보 단계에 따라 정렬된 {data?.facilities.length ?? 195}개 시설입니다.</p>
               </div>
               <div className="priority-filters">
                 <select
@@ -785,11 +785,11 @@ export default function ControlApp() {
                 className="secondary-button pdf-button"
                 onClick={handlePdfDownload}
                 disabled={pdfLoading || actionsBlocked}
-                title="선택 상태와 무관하게 전체 103개 소관시설 종합보고서를 다운로드합니다."
+                title={`선택 상태와 무관하게 전체 ${data?.facilities.length ?? 195}개 소관시설 종합보고서를 다운로드합니다.`}
               >
                 {pdfLoading ? "PDF 생성 중..." : (
                   <>
-                    <span className="btn-text-full">전체 103개소 PDF 보고서 ⤓</span>
+                    <span className="btn-text-full">전체 {data?.facilities.length ?? 195}개소 PDF 보고서 ⤓</span>
                     <span className="btn-text-short">전체 PDF ⤓</span>
                   </>
                 )}

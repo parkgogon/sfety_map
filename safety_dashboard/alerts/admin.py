@@ -455,8 +455,8 @@ def _validated_manual(value: ManualTelegramDispatch) -> ManualTelegramDispatch:
         raise ManualDispatchValidationError("정정·추가안내에는 관리자 메모가 필요합니다.")
     facility_ids = tuple(sorted({item.strip() for item in value.facility_ids if item.strip()}))
     warning_keys = tuple(sorted({item.strip() for item in value.warning_keys if item.strip()}))
-    if not facility_ids or len(facility_ids) > 103:
-        raise ManualDispatchValidationError("수동 전파 시설은 1~103곳이어야 합니다.")
+    if not facility_ids or len(facility_ids) > 300:
+        raise ManualDispatchValidationError("수동 전파 시설은 1~300곳이어야 합니다.")
     if not warning_keys or len(warning_keys) > 200:
         raise ManualDispatchValidationError("연결 특보 정보가 없습니다.")
     if not value.messages or len(value.messages) > 30:

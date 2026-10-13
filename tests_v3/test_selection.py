@@ -34,15 +34,16 @@ class FacilityGroupTests(unittest.TestCase):
         self.catalog = FacilityGroupCatalog.load(CATALOG_PATH)
         self.facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
 
-    def test_real_facility_counts_match_six_groups(self):
+    def test_real_facility_counts_match_seven_groups(self):
         counts = self.catalog.counts(self.facilities)
-        self.assertEqual(sum(counts.values()), 103)
+        self.assertEqual(sum(counts.values()), 195)
         self.assertEqual(counts["air"], 55)
         self.assertEqual(counts["water"], 21)
         self.assertEqual(counts["farming_collection"], 8)
         self.assertEqual(counts["farming_plastic"], 3)
-        self.assertEqual(counts["wastewater"], 2)
-        self.assertEqual(counts["other"], 14)
+        self.assertEqual(counts["wastewater"], 78)
+        self.assertEqual(counts["site"], 14)
+        self.assertEqual(counts["other"], 16)
 
     def test_unknown_future_type_uses_fallback_group(self):
         self.assertEqual(self.catalog.group_for_type("새로운 시설 유형").id, "other")
