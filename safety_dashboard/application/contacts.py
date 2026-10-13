@@ -11,6 +11,7 @@ _PHONE = re.compile(
     r"(?<!\d)(?:\+?82[-.\s]?\(?\d{1,2}\)?|\(?0\d{1,2}\)?)"
     r"(?:[-.\s]?\d{3,4})(?:[-.\s]?\d{4})\)?(?!\d)"
 )
+_MOBILE_PHONE = _PHONE
 _EMPTY_BRACKETS = re.compile(r"\(\s*\)|\[\s*\]")
 _EXTRA_SEPARATORS = re.compile(r"\s*(?:[|,/]·?|[·])\s*$")
 _MULTISPACE = re.compile(r"\s{2,}")
