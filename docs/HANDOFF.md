@@ -3,7 +3,7 @@
 > 살아 있는 현재 상태 문서입니다. 작업일지가 아닙니다.
 >
 > 마지막 정리: 2026-10-15
-> 기준: main `4cf9a8b`에서 시작한 모바일 UI 1~5단계 완료 / 작업 전 운영은 임시 기준점 기능 `10c0647` 포함
+> 기준: 모바일 UI 1~5단계 `154263c` main 배포 완료 / 운영 번들 `154263c`
 
 새 작업자는 먼저 루트의 [`AGENTS.md`](../AGENTS.md)를 읽고, 이 문서를 실제
 Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간이 지나면 달라질 수
@@ -45,6 +45,12 @@ Git·코드·테스트와 대조해야 합니다. 아래 운영 상태는 시간
   - 코드 변경은 App, KakaoMap, FacilitySheet, LocationReferencePanel, types, utils 및 새 MobileMapHeader/
     MobileBottomSheet/MobileMapSettings/MobileMapSearch/useMobileLayout/mobileMap.css와 관련 테스트입니다.
     기존 미추적 사용자 산출물은 변경 대상에서 제외해 보존했습니다.
+  - `154263c`를 main에 push해 운영 배포했습니다. GitHub Actions
+    `38690934654`에서 전체 테스트, Cloud Run API·자동 알림 worker·Scheduler,
+    Firebase Hosting, 업타임 감시 구성이 모두 성공했습니다.
+  - 운영 `/`, `/control`, `/settings`와 공개 health 2종이 HTTP 200이고, HTML은
+    `no-cache, no-store, must-revalidate`입니다. 운영 JS에서 `154263c`와 새 모바일
+    검색·지도 설정 코드를 확인했습니다.
 
 - **임시 기준점·주변 시설 기능 — 운영 배포 완료 (2026-10-15)**:
   - 현장 지도는 검색 대상을 `우리 시설 / 장소·주소`로 구분합니다. 중앙관제는
