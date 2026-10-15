@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { act } from "react";
+import { act, type ComponentProps } from "react";
+import type { KakaoMap } from "./KakaoMap";
 import { createRoot } from "react-dom/client";
 import { getFacilityIconPath } from "./facilityIcons";
 import App from "./App";
@@ -74,7 +75,11 @@ vi.mock("./weatherLayerApi", () => ({
 }));
 
 vi.mock("./KakaoMap", () => ({
-  KakaoMap: () => <div data-testid="kakao-map" />,
+  KakaoMap: (props: ComponentProps<typeof KakaoMap>) => <div data-testid="kakao-map">
+    <span data-testid="visible-facilities">{props.facilities.map((facility) => facility.id).join(",")}</span>
+    <span data-testid="reference-target">{props.referenceTarget?.id ?? ""}</span>
+    {props.pickingReference && <button type="button" onClick={() => props.onPickReference?.({ latitude: 36.5, longitude: 128.71 })}>시험 지도 위치</button>}
+  </div>,
 }));
 
 describe("App 모의훈련 및 기상 레이어 동작", () => {
@@ -155,6 +160,44 @@ describe("시설 범례 아이콘과 필터", () => {
       await act(async () => root.unmount());
       container.remove();
       mockData.groups = originalGroups;
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("현장 지도 기준점 통합", () => {
+  it("필터로 숨긴 시설도 기준점 주변 목록에서 선택하면 표시한다", async () => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    window.history.replaceState({}, "", "/");
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const click = async (text: string) => {
+      const button = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === text);
+      expect(button, text).toBeTruthy();
+      await act(async () => button!.click());
+    };
+    try {
+      await act(async () => root.render(<App />));
+      await act(async () => container.querySelector<HTMLButtonElement>(".filter-button")!.click());
+      await act(async () => container.querySelector<HTMLInputElement>(".group-options input")!.click());
+      await click("확인");
+      expect(container.querySelector('[data-testid="visible-facilities"]')?.textContent).toBe("");
+      await click("장소·주소");
+      await click("지도에서 지정");
+      await click("시험 지도 위치");
+      await click("이곳을 기준점으로 지정");
+      expect(container.textContent).toContain("필터로 숨김 — 선택하면 표시");
+      await act(async () => container.querySelector<HTMLButtonElement>(".location-nearby-list button")!.click());
+      expect(container.querySelector('[data-testid="visible-facilities"]')?.textContent).toBe("F-1");
+      expect(container.querySelector('[data-testid="reference-target"]')?.textContent).toBe("F-1");
+      expect(window.location.search).toContain("facility_id=F-1");
+      expect(container.querySelector(".map-stage.has-reference-comparison")).not.toBeNull();
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="시설 선택 닫기"]')!.click());
+      expect(container.querySelector(".has-reference-comparison")).toBeNull();
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
       vi.unstubAllGlobals();
     }
   });

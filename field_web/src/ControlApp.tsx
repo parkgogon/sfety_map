@@ -13,6 +13,8 @@ import {
   verifyAdminPassword,
 } from "./controlApi";
 import { KakaoMap } from "./KakaoMap";
+import { LocationReferencePanel } from "./LocationReferencePanel";
+import { useLocationReference } from "./useLocationReference";
 import { ManualDispatchModal } from "./ManualDispatchModal";
 import { WeatherLayerLegend } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
@@ -129,6 +131,8 @@ function setModeQuery(mode: MonitoringMode) {
 
 export default function ControlApp() {
   const [workspace, setWorkspace] = useState<ControlWorkspace>("overview");
+  const reference = useLocationReference();
+  const [locationOpen, setLocationOpen] = useState(false);
   const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
     requestedMonitoringMode(typeof window !== "undefined" ? window.location.search : ""),
   );
@@ -238,6 +242,7 @@ export default function ControlApp() {
   const changeMonitoringMode = (mode: MonitoringMode) => {
     setModeQuery(mode);
     setMonitoringMode(mode);
+    reference.clear();
     if (mode === "live") {
       setWeatherLayerKind(null);
       autoSelectedSimulationRef.current = false;
@@ -323,7 +328,8 @@ export default function ControlApp() {
       zoom: true,
       revision: Date.now(),
     });
-  }, []);
+    reference.selectNearby(facility);
+  }, [reference.selectNearby]);
 
   // PDF 다운로드 실행 (기본 전체 소관시설 103개소 종합보고서)
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -500,7 +506,7 @@ export default function ControlApp() {
         <button
           type="button"
           className={`tab-button ${workspace === "overview" ? "active" : ""}`}
-          onClick={() => setWorkspace("overview")}
+          onClick={() => { reference.cancel(); setWorkspace("overview"); }}
         >
           운영 상황
         </button>
@@ -514,7 +520,7 @@ export default function ControlApp() {
         <button
           type="button"
           className={`tab-button ${workspace === "history" ? "active" : ""}`}
-          onClick={() => setWorkspace("history")}
+          onClick={() => { reference.cancel(); setWorkspace("history"); }}
         >
           실적·이력
         </button>
@@ -839,8 +845,27 @@ export default function ControlApp() {
                 </div>
               </div>
               <div className="control-map-container">
+                <div className="control-location-panel">
+                  <button className="location-open-button" type="button" aria-expanded={locationOpen} onClick={() => {
+                    if (locationOpen) reference.cancel();
+                    setLocationOpen(!locationOpen);
+                  }}>{locationOpen ? "장소·주소 닫기" : reference.point ? "기준점·주변 시설" : "장소·주소 / 주변 시설"}</button>
+                  {locationOpen && <LocationReferencePanel
+                    reference={reference}
+                    facilities={data.facilities}
+                    visibleFacilityIds={new Set(data.facilities.map((facility) => facility.id))}
+                    onSelectFacility={handleMapFacilitySelect}
+                  />}
+                </div>
                 <KakaoMap
                   facilities={data.facilities}
+                  referencePoint={reference.point}
+                  referenceCandidate={reference.candidate}
+                  referenceTarget={data.facilities.find((facility) => facility.id === reference.targetId) ?? null}
+                  referenceView={reference.view}
+                  referenceRings={reference.showRings}
+                  pickingReference={reference.picking && workspace === "analysis"}
+                  onPickReference={reference.pick}
                   warningZones={data.warning_zones.features}
                   warnings={data.warnings}
                   isSimulation={simulation}

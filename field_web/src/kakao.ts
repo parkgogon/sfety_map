@@ -20,7 +20,7 @@ export function loadKakaoMaps(appKey: string): Promise<any> {
     if (!existing) {
       script.dataset.kakaoMap = "true";
       script.async = true;
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=clusterer`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=clusterer,services`;
       document.head.appendChild(script);
     }
   });

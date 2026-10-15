@@ -6,6 +6,8 @@ import { FacilitySheet } from "./FacilitySheet";
 import { GradeLegend } from "./GradeLegend";
 import { KakaoMap } from "./KakaoMap";
 import { FacilityIcon } from "./facilityIcons";
+import { LocationReferencePanel } from "./LocationReferencePanel";
+import { useLocationReference } from "./useLocationReference";
 import { WeatherLayerLegend, WeatherLayerSheet } from "./WeatherLayerControls";
 import { useWeatherLayer } from "./weatherLayerApi";
 import { navigate, navigateWithMode } from "./router";
@@ -61,6 +63,8 @@ export default function App() {
   );
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"facilities" | "location">("facilities");
+  const reference = useLocationReference();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sameLocation, setSameLocation] = useState<Facility[]>([]);
   const [deepLinkNotice, setDeepLinkNotice] = useState("");
@@ -95,7 +99,8 @@ export default function App() {
       zoom: shouldZoomForSelection(source),
       revision: focusRevision.current,
     });
-  }, []);
+    reference.selectNearby(facility);
+  }, [reference.selectNearby]);
 
   useEffect(() => {
     if (!data) return;
@@ -147,10 +152,11 @@ export default function App() {
   }, []);
 
   const clearFacility = useCallback(() => {
+    reference.clearTarget();
     setSelectedId("");
     setSelectedCctvId("");
     setFacilityQuery("");
-  }, []);
+  }, [reference.clearTarget]);
 
   const resetFilters = useCallback(() => {
     if (!data) return;
@@ -228,6 +234,7 @@ export default function App() {
   const changeMonitoringMode = (mode: MonitoringMode) => {
     setModeQuery(mode);
     setMonitoringMode(mode);
+    reference.clear();
     setFilterOpen(false);
     if (mode === "live") {
       setWeatherLayerKind(null);
@@ -380,9 +387,16 @@ export default function App() {
         );
       })()}
 
-      <main className={`map-stage ${selectedFacility ? "has-selection" : ""}`}>
+      <main className={`map-stage ${selectedFacility ? "has-selection" : ""} ${reference.point && reference.targetId && selectedFacility ? "has-reference-comparison" : ""}`}>
         <KakaoMap
           facilities={visibleFacilities}
+          referencePoint={reference.point}
+          referenceCandidate={reference.candidate}
+          referenceTarget={data.facilities.find((facility) => facility.id === reference.targetId) ?? null}
+          referenceView={reference.view}
+          referenceRings={reference.showRings}
+          pickingReference={reference.picking}
+          onPickReference={reference.pick}
           warningZones={data.warning_zones.features}
           warnings={data.warnings}
           isSimulation={simulation}
@@ -398,7 +412,7 @@ export default function App() {
           onSelectCctv={selectCctv}
         />
 
-        {visibleFacilities.length === 0 && (
+        {visibleFacilities.length === 0 && !reference.picking && (
           <div className="empty-facilities-overlay" role="status">
             <p>현재 필터 조건에 해당하는 시설이 없습니다.</p>
             <button className="primary-button" type="button" onClick={resetFilters}>
@@ -408,7 +422,24 @@ export default function App() {
         )}
 
         <div className="map-search-panel">
-          <div className="search-row">
+          <div className="location-search-modes" role="group" aria-label="검색 대상">
+            <button type="button" aria-pressed={searchMode === "facilities"} onClick={() => {
+              reference.cancel();
+              setSearchMode("facilities");
+            }}>우리 시설</button>
+            <button type="button" aria-pressed={searchMode === "location"} onClick={() => {
+              setSearch("");
+              clearFacility();
+              setSearchMode("location");
+            }}>장소·주소{reference.point ? " · 기준점 표시 중" : ""}</button>
+          </div>
+          {searchMode === "location" && <LocationReferencePanel
+            reference={reference}
+            facilities={data.facilities}
+            visibleFacilityIds={new Set(visibleFacilities.map((facility) => facility.id))}
+            onSelectFacility={(facility) => selectFacility(facility, "search")}
+          />}
+          {searchMode === "facilities" && <div className="search-row">
             <label className="search-box">
               <span aria-hidden="true">⌕</span>
               <input
@@ -432,8 +463,8 @@ export default function App() {
               <span aria-hidden="true">☁</span>
               <b>{weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : "기상"}</b>
             </button>
-          </div>
-          {search.trim() && (
+          </div>}
+          {searchMode === "facilities" && search.trim() && (
             <div className="search-results">
               {searchResults.length ? searchResults.map((facility) => (
                 <button type="button" key={facility.id} onClick={() => selectFacility(facility, "search")}>
@@ -457,7 +488,7 @@ export default function App() {
 
         <GradeLegend selectedGrades={selectedGrades} onToggle={toggleGrade} />
 
-        <FacilitySheet
+        {!reference.picking && !reference.candidate && (searchMode === "facilities" || reference.targetId) && <FacilitySheet
           facility={selectedFacility}
           simulation={simulation}
           cctvEnabled={cctvEnabled}
@@ -472,7 +503,7 @@ export default function App() {
           onLoadCctv={cctv.load}
           onSelectCctv={selectCctv}
           onClose={clearFacility}
-        />
+        />}
       </main>
 
       <CctvModal

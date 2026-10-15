@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { act, type ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { KakaoMap } from "./KakaoMap";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import ControlApp, {
@@ -110,6 +113,7 @@ vi.mock("./weatherLayerApi", () => ({
 
 vi.mock("./controlApi", () => ({
   getStoredAdminToken: () => "",
+  checkAdminSession: vi.fn().mockResolvedValue({ authenticated: false }),
   setStoredAdminToken: vi.fn(),
   verifyAdminPassword: vi.fn(),
   useControlOverview: () => ({ data: null, loading: false, error: null, refresh: vi.fn() }),
@@ -241,3 +245,42 @@ describe("ControlApp 중앙관제 대시보드", () => {
   });
 });
 
+
+vi.mock("./KakaoMap", () => ({
+  KakaoMap: (props: ComponentProps<typeof KakaoMap>) => <div data-testid="kakao-map">
+    <span data-testid="reference-target">{props.referenceTarget?.id ?? ""}</span>
+    {props.pickingReference && <button type="button" onClick={() => props.onPickReference?.({ latitude: 36.1, longitude: 128.41 })}>시험 지도 위치</button>}
+  </div>,
+}));
+
+describe("중앙관제 기준점 통합", () => {
+  it("주변 시설을 보더라도 수동 전파 대상 선택은 바뀌지 않는다", async () => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    window.history.replaceState({}, "", "/control");
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const click = async (text: string) => {
+      const button = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === text || button.querySelector(".btn-text-full")?.textContent === text);
+      expect(button, text).toBeTruthy();
+      await act(async () => button!.click());
+    };
+    try {
+      await act(async () => root.render(<ControlApp />));
+      await click("대상 분석·전파");
+      await click("선택 해제");
+      expect(container.textContent).toContain("선택된 시설: 0개소");
+      await click("장소·주소 / 주변 시설");
+      await click("지도에서 지정");
+      await click("시험 지도 위치");
+      await click("이곳을 기준점으로 지정");
+      await act(async () => container.querySelector<HTMLButtonElement>(".location-nearby-list button")!.click());
+      expect(container.querySelector('[data-testid="reference-target"]')?.textContent).toBe("F-1");
+      expect(container.textContent).toContain("선택된 시설: 0개소");
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+});

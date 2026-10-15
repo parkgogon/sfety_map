@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./kakao";
 import { facilityMarkerIconSvg } from "./facilityIcons";
+import { referenceMapOverlays } from "./referenceMapOverlays";
+import type { MapCoordinate, ReferencePoint, ReferenceView } from "./locationReference";
 import {
   MapInformationCard,
   type MapInformationCardContent,
@@ -58,6 +60,13 @@ import { buildWarningCardContent, groupWarningsByRegion } from "./mapWarningInsp
 
 interface KakaoMapProps {
   facilities: Facility[];
+  referencePoint?: ReferencePoint | null;
+  referenceCandidate?: ReferencePoint | null;
+  referenceTarget?: Facility | null;
+  referenceView?: ReferenceView | null;
+  referenceRings?: boolean;
+  pickingReference?: boolean;
+  onPickReference?: (point: MapCoordinate) => void;
   warningZones: WarningZoneFeature[];
   warnings?: MonitoringWarningItem[];
   isSimulation?: boolean;
@@ -249,6 +258,13 @@ function polygonPaths(kakao: any, feature: WarningZoneFeature): any[][][] {
 
 export function KakaoMap({
   facilities,
+  referencePoint = null,
+  referenceCandidate = null,
+  referenceTarget = null,
+  referenceView = null,
+  referenceRings = true,
+  pickingReference = false,
+  onPickReference,
   warningZones,
   warnings = [],
   isSimulation = false,
@@ -273,6 +289,16 @@ export function KakaoMap({
   const suppressMapInspectionUntilRef = useRef(0);
   const [error, setError] = useState("");
   const [mapInformation, setMapInformation] = useState<PositionedMapInformation | null>(null);
+  const referencePickingRef = useRef({ active: pickingReference, onPick: onPickReference });
+  referencePickingRef.current = { active: pickingReference, onPick: onPickReference };
+  const pickReferenceAt = useCallback((latLng: any): boolean => {
+    const state = referencePickingRef.current;
+    if (!state.active || !latLng || !state.onPick) return false;
+    state.onPick({ latitude: latLng.getLat(), longitude: latLng.getLng() });
+    suppressMapInspectionUntilRef.current = Date.now() + 350;
+    setMapInformation(null);
+    return true;
+  }, []);
   const appKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY?.trim() ?? "";
   const dismissMapInformation = useCallback((suppressNextMapClick = false) => {
     if (suppressNextMapClick) suppressMapInspectionUntilRef.current = Date.now() + 250;
@@ -361,6 +387,7 @@ export function KakaoMap({
           ),
         });
         kakao.maps.event.addListener(marker, "click", () => {
+          if (pickReferenceAt(position)) return;
           dismissMapInformation(true);
           if (group.length === 1) onSelect(group[0]);
           else onSelectGroup(group);
@@ -381,7 +408,7 @@ export function KakaoMap({
     render();
     window.addEventListener("keco-map-ready", render);
     return () => window.removeEventListener("keco-map-ready", render);
-  }, [dismissMapInformation, facilities, onSelect, onSelectGroup, selectedFacilityId]);
+  }, [dismissMapInformation, facilities, onSelect, onSelectGroup, selectedFacilityId, pickReferenceAt]);
 
   useEffect(() => {
     const focus = () => {
@@ -414,6 +441,7 @@ export function KakaoMap({
           zIndex: 20,
         });
         kakao.maps.event.addListener(marker, "click", () => {
+          if (pickReferenceAt(new kakao.maps.LatLng(cctv.latitude, cctv.longitude))) return;
           dismissMapInformation(true);
           onSelectCctv(cctv);
         });
@@ -423,7 +451,7 @@ export function KakaoMap({
     render();
     window.addEventListener("keco-map-ready", render);
     return () => window.removeEventListener("keco-map-ready", render);
-  }, [cctvs, dismissMapInformation, onSelectCctv, selectedCctvId]);
+  }, [cctvs, dismissMapInformation, onSelectCctv, selectedCctvId, pickReferenceAt]);
 
   useEffect(() => {
     dismissMapInformation();
@@ -470,6 +498,7 @@ export function KakaoMap({
             fillOpacity: 0.13,
           });
           kakao.maps.event.addListener(polygon, "click", (mouseEvent: any) => {
+            if (pickReferenceAt(mouseEvent?.latLng)) return;
             suppressMapInspectionUntilRef.current = Date.now() + 350;
             const element = elementRef.current;
             const projection = map.getProjection();
@@ -493,7 +522,7 @@ export function KakaoMap({
     render();
     window.addEventListener("keco-map-ready", render);
     return () => window.removeEventListener("keco-map-ready", render);
-  }, [isSimulation, warningZones, warnings]);
+  }, [isSimulation, warningZones, warnings, pickReferenceAt]);
 
   useEffect(() => {
     let dragging = false;
@@ -632,6 +661,7 @@ export function KakaoMap({
         suppressMapInspectionUntilRef.current = 0;
         return;
       }
+      if (pickReferenceAt(mouseEvent.latLng)) return;
       const element = elementRef.current;
       const kakao = kakaoRef.current;
       const map = mapRef.current;
@@ -712,12 +742,83 @@ export function KakaoMap({
       motionQuery?.removeEventListener?.("change", draw);
       detachMapListeners();
     };
-  }, [dismissMapInformation, weatherLayer]);
+  }, [dismissMapInformation, weatherLayer, pickReferenceAt]);
 
+
+  useEffect(() => {
+    if (pickingReference) dismissMapInformation();
+  }, [pickingReference, dismissMapInformation]);
+
+  useEffect(() => {
+    let dispose = () => {};
+    const draw = () => {
+      dispose();
+      if (!kakaoRef.current || !mapRef.current) return;
+      dispose = referenceMapOverlays(
+        kakaoRef.current, mapRef.current, referencePoint, referenceCandidate,
+        pickingReference ? null : referenceTarget, referenceRings && !pickingReference,
+      );
+    };
+    draw();
+    window.addEventListener("keco-map-ready", draw);
+    return () => { dispose(); window.removeEventListener("keco-map-ready", draw); };
+  }, [referencePoint, referenceCandidate, referenceTarget, referenceRings, pickingReference]);
+
+  useEffect(() => {
+    let lastLayout = "";
+    const focus = () => {
+      const kakao = kakaoRef.current;
+      const map = mapRef.current;
+      if (!kakao || !map || !referenceView?.points.length) return;
+      const points = referenceView.points;
+      const element = elementRef.current;
+      const rect = element?.getBoundingClientRect();
+      const height = element?.clientHeight || 600;
+      const width = element?.clientWidth || 1024;
+      const container = element?.closest(".map-stage, .control-map-container");
+      const panel = container?.querySelector(".map-search-panel, .control-location-panel")?.getBoundingClientRect();
+      const sheet = container?.querySelector(".facility-sheet")?.getBoundingClientRect();
+      const right = sheet && sheet.width < width * 0.7
+        ? Math.min(width * 0.5, sheet.width + 40) : 48;
+      const bottom = sheet && sheet.width >= width * 0.7
+        ? Math.min(height * 0.4, sheet.height + 24) : 48;
+      const top = Math.max(0, Math.min(height - bottom - 96,
+        Math.max(48, panel && rect ? panel.bottom - rect.top + 20 : 48)));
+      const layout = [width, height, top, right, bottom].join(":");
+      if (layout === lastLayout) return;
+      lastLayout = layout;
+      if (points.length === 1) {
+        map.setLevel(5);
+        map.setCenter(new kakao.maps.LatLng(points[0].latitude, points[0].longitude));
+        // Place the candidate in the unobscured area below the search panel.
+        map.panBy((right - 48) / 2, (bottom - top) / 2);
+      } else {
+        const bounds = new kakao.maps.LatLngBounds();
+        points.forEach((point) => bounds.extend(new kakao.maps.LatLng(point.latitude, point.longitude)));
+        map.setBounds(bounds, top, right, bottom, 48);
+      }
+      dismissMapInformation();
+    };
+    focus();
+    // Weather content, panel expansion and viewport changes can cover a previously
+    // visible endpoint. Refit only when overlay geometry changes, never on map drag.
+    const observer = referenceView && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(focus) : null;
+    const element = elementRef.current;
+    const container = element?.closest(".map-stage, .control-map-container");
+    if (element) observer?.observe(element);
+    container?.querySelectorAll(".map-search-panel, .control-location-panel, .facility-sheet")
+      .forEach((overlay) => observer?.observe(overlay));
+    window.addEventListener("keco-map-ready", focus);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("keco-map-ready", focus);
+    };
+  }, [referenceView, dismissMapInformation]);
 
   return (
     <div className="map-frame" aria-label="시설 위치 지도">
-      <div ref={elementRef} className="map-canvas" />
+      <div ref={elementRef} className={`map-canvas ${pickingReference ? "picking-reference" : ""}`} />
       <canvas
         ref={weatherSurfaceCanvasRef}
         className="weather-map-canvas weather-map-surface"
