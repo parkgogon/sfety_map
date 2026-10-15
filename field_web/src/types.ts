@@ -124,6 +124,11 @@ export interface MapFocusRequest {
   revision: number;
 }
 
+export interface MapViewportRequest {
+  kind: "fit-facilities" | "zoom-in" | "zoom-out";
+  revision: number;
+}
+
 export interface WarningZoneFeature {
   type: "Feature";
   properties: {

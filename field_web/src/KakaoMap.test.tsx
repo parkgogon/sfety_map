@@ -6,7 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { loadKakaoMaps } from "./kakao";
 import { getFacilityIconPath } from "./facilityIcons";
 import type { Facility } from "./types";
-import { KakaoMap } from "./KakaoMap";
+import { KakaoMap, mapViewportPadding } from "./KakaoMap";
 
 describe("KakaoMap 기상 canvas 계층", () => {
   it("정적 기상 색면과 바람 파티클을 독립 canvas로 렌더링한다", () => {
@@ -70,6 +70,11 @@ describe("시설 마커 이미지", () => {
   let listeners: Array<{ target: { kind?: string }; name: string; handler: (event?: any) => void }>;
   let fittedPoints: Array<Array<{ latitude: number; longitude: number }>>;
   let fittedPadding: number[][];
+  let addedControls: unknown[];
+  let removedControls: unknown[];
+  let mapCreations: number;
+  let levels: number[];
+  let panOffsets: Array<[number, number]>;
 
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -81,18 +86,30 @@ describe("시설 마커 이미지", () => {
     listeners = [];
     fittedPoints = [];
     fittedPadding = [];
+    addedControls = [];
+    removedControls = [];
+    mapCreations = 0;
+    levels = [];
+    panOffsets = [];
     vi.mocked(loadKakaoMaps).mockResolvedValue({
       maps: {
         Map: class {
           kind = "map";
-          addControl() {}
+          level = 10;
+          constructor() { mapCreations += 1; }
+          addControl(control: unknown) { addedControls.push(control); }
+          removeControl(control: unknown) { removedControls.push(control); }
           setBounds(bounds: { points: Array<{ latitude: number; longitude: number }> }, ...padding: number[]) {
             fittedPoints.push(bounds.points);
             fittedPadding.push(padding);
           }
           setCenter() {}
-          setLevel() {}
-          panBy() {}
+          getLevel() { return this.level; }
+          setLevel(level: number) { this.level = level; levels.push(level); }
+          panBy(x: number, y: number) { panOffsets.push([x, y]); }
+          getProjection() {
+            return { containerPointFromCoords: () => ({ x: 350, y: 450 }) };
+          }
         },
         LatLng: class {
           constructor(public latitude: number, public longitude: number) {}
@@ -109,6 +126,7 @@ describe("시설 마커 이미지", () => {
         Point: class {},
         MarkerImage: class { constructor(url: string) { imageUrls.push(url); } },
         Marker: class { kind = "marker"; constructor(options: { title: string }) { markerOptions.push(options); } },
+        CustomOverlay: class { setMap() {} },
         Polygon: class { kind = "polygon"; setMap() {} },
         MarkerClusterer: class {
           constructor(options: { minLevel: number; gridSize: number }) { clusterOptions.push(options); }
@@ -279,4 +297,82 @@ describe("시설 마커 이미지", () => {
     expect(fittedPoints).toHaveLength(fittedCount);
   });
 
+  it("화면 폭 모드가 바뀌어도 지도를 다시 만들지 않고 SDK 확대 막대만 교체한다", async () => {
+    const props = {
+      facilities: [facility("water")], warningZones: [], selectedFacilityId: "",
+      cctvs: [], selectedCctvId: "", focusRequest: null, weatherLayer: null,
+      onSelect: () => undefined, onSelectGroup: () => undefined, onSelectCctv: () => undefined,
+    };
+    await act(async () => root.render(<KakaoMap {...props} showZoomControl={false} />));
+    expect(mapCreations).toBe(1);
+    expect(addedControls).toHaveLength(0);
+    await act(async () => root.render(<KakaoMap {...props} showZoomControl={true} />));
+    expect(mapCreations).toBe(1);
+    expect(addedControls).toHaveLength(1);
+    await act(async () => root.render(<KakaoMap {...props} showZoomControl={false} />));
+    expect(mapCreations).toBe(1);
+    expect(removedControls).toEqual(addedControls);
+  });
+
+  it("모바일 확대·축소와 전체 시설 범위 요청을 최신 요청 한 번씩 적용한다", async () => {
+    const props = {
+      facilities: [facility("water"), facility("air", { id: "F-2", latitude: 35.4, longitude: 129.3 })],
+      warningZones: [], selectedFacilityId: "", cctvs: [], selectedCctvId: "",
+      focusRequest: null, weatherLayer: null, showZoomControl: false,
+      onSelect: () => undefined, onSelectGroup: () => undefined, onSelectCctv: () => undefined,
+    };
+    await act(async () => root.render(<KakaoMap {...props} viewportRequest={{ kind: "zoom-in", revision: 1 }} />));
+    expect(levels.at(-1)).toBe(9);
+    await act(async () => root.render(<KakaoMap {...props} viewportRequest={{ kind: "zoom-out", revision: 2 }} />));
+    expect(levels.at(-1)).toBe(10);
+    const beforeFit = fittedPoints.length;
+    await act(async () => root.render(<KakaoMap {...props} viewportRequest={{ kind: "fit-facilities", revision: 3 }} />));
+    expect(fittedPoints).toHaveLength(beforeFit + 1);
+    expect(fittedPoints.at(-1)).toEqual([
+      { latitude: 36.5, longitude: 128.7 },
+      { latitude: 35.4, longitude: 129.3 },
+    ]);
+    await act(async () => root.render(<KakaoMap {...props} viewportRequest={{ kind: "fit-facilities", revision: 3 }} />));
+    expect(fittedPoints).toHaveLength(beforeFit + 1);
+    expect(panOffsets).toEqual([]);
+  });
+
+  it("지도에서 고른 후보가 실제 하단 확인 패널에 가리면 필요한 만큼만 이동한다", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(500);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(390);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("mobile-candidate-panel")) {
+        return { top: 300, bottom: 500, left: 0, right: 390, width: 390, height: 200, x: 0, y: 300, toJSON() {} };
+      }
+      return { top: 0, bottom: 500, left: 0, right: 390, width: 390, height: 500, x: 0, y: 0, toJSON() {} };
+    });
+    await act(async () => root.render(<div className="mobile-field-map"><main className="map-stage">
+      <KakaoMap facilities={[facility("water")]} warningZones={[]} selectedFacilityId=""
+        cctvs={[]} selectedCctvId="" focusRequest={null} weatherLayer={null}
+        onSelect={() => undefined} onSelectGroup={() => undefined} onSelectCctv={() => undefined}
+        referenceCandidate={{ latitude: 35.4, longitude: 129.3, label: "후보", address: "", source: "map" }} />
+      <section className="mobile-candidate-panel" />
+    </main></div>));
+    expect(panOffsets.at(-1)).toEqual([8, 166]);
+  });
+
+});
+
+describe("모바일 지도 가림 영역", () => {
+  it("실제 상단·하단 오버레이 크기를 지도 여백으로 계산한다", () => {
+    const shell = document.createElement("div");
+    shell.className = "mobile-field-map";
+    shell.innerHTML = `<main class="map-stage"><div class="mobile-map-top-controls"></div><div class="map-frame"><div class="map-canvas"></div></div><div class="mobile-map-bottom-controls"></div></main>`;
+    document.body.append(shell);
+    const map = shell.querySelector<HTMLElement>(".map-canvas")!;
+    const top = shell.querySelector<HTMLElement>(".mobile-map-top-controls")!;
+    const bottom = shell.querySelector<HTMLElement>(".mobile-map-bottom-controls")!;
+    Object.defineProperty(map, "clientWidth", { value: 390 });
+    Object.defineProperty(map, "clientHeight", { value: 700 });
+    vi.spyOn(map, "getBoundingClientRect").mockReturnValue({ top: 0, bottom: 700, left: 0, right: 390, width: 390, height: 700, x: 0, y: 0, toJSON() {} });
+    vi.spyOn(top, "getBoundingClientRect").mockReturnValue({ top: 12, bottom: 118, left: 12, right: 378, width: 366, height: 106, x: 12, y: 12, toJSON() {} });
+    vi.spyOn(bottom, "getBoundingClientRect").mockReturnValue({ top: 520, bottom: 660, left: 12, right: 378, width: 366, height: 140, x: 12, y: 520, toJSON() {} });
+    expect(mapViewportPadding(map)).toEqual({ top: 134, right: 48, bottom: 196, left: 48 });
+    shell.remove();
+  });
 });

@@ -57,6 +57,22 @@ export const WEATHER_LAYER_LABELS: Record<WeatherLayerKind, string> = {
   temperature: "기온",
 };
 
+/** Preserve user choices across snapshots while selecting only genuinely new groups by default. */
+export function reconcileFacilityGroupSelection(
+  selected: ReadonlySet<string>,
+  previousGroupIds: ReadonlySet<string>,
+  nextGroupIds: ReadonlySet<string>,
+): Set<string> {
+  const next = new Set<string>();
+  nextGroupIds.forEach((id) => {
+    if (selected.has(id) || !previousGroupIds.has(id)) next.add(id);
+  });
+  if (next.size === selected.size && [...next].every((id) => selected.has(id))) {
+    return selected instanceof Set ? selected : new Set(selected);
+  }
+  return next;
+}
+
 type ColorStop = readonly [number, string, string];
 
 const TEMPERATURE_STOPS: readonly ColorStop[] = [

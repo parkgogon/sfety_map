@@ -187,6 +187,7 @@ describe("현장 지도 기준점 통합", () => {
       await click("지도에서 지정");
       await click("시험 지도 위치");
       await click("이곳을 기준점으로 지정");
+      expect(container.querySelector(".map-stage.has-confirmed-reference")).not.toBeNull();
       expect(container.textContent).toContain("필터로 숨김 — 선택하면 표시");
       await act(async () => container.querySelector<HTMLButtonElement>(".location-nearby-list button")!.click());
       expect(container.querySelector('[data-testid="visible-facilities"]')?.textContent).toBe("F-1");

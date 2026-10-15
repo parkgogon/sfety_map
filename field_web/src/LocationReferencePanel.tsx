@@ -7,12 +7,13 @@ import type { LocationReferenceState } from "./useLocationReference";
 
 interface Props {
   reference: LocationReferenceState;
+  keyboardActive?: boolean;
   facilities: Facility[];
   visibleFacilityIds: Set<string>;
   onSelectFacility: (facility: Facility) => void;
 }
 
-export function LocationReferencePanel({ reference, facilities, visibleFacilityIds, onSelectFacility }: Props) {
+export function LocationReferencePanel({ reference, facilities, visibleFacilityIds, onSelectFacility, keyboardActive = true }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ReferencePoint[]>([]);
   const [message, setMessage] = useState("");
@@ -30,6 +31,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
   useEffect(() => { setLimit(10); }, [reference.point]);
   // Capture Escape before the page's facility/weather dismissal shortcuts.
   useEffect(() => {
+    if (!keyboardActive) return;
     const close = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (reference.picking || reference.candidate) reference.cancel();
@@ -40,7 +42,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
     };
     window.addEventListener("keydown", close, true);
     return () => window.removeEventListener("keydown", close, true);
-  }, [reference, collapsed]);
+  }, [reference, collapsed, keyboardActive]);
 
   function invalidateSearch() {
     request.current += 1;

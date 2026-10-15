@@ -19,6 +19,7 @@ import {
 import type {
   Facility,
   MapFocusRequest,
+  MapViewportRequest,
   MonitoringWarningItem,
   NearbyCctv,
   RiskGrade,
@@ -74,10 +75,79 @@ interface KakaoMapProps {
   cctvs: NearbyCctv[];
   selectedCctvId: string;
   focusRequest: MapFocusRequest | null;
+  viewportRequest?: MapViewportRequest | null;
+  showZoomControl?: boolean;
   weatherLayer: WeatherLayerResponse | null;
   onSelect: (facility: Facility) => void;
   onSelectGroup: (facilities: Facility[]) => void;
   onSelectCctv: (cctv: NearbyCctv) => void;
+}
+
+interface MapPadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+const MAP_EDGE_PADDING = 48;
+const MAP_OVERLAY_GAP = 16;
+
+function usableOverlayRect(overlay: Element, mapRect: DOMRect): DOMRect | null {
+  const rect = overlay.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  if (rect.right <= mapRect.left || rect.left >= mapRect.right
+    || rect.bottom <= mapRect.top || rect.top >= mapRect.bottom) return null;
+  return rect;
+}
+
+export function mapViewportPadding(element: HTMLElement): MapPadding {
+  const mapRect = element.getBoundingClientRect();
+  const width = element.clientWidth || mapRect.width || 1024;
+  const height = element.clientHeight || mapRect.height || 600;
+  const container = element.closest(".map-stage, .control-map-container");
+  const mobile = !!element.closest(".mobile-field-map");
+  const padding: MapPadding = {
+    top: MAP_EDGE_PADDING,
+    right: MAP_EDGE_PADDING,
+    bottom: MAP_EDGE_PADDING,
+    left: MAP_EDGE_PADDING,
+  };
+  if (!container) return padding;
+
+  if (mobile) {
+    container.querySelectorAll(".mobile-map-top-controls, .mobile-picking-guide")
+      .forEach((overlay) => {
+        const rect = usableOverlayRect(overlay, mapRect);
+        if (rect) padding.top = Math.max(padding.top, rect.bottom - mapRect.top + MAP_OVERLAY_GAP);
+      });
+    container.querySelectorAll(".mobile-candidate-panel, .facility-sheet.mobile-compact, .mobile-map-bottom-controls")
+      .forEach((overlay) => {
+        const rect = usableOverlayRect(overlay, mapRect);
+        if (rect) padding.bottom = Math.max(padding.bottom, mapRect.bottom - rect.top + MAP_OVERLAY_GAP);
+      });
+    padding.top = Math.min(padding.top, Math.max(MAP_EDGE_PADDING, height - padding.bottom - 96));
+    padding.bottom = Math.min(padding.bottom, Math.max(MAP_EDGE_PADDING, height - padding.top - 96));
+    return padding;
+  }
+
+  const panel = container.querySelector(".map-search-panel, .control-location-panel")?.getBoundingClientRect();
+  const sheet = container.querySelector(".facility-sheet")?.getBoundingClientRect();
+  padding.right = sheet && sheet.width < width * 0.7
+    ? Math.min(width * 0.5, sheet.width + 40) : MAP_EDGE_PADDING;
+  padding.bottom = sheet && sheet.width >= width * 0.7
+    ? Math.min(height * 0.4, sheet.height + 24) : MAP_EDGE_PADDING;
+  padding.top = Math.max(0, Math.min(height - padding.bottom - 96,
+    Math.max(MAP_EDGE_PADDING, panel ? panel.bottom - mapRect.top + 20 : MAP_EDGE_PADDING)));
+  return padding;
+}
+
+function overlayElements(element: HTMLElement): Element[] {
+  const container = element.closest(".map-stage, .control-map-container");
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(
+    ".map-search-panel, .control-location-panel, .facility-sheet, .mobile-map-top-controls, .mobile-picking-guide, .mobile-candidate-panel, .mobile-map-bottom-controls",
+  ));
 }
 
 interface WindCanvasRenderResult {
@@ -272,6 +342,8 @@ export function KakaoMap({
   cctvs,
   selectedCctvId,
   focusRequest,
+  viewportRequest = null,
+  showZoomControl,
   weatherLayer,
   onSelect,
   onSelectGroup,
@@ -283,6 +355,11 @@ export function KakaoMap({
   const mapRef = useRef<any>(null);
   const kakaoRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
+  const zoomControlRef = useRef<any>(null);
+  const zoomControlVisibleRef = useRef(false);
+  const handledViewportRevisionRef = useRef(0);
+  const showZoomControlRef = useRef(showZoomControl);
+  showZoomControlRef.current = showZoomControl;
   const initialBoundsFittedRef = useRef(false);
   const polygonRef = useRef<any[]>([]);
   const cctvMarkerRef = useRef<any[]>([]);
@@ -291,6 +368,8 @@ export function KakaoMap({
   const [mapInformation, setMapInformation] = useState<PositionedMapInformation | null>(null);
   const referencePickingRef = useRef({ active: pickingReference, onPick: onPickReference });
   referencePickingRef.current = { active: pickingReference, onPick: onPickReference };
+  const referenceViewRef = useRef(referenceView);
+  referenceViewRef.current = referenceView;
   const pickReferenceAt = useCallback((latLng: any): boolean => {
     const state = referencePickingRef.current;
     if (!state.active || !latLng || !state.onPick) return false;
@@ -304,6 +383,17 @@ export function KakaoMap({
     if (suppressNextMapClick) suppressMapInspectionUntilRef.current = Date.now() + 250;
     setMapInformation(null);
   }, []);
+  const syncZoomControl = useCallback(() => {
+    const kakao = kakaoRef.current;
+    const map = mapRef.current;
+    if (!kakao || !map) return;
+    if (!zoomControlRef.current) zoomControlRef.current = new kakao.maps.ZoomControl();
+    const visible = showZoomControlRef.current ?? shouldShowMapZoomControl(window.innerWidth);
+    if (visible === zoomControlVisibleRef.current) return;
+    if (visible) map.addControl(zoomControlRef.current, kakao.maps.ControlPosition.RIGHT);
+    else map.removeControl?.(zoomControlRef.current);
+    zoomControlVisibleRef.current = visible;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -315,10 +405,8 @@ export function KakaoMap({
           center: new kakao.maps.LatLng(36.0, 128.55),
           level: 10,
         });
-        if (shouldShowMapZoomControl(window.innerWidth)) {
-          map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-        }
         mapRef.current = map;
+        syncZoomControl();
         setError("");
         window.dispatchEvent(new Event("keco-map-ready"));
       })
@@ -326,15 +414,23 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [appKey]);
+  }, [appKey, syncZoomControl]);
 
   useEffect(() => {
     const onResize = () => {
-      if (mapRef.current) kakaoRef.current.maps.event.trigger(mapRef.current, "resize");
+      if (mapRef.current) {
+        kakaoRef.current.maps.event.trigger(mapRef.current, "resize");
+        syncZoomControl();
+      }
     };
+    syncZoomControl();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [syncZoomControl]);
+
+  useEffect(() => {
+    syncZoomControl();
+  }, [showZoomControl, syncZoomControl]);
 
   useEffect(() => {
     const render = () => {
@@ -401,7 +497,10 @@ export function KakaoMap({
         initialBoundsFittedRef.current,
         facilities.length,
       )) {
-        map.setBounds(bounds, 48, 48, 120, 48);
+        const padding = elementRef.current
+          ? mapViewportPadding(elementRef.current)
+          : { top: 48, right: 48, bottom: 120, left: 48 };
+        map.setBounds(bounds, padding.top, padding.right, padding.bottom, padding.left);
         initialBoundsFittedRef.current = true;
       }
     };
@@ -411,20 +510,72 @@ export function KakaoMap({
   }, [dismissMapInformation, facilities, onSelect, onSelectGroup, selectedFacilityId, pickReferenceAt]);
 
   useEffect(() => {
+    let lastLayout = "";
     const focus = () => {
       const kakao = kakaoRef.current;
       const map = mapRef.current;
-      if (!kakao || !map || !focusRequest) return;
+      if (!kakao || !map || !focusRequest || referenceViewRef.current?.points.length) return;
+      const padding = elementRef.current
+        ? mapViewportPadding(elementRef.current)
+        : { top: 48, right: 48, bottom: 48, left: 48 };
+      const layout = [elementRef.current?.clientWidth, elementRef.current?.clientHeight,
+        padding.top, padding.right, padding.bottom, padding.left].join(":");
+      if (layout === lastLayout) return;
+      lastLayout = layout;
       map.panTo(new kakao.maps.LatLng(
         focusRequest.latitude,
         focusRequest.longitude,
       ));
       if (focusRequest.zoom && map.getLevel() > 5) map.setLevel(5);
+      map.panBy?.(
+        (padding.right - padding.left) / 2,
+        (padding.bottom - padding.top) / 2,
+      );
     };
     focus();
+    const observer = focusRequest && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(focus) : null;
+    const element = elementRef.current;
+    if (element) observer?.observe(element);
+    if (element) overlayElements(element).forEach((overlay) => observer?.observe(overlay));
     window.addEventListener("keco-map-ready", focus);
-    return () => window.removeEventListener("keco-map-ready", focus);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("keco-map-ready", focus);
+    };
   }, [focusRequest]);
+
+  useEffect(() => {
+    const apply = () => {
+      const kakao = kakaoRef.current;
+      const map = mapRef.current;
+      if (!kakao || !map || !viewportRequest) return;
+      if (handledViewportRevisionRef.current === viewportRequest.revision) return;
+      handledViewportRevisionRef.current = viewportRequest.revision;
+      if (viewportRequest.kind === "zoom-in" || viewportRequest.kind === "zoom-out") {
+        const current = map.getLevel();
+        const delta = viewportRequest.kind === "zoom-in" ? -1 : 1;
+        map.setLevel(Math.max(1, Math.min(14, current + delta)));
+        return;
+      }
+      if (!facilities.length) return;
+      const bounds = new kakao.maps.LatLngBounds();
+      facilities.forEach((facility) => bounds.extend(
+        new kakao.maps.LatLng(facility.latitude, facility.longitude),
+      ));
+      const padding = elementRef.current
+        ? mapViewportPadding(elementRef.current)
+        : { top: 48, right: 48, bottom: 48, left: 48 };
+      map.setBounds(bounds, padding.top, padding.right, padding.bottom, padding.left);
+      dismissMapInformation();
+    };
+    apply();
+    window.addEventListener("keco-map-ready", apply);
+    return () => window.removeEventListener("keco-map-ready", apply);
+  // A data refresh must not refit a map the user has already moved.
+  // The current facilities are read only when an explicit viewport request changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewportRequest, dismissMapInformation]);
 
   useEffect(() => {
     const render = () => {
@@ -772,30 +923,24 @@ export function KakaoMap({
       if (!kakao || !map || !referenceView?.points.length) return;
       const points = referenceView.points;
       const element = elementRef.current;
-      const rect = element?.getBoundingClientRect();
-      const height = element?.clientHeight || 600;
-      const width = element?.clientWidth || 1024;
-      const container = element?.closest(".map-stage, .control-map-container");
-      const panel = container?.querySelector(".map-search-panel, .control-location-panel")?.getBoundingClientRect();
-      const sheet = container?.querySelector(".facility-sheet")?.getBoundingClientRect();
-      const right = sheet && sheet.width < width * 0.7
-        ? Math.min(width * 0.5, sheet.width + 40) : 48;
-      const bottom = sheet && sheet.width >= width * 0.7
-        ? Math.min(height * 0.4, sheet.height + 24) : 48;
-      const top = Math.max(0, Math.min(height - bottom - 96,
-        Math.max(48, panel && rect ? panel.bottom - rect.top + 20 : 48)));
-      const layout = [width, height, top, right, bottom].join(":");
+      const padding = element
+        ? mapViewportPadding(element)
+        : { top: 48, right: 48, bottom: 48, left: 48 };
+      const layout = [element?.clientWidth, element?.clientHeight,
+        padding.top, padding.right, padding.bottom, padding.left].join(":");
       if (layout === lastLayout) return;
       lastLayout = layout;
       if (points.length === 1) {
         map.setLevel(5);
         map.setCenter(new kakao.maps.LatLng(points[0].latitude, points[0].longitude));
-        // Place the candidate in the unobscured area below the search panel.
-        map.panBy((right - 48) / 2, (bottom - top) / 2);
+        map.panBy(
+          (padding.right - padding.left) / 2,
+          (padding.bottom - padding.top) / 2,
+        );
       } else {
         const bounds = new kakao.maps.LatLngBounds();
         points.forEach((point) => bounds.extend(new kakao.maps.LatLng(point.latitude, point.longitude)));
-        map.setBounds(bounds, top, right, bottom, 48);
+        map.setBounds(bounds, padding.top, padding.right, padding.bottom, padding.left);
       }
       dismissMapInformation();
     };
@@ -805,16 +950,51 @@ export function KakaoMap({
     const observer = referenceView && typeof ResizeObserver !== "undefined"
       ? new ResizeObserver(focus) : null;
     const element = elementRef.current;
-    const container = element?.closest(".map-stage, .control-map-container");
     if (element) observer?.observe(element);
-    container?.querySelectorAll(".map-search-panel, .control-location-panel, .facility-sheet")
-      .forEach((overlay) => observer?.observe(overlay));
+    if (element) overlayElements(element).forEach((overlay) => observer?.observe(overlay));
     window.addEventListener("keco-map-ready", focus);
     return () => {
       observer?.disconnect();
       window.removeEventListener("keco-map-ready", focus);
     };
   }, [referenceView, dismissMapInformation]);
+
+  useEffect(() => {
+    if (!referenceCandidate || referenceCandidate.source !== "map") return;
+    let lastLayout = "";
+    const keepVisible = () => {
+      const kakao = kakaoRef.current;
+      const map = mapRef.current;
+      const element = elementRef.current;
+      const projection = map?.getProjection?.();
+      if (!kakao || !map || !element || !projection) return;
+      const padding = mapViewportPadding(element);
+      const layout = [element.clientWidth, element.clientHeight,
+        padding.top, padding.right, padding.bottom, padding.left].join(":");
+      if (layout === lastLayout) return;
+      lastLayout = layout;
+      const point = projection.containerPointFromCoords(
+        new kakao.maps.LatLng(referenceCandidate.latitude, referenceCandidate.longitude),
+      );
+      const minX = padding.left;
+      const maxX = element.clientWidth - padding.right;
+      const minY = padding.top;
+      const maxY = element.clientHeight - padding.bottom;
+      const dx = point.x < minX ? point.x - minX : point.x > maxX ? point.x - maxX : 0;
+      const dy = point.y < minY ? point.y - minY : point.y > maxY ? point.y - maxY : 0;
+      if (dx || dy) map.panBy(dx, dy);
+    };
+    keepVisible();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(keepVisible) : null;
+    const element = elementRef.current;
+    if (element) observer?.observe(element);
+    if (element) overlayElements(element).forEach((overlay) => observer?.observe(overlay));
+    window.addEventListener("keco-map-ready", keepVisible);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("keco-map-ready", keepVisible);
+    };
+  }, [referenceCandidate]);
 
   return (
     <div className="map-frame" aria-label="시설 위치 지도">

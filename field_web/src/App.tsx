@@ -4,6 +4,12 @@ import { useFacilityCctv, useFacilityWeather } from "./contextApi";
 import { CctvModal } from "./CctvModal";
 import { FacilitySheet } from "./FacilitySheet";
 import { GradeLegend } from "./GradeLegend";
+import { MobileHeaderPanel, MobileMapHeader, KMA_OFFICIAL_WARNING_URL } from "./MobileMapHeader";
+import { MobileBottomSheet } from "./MobileBottomSheet";
+import { MobileMapSettings } from "./MobileMapSettings";
+import { MobileMapSearch } from "./MobileMapSearch";
+import { useMobileLayout, type MobilePanel, type MobileSearchTab, type MobileSettingsTab } from "./useMobileLayout";
+import "./mobileMap.css";
 import { KakaoMap } from "./KakaoMap";
 import { FacilityIcon } from "./facilityIcons";
 import { LocationReferencePanel } from "./LocationReferencePanel";
@@ -14,6 +20,7 @@ import { navigate, navigateWithMode } from "./router";
 import type {
   Facility,
   MapFocusRequest,
+  MapViewportRequest,
   MonitoringMode,
   NearbyCctv,
   RiskGrade,
@@ -27,6 +34,7 @@ import {
   formatReferenceTime,
   GRADE_DISPLAY_ORDER,
   recommendedWeatherLayer,
+  reconcileFacilityGroupSelection,
   requestedFacilityId,
   requestedMonitoringMode,
   searchFacilities,
@@ -49,9 +57,12 @@ function setModeQuery(mode: MonitoringMode) {
   window.history.replaceState({}, "", url);
 }
 
-const KMA_OFFICIAL_WARNING_URL = "https://www.weather.go.kr/w/special-report/overall.do";
-
 export default function App() {
+  const isMobile = useMobileLayout();
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("none");
+  const [mobileSearchTab, setMobileSearchTab] = useState<MobileSearchTab>("facilities");
+  const [mobileSettingsTab, setMobileSettingsTab] = useState<MobileSettingsTab>("facilities");
+  const mobileModalPanelOpen = isMobile && ["status", "more", "map-settings", "search", "nearby", "same-location"].includes(mobilePanel);
   const cctvEnabled = import.meta.env.VITE_CCTV_ENABLED !== "false";
   const [monitoringMode, setMonitoringMode] = useState<MonitoringMode>(() =>
     requestedMonitoringMode(window.location.search),
@@ -65,19 +76,48 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState<"facilities" | "location">("facilities");
   const reference = useLocationReference();
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [desktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [sameLocation, setSameLocation] = useState<Facility[]>([]);
   const [deepLinkNotice, setDeepLinkNotice] = useState("");
   const [focusRequest, setFocusRequest] = useState<MapFocusRequest | null>(null);
+  const [viewportRequest, setViewportRequest] = useState<MapViewportRequest | null>(null);
   const [selectedCctvId, setSelectedCctvId] = useState("");
   const [weatherLayerKind, setWeatherLayerKind] = useState<WeatherLayerKind | null>(null);
-  const [weatherLayerOpen, setWeatherLayerOpen] = useState(false);
+  const [desktopWeatherLayerOpen, setDesktopWeatherLayerOpen] = useState(false);
+  // Legacy entry points route to the single mobile settings panel; desktop keeps its sheets.
+  const filterOpen = isMobile ? mobilePanel === "map-settings" && mobileSettingsTab === "facilities" : desktopFilterOpen;
+  const weatherLayerOpen = isMobile ? mobilePanel === "map-settings" && mobileSettingsTab === "weather" : desktopWeatherLayerOpen;
+  const setFilterOpen = useCallback((open: boolean) => {
+    if (isMobile) {
+      if (open) setMobileSettingsTab("facilities");
+      setMobilePanel(open ? "map-settings" : "none");
+    } else setDesktopFilterOpen(open);
+  }, [isMobile]);
+  const setWeatherLayerOpen = useCallback((open: boolean) => {
+    if (isMobile) {
+      if (open) setMobileSettingsTab("weather");
+      setMobilePanel(open ? "map-settings" : "none");
+    } else setDesktopWeatherLayerOpen(open);
+  }, [isMobile]);
+  const selectSameLocation = useCallback((facilities: Facility[]) => {
+    setSameLocation(facilities);
+    if (isMobile) setMobilePanel("same-location");
+  }, [isMobile]);
+  useEffect(() => {
+    // Close transient dialogs at breakpoints, preserving the map and domain state.
+    setMobilePanel("none");
+    setDesktopFilterOpen(false);
+    setDesktopWeatherLayerOpen(false);
+    setSameLocation([]);
+  }, [isMobile]);
   const [dismissedNotices, setDismissedNotices] = useState<Set<string>>(new Set());
   const autoSelectedSimulationRef = useRef(false);
   const userSelectedLayerRef = useRef(false);
   const initializedGroups = useRef(false);
+  const previousGroupIds = useRef<Set<string>>(new Set());
   const handledDeepLink = useRef(false);
   const focusRevision = useRef(0);
+  const viewportRevision = useRef(0);
 
   const selectFacility = useCallback((
     facility: Facility,
@@ -100,21 +140,25 @@ export default function App() {
       revision: focusRevision.current,
     });
     reference.selectNearby(facility);
-  }, [reference.selectNearby]);
+    if (isMobile) setMobilePanel("facility");
+  }, [reference.selectNearby, isMobile]);
 
   useEffect(() => {
     if (!data) return;
+    const available = new Set(data.groups.map((group) => group.id));
     if (!initializedGroups.current) {
-      setSelectedGroups(new Set(data.groups.map((group) => group.id)));
+      setSelectedGroups(available);
+      previousGroupIds.current = available;
       initializedGroups.current = true;
       return;
     }
-    setSelectedGroups((current) => {
-      const missing = data.groups.filter((group) => !current.has(group.id));
-      if (missing.length === 0) return current;
-      return new Set([...current, ...missing.map((group) => group.id)]);
-    });
-  }, [data]);
+    setSelectedGroups((current) => reconcileFacilityGroupSelection(
+      current,
+      previousGroupIds.current,
+      available,
+    ));
+    previousGroupIds.current = available;
+  }, [data?.groups]);
 
   useEffect(() => {
     if (!data || handledDeepLink.current) return;
@@ -156,7 +200,9 @@ export default function App() {
     setSelectedId("");
     setSelectedCctvId("");
     setFacilityQuery("");
-  }, [reference.clearTarget]);
+    setFocusRequest(null);
+    if (isMobile) setMobilePanel("none");
+  }, [reference.clearTarget, isMobile]);
 
   const resetFilters = useCallback(() => {
     if (!data) return;
@@ -164,9 +210,20 @@ export default function App() {
     setSelectedGrades(new Set(GRADE_DISPLAY_ORDER));
   }, [data]);
 
+  const requestMapViewport = useCallback((kind: MapViewportRequest["kind"]) => {
+    setViewportRequest({ kind, revision: ++viewportRevision.current });
+  }, []);
+
+  const showAllFacilities = useCallback(() => {
+    resetFilters();
+    clearFacility();
+    setSameLocation([]);
+    requestMapViewport("fit-facilities");
+  }, [clearFacility, requestMapViewport, resetFilters]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || event.defaultPrevented || mobileModalPanelOpen) return;
       if (selectedCctvId) {
         setSelectedCctvId("");
         return;
@@ -193,7 +250,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCctvId, filterOpen, weatherLayerOpen, sameLocation, search, selectedId, clearFacility]);
+  }, [selectedCctvId, filterOpen, weatherLayerOpen, sameLocation, search, selectedId, clearFacility, mobileModalPanelOpen, setFilterOpen, setWeatherLayerOpen]);
 
   const toggleGroup = (id: string) => {
     setSelectedGroups((current) => {
@@ -236,6 +293,7 @@ export default function App() {
     setMonitoringMode(mode);
     reference.clear();
     setFilterOpen(false);
+    setMobilePanel("none");
     if (mode === "live") {
       setWeatherLayerKind(null);
       autoSelectedSimulationRef.current = false;
@@ -244,6 +302,29 @@ export default function App() {
       autoSelectedSimulationRef.current = false;
       userSelectedLayerRef.current = false;
     }
+  };
+
+  const openMobileHeaderPanel = (panel: "status" | "more") => {
+    if (reference.picking || reference.candidate) reference.cancel();
+    setMobilePanel(panel);
+    setSameLocation([]);
+    setSelectedCctvId("");
+  };
+
+  const closeMobilePanel = () => setMobilePanel(selectedId ? "facility" : "none");
+
+  const openMobileSearch = () => {
+    if (reference.picking || reference.candidate) reference.cancel();
+    setSameLocation([]);
+    setSelectedCctvId("");
+    setMobilePanel("search");
+  };
+
+  const openMobileMapSettings = () => {
+    if (reference.picking || reference.candidate) reference.cancel();
+    setMobilePanel("map-settings");
+    setSameLocation([]);
+    setSelectedCctvId("");
   };
 
   if (loading && !data) {
@@ -271,60 +352,73 @@ export default function App() {
   const live = data.status.health === "LIVE";
   const stale = data.status.health === "STALE";
   const feedAvailable = live || simulation || stale;
+  const filtersApplied = selectedGroups.size !== data.groups.length
+    || data.groups.some((group) => !selectedGroups.has(group.id))
+    || selectedGrades.size !== GRADE_DISPLAY_ORDER.length
+    || GRADE_DISPLAY_ORDER.some((grade) => !selectedGrades.has(grade));
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <span className="brand-mark">K-ECO SAFETY MONITORING</span>
-          <h1>현장 안전지도</h1>
-        </div>
-        <div className="header-actions">
-          <button
-            className="secondary-button header-control-link"
-            type="button"
-            onClick={() => navigateWithMode("/control")}
-            title="중앙관제 관리자 대시보드로 이동"
-          >
-            중앙관제 🖥️
-          </button>
-          <button
-            className={`icon-button refresh-button ${refreshing ? "spinning" : ""}`}
-            type="button"
-            onClick={() => void refresh()}
-            disabled={refreshing}
-            aria-label="관제 자료 새로고침"
-          >
-            ↻
-          </button>
-        </div>
-      </header>
-
-
-      <div
-        className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
-        role="status"
-      >
-        <span className="status-dot" aria-hidden="true" />
-        <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}</b>
-        <span>· {formatReferenceTime(data.generated_at)} 기준{stale && formatElapsedTime(data.generated_at) ? ` (${formatElapsedTime(data.generated_at)})` : ""}</span>
-        <a
-          className="official-warning-link"
-          href={KMA_OFFICIAL_WARNING_URL}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="기상청 실제 특보 발효현황을 새 탭에서 열기"
-        >
-          기상청 특보 <span aria-hidden="true">↗</span>
-        </a>
-        <span className="facility-count">
-          · 시설 {visibleFacilities.length}개 표시
-          {visibleFacilities.length === 0 && (
-            <button className="reset-filter-inline" type="button" onClick={resetFilters}>
-              (전체 표시)
+    <div className={`app-shell ${isMobile ? "mobile-field-map" : ""}`}>
+      {isMobile ? <MobileMapHeader
+        data={data}
+        mode={monitoringMode}
+        additionalNotice={!!error || !!deepLinkNotice || !["LIVE", "SIMULATION"].includes(data.status.zone_health)}
+        panel={mobilePanel}
+        onOpen={openMobileHeaderPanel}
+      /> : <>
+        <header className="app-header">
+          <div>
+            <span className="brand-mark">K-ECO SAFETY MONITORING</span>
+            <h1>현장 안전지도</h1>
+          </div>
+          <div className="header-actions">
+            <button
+              className="secondary-button header-control-link"
+              type="button"
+              onClick={() => navigateWithMode("/control")}
+              title="중앙관제 관리자 대시보드로 이동"
+            >
+              중앙관제 🖥️
             </button>
-          )}
-        </span>
-      </div>
+            <button
+              className={`icon-button refresh-button ${refreshing ? "spinning" : ""}`}
+              type="button"
+              onClick={() => void refresh()}
+              disabled={refreshing}
+              aria-label="관제 자료 새로고침"
+            >
+              ↻
+            </button>
+          </div>
+        </header>
+
+
+        <div
+          className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
+          role="status"
+        >
+          <span className="status-dot" aria-hidden="true" />
+          <b>{simulation ? "모의훈련 자료" : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}</b>
+          <span>· {formatReferenceTime(data.generated_at)} 기준{stale && formatElapsedTime(data.generated_at) ? ` (${formatElapsedTime(data.generated_at)})` : ""}</span>
+          <a
+            className="official-warning-link"
+            href={KMA_OFFICIAL_WARNING_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="기상청 실제 특보 발효현황을 새 탭에서 열기"
+          >
+            기상청 특보 <span aria-hidden="true">↗</span>
+          </a>
+          <span className="facility-count">
+            · 시설 {visibleFacilities.length}개 표시
+            {visibleFacilities.length === 0 && (
+              <button className="reset-filter-inline" type="button" onClick={resetFilters}>
+                (전체 표시)
+              </button>
+            )}
+          </span>
+        </div>
+
+      </>}
 
       {monitoringMode === "simulation" && (
         <div className="simulation-banner" role="alert">
@@ -343,21 +437,21 @@ export default function App() {
         if (error && !dismissedNotices.has("error")) {
           notices.push({ key: "error", type: "warning", text: error });
         }
-        if (stale && !dismissedNotices.has("stale")) {
+        if (!isMobile && stale && !dismissedNotices.has("stale")) {
           notices.push({
             key: "stale",
             type: "warning",
             text: data.status.detail || "KMA 특보 자료 수신이 지연되어 마지막 정상 자료를 표시합니다.",
           });
         }
-        if (!feedAvailable && !dismissedNotices.has("feed_unavailable")) {
+        if (!isMobile && !feedAvailable && !dismissedNotices.has("feed_unavailable")) {
           notices.push({
             key: "feed_unavailable",
             type: "error",
             text: data.status.detail || "KMA 특보를 조회하지 못했습니다. 시설 위치만 확인할 수 있습니다.",
           });
         }
-        if (data.status.zone_health === "FALLBACK" && !dismissedNotices.has("zone_fallback")) {
+        if (!isMobile && data.status.zone_health === "FALLBACK" && !dismissedNotices.has("zone_fallback")) {
           notices.push({
             key: "zone_fallback",
             type: "info",
@@ -387,7 +481,7 @@ export default function App() {
         );
       })()}
 
-      <main className={`map-stage ${selectedFacility ? "has-selection" : ""} ${reference.point && reference.targetId && selectedFacility ? "has-reference-comparison" : ""}`}>
+      <main className={`map-stage ${selectedFacility ? "has-selection" : ""} ${reference.point && !reference.candidate ? "has-confirmed-reference" : ""} ${reference.point && reference.targetId && selectedFacility ? "has-reference-comparison" : ""}`}>
         <KakaoMap
           facilities={visibleFacilities}
           referencePoint={reference.point}
@@ -404,11 +498,17 @@ export default function App() {
           cctvs={cctvItems}
           selectedCctvId={selectedCctvId}
           focusRequest={focusRequest}
+          viewportRequest={viewportRequest}
+          showZoomControl={!isMobile}
           weatherLayer={
             weatherLayer.data?.status !== "ERROR" ? weatherLayer.data : null
           }
-          onSelect={selectFacility}
-          onSelectGroup={setSameLocation}
+          onSelect={(facility) => {
+            if (!isMobile || (!reference.candidate && !reference.picking)) selectFacility(facility);
+          }}
+          onSelectGroup={(facilities) => {
+            if (!isMobile || (!reference.candidate && !reference.picking)) selectSameLocation(facilities);
+          }}
           onSelectCctv={selectCctv}
         />
 
@@ -421,7 +521,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="map-search-panel">
+        {!isMobile && <div className="map-search-panel">
           <div className="location-search-modes" role="group" aria-label="검색 대상">
             <button type="button" aria-pressed={searchMode === "facilities"} onClick={() => {
               reference.cancel();
@@ -435,6 +535,7 @@ export default function App() {
           </div>
           {searchMode === "location" && <LocationReferencePanel
             reference={reference}
+            keyboardActive={!mobileModalPanelOpen}
             facilities={data.facilities}
             visibleFacilityIds={new Set(visibleFacilities.map((facility) => facility.id))}
             onSelectFacility={(facility) => selectFacility(facility, "search")}
@@ -450,11 +551,11 @@ export default function App() {
               />
               {search && <button type="button" onClick={() => setSearch("")} aria-label="검색어 지우기">×</button>}
             </label>
-            <button className="filter-button" type="button" onClick={() => setFilterOpen(true)}>
+            {!isMobile && <button className="filter-button" type="button" onClick={() => setFilterOpen(true)}>
               <span aria-hidden="true">☷</span>
               <span>필터</span>
-            </button>
-            <button
+            </button>}
+            {!isMobile && <button
               className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
               type="button"
               onClick={() => setWeatherLayerOpen(true)}
@@ -462,7 +563,7 @@ export default function App() {
             >
               <span aria-hidden="true">☁</span>
               <b>{weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : "기상"}</b>
-            </button>
+            </button>}
           </div>}
           {searchMode === "facilities" && search.trim() && (
             <div className="search-results">
@@ -484,12 +585,57 @@ export default function App() {
               onRetry={weatherLayer.retry}
             />
           )}
-        </div>
+        </div>}
 
-        <GradeLegend selectedGrades={selectedGrades} onToggle={toggleGrade} />
+        {isMobile && !reference.picking && !reference.candidate && <div className="mobile-map-top-controls">
+          <button className="mobile-search-trigger" type="button" onClick={openMobileSearch} aria-label="시설·장소·주소 검색">
+            <span aria-hidden="true">⌕</span><span>시설·장소·주소 검색</span>
+          </button>
+          {reference.point && <div className="mobile-reference-summary">
+            <strong title={reference.point.label}>{reference.point.label} · 기준점</strong>
+            <button type="button" onClick={() => setMobilePanel("nearby")}>주변 시설</button>
+            <button type="button" onClick={reference.clear} aria-label="기준점 지우기">×</button>
+          </div>}
+          {weatherLayerKind && <div className="mobile-weather-legend">
+            <WeatherLayerLegend
+              kind={weatherLayerKind}
+              data={weatherLayer.data}
+              loading={weatherLayer.loading}
+              error={weatherLayer.error}
+              simulation={simulation}
+              onRetry={weatherLayer.retry}
+            />
+          </div>}
+        </div>}
 
-        {!reference.picking && !reference.candidate && (searchMode === "facilities" || reference.targetId) && <FacilitySheet
+        {!isMobile && <GradeLegend selectedGrades={selectedGrades} onToggle={toggleGrade} />}
+
+        {isMobile && mobilePanel === "none" && !reference.picking && !reference.candidate && <div className="mobile-map-bottom-controls">
+          <button className="mobile-show-all-button" type="button" onClick={showAllFacilities}>전체 시설</button>
+          <div className="mobile-map-zoom-controls" role="group" aria-label="지도 확대 축소">
+            <button type="button" onClick={() => requestMapViewport("zoom-in")} aria-label="지도 확대">＋</button>
+            <button type="button" onClick={() => requestMapViewport("zoom-out")} aria-label="지도 축소">－</button>
+          </div>
+          <button
+            className={`mobile-map-settings-trigger ${filtersApplied || weatherLayerKind ? "active" : ""}`}
+            type="button"
+            onClick={openMobileMapSettings}
+            aria-label={`지도 설정${filtersApplied ? `, 필터 적용 ${visibleFacilities.length}개 표시` : ""}${weatherLayerKind ? `, ${WEATHER_LAYER_LABELS[weatherLayerKind]} 표시 중` : ""}`}
+          >
+            <span>지도 설정</span>
+            {(filtersApplied || weatherLayerKind) && <small>
+              {filtersApplied ? `필터 적용 · ${visibleFacilities.length}개` : ""}
+              {filtersApplied && weatherLayerKind ? " / " : ""}
+              {weatherLayerKind ? WEATHER_LAYER_LABELS[weatherLayerKind] : ""}
+            </small>}
+          </button>
+        </div>}
+
+        {!reference.picking && !reference.candidate
+          && ((!isMobile && (searchMode === "facilities" || reference.targetId)) || (isMobile && mobilePanel === "facility" && selectedFacility))
+          && <FacilitySheet
           facility={selectedFacility}
+          compact={isMobile}
           simulation={simulation}
           cctvEnabled={cctvEnabled}
           weather={weather.data}
@@ -516,7 +662,7 @@ export default function App() {
         onClose={() => setSelectedCctvId("")}
       />
 
-      {weatherLayerOpen && (
+      {!isMobile && weatherLayerOpen && (
         <WeatherLayerSheet
           active={weatherLayerKind}
           simulation={simulation}
@@ -528,7 +674,7 @@ export default function App() {
         />
       )}
 
-      {filterOpen && (
+      {!isMobile && filterOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setFilterOpen(false)}>
           <section className="filter-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-title" onMouseDown={(event) => event.stopPropagation()}>
             <span className="sheet-handle" aria-hidden="true" />
@@ -545,7 +691,7 @@ export default function App() {
                 </label>
               ))}
             </div>
-            <div className={`training-option ${monitoringMode === "simulation" ? "active" : ""}`}>
+            {!isMobile && <div className={`training-option ${monitoringMode === "simulation" ? "active" : ""}`}>
               <div>
                 <strong>화면 확인</strong>
                 <span>
@@ -564,7 +710,7 @@ export default function App() {
                   ? "실시간 화면으로 돌아가기"
                   : "모의훈련 화면 보기"}
               </button>
-            </div>
+            </div>}
             <div className="filter-actions">
               <button type="button" onClick={() => setSelectedGroups(new Set(data.groups.map((group) => group.id)))}>전체 선택</button>
               <button className="primary-button" type="button" onClick={() => setFilterOpen(false)}>확인</button>
@@ -573,7 +719,7 @@ export default function App() {
         </div>
       )}
 
-      {sameLocation.length > 0 && (
+      {sameLocation.length > 0 && !isMobile && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setSameLocation([])}>
           <section className="same-location-sheet" role="dialog" aria-modal="true" aria-labelledby="same-location-title" onMouseDown={(event) => event.stopPropagation()}>
             <span className="sheet-handle" aria-hidden="true" />
@@ -592,6 +738,63 @@ export default function App() {
           </section>
         </div>
       )}
+      {isMobile && sameLocation.length > 0 && mobilePanel === "same-location" && <MobileBottomSheet
+        title="같은 위치의 시설"
+        onClose={() => { setSameLocation([]); closeMobilePanel(); }}
+      >
+        <p className="mobile-sheet-intro">확인할 시설을 선택하세요.</p>
+        <div className="same-location-options">
+          {sameLocation.map((facility) => <button type="button" key={facility.id} onClick={() => selectFacility(facility, "same_location")}>
+            <span className="grade-badge" style={{ backgroundColor: facility.grade_color }}>{facility.grade_label}</span>
+            <span><b>{facility.name}</b><small>{facility.type} · {uniqueWarningText(facility)}</small></span>
+          </button>)}
+        </div>
+      </MobileBottomSheet>}
+      {isMobile && <MobileMapSearch
+        panel={mobilePanel}
+        tab={mobileSearchTab}
+        facilityQuery={search}
+        facilityResults={searchResults}
+        facilities={data.facilities}
+        visibleFacilityIds={new Set(visibleFacilities.map((facility) => facility.id))}
+        reference={reference}
+        onSelectTab={setMobileSearchTab}
+        onFacilityQuery={setSearch}
+        onSelectFacility={(facility) => selectFacility(facility, "search")}
+        onPanelChange={setMobilePanel}
+        onClose={closeMobilePanel}
+      />}
+      {isMobile && (mobilePanel === "status" || mobilePanel === "more") && <MobileHeaderPanel
+        panel={mobilePanel}
+        data={data}
+        mode={monitoringMode}
+        refreshing={refreshing}
+        error={error || ""}
+        deepLinkNotice={deepLinkNotice}
+        onClose={closeMobilePanel}
+        onRefresh={() => void refresh()}
+        onControl={() => { setMobilePanel("none"); navigateWithMode("/control"); }}
+        onChangeMode={changeMonitoringMode}
+      />}
+      {isMobile && mobilePanel === "map-settings" && <MobileMapSettings
+        tab={mobileSettingsTab}
+        groups={data.groups}
+        selectedGroups={selectedGroups}
+        selectedGrades={selectedGrades}
+        visibleCount={visibleFacilities.length}
+        totalCount={data.facilities.length}
+        weatherKind={weatherLayerKind}
+        weatherData={weatherLayer.data}
+        weatherLoading={weatherLayer.loading}
+        weatherError={weatherLayer.error}
+        simulation={simulation}
+        onSelectTab={setMobileSettingsTab}
+        onToggleGroup={toggleGroup}
+        onToggleGrade={toggleGrade}
+        onResetFilters={resetFilters}
+        onSelectWeather={handleSelectWeatherLayer}
+        onClose={closeMobilePanel}
+      />}
     </div>
   );
 }

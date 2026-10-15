@@ -9,6 +9,7 @@ import {
   GRADE_DISPLAY_ORDER,
   GRADE_PRIORITY_ORDER,
   recommendedWeatherLayer,
+  reconcileFacilityGroupSelection,
   requestedFacilityId,
   requestedMonitoringMode,
   rainfallColor,
@@ -62,6 +63,18 @@ describe("현장 지도 필터", () => {
   it("전체 시설 검색은 필터와 무관하게 전체 시설에서 검색한다", () => {
     const result = searchFacilities(facilities, "포항대기");
     expect(result.map((item) => item.id)).toEqual(["F-2"]);
+  });
+
+  it("snapshot 갱신 때 해제한 유형은 유지하고 신규 유형만 기본 선택한다", () => {
+    const selected = new Set(["water", "removed"]);
+    const next = reconcileFacilityGroupSelection(
+      selected,
+      new Set(["water", "air", "removed"]),
+      new Set(["water", "air", "site"]),
+    );
+    expect([...next]).toEqual(["water", "site"]);
+    expect(next.has("air")).toBe(false);
+    expect(next.has("removed")).toBe(false);
   });
 
   it("경과 시간을 한국어 분/시간 단위로 표시한다", () => {

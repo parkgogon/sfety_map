@@ -25,6 +25,7 @@ function friendlyWeatherError(detail?: string): string {
 
 interface FacilitySheetProps {
   facility: Facility | null;
+  compact?: boolean;
   simulation: boolean;
   cctvEnabled: boolean;
   weather: WeatherResponse | null;
@@ -87,6 +88,7 @@ export function FacilityWeather({
 
 export function FacilitySheet({
   facility,
+  compact = false,
   simulation,
   cctvEnabled,
   weather,
@@ -135,9 +137,16 @@ export function FacilitySheet({
   const cooldownSeconds = Math.max(0, Math.ceil((cctvCooldownUntil - now) / 1_000));
   const weatherLive = weather?.status === "LIVE";
   const weatherFailing = !weatherLoading && (weatherError || (weather && !weatherLive));
+  const warningLabels = facility.reasons
+    .filter((reason) => reason.grade !== "NONE")
+    .map((reason) => `${reason.type} ${reason.raw_level}`)
+    .filter((label, index, labels) => labels.indexOf(label) === index);
+  const compactWarning = warningLabels.length > 1
+    ? `${warningLabels[0]} 외 ${warningLabels.length - 1}건`
+    : uniqueWarningText(facility);
 
   return (
-    <section className={`facility-sheet ${expanded ? "expanded" : ""}`} aria-label="선택 시설 상세">
+    <section className={`facility-sheet ${compact ? "mobile-compact" : ""} ${expanded ? "expanded" : ""}`} aria-label="선택 시설 상세">
       <span className="sheet-handle" aria-hidden="true" />
       <div className="facility-heading">
         <span className="grade-badge" style={{ backgroundColor: facility.grade_color }}>
@@ -153,14 +162,14 @@ export function FacilitySheet({
       </div>
       <div className="facility-alert-line">
         <span>영향 특보</span>
-        <strong>{uniqueWarningText(facility)}</strong>
+        <strong>{compact && !expanded ? compactWarning : uniqueWarningText(facility)}</strong>
       </div>
       <div className="facility-action">
         <span>권장 행동</span>
         <strong>{facility.recommended_action}</strong>
       </div>
 
-      <section className="weather-context" aria-label="시설 위치 현재 기상" aria-busy={weatherLoading}>
+      {(!compact || expanded) && <section className="weather-context" aria-label="시설 위치 현재 기상" aria-busy={weatherLoading}>
         <div className="context-title-row">
           <strong>현재 기상</strong>
           <ActualDataBadge simulation={simulation} />
@@ -185,9 +194,9 @@ export function FacilitySheet({
           </div>
         )}
         <small>현장 센서가 아닌, 시설 위치가 속한 KMA 격자의 초단기실황입니다.</small>
-      </section>
+      </section>}
 
-      {cctvEnabled && <section className="cctv-context" aria-label="인근 도로 CCTV" aria-busy={cctvLoading}>
+      {cctvEnabled && (!compact || expanded) && <section className="cctv-context" aria-label="인근 도로 CCTV" aria-busy={cctvLoading}>
         <div className="context-title-row">
           <strong>인근 도로 CCTV</strong>
           <ActualDataBadge simulation={simulation} />
@@ -258,7 +267,7 @@ export function FacilitySheet({
         </div>
       )}
       <button className="sheet-toggle" type="button" onClick={() => setExpanded((value) => !value)}>
-        {expanded ? "간단히 보기" : "시설정보 자세히"}
+        {expanded ? "간단히 보기" : compact ? "자세히 보기" : "시설정보 자세히"}
         <span aria-hidden="true">{expanded ? "⌄" : "⌃"}</span>
       </button>
     </section>

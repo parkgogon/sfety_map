@@ -75,4 +75,28 @@ describe("시설 현재 기상 표현", () => {
     expect(markup).not.toContain("ConnectTimeout");
     expect(markup).toContain("다시 시도");
   });
+
+  it("모바일 접힌 요약은 기상 상세을 숨기고 권장 행동과 자세히 보기를 유지한다", () => {
+    const facility = {
+      id: "F-1", name: "긴 이름을 가진 테스트 시설", type: "수질측정소", group_id: "water",
+      group_label: "수질측정소", latitude: 36.5, longitude: 128.7, address: "경상북도",
+      public_contact: "담당자", grade: "HIGH" as const, grade_label: "상", grade_color: "#dc2626",
+      meaning: "즉시 확인", recommended_action: "현장 상태를 확인하세요",
+      reasons: [
+        { warning_id: "W-1", type: "태풍", raw_level: "경보", grade: "HIGH" as const, region: "경북" },
+        { warning_id: "W-2", type: "호우", raw_level: "주의보", grade: "MEDIUM" as const, region: "경북" },
+      ],
+    };
+    const markup = renderToStaticMarkup(<FacilitySheet
+      facility={facility} compact simulation={false} cctvEnabled={false}
+      weather={weather} weatherLoading={false} weatherError="" onRetryWeather={() => undefined}
+      cctv={null} cctvLoading={false} cctvError="" cctvCooldownUntil={0}
+      onLoadCctv={() => undefined} onSelectCctv={() => undefined} onClose={() => undefined}
+    />);
+    expect(markup).toContain("mobile-compact");
+    expect(markup).toContain("태풍 경보 외 1건");
+    expect(markup).toContain("현장 상태를 확인하세요");
+    expect(markup).toContain("자세히 보기");
+    expect(markup).not.toContain("weather-context");
+  });
 });
