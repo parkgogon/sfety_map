@@ -1,0 +1,176 @@
+{
+  "source": "Local modified production build; fixed monitoring API fixture. Not production verification.",
+  "results": [
+    {
+      "route": "/control",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "login": [],
+      "refresh": [
+        {
+          "color": "rgb(20, 39, 70)",
+          "right": 266.40625
+        }
+      ]
+    },
+    {
+      "route": "/control",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "login": [],
+      "refresh": [
+        {
+          "color": "rgb(20, 39, 70)",
+          "right": 266.40625
+        }
+      ]
+    },
+    {
+      "route": "/control",
+      "width": 430,
+      "height": 932,
+      "documentWidth": 430,
+      "login": [],
+      "refresh": [
+        {
+          "color": "rgb(20, 39, 70)",
+          "right": 418
+        }
+      ]
+    },
+    {
+      "route": "/control",
+      "width": 700,
+      "height": 360,
+      "documentWidth": 700,
+      "login": [],
+      "refresh": [
+        {
+          "color": "rgb(20, 39, 70)",
+          "right": 688
+        }
+      ]
+    },
+    {
+      "route": "/control",
+      "width": 1440,
+      "height": 900,
+      "documentWidth": 1440,
+      "login": [],
+      "refresh": [
+        {
+          "color": "rgb(20, 39, 70)",
+          "right": 1416
+        }
+      ]
+    },
+    {
+      "route": "/settings",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "login": [
+        {
+          "w": 230,
+          "h": 44
+        }
+      ],
+      "refresh": []
+    },
+    {
+      "route": "/settings",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "login": [
+        {
+          "w": 260,
+          "h": 44
+        }
+      ],
+      "refresh": []
+    },
+    {
+      "route": "/settings",
+      "width": 430,
+      "height": 932,
+      "documentWidth": 430,
+      "login": [
+        {
+          "w": 300,
+          "h": 44
+        }
+      ],
+      "refresh": []
+    },
+    {
+      "route": "/settings",
+      "width": 700,
+      "height": 360,
+      "documentWidth": 700,
+      "login": [
+        {
+          "w": 374,
+          "h": 44
+        }
+      ],
+      "refresh": []
+    },
+    {
+      "route": "/settings",
+      "width": 1440,
+      "height": 900,
+      "documentWidth": 1440,
+      "login": [
+        {
+          "w": 121.015625,
+          "h": 44
+        }
+      ],
+      "refresh": []
+    },
+    {
+      "route": "/",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "login": [],
+      "refresh": []
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "login": [],
+      "refresh": []
+    },
+    {
+      "route": "/",
+      "width": 430,
+      "height": 932,
+      "documentWidth": 430,
+      "login": [],
+      "refresh": []
+    },
+    {
+      "route": "/",
+      "width": 700,
+      "height": 360,
+      "documentWidth": 700,
+      "login": [],
+      "refresh": []
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "height": 900,
+      "documentWidth": 1440,
+      "login": [],
+      "refresh": []
+    }
+  ],
+  "errors": []
+}

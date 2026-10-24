@@ -8,6 +8,8 @@
   }
 
   .control-header {
+    flex-wrap: wrap;
+    gap: 8px;
     min-height: auto;
     padding: 8px 12px;
   }
@@ -34,6 +36,8 @@
   }
 
   .control-header-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
     gap: 4px;
   }
 
@@ -42,6 +46,10 @@
     padding: 6px 8px !important;
     white-space: nowrap !important;
   }
+
+  .control-header .control-brand { min-width: 0; }
+  .login-form { flex-direction: column; }
+  .login-form input, .login-form button { width: 100%; }
 
   .settings-header {
     gap: 6px;
