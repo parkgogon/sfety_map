@@ -10,6 +10,10 @@ from safety_dashboard.domain.enums import DataHealth
 from fastapi import APIRouter
 from safety_dashboard.api.dependencies import ApiServices
 from safety_dashboard.api.settings import ROOT
+from safety_dashboard.api.schemas import NearbyReportRequest
+from safety_dashboard.adapters.facility_csv import CsvFacilityRepository, FacilityDataError
+from safety_dashboard.application.nearby_report import NearbyReport
+from safety_dashboard.domain.models import GeoPoint
 
 LOGGER = logging.getLogger("safety_dashboard.api")
 
@@ -17,6 +21,28 @@ LOGGER = logging.getLogger("safety_dashboard.api")
 def build_router(services: ApiServices) -> APIRouter:
     router = APIRouter()
     monitoring_service = services.monitoring_service
+
+    @router.post("/api/v1/reports/nearby.pdf")
+    def nearby_report_pdf(request: NearbyReportRequest) -> Response:
+        """기상 조회나 전파 없이 시설 CSV로만 기준점 주변 보고서를 만듭니다."""
+        try:
+            facilities = CsvFacilityRepository(services.settings.facility_path).list_monitored()
+            report = NearbyReport.build(GeoPoint(request.latitude, request.longitude),
+                                        request.label, request.address, request.radius_km, facilities)
+        except (FacilityDataError, ValueError):
+            LOGGER.warning("nearby_report_facilities_unavailable")
+            raise HTTPException(status_code=503, detail="시설 자료를 읽지 못해 보고서를 생성하지 못했습니다.") from None
+        from safety_dashboard.adapters.nearby_pdf_report import NearbyPdfReportRenderer
+        try:
+            content = NearbyPdfReportRenderer(ROOT / "fonts" / "NotoSansKR.ttf").render(report)
+        except Exception as exc:
+            LOGGER.error("nearby_report_generation_failed type=%s", type(exc).__name__)
+            raise HTTPException(status_code=500, detail="주변 시설 보고서를 생성하지 못했습니다.") from None
+        return Response(content=content, media_type="application/pdf", headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="nearby_facilities_{report.generated_at:%Y%m%d_%H%M%S}.pdf"',
+            "X-Nearby-Facility-Count": str(len(report.facilities)),
+        })
 
     @router.get("/api/v1/monitoring/report.pdf")
     @router.get("/internal/v1/monitoring/report.pdf")

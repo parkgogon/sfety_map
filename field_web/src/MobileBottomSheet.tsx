@@ -6,10 +6,11 @@ interface Props {
   children: ReactNode;
   footer?: ReactNode;
   returnFocusSelector?: string;
+  className?: string;
 }
 
 /** Mobile field-map modal. The map stays mounted and becomes inert underneath. */
-export function MobileBottomSheet({ title, onClose, children, footer, returnFocusSelector }: Props) {
+export function MobileBottomSheet({ title, onClose, children, footer, returnFocusSelector, className = "" }: Props) {
   const titleId = useId();
   const backdropRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -79,7 +80,7 @@ export function MobileBottomSheet({ title, onClose, children, footer, returnFocu
   }, []);
 
   return (
-    <div ref={backdropRef} className="mobile-sheet-backdrop" onClick={(event) => {
+    <div ref={backdropRef} className={`mobile-sheet-backdrop ${className}`} onClick={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section ref={dialogRef} className="mobile-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>

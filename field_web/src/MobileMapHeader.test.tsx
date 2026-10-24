@@ -287,6 +287,11 @@ describe("모바일 헤더와 패널", () => {
     const map = container.querySelector('[data-testid="map"]');
     expect(map?.getAttribute("data-reference")).toBe("사고 확인 지점");
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("주변 시설");
+    await click(byText("주변 시설 보고서"));
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("보고서 반경");
+    await key("Escape");
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("주변 시설");
     await click(byLabel("주변 시설 닫기"));
     await click(byLabel("더보기")); await key("Escape");
     expect(container.querySelector('[role="dialog"]')).toBeNull();

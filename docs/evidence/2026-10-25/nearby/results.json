@@ -1,0 +1,106 @@
+{
+  "environment": "LOCAL fixed API + fake map SDK; not production or physical devices",
+  "results": [
+    {
+      "path": "/",
+      "width": 360,
+      "height": 740,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/",
+      "width": 390,
+      "height": 844,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/",
+      "width": 430,
+      "height": 932,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/",
+      "width": 700,
+      "height": 700,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/",
+      "width": 1440,
+      "height": 900,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/control",
+      "width": 360,
+      "height": 740,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/control",
+      "width": 390,
+      "height": 844,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/control",
+      "width": 430,
+      "height": 932,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/control",
+      "width": 700,
+      "height": 700,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    },
+    {
+      "path": "/control",
+      "width": 1440,
+      "height": 900,
+      "count": 3,
+      "zeroCount": 0,
+      "invalidRejected": true,
+      "focusRestored": true,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}
