@@ -51,3 +51,7 @@ KST 생성 시각·기준점 정보, 한 줄 요약, 시설 수/최근접/유형
 
 공식 캡처 안내: [일부 지역 업무용 캡처](https://devtalk.kakao.com/t/javascript-sdk-png/152174),
 [출판·인쇄물 출처 표기](https://kakaomap.tistory.com/257).
+
+저장소의 증빙 비교 HTML은 `node design/nearby_report/gallery.mjs`로 1440/390px 배치를 검수한다.
+로컬 HTML/이미지 응답만 사용한다. 관리 브라우저의 `file://` 제한 때문에 소유 원점의 응답을 대체하며
+정책을 변경하거나 외부 서버에 검수 파일을 업로드하지 않는다. 모바일 폭은 에뮬레이션이다.

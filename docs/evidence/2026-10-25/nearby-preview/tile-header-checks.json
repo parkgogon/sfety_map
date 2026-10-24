@@ -1,0 +1,16 @@
+[
+  {
+    "host": "mts.kakaocdn.net",
+    "path": "/api/v1/tile/PNG02/v27_pps0b/latest/2/2539/2924.png",
+    "status": 200,
+    "content_type": "image/png",
+    "access_control_allow_origin": null
+  },
+  {
+    "host": "mts.kakaocdn.net",
+    "path": "/api/v1/tile/PNG02/v27_pps0b/latest/2/2539/2929.png",
+    "status": 200,
+    "content_type": "image/png",
+    "access_control_allow_origin": null
+  }
+]

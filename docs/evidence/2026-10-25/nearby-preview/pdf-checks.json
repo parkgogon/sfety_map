@@ -1,0 +1,130 @@
+[
+  {
+    "file": "coast-0.1km-after.pdf",
+    "pages": 1,
+    "textWords": 156,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "coast-1km-after.pdf",
+    "pages": 1,
+    "textWords": 156,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "coast-3km-after.pdf",
+    "pages": 1,
+    "textWords": 190,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "coast-50km-after.pdf",
+    "pages": 2,
+    "textWords": 403,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "coast-5km-after.pdf",
+    "pages": 2,
+    "textWords": 246,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "rural-0.1km-after.pdf",
+    "pages": 1,
+    "textWords": 154,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "rural-1km-after.pdf",
+    "pages": 1,
+    "textWords": 154,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "rural-3km-after.pdf",
+    "pages": 1,
+    "textWords": 156,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "rural-50km-after.pdf",
+    "pages": 4,
+    "textWords": 1113,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "rural-5km-after.pdf",
+    "pages": 1,
+    "textWords": 163,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "synthetic-dense-long-after.pdf",
+    "pages": 10,
+    "textWords": 6072,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "urban-0.1km-after.pdf",
+    "pages": 1,
+    "textWords": 153,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "urban-1km-after.pdf",
+    "pages": 1,
+    "textWords": 153,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "urban-3km-after.pdf",
+    "pages": 1,
+    "textWords": 174,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "urban-50km-after.pdf",
+    "pages": 4,
+    "textWords": 925,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  },
+  {
+    "file": "urban-5km-after.pdf",
+    "pages": 1,
+    "textWords": 192,
+    "pageOverflowWords": 0,
+    "footerOverlapWords": 0,
+    "phoneNumbers": 0
+  }
+]

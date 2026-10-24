@@ -1,0 +1,36 @@
+{
+  "scope": "Local Linux processes pinned to one logical CPU; in-process API with network guard. No Cloud Run memory limit/cold start/production load verification.",
+  "cpuAffinityCount": 1,
+  "apiProcessPssMiB": 156.1,
+  "baselineHealth": {
+    "samples": 8,
+    "medianMs": 1.2,
+    "p95Ms": 1.6,
+    "maxMs": 1.6
+  },
+  "baselinePdf": {
+    "samples": 8,
+    "medianMs": 389.5,
+    "p95Ms": 405.4,
+    "maxMs": 405.4
+  },
+  "concurrentHealth": {
+    "samples": 22,
+    "medianMs": 1.4,
+    "p95Ms": 6.9,
+    "maxMs": 8.4
+  },
+  "concurrentPdf": {
+    "samples": 22,
+    "medianMs": 800.0,
+    "p95Ms": 1252.3,
+    "maxMs": 1515.8
+  },
+  "externalApiAttempts": 0,
+  "captureMs": [
+    6009,
+    5126,
+    3552
+  ],
+  "peakBrowserPssMiB": 385
+}
