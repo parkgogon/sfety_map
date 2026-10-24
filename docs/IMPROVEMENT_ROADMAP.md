@@ -9,6 +9,8 @@
 현재 작업은 [구조 개선 5단계 계획](archive/REFACTORING_PLAN_20261024.md)을 따릅니다.
 검증 정비·Streamlit/구버전 제거·React 분리·지도 분리·API/Worker 분리의 5단계를
 모두 완료했습니다. Python 231개·React 195개·빌드와 새 가상환경 검증이 통과했습니다. 아래 초기 로드맵의 완료 이력은 당시 범위를 설명합니다.
+사용자 요청으로 `e1f6c0d`를 main에 반영했으며 [GitHub Actions](https://github.com/parkgogon/sfety_map/actions/runs/40083176804)의
+테스트·API·Worker·웹 배포와 외부 감시 설정이 모두 성공했습니다. 직접 운영 URL 점검의 제약은 [HANDOFF](HANDOFF.md)에 기록했습니다.
 이 개선에서 실제 Telegram·SMS나 운영 수동전파·Worker 시험 API를 호출하지 않습니다.
 
 ## 1. 최종 방향
