@@ -4,6 +4,13 @@
 - 기준일: 2026-08-26
 - 목적: 운영 중인 기능을 유지하면서 관제 결과의 신뢰성과 변경 용이성을 높인다.
 
+## 현재 진행 — 2026-10-24
+
+현재 작업은 [구조 개선 5단계 계획](archive/REFACTORING_PLAN_20261024.md)을 따릅니다.
+검증 정비·Streamlit/구버전 제거·React 분리·지도 분리·API/Worker 분리의 5단계를
+모두 완료했습니다. Python 231개·React 195개·빌드와 새 가상환경 검증이 통과했습니다. 아래 초기 로드맵의 완료 이력은 당시 범위를 설명합니다.
+이 개선에서 실제 Telegram·SMS나 운영 수동전파·Worker 시험 API를 호출하지 않습니다.
+
 ## 1. 최종 방향
 
 전면 재작성이나 기능별 MSA를 도입하지 않는다. 하나의 코드베이스를 업무 기능별로
@@ -85,10 +92,10 @@ Firestore        관제 상태·알림·실적·감사 이력
 
 - [x] `core/region_resolver.py`를 `safety_dashboard/domain/`으로 이전하고 패키지 내 참조를 전환한다. (`core/region_resolver.py`는 구버전 호환 facade로 유지)
 - [x] 운영 시설 CSV(`facilities_info.csv`)와 템플릿의 단일 기준을 확정한다.
-- 구버전 `data_providers/`, `services/`, 루트 위험도·보고서·Telegram·UI 코드를
-  현행 테스트 이전 후 제거하거나 `legacy/`로 격리한다.
+- [x] 구버전 provider·service·루트 위험도·보고서·Telegram·UI 코드를 필요한 현행
+  테스트로 이전 후 제거했다. 임시 legacy 복사본은 두지 않는다.
 - `tmp/`, 생성 산출물과 최종 보고자료의 보관 위치를 분리한다.
-- README, 아키텍처와 사용자 안내를 현재 배포 구조에 맞춘다.
+- [x] README, 아키텍처와 사용자 안내를 React·API·Worker 실행 구조에 맞췄다.
 
 ### 5단계 — 사용자 지도 UX
 
@@ -119,7 +126,7 @@ Firestore        관제 상태·알림·실적·감사 이력
 ### 8단계 — Streamlit 종료
 
 - [x] React 기능 동등성(현장 지도, 중앙관제, 수동 전파, PDF 생성, 위험도 정책 설정)을 확인했다.
-- [x] Streamlit 진입점(`app.py`)을 React 정식 웹 앱 이동 안내 및 상태 페이지로 경량화했다.
+- [x] 2026-10-24 승인된 구조 개선에서 Streamlit 화면·진입점·설정·의존성을 완전히 제거했다.
 - [x] 도메인 모델이 레거시 UI에 의존하지 않도록 `RISK_GRADE_COLORS` 등 공통 상수를 도메인으로 이전했다.
 - [x] 아키텍처 다이어그램 및 배포 문서를 React SPA + Cloud Run 모듈형 모놀리스 기준으로 최신화했다.
 

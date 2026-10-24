@@ -5,7 +5,7 @@
 
 이 문서는 Firebase React 현장 지도·중앙 관제·설정이 같은 제품으로
 보이고 동일하게 동작하도록 하는 표현 기준이다. 새 화면을 만들 때는
-개별 페이지의 선호보다 이 문서와 `safety_dashboard/ui/design_tokens.css`를
+개별 페이지의 선호보다 이 문서와 `field_web/src/styles/design_tokens.css`를
 우선한다.
 
 ## 1. 제품 표현 원칙
@@ -21,10 +21,9 @@
 
 ## 2. 디자인 토큰
 
-토큰의 단일 기준은 `safety_dashboard/ui/design_tokens.css`다. Streamlit은
-`app.py`에서 이 파일을 먼저 읽고 화면별 `style.css`를 나중에 읽는다. React
-현장 지도를 추가할 때도 같은 토큰 파일을 빌드 입력으로 사용하고 색상과
-간격을 다시 정의하지 않는다.
+토큰의 단일 기준은 `field_web/src/styles/design_tokens.css`다. React가 이 파일을
+화면별 스타일보다 먼저 읽는다. 영역별 CSS는 `field_web/src/styles/`에 두고
+`styles.css`가 기존 선언 순서대로 불러온다. 색상과 간격을 중복 정의하지 않는다.
 
 ### 주요 토큰 그룹
 

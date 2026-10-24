@@ -41,7 +41,7 @@ class SystemHealthProbe(Protocol):
     def check(self, now: dt.datetime) -> OperationalHealthReport: ...
 
 
-class AlertStateStore(Protocol):
+class AlertStateRepository(Protocol):
     def acquire_lock(self, run_id: str, now: dt.datetime) -> bool: ...
 
     def release_lock(self, run_id: str, now: dt.datetime) -> None: ...
@@ -61,6 +61,8 @@ class AlertStateStore(Protocol):
         self, batch_id: str, values: Mapping[str, object]
     ) -> None: ...
 
+    def load_batch(self, batch_id: str) -> AlertBatch | None: ...
+
     def save_pending(
         self,
         transitions: Sequence[AlertTransition],
@@ -71,6 +73,8 @@ class AlertStateStore(Protocol):
 
     def resolve_pending(self, transition_ids: Sequence[str], status: str) -> None: ...
 
+
+class AlertDeliveryRepository(Protocol):
     def reserve_delivery(
         self,
         message: OutgoingSmsMessage,
@@ -89,6 +93,34 @@ class AlertStateStore(Protocol):
 
     def monthly_sms_count(self, month: dt.date) -> int: ...
 
+    def delivery_summary(self, batch_id: str) -> Mapping[str, int]: ...
+
+    def apply_provider_report(
+        self,
+        provider_message_id: str,
+        status_code: str,
+        processed_at: dt.datetime,
+        delivery_id_hint: str = "",
+    ) -> bool: ...
+
+
+class TelegramOutboxRepository(Protocol):
+    def enqueue_telegram(self, item: TelegramOutboxItem) -> bool: ...
+
+    def due_telegram(
+        self, now: dt.datetime, limit: int = 20
+    ) -> tuple[TelegramOutboxItem, ...]: ...
+
+    def record_telegram_result(
+        self,
+        item: TelegramOutboxItem,
+        success: bool,
+        detail: str,
+        now: dt.datetime,
+    ) -> None: ...
+
+
+class AlertAuditRepository(Protocol):
     def record_run(
         self,
         day: dt.date,
@@ -106,24 +138,6 @@ class AlertStateStore(Protocol):
         now: dt.datetime,
         interval: dt.timedelta,
     ) -> bool: ...
-
-    def enqueue_telegram(self, item: TelegramOutboxItem) -> bool: ...
-
-    def due_telegram(
-        self, now: dt.datetime, limit: int = 20
-    ) -> tuple[TelegramOutboxItem, ...]: ...
-
-    def record_telegram_result(
-        self,
-        item: TelegramOutboxItem,
-        success: bool,
-        detail: str,
-        now: dt.datetime,
-    ) -> None: ...
-
-    def load_batch(self, batch_id: str) -> AlertBatch | None: ...
-
-    def delivery_summary(self, batch_id: str) -> Mapping[str, int]: ...
 
     def notification_metrics(
         self, start: dt.date, end: dt.date
@@ -152,3 +166,25 @@ class AlertStateStore(Protocol):
         status: str = "all",
         limit: int = 100,
     ) -> tuple[NotificationEvent, ...]: ...
+
+    def export_rows(
+        self, start: dt.datetime, end: dt.datetime
+    ) -> list[dict[str, object]]: ...
+
+
+class SmsDeliveryStore(AlertStateRepository, AlertDeliveryRepository, Protocol):
+    """SMS 준비·발송에 필요한 상태·발송 저장 경계."""
+
+
+class AlertOperationsStore(AlertAuditRepository, TelegramOutboxRepository, Protocol):
+    """운영보고에 필요한 상태·감사·보고 대기열 저장 경계."""
+
+
+class AlertStateStore(
+    AlertStateRepository,
+    AlertDeliveryRepository,
+    TelegramOutboxRepository,
+    AlertAuditRepository,
+    Protocol,
+):
+    """기존 Dispatcher·관리자·저장소가 사용하는 호환 통합 계약."""

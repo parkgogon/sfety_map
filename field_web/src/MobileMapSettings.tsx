@@ -8,13 +8,7 @@ import type {
   WeatherLayerResponse,
 } from "./types";
 import type { MobileSettingsTab } from "./useMobileLayout";
-import {
-  formatReferenceTime,
-  GRADE_COLORS,
-  GRADE_DISPLAY_ORDER,
-  GRADE_LABELS,
-  WEATHER_LAYER_LABELS,
-} from "./utils";
+import { formatReferenceTime, GRADE_COLORS, GRADE_DISPLAY_ORDER, GRADE_LABELS } from "./utils";
 
 interface Props {
   tab: MobileSettingsTab;

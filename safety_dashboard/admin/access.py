@@ -10,7 +10,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Callable
 
-from safety_dashboard.api.settings import _secret
+from safety_dashboard.config.environment import env_text
 
 
 class AdminAccessConfigurationError(RuntimeError):
@@ -41,11 +41,7 @@ class AdminAccessSettings:
                 return default
 
         return cls(
-            password=_secret(
-                "ADMIN_ACCESS_PASSWORD",
-                "admin",
-                "access_password",
-            ),
+            password=env_text("ADMIN_ACCESS_PASSWORD"),
             session_seconds=integer(
                 "ADMIN_SESSION_SECONDS",
                 8 * 60 * 60,
@@ -75,7 +71,7 @@ class AdminAccessVerifier:
         self._lock = threading.Lock()
 
     def verify(self, supplied_password: str) -> int:
-        """성공하면 Streamlit 세션 유지시간(초)을 반환한다."""
+        """성공하면 관리자 세션 유지시간(초)을 반환한다."""
 
         if not self.settings.password:
             raise AdminAccessConfigurationError("관리자 잠금이 설정되지 않음")

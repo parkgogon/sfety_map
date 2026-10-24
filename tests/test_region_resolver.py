@@ -1,20 +1,20 @@
-import unittest
 import gzip
 import json
 from pathlib import Path
+import unittest
 
-from core.region_resolver import (
+from safety_dashboard.domain.region_resolver import (
     WarningZoneIndex,
     boundary_names_for_warning,
     dominant_warning,
     facility_matches_warning,
     normalize_warning_zone_data,
-    warning_matches_facility,
     warning_level_rank,
+    warning_matches_facility,
 )
 
 
-class RegionResolverTests(unittest.TestCase):
+class DomainRegionResolverTests(unittest.TestCase):
     def test_matches_regular_city(self):
         self.assertTrue(
             facility_matches_warning(

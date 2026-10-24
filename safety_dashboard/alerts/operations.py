@@ -13,7 +13,7 @@ from safety_dashboard.alerts.domain import (
     TelegramPurpose,
 )
 from safety_dashboard.alerts.ports import (
-    AlertStateStore,
+    AlertOperationsStore,
     SolapiBalanceProvider,
     SystemHealthProbe,
 )
@@ -28,7 +28,7 @@ KST = dt.timezone(dt.timedelta(hours=9))
 class AlertOperationsService:
     def __init__(
         self,
-        store: AlertStateStore,
+        store: AlertOperationsStore,
         settings: AlertSettings,
         telegram_outbox: TelegramOutboxService,
         balance_provider: SolapiBalanceProvider | None = None,
@@ -52,11 +52,13 @@ class AlertOperationsService:
         try:
             balance = self.balance_provider.fetch_balance()
         except Exception as exc:
-            self.store.update_status({
-                "solapi_balance_checked_at": now,
-                "solapi_balance_health": "ERROR",
-                "solapi_balance_detail": type(exc).__name__,
-            })
+            self.store.update_status(
+                {
+                    "solapi_balance_checked_at": now,
+                    "solapi_balance_health": "ERROR",
+                    "solapi_balance_detail": type(exc).__name__,
+                }
+            )
             self.telegram_outbox.notify_admin(
                 "solapi-balance-error",
                 now,
@@ -69,14 +71,16 @@ class AlertOperationsService:
             critical=self.settings.balance_critical,
         )
         previous_level = str(status.get("solapi_balance_level", ""))
-        self.store.update_status({
-            "solapi_balance_checked_at": now,
-            "solapi_balance_health": "LIVE",
-            "solapi_balance": balance.balance,
-            "solapi_point": balance.point,
-            "solapi_available": balance.available,
-            "solapi_balance_level": level,
-        })
+        self.store.update_status(
+            {
+                "solapi_balance_checked_at": now,
+                "solapi_balance_health": "LIVE",
+                "solapi_balance": balance.balance,
+                "solapi_point": balance.point,
+                "solapi_available": balance.available,
+                "solapi_balance_level": level,
+            }
+        )
         if level != previous_level:
             if level == "CRITICAL":
                 self.telegram_outbox.notify_admin(
@@ -109,17 +113,18 @@ class AlertOperationsService:
         if not self.store.admin_notice_due(key, now, dt.timedelta(days=2)):
             return
         message = self.report_message(now, include_metrics=slot == "09")
-        self.store.enqueue_telegram(TelegramOutboxItem(
-            id=f"admin-health-{local.date().isoformat()}-{slot}",
-            audience=TelegramAudience.ADMIN,
-            purpose=TelegramPurpose.HEARTBEAT,
-            created_at=now,
-            expires_at=now + dt.timedelta(
-                seconds=self.settings.telegram_retry_seconds
-            ),
-            next_attempt_at=now,
-            messages=(message,),
-        ))
+        self.store.enqueue_telegram(
+            TelegramOutboxItem(
+                id=f"admin-health-{local.date().isoformat()}-{slot}",
+                audience=TelegramAudience.ADMIN,
+                purpose=TelegramPurpose.HEARTBEAT,
+                created_at=now,
+                expires_at=now
+                + dt.timedelta(seconds=self.settings.telegram_retry_seconds),
+                next_attempt_at=now,
+                messages=(message,),
+            )
+        )
 
     def report_message(
         self,
@@ -145,9 +150,7 @@ class AlertOperationsService:
         mode_ok = self.settings.automation_mode == "live"
         healthy = probe.healthy and kma_ok and mode_ok
         title = (
-            "자동 알림 일일 요약 + 운영 상태"
-            if include_metrics
-            else "운영 상태 보고"
+            "자동 알림 일일 요약 + 운영 상태" if include_metrics else "운영 상태 보고"
         )
         if test:
             title = "[시험] " + title
@@ -162,47 +165,47 @@ class AlertOperationsService:
             totals = metrics.get("totals", {})
             if not isinstance(totals, dict):
                 totals = {}
-            lines.extend((
-                f"\n<b>{report_day:%Y-%m-%d} 전날 실적</b>",
-                f"자동 관제 · {int(totals.get('poll_runs', 0))}회",
-                f"특보 변화 · 발효 {int(totals.get('warning_activated', 0))} · "
-                f"격상 {int(totals.get('warning_escalated', 0))} · "
-                f"해제 {int(totals.get('warning_cleared', 0))}",
-                f"문자 · 시도 {int(totals.get('sms_attempted', 0))} · "
-                f"수신완료 {int(totals.get('sms_delivered', 0))} · "
-                f"실패 {int(totals.get('sms_delivery_failed', 0)) + int(totals.get('sms_failed', 0))}",
-                "사용자 Telegram · "
-                f"주경로 {int(totals.get('telegram_user_primary_sent', 0))} · "
-                f"대체 {int(totals.get('telegram_user_fallback_sent', 0))} · "
-                f"실패 {int(totals.get('telegram_user_failed', 0))}",
-            ))
+            lines.extend(
+                (
+                    f"\n<b>{report_day:%Y-%m-%d} 전날 실적</b>",
+                    f"자동 관제 · {int(totals.get('poll_runs', 0))}회",
+                    f"특보 변화 · 발효 {int(totals.get('warning_activated', 0))} · "
+                    f"격상 {int(totals.get('warning_escalated', 0))} · "
+                    f"해제 {int(totals.get('warning_cleared', 0))}",
+                    f"문자 · 시도 {int(totals.get('sms_attempted', 0))} · "
+                    f"수신완료 {int(totals.get('sms_delivered', 0))} · "
+                    f"실패 {int(totals.get('sms_delivery_failed', 0)) + int(totals.get('sms_failed', 0))}",
+                    "사용자 Telegram · "
+                    f"주경로 {int(totals.get('telegram_user_primary_sent', 0))} · "
+                    f"대체 {int(totals.get('telegram_user_fallback_sent', 0))} · "
+                    f"실패 {int(totals.get('telegram_user_failed', 0))}",
+                )
+            )
         lines.append("\n<b>현재 시스템</b>")
         for check in probe.checks:
-            latency = (
-                f" · {check.latency_ms}ms"
-                if check.latency_ms is not None
-                else ""
-            )
+            latency = f" · {check.latency_ms}ms" if check.latency_ms is not None else ""
             lines.append(
                 f"{_health_icon(check.healthy)} {html.escape(check.name)} · "
                 f"{html.escape(check.detail)}{latency}"
             )
-        lines.extend((
-            f"{_health_icon(mode_ok)} 자동 관제 · "
-            f"{html.escape(self.settings.automation_mode)} · "
-            f"최근 {html.escape(_format_status_time(status.get('last_run_at')))}",
-            f"{_health_icon(kma_ok)} KMA · "
-            f"{html.escape(str(status.get('kma_health', '미확인')))} · "
-            "최근 정상 "
-            f"{html.escape(_format_status_time(status.get('kma_last_success_at')))} · "
-            f"연속 실패 {int(status.get('kma_consecutive_errors', 0))}회",
-            f"특보·시설 · 활성 {int(status.get('active_warning_count', 0))}건 · "
-            f"영향 {int(status.get('affected_facility_count', 0))}곳",
-            "사용자 Telegram 최근 발송 · "
-            f"{html.escape(str(status.get('last_user_telegram_result', '기록 없음')))} · "
-            f"{html.escape(_format_status_time(status.get('last_user_telegram_at')))}",
-            f"배포 · {html.escape(self.settings.app_revision)}",
-        ))
+        lines.extend(
+            (
+                f"{_health_icon(mode_ok)} 자동 관제 · "
+                f"{html.escape(self.settings.automation_mode)} · "
+                f"최근 {html.escape(_format_status_time(status.get('last_run_at')))}",
+                f"{_health_icon(kma_ok)} KMA · "
+                f"{html.escape(str(status.get('kma_health', '미확인')))} · "
+                "최근 정상 "
+                f"{html.escape(_format_status_time(status.get('kma_last_success_at')))} · "
+                f"연속 실패 {int(status.get('kma_consecutive_errors', 0))}회",
+                f"특보·시설 · 활성 {int(status.get('active_warning_count', 0))}건 · "
+                f"영향 {int(status.get('affected_facility_count', 0))}곳",
+                "사용자 Telegram 최근 발송 · "
+                f"{html.escape(str(status.get('last_user_telegram_result', '기록 없음')))} · "
+                f"{html.escape(_format_status_time(status.get('last_user_telegram_at')))}",
+                f"배포 · {html.escape(self.settings.app_revision)}",
+            )
+        )
         return OutgoingTelegramMessage(
             text="\n".join(lines),
             silent=healthy,

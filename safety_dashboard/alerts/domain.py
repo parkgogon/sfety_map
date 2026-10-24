@@ -241,10 +241,12 @@ class ManualTelegramDispatch:
 
     @property
     def fingerprint(self) -> str:
-        identity = "|".join((
-            ",".join(sorted(set(self.facility_ids))),
-            ",".join(sorted(set(self.warning_keys))),
-        ))
+        identity = "|".join(
+            (
+                ",".join(sorted(set(self.facility_ids))),
+                ",".join(sorted(set(self.warning_keys))),
+            )
+        )
         return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
 
 
@@ -281,3 +283,25 @@ class NotificationEvent:
 def make_batch_id(transitions: Iterable[AlertTransition]) -> str:
     identity = "|".join(sorted(item.id for item in transitions))
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+
+
+@dataclass(frozen=True)
+class DispatchSummary:
+    status: str
+    mode: str
+    transition_count: int = 0
+    message_count: int = 0
+    accepted_count: int = 0
+    blocked_count: int = 0
+    detail: str = ""
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "status": self.status,
+            "mode": self.mode,
+            "transition_count": self.transition_count,
+            "message_count": self.message_count,
+            "accepted_count": self.accepted_count,
+            "blocked_count": self.blocked_count,
+            "detail": self.detail,
+        }

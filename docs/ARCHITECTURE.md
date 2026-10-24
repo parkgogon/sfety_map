@@ -1,479 +1,108 @@
-# v3 아키텍처
+# 현재 아키텍처
 
-- 문서 상태: 구현 기준
-- 방향: 도메인 중심의 점진적 재구축
+기준: 2026-10-24 구조 개선 1~5단계 코드 반영. React가 현장·중앙관제·설정의 유일한 UI이며
+Streamlit과 루트 구버전 구현은 제거했습니다. API와 Worker는 하나의 코드베이스를
+공유하는 모듈형 모놀리스입니다.
 
-## 1. 결론
-
-현재 코드를 전부 폐기하지 않습니다. 검증된 KMA 파싱, 공식 특보구역
-스냅샷, 공간 도형 처리, Telegram 분할, PDF 폰트, 회귀 테스트는 가져옵니다.
-
-배포 설정은 `app.py` 진입점으로 고정하고, 선택 실행되는 현장 지도·중앙 관제·설정
-페이지와 공통 `MonitoringContext`는 `safety_dashboard/` 패키지에서 관리합니다.
-
-시설담당자용 현장 지도를 React 정적 웹으로 분리할 때는 기존 Python 도메인과
-어댑터를 HTTP API로 공유한다. 이 Python 데이터 API는 **Google Cloud Run
-`asia-northeast3`(서울) 리전**에 배포한다. 기존 Streamlit 중앙 관제도 같은
-API를 사용하여 KMA·CCTV·재난문자 조회가 국내 리전에서 실행되게 한다.
-
-React 정적 웹은 **Firebase Hosting**에 배포한다. Firebase Hosting과 Cloud
-Run은 같은 Google Cloud 프로젝트에서 관리하고, 브라우저의 `/api/**` 요청은
-Hosting rewrite를 통해 서울 리전의 Cloud Run 서비스로 전달한다. 이에 따라
-프런트엔드와 API를 하나의 운영 도메인으로 제공하고 CORS·환경별 API 주소 설정을
-최소화한다. GitHub 기본 브랜치 반영 시 운영 배포, pull request에는 미리보기
-채널을 만드는 자동 배포를 기본으로 한다.
-
-1차 내부 테스트는 Firebase가 제공하는 `https://keco-safety-map.web.app` 기본
-주소를 사용한다. 별도 도메인은 테스트 결과와 운영 주체가 확정된 후 연결하며,
-React 코드가 특정 호스트명에 의존하지 않게 한다. 카카오 지도 JavaScript 키의
-허용 도메인에는 로컬 개발 주소와 실제 Firebase Hosting 주소만 등록한다.
-
-GitHub 기본 브랜치의 변경은 자동 테스트를 먼저 통과해야 한다. 성공한 경우에만
-변경된 구성요소를 배포한다. React 변경은 Firebase Hosting, Python API 변경은
-Cloud Run 서울 리전으로 각각 배포하고 기존 Streamlit 중앙 관제는 Community
-Cloud의 GitHub 연동을 유지한다. 테스트나 빌드가 실패하면 기존 운영 버전을
-그대로 유지한다. 장애 시 Firebase 배포 이력과 Cloud Run 리비전으로 직전 정상
-버전에 복구할 수 있어야 한다.
+## 실행 구조
 
 ```text
-시설담당자 스마트폰 & 중앙관제 브라우저
-    ↓ HTTPS
-Firebase Hosting (React SPA + Kakao Maps)
-    ├── / (현장 안전지도)
-    ├── /control (중앙관제 대시보드·지도·수동전파) [SPA 경로 분기]
-    ├── /settings (위험도 정책 매트릭스 설정) [SPA 경로 분기]
-    └── /api/**, /internal/** → Cloud Run asia-northeast3
-                                  ├── KMA 기상특보
-                                  ├── Firestore (알림 상태/이력/관제 Snapshot)
-                                  ├── Telegram (자동/수동 상황전파)
-                                  └── PDF 초동보고서 스트리밍 렌더러
+Firebase Hosting / React SPA / Kakao Maps
+  /                 현장 안전지도
+  /control          중앙관제
+  /settings         위험도 설정
+          │ /api/**, /internal/**
+          ▼
+Cloud Run API (서울 asia-northeast3)
+  공개 조회·관리자 세션·수동전파·PDF·정책
+          │
+          ├── Firestore: MonitoringSnapshot, 상태·발송·outbox·실적·감사
+          ├── KMA 공식 특보·경계·실황
+          ├── Telegram / 선택형 SOLAPI
+          └── PDF·정적 지도
+          ▲
+Cloud Run Worker ← Cloud Scheduler (5분, OIDC)
 ```
 
-세 React 화면은 현재 정적 import 단일 번들로 배포합니다. 초기 `React.lazy` 청크는
-경로 전환 직후 이전 배포 청크가 보이는 문제를 피하기 위해 `709d542`에서 합쳤습니다.
-다시 청크를 분리하려면 Firebase의 HTML 캐시와 배포 중 청크 교체 시나리오를 함께
-검증해야 합니다.
-
-
-### 기본 운영 관측
-
-- Cloud Run 요청·애플리케이션 로그는 Cloud Logging에 남기되 API 키, 전화번호와
-  외부 API 원문 전체는 기록하지 않는다.
-- Cloud Monitoring으로 서비스 무응답과 지속적인 5xx 증가를 감시하고 운영자
-  이메일로 알린다.
-- Google Cloud 예산 알림을 설정해 예상하지 못한 호출량과 비용 증가를 조기에
-  확인한다.
-- 서비스 자체의 생존 상태와 KMA·CCTV·재난문자 같은 외부 제공자의 상태를
-  구분한다. 외부 참고정보 하나의 실패는 전체 API 장애로 처리하지 않는다.
-- 초기에는 Sentry 같은 별도 관측 서비스를 추가하지 않는다.
-
-## 2. 계층 원칙
-
-```text
-UI(Streamlit)
-    ↓ ViewModel / Application Service
-Domain Rules
-    ↑ Ports(interfaces)
-Adapters(KMA, CSV, Telegram, PDF)
-```
-
-### Domain
-
-- 시설, 특보, 위험도, 데이터 상태 모델
-- 공간 매칭 정책
-- 위험도 정책
-- pandas, Streamlit, requests를 import하지 않음
-
-### Application
-
-- 현재 관제 snapshot 구성
-- 시설 그룹·위험도 필터 snapshot 구성
-- 체크된 시설의 작업 snapshot 구성
-- 점검 요청 대상 선정
-- 보고서 입력 모델 구성
-- 외부 동작의 순서를 조율
-
-### Ports
-
-- `WarningProvider`
-- `WarningZoneRepository`
-- `FacilityRepository`
-- `Notifier`
-- `ReportRenderer`
-- `DisasterMessageProvider` (핵심 snapshot과 독립된 현장 참고정보)
-- `CctvProvider` (선택 시설 좌표 기준의 인근 도로 CCTV 참고정보)
-
-### Adapters
-
-- KMA HTTP와 응답 파싱
-- CSV 또는 DB 시설 저장소
-- Telegram API
-- PDF 렌더러
-- ITS CCTV HTTP·JSON·XML 어댑터
-- ITS 조회 결과에 사람이 검증한 `cctv_directions.toml` 고정 방향만
-  이름·좌표로 안전하게 결합하는 application catalog
-- Streamlit 캐시와 session state
-
-### UI
-
-- ViewModel을 렌더링하고 사용자 의도를 application service에 전달
-- 위험도 계산, API 파싱, Telegram 메시지 조립을 하지 않음
-
-## 3. 구현 디렉터리
-
-```text
-safety_dashboard/
-├── config/
-│   ├── cctv_directions.toml
-│   ├── risk_policy.toml
-│   └── facility_groups.toml
-├── domain/
-│   ├── models.py
-│   ├── enums.py
-│   └── risk_policy.py
-├── application/
-│   ├── ports.py
-│   ├── monitoring.py
-│   ├── facility_groups.py
-│   ├── selection.py
-│   ├── risk_configuration.py
-│   └── notifications.py
-├── adapters/
-│   ├── kma.py
-│   ├── facility_csv.py
-│   ├── region_matcher.py
-│   ├── telegram.py
-│   └── pdf_report.py
-├── simulation/
-│   ├── __init__.py
-│   ├── scenarios.py
-│   └── weather_layers.py
-└── ui/
-    ├── dialogs.py
-    ├── map_view.py
-    ├── policy_editor.py
-    ├── workflow.py
-    └── style.css
-```
-
-## 4. 핵심 인터페이스 예시
-
-```python
-class WarningProvider(Protocol):
-    def fetch_active(self, scope: MonitoringScope) -> WarningFeed: ...
-
-class FacilityRepository(Protocol):
-    def list_monitored(self) -> list[Facility]: ...
-
-class Notifier(Protocol):
-    def send(self, request: NotificationRequest) -> NotificationResult: ...
-
-class ReportRenderer(Protocol):
-    def render(self, report: SituationReport) -> bytes: ...
-```
-
-Streamlit 캐시는 adapter를 감싸는 UI/infrastructure decorator로 적용하고 도메인
-모델에는 캐시 개념을 넣지 않습니다.
-
-### 자동 알림 작업자 내부 모듈
-
-자동 작업자는 하나의 Cloud Run 실행 단위를 유지하지만 내부 책임은 분리한다.
-`AlertDispatcher`는 잠금과 전체 순서만 조율하며 다음 서비스의 세부 규칙을 직접
-구현하지 않는다.
-
-```text
-AlertDispatcher
-├── AlertCyclePlanner       snapshot → 영향 상태·발효/격상/해제 계획
-├── SmsDeliveryService      연락처·문자·비용 상한·Telegram 대체 경로
-├── TelegramOutboxService  outbox 생성·재시도·전달 결과 보고
-└── AlertOperationsService 잔액 점검·09/18시 운영 상태 보고
-
-FirestoreAlertStore (compatibility facade)
-├── FirestoreAlertStateRepository     잠금·기준 상태·배치·보류 전환
-├── FirestoreAlertDeliveryRepository  SMS 예약·SOLAPI 최종 결과
-├── FirestoreTelegramOutboxRepository Telegram 큐·재시도·완료
-└── FirestoreAlertAuditRepository     상태·실적·수동 전파·감사 이력
-```
-
-- `AlertCyclePlanner`는 외부 조회·저장을 하지 않는 순수 계산 모듈이다.
-- `SmsDeliveryService`는 연락처 Sheet 준비, SOLAPI 발송, 일·월 상한과
-  실패 시 시설담당자 Telegram 대체 전파를 한 경계에서 관리한다.
-- `TelegramOutboxService`는 관리자방과 시설담당자 그룹의 전달·재시도를 한곳에서
-  처리한다.
-- `AlertOperationsService`는 재난 변화 전파와 무관한 비용·운영 상태 보고를
-  격리한다.
-- 기존 `AlertDispatcher(...)` 생성 규격과 `AlertStateStore` 계약은 유지하므로
-  Worker API, Firestore 문서와 자동알림 기준 상태는 변경하지 않는다.
-- `FirestoreAlertStore(...)`도 기존 생성자와 메서드를 유지하는 facade다.
-  책임별 저장 모듈은 같은 client와 collection을 공유하며, 저장 스키마를
-  바꾸지 않고 코드 소유권만 나눈다.
-- 보류 전환과 Telegram outbox는 Firestore에서 `status == PENDING`을 먼저
-  필터링한 뒤 애플리케이션에서 만료 시각·다음 재시도 시각·limit을 적용한다.
-  누적된 완료 문서를 읽지 않으면서 기존 만료·재시도 순서를 그대로 유지하기
-  위한 경계다.
-- 이 조건은 Firestore 자동 단일 필드 인덱스로 처리하므로 별도 composite index,
-  Firebase index 배포 범위나 추가 IAM 권한을 요구하지 않는다. 시간 조건까지
-  서버 쿼리에 합치는 것은 실제 규모와 비용을 측정한 뒤에만 검토한다.
-
-### 시설담당자용 HTTP API
-
-React 현장 지도는 초기 관제 데이터와 선택 시설의 외부 참고정보를 분리해
-요청한다. 공개 경로에는 처음부터 `/api/v1` 버전을 포함한다.
-
-```text
-GET /api/v1/monitoring
-    → KMA 상태, 기준 시각, 시설, 활성 특보, 시설별 위험 판정
-
-GET /api/v1/facilities/{facility_id}/weather
-    → 시설 위치 KMA 격자의 초단기실황과 상태
-
-GET /api/v1/facilities/{facility_id}/cctv
-    → 20km 이내 도로 CCTV 최대 5개와 상태
-
-GET /api/v1/weather/layers/{temperature|rainfall|wind}
-    → 5개 관제 권역의 KMA 격자 실황과 상태
-```
-
-`monitoring` 응답만으로 검색·필터·지도·시설 기본 상세를 렌더링할 수 있어야
-한다. 기상은 시설 선택 250ms 후 자동으로, CCTV는 사용자 요청 후에만
-호출한다. 두 endpoint는 서로 독립이며 하나가 실패해도 나머지 결과와
-핵심 관제 응답을 유지한다. React 현장 지도의 이번 범위에서 재난문자는
-연동하지 않는다.
-
-#### 갱신 정책
-
-- React 현장 지도는 화면이 활성화된 동안 `monitoring`을 5분마다 갱신한다.
-- 사용자가 즉시 확인할 수 있는 수동 새로고침을 함께 제공한다.
-- 브라우저 탭이 백그라운드에 있으면 주기 요청을 중지하고 다시 활성화될 때
-  즉시 갱신한다.
-- 갱신 실패 시 마지막 정상 자료를 유지하면서 기준 시각과 실패 상태를 함께
-  표시한다. 오류를 정상 0건으로 바꾸지 않는다.
-- 현재 기상은 시설 선택 후 자동 조회하고 격자별 10분 캐시한다.
-- 지도 기상 레이어는 첫 화면에서 조회하지 않고, 선택한 종류만 10분
-  캐시한다. 지연 시 마지막 정상 격자와 기준 시각을 함께 제공한다.
-- CCTV는 사용자가 요청할 때만 조회하고 시설별 1분 캐시한다.
-- 오류 결과는 30초 후 재시도할 수 있게 하며 위험도·Telegram·PDF에는 반영하지 않는다.
-
-## 5. 관제 Snapshot
-
-UI는 여러 DataFrame을 직접 조합하지 않고 하나의 결과를 받습니다.
-
-```text
-DashboardSnapshot
-├── generated_at
-├── data_health
-├── warnings
-├── facilities
-├── assessments
-├── summary
-└── notices
-```
-
-지도, 대응 목록, 보고서는 모두 같은 `assessments`를 사용합니다. 화면별로 다시
-계산하지 않습니다.
-
-```text
-전체 DashboardSnapshot
-  → 시설 그룹·위험도 filter_snapshot
-  → 체크된 시설 action_snapshot
-  → 시설담당자 그룹 수동 전파 API / PDF
-```
-
-지도와 상단 지표는 적용 버튼으로 확정한 filter snapshot을, 두 출력물은
-대상 표의 제출 시점에 확정한 동일 action snapshot을 사용합니다.
-
-중앙 관제는 세 작업 화면을 선택 실행합니다.
-
-```text
-운영 상황       → 경량 관리자 overview + 현재 snapshot 요약
-대상 분석·전파  → filter/action snapshot + PDF + 감사형 수동 전파
-실적·이력       → 자동·수동 metrics/events + 비식별 CSV
-```
-
-실시간 중앙 관제는 Streamlit에서 KMA를 다시 조회하지 않는다.
-`GET /internal/v1/monitoring/snapshot`으로 Cloud Run이 Firestore에서 선택한
-공통 `DashboardSnapshot`을 읽고, 이 결과를 필터·지도·수동 전파·PDF가
-계속 공유한다. 전송 계약은 개인 휴대전화와 원본 CSV 부가 열을 제외한다.
-
-모의훈련은 Streamlit 내 고정 시나리오를 별도로 사용한다. 세션 임시
-정책은 공통 snapshot이 보존한 특보–시설 연결만 재사용해 등급을
-다시 산출하며 자동 관제 기준 상태에는 영향을 주지 않는다.
-
-수동 전파는 Streamlit이 Telegram 토큰을 가지지 않고
-`POST /internal/v1/notifications/manual`을 호출합니다. API는 시설담당자 그룹으로
-즉시 전송하고 실패한 미전송 메시지만 Firestore outbox에 넣습니다.
-
-화면에서 편집한 위험도 행렬은 `risk_configuration` service가 기본
-정책을 복제해 세션 정책으로 만듭니다. 파일이나 다른 세션은 변경하지
-않으며, 기본 버전과 행렬 해시를 조합한 임시 버전이 snapshot에 남습니다.
-
-## 6. 설정
-
-설정 우선순위는 다음과 같습니다.
-
-1. 환경변수
-2. Streamlit secrets adapter
-3. 비밀이 아닌 기본 설정 파일
-
-설정 예시:
-
-```text
-KMA_API_KEY
-TELEGRAM_BOT_TOKEN
-TELEGRAM_ADMIN_CHAT_ID
-TELEGRAM_USER_CHAT_ID
-# TELEGRAM_ADMIN_CHAT_ID 미설정 시 기존 TELEGRAM_CHAT_ID 호환
-ALERT_ADMIN_TOKEN
-ALERT_ADMIN_API_URL  # Streamlit에서 사용하는 API 주소
-ALERT_USER_DELIVERY_MODE=telegram
-DASHBOARD_BASE_URL
-SAFETY_DATA_API_KEY
-SAFETY_DATA_API_URL
-WARNING_CACHE_SECONDS
-RISK_POLICY_PATH
-FACILITY_GROUPS_PATH
-FACILITY_DATA_PATH
-```
-
-API 키는 URL 문자열, 로그, 예외 메시지, 보고서에 포함하지 않습니다.
-
-## 7. 저장소 선택
-
-- 시설 원본은 GitHub 저장소의 CSV로 관리하고 Cloud Run 배포 이미지에 포함한다.
-- 시설 변경은 `CSV 수정 → 자동 검증 → GitHub 반영 → 재배포` 순서로 처리한다.
-  검증은 시설 ID 중복, 필수값 누락, 좌표 범위, 시설 그룹 매핑과 행 개수를
-  확인하며 실패하면 배포하지 않는다. Git 이력을 변경 기록과 복구 수단으로
-  사용한다.
-- 사용자별 담당 시설 묶음은 저장하지 않는다. 담당자는 현장 지도에서 시설을
-  검색하고 그때그때 원하는 시설을 선택한다.
-- 점검 상태와 발송 이력은 저장하지 않습니다.
-- 내부 검증 단계에서는 별도 로그인을 두지 않고 Firebase Hosting 주소를 내부에
-  직접 공유한다. `robots.txt`와 페이지 메타 태그로 검색엔진 색인을 막되, 이는
-  접근 통제가 아니며 URL을 아는 사람은 접속할 수 있음을 운영자가 인지한다.
-- KMA·CCTV·재난문자 인증키는 React 빌드와 응답에 포함하지 않고 Cloud Run의
-  서버 환경에만 둔다.
-- 외부 공개나 사용자 범위 확대 전에는 Google 로그인을 이용한 허용 사용자
-  방식을 별도 단계로 도입한다.
-- 현재 단계에는 데이터베이스와 감사 로그를 도입하지 않습니다.
-- Streamlit session state는 화면 선택, 세션 위험도 기준과 일시적인 보고서
-  결과에만 사용합니다.
-
-## 8. 재사용할 현재 자산
-
-| 현재 자산 | v3 사용 방식 |
-|---|---|
-| `parse_warning_response` | KMA parser contract test와 함께 이동 |
-| `filter_warning_scope` | `MonitoringScope` 정책으로 이동 |
-| 공식 warning zone fetch/fallback | 경계 repository로 이동 |
-| `WarningZoneIndex` | Shapely 기반 domain service로 정리 |
-| Telegram batch 분할 | notifier adapter로 이동 |
-| PDF 한글 폰트 설정 | report renderer로 이동 |
-| 시뮬레이션 데이터 | fixture 파일로 이동 |
-| 현재 테스트 | unit/contract/integration으로 재분류 |
-
-## 9. 제거할 결합
-
-- provider가 `streamlit`을 직접 import하는 구조
-- domain 함수가 pandas `Series/DataFrame`을 직접 받는 구조
-- UI가 Telegram 메시지를 조립하는 구조
-- UI가 보고서용 날씨를 순회 조회하는 구조
-- CSS 문자열 전체를 Python 모듈에 보관하는 구조
-- 보고서와 화면이 위험도를 각각 계산하는 구조
-- 배포 진입점에 화면·업무 로직을 중복 구현하는 구조
-
-## 10. 테스트 전략
-
-### Unit
-
-- 단계 정규화
-- 공간 경계 포함·경계선·인접 구역
-- 위험도 등급 경계값
-- 알림 대상 선정
-- 데이터 상태 전이
-
-### Contract
-
-- 저장된 KMA 원본 응답을 표준 Warning으로 파싱
-- 공식 GeoJSON 필드 변화 감지
-- Telegram 메시지 길이와 HTML escape
-
-### Integration
-
-- fixture 특보 + fixture 시설 → 예상 영향 시설
-- 동일 snapshot → 지도·알림·보고서 동일 등급
-- live 실패 → fallback 또는 ERROR 상태
-
-### E2E
-
-- 실시간 기본 화면
-- 모의훈련 전환
-- 시설 그룹·위험도 필터
-- 작업 대상 체크와 출력 범위 일치
-- 알림 미리보기
-- PDF 생성
-- 모바일 핵심 흐름
-
-## 11. 점진적 전환 계획
-
-### 0단계: 결정 확정 — 완료
-
-- 조회·Telegram 발송·PDF 보고서 범위
-- 대구·경북·부산·울산·경남 관제
-- 수정 가능한 직접 매핑형 위험도 정책
-
-### 1단계: 현재 동작 고정
-
-- 시뮬레이션별 예상 시설과 등급 fixture 작성
-- KMA 원본 응답 contract fixture 작성
-- 현재 PDF와 Telegram 결과의 필수 필드 테스트
-
-### 2단계: domain v3
-
-- dataclass/enum 모델
-- 공간 매칭과 위험도 정책 이전
-- pandas 비종속 unit test
-
-### 3단계: adapters
-
-- KMA, 경계, CSV, Telegram, PDF 이전
-- UI 없이 integration test
-
-### 4단계: UI v3
-
-- 중복 없는 정보 구조 적용
-- 지도·목록·상세 선택 연동
-- 모바일 분리 흐름 구현
-
-### 5단계: 동등성·운영 검증
-
-- v2와 v3의 영향 시설 결과 비교
-- 훈련 시나리오 사용자 검수
-- API 실패·fallback·STALE 훈련
-
-### 6단계: 전환 (완료)
-
-- `app.py`가 v3 화면을 실행하도록 배포 진입점 전환
-- 구버전 화면 진입점 제거
-- README와 운영 절차 갱신
-
-### 7단계: React 현장 지도 병행 검증
-
-- 시설담당자용 React 현장 지도를 Firebase 기본 주소에 별도로 배포
-- 기존 Streamlit 현장 지도를 비상용 비교 화면으로 유지
-- 스마트폰에서 시설 검색·선택, KMA 영향 판정, 새로고침과 외부 참고정보 검증
-- 검증 기간에는 중앙 관제와 설정 화면의 동작 및 주소를 변경하지 않음
-
-### 8단계: 현장 지도 전환
-
-- 사용자 검증이 끝난 뒤 Streamlit의 현장 지도 진입을 React 주소로 연결
-- React 장애 시 기존 Streamlit 현장 지도로 되돌릴 수 있는 운영 절차 유지
-- 중앙 관제·설정·Telegram·PDF는 Streamlit에서 계속 운영
-
-## 12. 완료 조건
-
-- UI 파일에 KMA 응답 필드명이나 위험도 상수가 없음
-- provider 파일에 Streamlit import가 없음
-- 동일 snapshot이 UI·알림·보고서에서 동일한 결과를 사용
-- 데이터 오류가 정상 0건으로 표시되지 않음
-- P-001~P-003 결정과 정책 버전이 문서와 코드에 기록됨
-- 자동 테스트와 모바일 브라우저 검증 통과
+세 React 화면은 정적 import 단일 번들로 배포합니다. 초기 lazy 청크를 합친 이유는
+화면 이동 시 이전 배포 청크가 섞이는 문제였으며, 다시 나누려면 HTML 캐시와 배포
+중 청크 교체를 함께 검증해야 합니다. HTML은 재검증·저장 금지 정책을 사용합니다.
+
+## 책임 경계
+
+- `domain`: 시설 ID·좌표, 특보, 위험도·등급·근거, 지역 매칭. UI·외부 HTTP에 의존하지 않습니다.
+- `application`: snapshot 구성, 조회/작업 대상 선정, 정책 재평가, 전파 문안 구성.
+- `adapters`: KMA·CSV·공식 경계·Firestore·Telegram·SOLAPI·PDF 등 외부 기술.
+- `api`: 조립 진입점, 공통 서비스 생성, 요청 모델·인증 경계, 업무별 라우터, 조회 캐시.
+  라우터는 health·admin·monitoring·context·notifications·reports·policy로 구분합니다.
+- `alerts`: 5분 회차, 발효·격상·해제 감지, 중복 방지, 전달·재시도와 운영 상태 보고.
+- `monitoring`: 공통 MonitoringSnapshot의 직렬화·검증·저장 인터페이스.
+- `operations` / `admin`: 운영 준비 상태, 관리자 비밀번호·서명 세션.
+- React는 API에서 받은 동일한 평가 결과를 표시합니다. 인증·현장 상태 훅과 중앙관제
+  화면을 분리했고, 지도 런타임·레이어는 `field_web/src/map/`에서 관리합니다.
+  디자인 토큰과 영역별 CSS는 프런트엔드가 소유합니다.
+
+## 공통 관제 결과와 장애
+
+Worker는 정상 회차에 최신 `MonitoringSnapshot`과 latest 포인터를 원자적으로 저장합니다.
+API는 정상·정책 일치·15분 이내 저장본을 우선 사용하고 필요하면 KMA를 직접 조회합니다.
+
+snapshot에는 ID·스키마 버전·생성/조회 시각·정책 버전·자료 상태를 보존하며,
+연락처와 내부 메타데이터는 공개 전송·Firestore snapshot에서 제거합니다.
+
+KMA 실패 시 마지막 정상 특보와 기준 상태를 보존하고 STALE로 표시합니다.
+사용 가능한 자료가 없으면 ERROR/조회 불가로 표시하며 정상 0건으로 바꾸지 않습니다.
+STALE·ERROR 자료에서는 새 수동전파·PDF를 생성하지 않습니다. 훈련은 실시간
+snapshot·캐시·자동알림 기준 상태와 분리합니다.
+
+## 자동알림과 저장
+
+- `AlertCyclePlanner`: snapshot과 이전 상태에서 영향·변화 계획을 계산하는 순수 로직.
+- `AlertDispatcher`: 회차 잠금과 전체 실행 순서.
+- `SmsDeliveryService`: 연락처·비용 상한·SMS와 Telegram 대체 전달.
+- `TelegramOutboxService`: 관리자/시설담당자 전달·부분 실패·제한 시간 재시도.
+- `AlertOperationsService`: 잔액 점검과 09/18시 운영보고.
+- `MonitoringHealthService`: KMA 장애·복구 진단/상태와 공통 snapshot 저장 상태.
+- `FirestoreAlertStore`: 상태·SMS·Telegram outbox·감사 저장소를 감싼 호환 facade.
+
+자동알림은 발효·격상·해제만 전파합니다. 무변화 반복 발송은 하지 않습니다.
+필터·정책·모드 변경 시 현재 활성 특보를 새 사건처럼 재발송하지 않도록 기준화를 유지합니다.
+KMA 장애는 해제가 아니며 기준 상태를 갱신하지 않습니다.
+
+보류·outbox 조회는 `status == PENDING` 조건을 사용합니다. 완료·만료 문서에만
+7일 보존용 `delete_after`를 기록하고 Firestore TTL 정책은 배포 안내를 따릅니다.
+저장 포트도 상태·발송·outbox·감사로 나누고 기존 `AlertStateStore` 통합 계약은 유지합니다.
+SMS와 운영보고는 필요한 포트 조합만 받습니다. 컬렉션 이름·문서 ID·중복 방지 키·
+상태 스키마는 이번 구조 개선에서 바꾸지 않습니다.
+
+## HTTP·보안·출력 계약
+
+공개 경로는 `/api/v1`, 보호된 관리자 경로는 `/internal/v1`입니다.
+관리자 비밀번호는 서버에서 검증하고 8시간 HMAC 서명 세션을 HttpOnly 쿠키로 발급합니다.
+관리자 토큰 헤더의 기존 호환 방식도 유지합니다. 인증 경로는 비밀번호를 응답하지 않고
+실패 제한·만료·로그아웃과 감사 기록을 유지합니다.
+
+수동전파는 분류·훈련 표시·최종 대상·중복 확인과 감사 기록을 보존합니다.
+자동·수동·시험·훈련 실적을 분리합니다. PDF는 관제 snapshot을 그대로 사용하고
+별도 위험도 계산을 하지 않습니다. 공개 PDF와 관리자 PDF 경로를 모두 유지합니다.
+
+현재 기상·기상 그래픽·임시 기준점 거리·뉴스·CCTV는 참고정보입니다.
+위험도·자동알림 기준·수동전파 대상·PDF 평가에 혼합하지 않습니다.
+CCTV는 코드·테스트를 유지하지만 운영 플래그는 비활성입니다.
+
+## 설정·검증·운영
+
+서버 설정은 환경변수로 읽고 운영 비밀값은 Secret Manager에서 주입합니다.
+로컬 `.env`와 웹 `.env.local`은 Git에서 제외합니다. Streamlit secrets fallback은 제거했습니다.
+API·Worker 실행 진입점과 기존 환경변수 이름·기본값은 유지합니다.
+
+Python 검증은 `scripts/run_python_tests.py`, 전체 검증은 `scripts/verify_all.sh`입니다.
+실제 외부 HTTP·TCP를 차단하고 Telegram·SMS는 가짜 제공자로만 검증합니다.
+브라우저 전파 검수도 운영 API를 호출하지 않는 가짜 API 환경에서 수행합니다.
+
+운영 로그에는 키·전화번호·외부 원문을 기록하지 않습니다. Cloud Logging·Monitoring과
+예산 알림을 사용하고, 참고정보 제공자 실패와 전체 API 장애를 구분합니다.
+`main` push에 운영 배포가 연결되므로 별도 사용자 요청 시에만 push·배포합니다.
+
+현재 상태는 [인수인계](HANDOFF.md), 완료한 단계와 수용 조건은
+[구조 개선 기록](archive/REFACTORING_PLAN_20261024.md)을 따릅니다.

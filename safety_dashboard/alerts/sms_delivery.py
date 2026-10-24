@@ -21,7 +21,7 @@ from safety_dashboard.alerts.messages import (
     unmapped_facility_ids,
 )
 from safety_dashboard.alerts.ports import (
-    AlertStateStore,
+    SmsDeliveryStore,
     ContactProvider,
     SmsNotifier,
 )
@@ -88,7 +88,7 @@ class SmsDeliveryService:
         self,
         contacts: ContactProvider,
         notifier: SmsNotifier,
-        store: AlertStateStore,
+        store: SmsDeliveryStore,
         settings: AlertSettings,
         telegram_outbox: TelegramOutboxService,
     ) -> None:
@@ -165,9 +165,11 @@ class SmsDeliveryService:
             len(messages),
         )
 
-        counters: Counter[str] = Counter({
-            "unmapped_facilities": len(unmapped),
-        })
+        counters: Counter[str] = Counter(
+            {
+                "unmapped_facilities": len(unmapped),
+            }
+        )
         recipient_hashes: list[str] = []
         accepted = 0
         blocked = 0
@@ -234,15 +236,18 @@ class SmsDeliveryService:
             )
 
         self.store.save_batch(batch, "DISPATCHED")
-        self.store.update_batch_delivery(batch.id, {
-            "delivery_route": "sms",
-            "sms_message_count": len(messages),
-            "sms_accepted_count": accepted,
-            "sms_failed_count": failed,
-            "sms_unknown_count": unknown,
-            "sms_blocked_count": blocked,
-            "telegram_fallback_queued": fallback_queued,
-        })
+        self.store.update_batch_delivery(
+            batch.id,
+            {
+                "delivery_route": "sms",
+                "sms_message_count": len(messages),
+                "sms_accepted_count": accepted,
+                "sms_failed_count": failed,
+                "sms_unknown_count": unknown,
+                "sms_blocked_count": blocked,
+                "telegram_fallback_queued": fallback_queued,
+            },
+        )
         self.telegram_outbox.enqueue_batch_summary(
             batch,
             "SMS 우선",
@@ -281,20 +286,14 @@ class SmsDeliveryService:
         sms_month: int,
         message_count: int,
     ) -> None:
-        if (
-            sms_today < self.settings.cap_warning
-            <= sms_today + message_count
-        ):
+        if sms_today < self.settings.cap_warning <= sms_today + message_count:
             self.telegram_outbox.notify_admin(
                 f"daily-cap-warning-{day.isoformat()}",
                 now,
                 f"⚠️ 오늘 자동 문자 발송이 "
                 f"{self.settings.cap_warning}건에 도달합니다.",
             )
-        if (
-            sms_month < self.settings.monthly_cap_warning
-            <= sms_month + message_count
-        ):
+        if sms_month < self.settings.monthly_cap_warning <= sms_month + message_count:
             self.telegram_outbox.notify_admin(
                 f"monthly-cap-warning-{day:%Y-%m}",
                 now,

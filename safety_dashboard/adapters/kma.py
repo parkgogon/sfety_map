@@ -1,4 +1,4 @@
-"""Streamlit과 pandas에 의존하지 않는 KMA HTTP 어댑터."""
+"""기상청 공식 특보 조회와 표준 Warning 변환."""
 
 from __future__ import annotations
 

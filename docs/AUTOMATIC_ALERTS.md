@@ -82,16 +82,11 @@ Actions의 `Test and deploy field map`을 `main` 브랜치에서 수동 실행�
 ID 변경은 자동 관제 기준 상태를 초기화하지 않는다.
 
 중앙 관제의 수동 상황전파는 브라우저에서 봇을 직접 호출하지 않고 공개 API의
-토큰 보호 관리자 경로를 사용한다. Streamlit에는 관리자 API 연결값만 둔다.
-
-```toml
-[alerting]
-admin_api_url = "https://<safety-dashboard-api Cloud Run 주소>"
-admin_token = "<ALERT_ADMIN_TOKEN과 같은 값>"
-```
+관리자 세션으로 보호한 API 경로를 사용한다. React는 동일 사이트의 API를
+호출하며 서버가 발급한 HttpOnly 세션을 사용한다. 관리자 비밀 토큰을 웹 번들에 넣지 않는다.
 
 봇 토큰과 두 `chat_id`는 API·작업자 Cloud Run에만 Secret Manager로 연결하며
-Streamlit 브라우저 응답이나 수동 전파 API 응답에는 포함하지 않는다.
+브라우저 응답이나 수동 전파 API 응답에는 포함하지 않는다.
 
 ## 2. 배포 변수와 발송 경로
 
@@ -143,36 +138,22 @@ Firestore API가 필요하다. `safety-dashboard-runtime` 실행 계정은
 - 비공개 `safety-alert-worker`: KMA 감지·Telegram·SMS 발송
 - `safety-alert-dispatch`: 5분 간격 Scheduler
 
-중앙 관제 실적 패널을 위해 Streamlit secrets에도 다음을 둔다.
+중앙관제는 React `/control`에서 같은 사이트의 보호 API를 호출한다.
+서버 설정은 환경변수로만 읽고 Streamlit secrets는 사용하지 않는다.
 
-```toml
-[alerting]
-admin_api_url = "https://<safety-dashboard-api Cloud Run 주소>"
-admin_token = "<ALERT_ADMIN_TOKEN과 같은 값>"
-```
+## 3. 실제 발송 없는 검증
 
-## 3. Telegram 연결 시험
-
-작업자는 비공개 Cloud Run이므로 Cloud Shell에서 ID 토큰으로 호출한다.
+운영방에는 실제 참여자가 있으므로 개발·구조 개선 중 Telegram·SMS 시험 메시지를 보내지 않는다.
+운영 수동전파·Worker 시험/dispatch 경로도 호출하지 않는다.
 
 ```bash
-WORKER_URL="$(gcloud run services describe safety-alert-worker \
-  --region asia-northeast3 --format='value(status.url)')"
-
-# 관리자방 시험
-curl -sS -X POST \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
-  "$WORKER_URL/internal/v1/test/telegram/admin"
-
-# 시설담당자 그룹 시험
-curl -sS -X POST \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
-  "$WORKER_URL/internal/v1/test/telegram/user"
+.venv/bin/python scripts/run_python_tests.py
 ```
 
-두 요청이 각각 다른 곳에 도착한 후에도 `preview`를 유지해 KMA 정상
-조회와 메시지 미리보기를 확인한다. 시험 Telegram과 지정 시험번호
-문자는 운영 실적에 포함하지 않는다.
+공통 실행기가 실제 HTTP·TCP를 차단한다. 가짜 제공자와 메모리 저장소로 발효·격상·해제,
+중복 방지·부분 실패·재시도·문안·실적을 검증한다. 브라우저 전파 검수도 로컬 가짜 API에서만 한다.
+기존 Worker 시험 경로는 호환성을 위해 유지하지만 자동 검증에는 사용하지 않는다.
+
 
 ## 4. SMS 우선 경로
 
@@ -283,12 +264,9 @@ snapshot을 덮어쓰지 않는다.
 표시하고 마지막 정상 KMA 기준 시각을 유지한다. Firestore 읽기는 5초 제한을 두며
 장애가 공개 API 전체 장애로 번지지 않게 한다. 모의훈련은 운영 저장본과 계속 분리한다.
 
-Streamlit 중앙관제는 `GET /internal/v1/monitoring/snapshot`을
-`X-Alert-Admin-Token`으로 호출해 같은 관제 결과를 읽는다. Streamlit은
-더 이상 KMA 특보를 직접 조회하지 않으며, 선택 시설 snapshot에서 PDF와
-수동 Telegram 메시지를 만든다. API 연결이 일시 실패하면 같은
-브라우저 세션의 마지막 정상 자료를 `STALE`로 표시하되, 지연·오류
-상태에서는 새 Telegram 전파와 PDF 생성을 차단한다.
+React 중앙관제와 PDF·수동전파는 같은 API의 관제 snapshot을 사용한다.
+`GET /internal/v1/monitoring/snapshot`의 기존 보호 조회 계약도 유지한다.
+지연·오류 상태에서는 새 Telegram 전파와 PDF 생성을 차단한다.
 
 브라우저 세션의 임시 위험도 정책은 Firestore 기준 상태를 덮어쓰지
 않는다. 공통 snapshot의 특보–시설 연결관계는 그대로 두고 해당 세션의
@@ -297,8 +275,8 @@ Streamlit 중앙관제는 `GET /internal/v1/monitoring/snapshot`을
 `실적·이력`에서 자동 관제와 수동 상황전파를 분리해 확인한다. SMS 수치는
 SMS 모드이거나 선택 기간에 문자 이력이 있을 때만 표시한다.
 
-즉시 운영 보고 시험은 Cloud Scheduler 실행 계정으로 다음 보호 경로를
-호출한다. 시험 보고는 실적에 포함되지 않는다.
+기존 운영보고 시험 경로는 호환성을 위해 유지한다. 이 개선의 검증에서 호출하지 않으며
+운영방으로 시험 보고를 보내지 않는다.
 
 ```text
 POST /internal/v1/test/heartbeat

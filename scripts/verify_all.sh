@@ -14,17 +14,16 @@ if [ ! -f "$PYTHON_BIN" ]; then
 fi
 
 echo ""
-echo "[1/5] 103개 소관시설 데이터 무결성 검증..."
+echo "[1/5] 소관시설 데이터 무결성 검증..."
 "$PYTHON_BIN" -m safety_dashboard.api.validate_data
 
 echo ""
-echo "[2/5] Python 단위 테스트 전체 실행 (tests + tests_v3)..."
-"$PYTHON_BIN" -m unittest discover -s tests -p 'test_*.py'
-"$PYTHON_BIN" -m unittest discover -s tests_v3 -p 'test_*.py'
+echo "[2/5] Python 단위 테스트 전체 실행 (실제 외부 통신 차단)..."
+"$PYTHON_BIN" scripts/run_python_tests.py
 
 echo ""
 echo "[3/5] Python 구문 컴파일 및 바이트코드 검증..."
-"$PYTHON_BIN" -m compileall -q app.py safety_dashboard core
+"$PYTHON_BIN" -m compileall -q safety_dashboard scripts tests
 
 echo ""
 echo "[4/5] React SPA 단위 테스트 (Vitest)..."

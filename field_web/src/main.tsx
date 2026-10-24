@@ -4,7 +4,7 @@ import App from "./App";
 import ControlApp from "./ControlApp";
 import SettingsApp from "./SettingsApp";
 import { useLocation } from "./router";
-import "../../safety_dashboard/ui/design_tokens.css";
+import "./styles/design_tokens.css";
 import "./styles.css";
 
 function Root() {

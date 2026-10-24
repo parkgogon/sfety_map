@@ -6,7 +6,7 @@ import os
 import re
 from dataclasses import dataclass
 
-from safety_dashboard.api.settings import _secret
+from safety_dashboard.config.environment import env_text
 
 
 @dataclass(frozen=True)
@@ -45,9 +45,9 @@ class AlertSettings:
         mode = os.getenv("ALERT_AUTOMATION_MODE", "preview").strip().lower()
         if mode not in {"preview", "live", "paused"}:
             mode = "preview"
-        delivery_mode = os.getenv(
-            "ALERT_USER_DELIVERY_MODE", "telegram"
-        ).strip().lower()
+        delivery_mode = (
+            os.getenv("ALERT_USER_DELIVERY_MODE", "telegram").strip().lower()
+        )
         if delivery_mode not in {"telegram", "sms"}:
             delivery_mode = "telegram"
 
@@ -61,11 +61,11 @@ class AlertSettings:
             raw = os.getenv(name, default)
             if raw.strip().casefold() in {"", "-", "none", "없음"}:
                 return ()
-            return tuple(dict.fromkeys(
-                item.strip()
-                for item in re.split(r"[,|;\n]+", raw)
-                if item.strip()
-            ))
+            return tuple(
+                dict.fromkeys(
+                    item.strip() for item in re.split(r"[,|;\n]+", raw) if item.strip()
+                )
+            )
 
         daily_cap = integer("ALERT_DAILY_CAP", 100, 1)
         cap_warning = min(
@@ -77,57 +77,29 @@ class AlertSettings:
             monthly_cap,
             integer("ALERT_MONTHLY_CAP_WARNING", 400, 1),
         )
-        legacy_chat_id = _secret(
-            "TELEGRAM_CHAT_ID", "telegram", "chat_id"
-        )
-        admin_chat_id = (
-            _secret(
-                "TELEGRAM_ADMIN_CHAT_ID", "telegram", "admin_chat_id"
-            )
-            or legacy_chat_id
-        )
+        legacy_chat_id = env_text("TELEGRAM_CHAT_ID")
+        admin_chat_id = env_text("TELEGRAM_ADMIN_CHAT_ID") or legacy_chat_id
         return cls(
             automation_mode=mode,
             user_delivery_mode=delivery_mode,
-            solapi_api_key=_secret("SOLAPI_API_KEY", "solapi", "api_key"),
-            solapi_api_secret=_secret(
-                "SOLAPI_API_SECRET", "solapi", "api_secret"
-            ),
-            solapi_sender_number=_secret(
-                "SOLAPI_SENDER_NUMBER", "solapi", "sender_number"
-            ),
-            solapi_webhook_secret=_secret(
-                "SOLAPI_WEBHOOK_SECRET", "solapi", "webhook_secret"
-            ),
-            contact_sheet_id=_secret(
-                "CONTACT_SHEET_ID", "alerting", "contact_sheet_id"
-            ),
+            solapi_api_key=env_text("SOLAPI_API_KEY"),
+            solapi_api_secret=env_text("SOLAPI_API_SECRET"),
+            solapi_sender_number=env_text("SOLAPI_SENDER_NUMBER"),
+            solapi_webhook_secret=env_text("SOLAPI_WEBHOOK_SECRET"),
+            contact_sheet_id=env_text("CONTACT_SHEET_ID"),
             contact_sheet_range=(
-                os.getenv("CONTACT_SHEET_RANGE", "").strip()
-                or "Recipients!A:E"
+                os.getenv("CONTACT_SHEET_RANGE", "").strip() or "Recipients!A:E"
             ),
-            recipient_hmac_secret=_secret(
-                "ALERT_HMAC_SECRET", "alerting", "hmac_secret"
-            ),
-            telegram_bot_token=_secret(
-                "TELEGRAM_BOT_TOKEN", "telegram", "bot_token"
-            ),
+            recipient_hmac_secret=env_text("ALERT_HMAC_SECRET"),
+            telegram_bot_token=env_text("TELEGRAM_BOT_TOKEN"),
             telegram_chat_id=legacy_chat_id,
             telegram_admin_chat_id=admin_chat_id,
-            telegram_user_chat_id=_secret(
-                "TELEGRAM_USER_CHAT_ID", "telegram", "user_chat_id"
-            ),
+            telegram_user_chat_id=env_text("TELEGRAM_USER_CHAT_ID"),
             dashboard_base_url=(
-                os.getenv("DASHBOARD_BASE_URL", "").strip()
-                or _secret("DASHBOARD_BASE_URL", "dashboard", "base_url")
-                or cls.dashboard_base_url
+                env_text("DASHBOARD_BASE_URL") or cls.dashboard_base_url
             ),
-            admin_token=_secret(
-                "ALERT_ADMIN_TOKEN", "alerting", "admin_token"
-            ),
-            test_phone=_secret(
-                "ALERT_TEST_PHONE", "alerting", "test_phone"
-            ),
+            admin_token=env_text("ALERT_ADMIN_TOKEN"),
+            test_phone=env_text("ALERT_TEST_PHONE"),
             project_id=(
                 os.getenv("GOOGLE_CLOUD_PROJECT", "").strip()
                 or os.getenv("GCP_PROJECT_ID", "").strip()
@@ -140,12 +112,8 @@ class AlertSettings:
             balance_warning=integer("SOLAPI_BALANCE_WARNING", 10000, 0),
             balance_critical=integer("SOLAPI_BALANCE_CRITICAL", 3000, 0),
             pending_seconds=integer("ALERT_PENDING_SECONDS", 1800, 60),
-            telegram_retry_seconds=integer(
-                "ALERT_TELEGRAM_RETRY_SECONDS", 1800, 300
-            ),
-            included_warning_types=warning_types(
-                "ALERT_INCLUDED_WARNING_TYPES"
-            ),
+            telegram_retry_seconds=integer("ALERT_TELEGRAM_RETRY_SECONDS", 1800, 300),
+            included_warning_types=warning_types("ALERT_INCLUDED_WARNING_TYPES"),
             excluded_warning_types=warning_types(
                 "ALERT_EXCLUDED_WARNING_TYPES", "열대야"
             ),

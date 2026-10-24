@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .streamlit/secrets.toml
+.env
 .DS_Store
 field_web/node_modules/
 field_web/dist/

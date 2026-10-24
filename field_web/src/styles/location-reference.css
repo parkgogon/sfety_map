@@ -1,0 +1,189 @@
+/* A temporary reference point is independent of weather risk and dispatch selection. */
+.location-search-modes {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.location-search-modes button,
+.location-open-button,
+.location-reference-panel button {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  min-height: 40px;
+  padding: 6px 10px;
+}
+.location-search-modes button[aria-pressed="true"] {
+  background: #142746;
+  color: white;
+}
+.location-reference-panel {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(20, 39, 70, .14);
+  font-size: 13px;
+  padding: 10px;
+}
+.location-panel-heading {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+.location-panel-heading > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.location-panel-heading > button { flex-shrink: 0; }
+.location-panel-body {
+  max-height: min(38dvh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-top: 8px;
+}
+.location-panel-body p { margin: 8px 0; }
+.location-panel-body small { color: var(--color-text-secondary); }
+.location-search-form {
+  display: flex;
+  gap: 6px;
+}
+.location-search-form input,
+.location-candidate input {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 16px;
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px;
+}
+.location-search-form input { flex: 1; width: 0; }
+.location-search-form button { flex-shrink: 0; }
+.location-reference-panel button:disabled { cursor: default; opacity: .6; }
+.location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.location-results,
+.location-nearby-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+.location-results button,
+.location-nearby-list button {
+  border-radius: 0;
+  border-width: 0 0 1px;
+  text-align: left;
+  width: 100%;
+}
+.location-results button > * { display: block; overflow-wrap: anywhere; }
+.location-candidate {
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 10px;
+}
+.location-candidate label { display: grid; gap: 4px; }
+.location-candidate-actions button:first-child { background: #142746; color: white; }
+.location-rings-toggle { align-items: center; display: flex; gap: 8px; min-height: 44px; }
+.location-rings-toggle input { height: 20px; width: 20px; }
+.location-nearby-list button { align-items: center; display: flex; gap: 8px; min-height: 52px; }
+.location-nearby-list button[aria-pressed="true"] { background: #eef4f8; }
+.location-nearby-list svg,
+.location-nearby-list b { flex-shrink: 0; }
+.location-nearby-list button > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.location-nearby-list small,
+.location-nearby-list strong { display: block; }
+.location-reference-note { color: var(--color-text-secondary); }
+.location-picking { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.location-picking p { margin: 0; }
+.location-picking button { flex-shrink: 0; }
+.control-location-panel {
+  left: 10px;
+  max-width: 390px;
+  position: absolute;
+  right: 54px;
+  top: 10px;
+  z-index: 25;
+}
+.control-location-panel .location-reference-panel { margin-top: 6px; }
+.control-location-panel .location-panel-body { max-height: min(32dvh, 240px); }
+.control-map-container { min-height: 320px; }
+.picking-reference { cursor: crosshair; }
+.location-reference-pin { align-items: center; display: flex; flex-direction: column; pointer-events: none; }
+.location-reference-pin > span:first-child,
+.location-distance-label {
+  background: #142746;
+  border: 2px solid white;
+  border-radius: 6px;
+  box-shadow: 0 1px 5px #0003;
+  color: white;
+  font: 700 12px sans-serif;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 5px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.location-reference-diamond {
+  align-items: center;
+  background: #142746;
+  border: 2px solid white;
+  border-radius: 4px 4px 50% 50%;
+  color: white;
+  display: flex;
+  font: 700 20px sans-serif;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+.location-distance-label { pointer-events: none; }
+@media (max-width: 700px) {
+  .location-reference-panel button,
+  .location-search-modes button,
+  .location-open-button { min-height: 44px; }
+  .location-panel-body { max-height: min(34dvh, 280px); }
+}
+
+.location-radius-label {
+  background: rgba(255, 255, 255, .95);
+  border: 1px solid #64748b;
+  border-radius: 4px;
+  color: #334155;
+  font: 600 11px sans-serif;
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
+/* Keep the comparison map usable while the facility card receives weather data. */
+.location-reference-panel.is-collapsed .location-panel-heading > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.location-reference-panel.has-candidate .location-panel-body {
+  max-height: min(24dvh, 160px);
+}
+.location-candidate-actions {
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+@media (max-width: 700px) {
+  .map-stage.has-reference-comparison .facility-sheet {
+    max-height: 36%;
+    overscroll-behavior: contain;
+  }
+}

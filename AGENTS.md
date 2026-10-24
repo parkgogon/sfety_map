@@ -43,7 +43,7 @@ AI가 처음 작업을 맡으면 이 파일과 [`docs/HANDOFF.md`](docs/HANDOFF.
 
 ## 3. 프로젝트 목적과 제품 경계
 
-대구·경북·부산·울산·경남의 소관시설 103개소를 KMA 공식 기상특보와 대조해
+대구·경북·부산·울산·경남의 소관시설 195개소를 KMA 공식 기상특보와 대조해
 영향 시설과 점검 우선순위를 보여주고, 시설담당자 알림과 중앙관제 보고를 돕는
 내부 시범 운영 시스템입니다.
 
@@ -83,9 +83,6 @@ Cloud Run API
           ▼
 Cloud Run Worker + Scheduler
   safety_dashboard/alerts/      5분 자동감시·변화·발송·운영보고
-
-Streamlit (전환 완료 및 안내 진입점)
-  app.py
 ```
 
 실행 단위는 API와 Worker로 나뉘지만, 코드는 **모듈형 모놀리스**로 유지합니다.
@@ -111,8 +108,7 @@ KMA·Telegram·PDF 등을 각각 서버로 분해하는 MSA는 현재 규모에�
   것은 아닙니다.
 - CCTV는 코드가 있어도 운영 배포에서 비활성입니다. 네트워크 경로와 비용을
   해결하고 실사용 검증하기 전에는 켜지 않습니다.
-- React 중앙관제가 기능 동등성을 확보하기 전에는 Streamlit 중앙관제를 제거하지
-  않습니다.
+- React가 유일한 UI입니다. 사용자 승인에 따라 Streamlit·구버전 화면과 실행 경로를 제거했습니다.
 - 공용 관리자 비밀번호는 임시 보호수단입니다. 비밀번호나 API 토큰을 브라우저
   번들에 넣지 않습니다.
 
@@ -174,14 +170,15 @@ KMA·Telegram·PDF 등을 각각 서버로 분해하는 MSA는 현재 규모에�
 
 ```bash
 .venv/bin/python -m safety_dashboard.api.validate_data
-.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
-.venv/bin/python -m unittest discover -s tests_v3 -p 'test_*.py'
-.venv/bin/python -m compileall -q app.py safety_dashboard core
+.venv/bin/python scripts/run_python_tests.py
+.venv/bin/python -m compileall -q safety_dashboard scripts tests
 cd field_web && npm test && npm run build
 ```
 
-운영 전송은 자동 테스트에서 실행하지 않습니다. 외부 시험은 사용자의 명시적 요청과
-시험 대상 확인 후 수행합니다.
+자동 테스트는 실제 HTTP·TCP를 차단하는 위 공통 실행기로 수행합니다. Telegram·SMS는
+가짜 제공자로만 검증하고 운영방·운영 수동전파·Worker 시험 API를 호출하지 않습니다.
+브라우저의 전파 검수도 가짜 API 환경에서만 합니다. 구조 개선·후속 검수에는 실제
+시험 발송이 포함되지 않습니다. 완료한 변경의 기준은 `docs/archive/REFACTORING_PLAN_20261024.md`에 있습니다.
 
 ## 9. 작업 종료와 handoff 갱신
 

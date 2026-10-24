@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
 interface Window {
-  kakao?: any;
-  __kakaoMapPromise?: Promise<any>;
+  kakao?: import("./kakaoTypes").KakaoSDK;
+  __kakaoMapPromise?: Promise<import("./kakaoTypes").KakaoSDK>;
 }

@@ -3,8 +3,8 @@
 > 상태: 현장 지도·중앙관제·설정 운영 기준
 
 현장 지도(`/`)·중앙관제(`/control`)·설정(`/settings`) React SPA는 Firebase
-Hosting, Python API는 Cloud Run 서울 `asia-northeast3`에 배포한다. `app.py`는
-React 정식 웹으로 이동시키는 경량 안내 진입점으로 유지한다.
+Hosting, Python API는 Cloud Run 서울 `asia-northeast3`에 배포한다. Streamlit 진입점과
+구화면은 제거했으며 API·React만 실행한다.
 
 ## 로컬 실행
 
@@ -12,7 +12,9 @@ Python API를 먼저 실행한다.
 
 ```bash
 .venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn safety_dashboard.api.app:app --host 127.0.0.1 --port 8080
+cp .env.example .env
+# .env에 KMA_API_KEY와 ADMIN_ACCESS_PASSWORD를 입력한다.
+.venv/bin/uvicorn safety_dashboard.api.app:app --env-file .env --host 127.0.0.1 --port 8080
 ```
 
 다른 터미널에서 React를 실행한다.
@@ -21,20 +23,19 @@ Python API를 먼저 실행한다.
 cd field_web
 cp .env.example .env.local
 # .env.local에 카카오 JavaScript 키 입력
-npm install
+npm ci
 npm run dev
 ```
 
 `http://localhost:5173`을 카카오 개발자 콘솔의 Web 플랫폼 허용 주소에
-등록한다. `.env.local`과 `.streamlit/secrets.toml`은 Git에 올리지 않는다.
-로컬 API는 환경변수 `KMA_API_KEY`를 우선하며, 없으면 Git에서 제외된 기존
-Streamlit secrets를 읽는다.
+등록한다. `.env`와 `.env.local`은 Git에 올리지 않는다.
+API·Worker는 환경변수만 읽으며 기존 Streamlit secrets fallback은 제거했다.
 
 ## API 계약
 
 - `GET /api/v1/health`: Cloud Run 프로세스 상태
 - `GET /api/v1/health/operations`: 5분 자동 관제 작업자의 최근 실행 상태
-- `GET /api/v1/monitoring`: 시설 103개, KMA 상태·특보·위험도·현재 특보 경계
+- `GET /api/v1/monitoring`: 시설 195개, KMA 상태·특보·위험도·현재 특보 경계
 - `GET /api/v1/monitoring?refresh=true`: 수동 강제 갱신
 - `GET /api/v1/facilities/{facility_id}/weather`: 시설 KMA 격자의 초단기실황
 - `GET /api/v1/facilities/{facility_id}/cctv`: 반경 20km 이내 도로 CCTV 최대 5개
@@ -227,8 +228,7 @@ bash scripts/verify_all.sh
 
 ```bash
 .venv/bin/python -m safety_dashboard.api.validate_data
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m unittest discover -s tests_v3 -v
+.venv/bin/python scripts/run_python_tests.py
 cd field_web && npm test && npm run build
 ```
 
