@@ -1,0 +1,63 @@
+{
+  "checked_at_kst": "2026-10-24 20:31–20:50",
+  "source": "Actual production browser request/response/failure events; no API/SDK substitutes",
+  "url_handling": "All query strings and fragments omitted; no headers, cookies or response bodies retained",
+  "responses_by_host_status": [
+    {
+      "host": "keco-safety-map.web.app",
+      "status": 200,
+      "count": 32
+    },
+    {
+      "host": "dapi.kakao.com",
+      "status": 200,
+      "count": 9
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "status": 200,
+      "count": 27
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "failure": "net::ERR_TUNNEL_CONNECTION_FAILED",
+      "count": 723
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "failure": "net::ERR_ABORTED",
+      "count": 19
+    }
+  ],
+  "successful_kakao_paths": [
+    "https://dapi.kakao.com/v2/local/search/address.json",
+    "https://dapi.kakao.com/v2/local/search/keyword.json",
+    "https://dapi.kakao.com/v2/maps/sdk.js",
+    "https://t1.kakaocdn.net/mapjsapi/images/bg_tile.png",
+    "https://t1.kakaocdn.net/mapjsapi/images/bg_zoom_control.png",
+    "https://t1.kakaocdn.net/mapjsapi/images/control.png",
+    "https://t1.kakaocdn.net/mapjsapi/images/cursor/closedhand.cur.ico",
+    "https://t1.kakaocdn.net/mapjsapi/images/cursor/openhand.cur.ico",
+    "https://t1.kakaocdn.net/mapjsapi/images/m_bi_b.png",
+    "https://t1.kakaocdn.net/mapjsapi/images/transparent.gif",
+    "https://t1.kakaocdn.net/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+    "https://t1.kakaocdn.net/mapjsapi/js/libs/services/1.1.5/services.js",
+    "https://t1.kakaocdn.net/mapjsapi/js/main/4.5.29/kakao.js"
+  ],
+  "first_blocked_tile": {
+    "time": "2026-10-24T11:31:58.829871+00:00",
+    "url": "https://mts.kakaocdn.net/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/6.png",
+    "failure": "net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  "page_error_count": 0,
+  "non_read_request_count": 0,
+  "prohibited_request_count": 0,
+  "proxy_recheck": {
+    "url": "https://mts.kakaocdn.net/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+    "result": "CONNECT 403 Forbidden",
+    "curl_exit_code": 56,
+    "checked_at_utc": "2026-10-24T11:35:54Z"
+  }
+}

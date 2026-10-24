@@ -1,0 +1,51 @@
+[
+  {
+    "path": "/",
+    "http_status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "cache_control": "no-cache, no-store, must-revalidate"
+  },
+  {
+    "path": "/control",
+    "http_status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "cache_control": "no-cache, no-store, must-revalidate"
+  },
+  {
+    "path": "/settings",
+    "http_status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "cache_control": "no-cache, no-store, must-revalidate"
+  },
+  {
+    "path": "/api/v1/health",
+    "http_status": 200,
+    "content_type": "application/json",
+    "cache_control": "private",
+    "root_fields": [
+      "status",
+      "api_version"
+    ],
+    "summary": {
+      "status": "ok",
+      "api_version": "v1"
+    }
+  },
+  {
+    "path": "/api/v1/health/operations",
+    "http_status": 200,
+    "content_type": "application/json",
+    "cache_control": "private, no-store",
+    "root_fields": [
+      "status",
+      "checked_at",
+      "worker",
+      "automation",
+      "kma",
+      "reason"
+    ],
+    "summary": {
+      "status": "ok"
+    }
+  }
+]

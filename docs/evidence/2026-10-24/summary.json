@@ -1,0 +1,28 @@
+{
+  "checked_at_kst": "2026-10-24 20:31–20:50",
+  "production_url": "https://keco-safety-map.web.app",
+  "production_version": "e1f6c0d",
+  "source_commit": "e1f6c0d",
+  "inspection_base_commit": "24180e5",
+  "initial_documentation_commit": "b4c818e",
+  "handoff_branch": "inspection/production-browser-check-20261024",
+  "browser": "Chromium 154.0.8037.57 headless; viewport emulation, locale ko-KR, timezone Asia/Seoul; inherited proxy; default certificate verification",
+  "screenshots": 50,
+  "verified": [
+    "Actual Kakao SDK and searches",
+    "Facility markers and clustering",
+    "Reference points and distance overlays",
+    "Wind/rainfall/temperature rendering and motion",
+    "Pre-auth UI and viewport layout"
+  ],
+  "blocked": [
+    "Map tile host mts.kakaocdn.net: proxy CONNECT 403"
+  ],
+  "unverified": [
+    "Tile-based geographic alignment",
+    "Authenticated administrator functions",
+    "Physical mobile devices"
+  ],
+  "later_user_report": "mts.kakaocdn.net was added to the environment domain configuration; enforcement and real tile requests must be checked in the next environment",
+  "sharing_scope": "Documentation and browser evidence only; no application code, main push, deployment or alert-send testing"
+}

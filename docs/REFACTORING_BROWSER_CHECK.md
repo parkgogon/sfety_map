@@ -38,7 +38,8 @@ Chromium 154.0.8037.57 headless에서 실제 운영 UI를 클릭·입력·드래
   원본은 그대로 두고 해당 최신 커밋의 detached 작업트리
   `/workspace/sfety_map-inspection-20261024`에서 두 점검 문서만 수정했다.
   점검 후 사용자 승인에 따라 `inspection/production-browser-check-20261024` 브랜치에
-  두 문서를 로컬 커밋했다. push·배포는 수행하지 않았다.
+  두 문서를 `b4c818e`로 로컬 커밋했다. 이후 사용자 요청으로 저장소 내 증빙을 추가하고
+  같은 점검 브랜치로 원격 인계한다. 운영 main push/병합·배포 실행은 포함하지 않는다.
 - 이전 환경에서 수정했던 작업트리와 두 증빙 폴더는 새 환경에 없었다.
   따라서 이전 미커밋 결과를 이번에 읽거나 보존된 파일로 재검토했다고 주장하지 않는다.
   아래 결과는 이번 실제 조작·요청·캡처를 근거로 한다.
@@ -124,8 +125,12 @@ Chromium 154.0.8037.57 headless에서 실제 운영 UI를 클릭·입력·드래
 
 ### 증빙·안전 경계·다음 시작점
 
-새 증빙 폴더: `/workspace/safety-inspection-resume-20261024T113125Z/`.
-환경이 바뀌면 실제 존재 여부부터 다시 확인한다.
+새 환경에서 읽을 증빙: [docs/evidence/2026-10-24/README.md](evidence/2026-10-24/README.md).
+직접 검토한 PNG 50장을 원본과 같은 바이트로 `screenshots/`에 보관하고,
+HTTP·기상·이동·레이아웃 요약 및 query를 제거한 요청 집계를 함께 전달한다.
+아래 PNG 이름은 이 폴더의 `screenshots/` 아래에서 찾는다.
+원본 폴더 `/workspace/safety-inspection-resume-20261024T113125Z/`는 보존했지만
+새 환경에서도 해당 로컬 경로가 존재한다고 가정하지 않는다.
 
 | 증빙 | 파일 |
 |---|---|
@@ -136,17 +141,20 @@ Chromium 154.0.8037.57 headless에서 실제 운영 UI를 클릭·입력·드래
 | 관제 넘침·버전·인증 전 탭·기준점 유지 | `29-control-*`, `30`~`33` PNG |
 | 모바일 관제 분석 목록·장소 패널 배치 | `35-control-analysis-*`, `36-control-mobile-location-panel.png` |
 | 설정 로그인 줄바꿈 | `34-settings-*` PNG |
-| 실제 요청·차단·관측 요약 | `browser-network.jsonl`, `mts-proxy-denial.txt`, `http-summary.json`, `weather-summary.jsonl`, `motion-observations.jsonl`, `layout-observations.jsonl`, `control-refresh-style.json`, `settings-login-dimensions.json`, `inspection-summary.json` |
+| 새 환경에서 읽을 실제 요청·차단·관측 요약 | `network-summary.json`, `http-summary.json`, `weather-summary.jsonl`, `motion-observations.jsonl`, `layout-observations.jsonl`, `control-refresh-style.json`, `settings-login-dimensions.json`, `summary.json`, `screenshots-sha256.json` |
+| 현재 환경에만 남긴 상세 원본 | 기존 로컬 폴더의 `browser-network.jsonl`, `mts-proxy-denial.txt`, `inspection-summary.json` 등. Git 전달 대상이 아니므로 새 환경에서 존재한다고 가정하지 않음 |
 
 요청 로그는 query를 제거해 SDK 키 등을 보관하지 않았다. API 원문·쿠키·비밀번호·토큰은 기록하지 않았다.
 브라우저 로그상 pageerror 0건, GET/HEAD/OPTIONS 외 요청 0건, 금지 경로 시도/차단 0건이다.
 금지 경로·비조회 요청은 전송 전에 중단하도록 두었으며 가짜 성공 응답은 반환하지 않았다.
 Telegram·SMS·운영 수동전파·Worker·dispatch·발송 시험은 호출하지 않았다.
-이번 변경은 두 점검 문서뿐이며 테스트·빌드·push·배포는 수행하지 않았다.
-점검 중에는 커밋하지 않았고, 이후 사용자가 문서 커밋까지 승인해 별도 브랜치에 로컬 커밋했다.
+운영 점검 당시 변경은 두 문서뿐이었다. 이후 사용자가 인계용 문서·증빙의 보관과 공유를
+요청해 `inspection/production-browser-check-20261024` 브랜치의 Git 전달 대상에 증빙을 추가했다.
+앱 코드·워크플로는 변경하지 않았고 테스트·빌드·main push/병합·배포는 수행하지 않았다.
 기존 자동 검증 결과는 위의 과거 로컬 기록과 HANDOFF에 있는 별도 근거다.
 
 다음 첫 작업은 **정식 환경 정책에 `mts.kakaocdn.net` 허용이 반영된 뒤 실제 운영 타일 성공과
 도로·지형 표시를 확인하고, 그 위에서 마커·검색 후보·거리 원·연결선·세 기상 그래픽의
 위치 및 이동·확대 정합을 재검수하는 것**이다. 추가 호스트는 실제 실패 요청에서만 확인한다.
+사용자는 `mts.kakaocdn.net`을 설정에 추가했다고 알렸으며 새 환경의 정책 적용과 실제 타일 성공은 아직 미검증이다.
 관리자 인증 후 검수·실기기 검수와 위 화면 문제 수정은 별도 범위로 남아 있다.
