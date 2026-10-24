@@ -1,0 +1,42 @@
+{
+  "checked_at_kst": "2026-10-24 21:15–21:28",
+  "production_url": "https://keco-safety-map.web.app",
+  "production_web_version": "e1f6c0d",
+  "production_displayed_facilities": 195,
+  "handoff_start_commit": "4993731e56d19c6b2aa4f2e8dc8c2df905e1b4b5",
+  "remote_main_at_start_and_precommit": "24180e51f700145b829021d5a9c94bec52fc8e91",
+  "handoff_branch": "inspection/production-browser-check-20261024",
+  "browser": "Chromium 154.0.8037.57 headless; viewport emulation, ko-KR, Asia/Seoul, inherited proxy, default TLS verification",
+  "actual_production_api_sdk": true,
+  "sdk_or_response_substitution": false,
+  "confirmed": [
+    "Policy lists mts.kakaocdn.net; actual tile HTTP 200 and visible roads/terrain",
+    "Cluster expansion and marker selection",
+    "Search candidate, confirmed reference, rings and 1.9km connection over road tiles",
+    "Wind/rainfall/temperature rendering, drag synchronization and redisplay after zoom",
+    "Field mobile search, candidate confirmation, nearby selection, detail and weather selection",
+    "Control mobile search through reference confirmation and connection",
+    "Web version e1f6c0d; five read-only public HTTP checks returned 200"
+  ],
+  "reproduced_unfixed": [
+    "Control document width 406px at 360/390px",
+    "Control white refresh icon on white header",
+    "Settings login wrapping, 137px height at 360/390px; two lines at 430px"
+  ],
+  "additional_blocked_hosts": [],
+  "unverified": [
+    "Administrator-authenticated workflows",
+    "Physical device keyboard, safe area, OS text scaling and touch performance",
+    "Independent validation of weather observations, survey-grade distances and all facility coordinates",
+    "All dense marker click targets and all zoom/location combinations",
+    "All three weather-layer drag/zoom paths in control screen",
+    "Full state-preservation regression including simulation switches and reloads"
+  ],
+  "reviewed_screenshot_count": 45,
+  "prohibited_request_attempts": 0,
+  "non_read_requests": 0,
+  "guard_block_count": 0,
+  "application_code_changes": false,
+  "main_push_merge_or_deployment": false,
+  "scope": "Documentation and evidence commit/push on inspection branch only"
+}

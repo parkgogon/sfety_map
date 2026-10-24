@@ -1,0 +1,49 @@
+{
+  "checked_at_utc": {
+    "first_request": "2026-10-24T12:15:56.767Z",
+    "last_event": "2026-10-24T12:27:21.536Z"
+  },
+  "source": "Actual production Chromium UI requests; no API/SDK response substitution",
+  "url_handling": "Queries and fragments removed; no headers, cookies or response bodies retained",
+  "responses_by_host_status": [
+    {
+      "host": "dapi.kakao.com",
+      "status": 200,
+      "count": 8
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "status": 200,
+      "count": 21
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "status": 200,
+      "count": 566
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "status": 200,
+      "count": 18
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "failure": "net::ERR_ABORTED",
+      "count": 20
+    }
+  ],
+  "first_successful_tile": {
+    "time": "2026-10-24T12:16:03.349Z",
+    "event": "response",
+    "status": 200,
+    "url": "https://mts.kakaocdn.net/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/4.png"
+  },
+  "additional_blocked_hosts": [],
+  "cancellation_note": "ERR_ABORTED occurred during map interactions/navigation and is counted separately from policy denial. No tunnel failure or HTTP >=400 was observed.",
+  "page_error_count": 0,
+  "non_read_request_count": 0,
+  "prohibited_attempt_count": 0,
+  "guard_block_count": 0
+}

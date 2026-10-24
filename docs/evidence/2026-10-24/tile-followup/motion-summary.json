@@ -1,0 +1,140 @@
+{
+  "method": "Read-only DOM positions before/during real mouse drag. Temperature repeated using checkVisibility to exclude hidden zoom buffers; original first-pass records retained for transparency.",
+  "observations": [
+    {
+      "item": "candidate",
+      "common_tile_count": 2,
+      "tile_delta_px": [
+        [
+          100,
+          60
+        ]
+      ],
+      "common_marker_count": 0,
+      "marker_delta_px": [],
+      "during_canvas": [
+        {
+          "class": "weather-map-canvas weather-map-surface",
+          "transform": "translate3d(100px, 60px, 0px)",
+          "opacity": "0",
+          "x": -141,
+          "y": -83,
+          "w": 1922,
+          "h": 1284
+        },
+        {
+          "class": "weather-map-canvas wind-particle-canvas",
+          "transform": "translate3d(100px, 60px, 0px)",
+          "opacity": "0",
+          "x": -141,
+          "y": -83,
+          "w": 1922,
+          "h": 1284
+        }
+      ]
+    },
+    {
+      "item": "wind",
+      "common_tile_count": 5,
+      "tile_delta_px": [
+        [
+          100,
+          60
+        ]
+      ],
+      "common_marker_count": 12,
+      "marker_delta_px": [
+        [
+          100,
+          60
+        ]
+      ],
+      "during_canvas": [
+        {
+          "class": "weather-map-canvas weather-map-surface",
+          "transform": "translate3d(100px, 60px, 0px)",
+          "opacity": "1",
+          "x": -141,
+          "y": -83,
+          "w": 1922,
+          "h": 1284
+        },
+        {
+          "class": "weather-map-canvas wind-particle-canvas",
+          "transform": "translate3d(100px, 60px, 0px)",
+          "opacity": "1",
+          "x": -141,
+          "y": -83,
+          "w": 1922,
+          "h": 1284
+        }
+      ]
+    },
+    {
+      "item": "rain",
+      "common_tile_count": 6,
+      "tile_delta_px": [
+        [
+          -100,
+          -60
+        ]
+      ],
+      "common_marker_count": 12,
+      "marker_delta_px": [
+        [
+          -100,
+          -60
+        ]
+      ],
+      "during_canvas": [
+        {
+          "class": "weather-map-canvas weather-map-surface",
+          "transform": "translate3d(-100px, -60px, 0px)",
+          "opacity": "1",
+          "x": -341,
+          "y": -203,
+          "w": 1922,
+          "h": 1284
+        },
+        {
+          "class": "weather-map-canvas wind-particle-canvas",
+          "transform": "translate3d(-100px, -60px, 0px)",
+          "opacity": "0",
+          "x": -341,
+          "y": -203,
+          "w": 1922,
+          "h": 1284
+        }
+      ]
+    },
+    {
+      "item": "temperature",
+      "common_tile_count": 35,
+      "tile_delta_px": [
+        [
+          80,
+          50
+        ]
+      ],
+      "common_marker_count": 2,
+      "marker_delta_px": [
+        [
+          80,
+          50
+        ]
+      ],
+      "during_canvas": [
+        {
+          "class": "weather-map-canvas weather-map-surface",
+          "transform": "translate3d(80px, 50px, 0px)",
+          "opacity": "1"
+        },
+        {
+          "class": "weather-map-canvas wind-particle-canvas",
+          "transform": "translate3d(80px, 50px, 0px)",
+          "opacity": "0"
+        }
+      ]
+    }
+  ]
+}

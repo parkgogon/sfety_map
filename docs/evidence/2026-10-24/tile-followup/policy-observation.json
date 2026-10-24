@@ -1,0 +1,22 @@
+{
+  "checked_at_utc": "2026-10-24T12:19:44.616Z",
+  "environment_id": "ccarenv_b64_Y2NhcmVudl81ZTQ1NTJhNDdkZTA4MTkxOTY4OTA4YTgwZDgzZjNkMQ",
+  "observations_current": true,
+  "spec_revision": "2",
+  "observed_spec_revision": "2",
+  "connectivity": "connected",
+  "network_policy": {
+    "mode": "restricted",
+    "state": "unknown",
+    "allowed_hosts": [
+      "apihub.kma.go.kr",
+      "dapi.kakao.com",
+      "keco-safety-map.web.app",
+      "mts.kakaocdn.net",
+      "t1.kakaocdn.net",
+      "www.weather.go.kr"
+    ]
+  },
+  "vpn_configured": false,
+  "proxy_route": "inherited HTTP(S)_PROXY; Chromium proxy configured; TLS verification enabled"
+}

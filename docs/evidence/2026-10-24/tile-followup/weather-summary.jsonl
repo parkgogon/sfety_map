@@ -1,0 +1,4 @@
+{"time":"2026-10-24T12:19:37.884Z","url":"https://keco-safety-map.web.app/api/v1/weather/layers/wind","http_status":200,"status":"LIVE","actual_data":true,"point_count":1244,"observed_at":"2026-10-24T21:00:00+09:00"}
+{"time":"2026-10-24T12:19:56.262Z","url":"https://keco-safety-map.web.app/api/v1/weather/layers/rainfall","http_status":200,"status":"LIVE","actual_data":true,"point_count":1244,"observed_at":"2026-10-24T21:00:00+09:00"}
+{"time":"2026-10-24T12:20:20.471Z","url":"https://keco-safety-map.web.app/api/v1/weather/layers/temperature","http_status":200,"status":"LIVE","actual_data":true,"point_count":1244,"observed_at":"2026-10-24T21:10:00+09:00"}
+{"time":"2026-10-24T12:26:51.214Z","url":"https://keco-safety-map.web.app/api/v1/weather/layers/temperature","http_status":200,"status":"LIVE","actual_data":true,"point_count":1244,"observed_at":"2026-10-24T21:10:00+09:00"}
