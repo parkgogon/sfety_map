@@ -1,0 +1,76 @@
+{
+  "results": [
+    {
+      "width": 1440,
+      "calm": {
+        "layer": "wind",
+        "speed": 0,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 1440,
+      "interaction": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1.2,
+        "pan": {
+          "x": 35,
+          "y": 20
+        },
+        "reduced": true,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      },
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "calm": {
+        "layer": "wind",
+        "speed": 0,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 390,
+      "interaction": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1.2,
+        "pan": {
+          "x": 35,
+          "y": 20
+        },
+        "reduced": true,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      },
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "scope": "Synthetic data + self-authored schematic; no SDK or production validation"
+}

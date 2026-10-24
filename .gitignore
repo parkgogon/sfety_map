@@ -14,3 +14,4 @@ recipients_private*.csv
 /tmp/
 /.trash/
 /.pytest_cache/
+field_web/design-dist/
