@@ -21,8 +21,8 @@
 반올림 전 `거리 <= 반경`을 포함하고 거리·시설 ID 순으로 정렬한다. 같은 이름/좌표도 ID별로 보존한다.
 조회 실패·빈 명부·잘못된 명부는 503, PDF 오류는 500이며 정상 0개소와 구분한다.
 
-성공은 `application/pdf`, `Cache-Control: no-store`, 첨부 파일명과 `X-Nearby-Facility-Count`를 반환한다.
-화면 수와 서버 수가 다르면 다운로드를 막고 새로고침을 안내한다. 대상과 기준점은 서버에 보관하지 않는다.
+성공은 `application/pdf`, `Cache-Control: no-store`, 첨부 파일명과 `X-Nearby-Facility-Count`, 대상 ID 목록의 SHA-256 `X-Nearby-Facility-Digest`를 반환한다.
+화면의 대상 수·ID 구성과 서버 결과가 다르면 다운로드를 막고 새로고침을 안내한다. 대상과 기준점은 서버에 보관하지 않는다.
 생성 중 중복 클릭을 막고 닫기·바깥 클릭·Escape·화면 종료 시 AbortController로 요청과 다운로드를 취소한다.
 이미 시작한 서버의 메모리 내 PDF 계산까지 중단됨을 보장하는 기능은 아니다.
 

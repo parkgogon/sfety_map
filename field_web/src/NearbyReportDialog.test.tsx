@@ -42,7 +42,7 @@ describe("독립적인 주변 시설 보고서", () => {
     expect(document.querySelector("ol")?.children).toHaveLength(3);
     expect(document.querySelector("ol")?.textContent).not.toContain("바깥 시설");
     await click("PDF 생성");
-    expect(downloadNearbyReport).toHaveBeenCalledWith(point, 1, 3, expect.any(AbortSignal));
+    expect(downloadNearbyReport).toHaveBeenCalledWith(point, 1, ["a", "b", "edge"], expect.any(AbortSignal));
   });
   it("직접 입력은 0.1km 단위로 제한하며 0개도 생성한다", async () => {
     for (const value of ["", "0", "50.1", "0.15"]) {
@@ -52,7 +52,7 @@ describe("독립적인 주변 시설 보고서", () => {
     await act(async () => root.render(<NearbyReportDialog point={{ ...point, latitude: 35 }} facilities={facilities} onClose={onClose} />));
     expect(document.body.textContent).toContain("0개소 보고서");
     await click("PDF 생성");
-    expect(downloadNearbyReport).toHaveBeenCalledWith(expect.objectContaining({ latitude: 35 }), 0.1, 0, expect.any(AbortSignal));
+    expect(downloadNearbyReport).toHaveBeenCalledWith(expect.objectContaining({ latitude: 35 }), 0.1, [], expect.any(AbortSignal));
   });
   it("중복 요청을 막고 닫을 때 취소하며 늦게 완료돼도 다운로드 성공을 표시하지 않는다", async () => {
     let resolve!: () => void;

@@ -1,5 +1,6 @@
 import dataclasses
 import math
+import hashlib
 from pathlib import Path
 import re
 import shutil
@@ -87,6 +88,7 @@ class NearbyReportApiTests(unittest.TestCase):
         self.assertEqual(response.headers["content-type"], "application/pdf")
         self.assertEqual(response.headers["cache-control"], "no-store")
         self.assertEqual(response.headers["x-nearby-facility-count"], "1")
+        self.assertEqual(response.headers["x-nearby-facility-digest"], hashlib.sha256(b'["a"]').hexdigest())
         self.assertTrue(response.content.startswith(b"%PDF"))
         self.monitoring.snapshot.assert_not_called()
 

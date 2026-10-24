@@ -1,6 +1,9 @@
 import type { ReferencePoint } from "./locationReference";
 
-export async function downloadNearbyReport(point: ReferencePoint, radiusKm: number, expectedCount: number, signal: AbortSignal) {
+export async function downloadNearbyReport(point: ReferencePoint, radiusKm: number, expectedIds: string[], signal: AbortSignal) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([...expectedIds].sort())));
+  const expectedDigest = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  signal.throwIfAborted();
   const response = await fetch("/api/v1/reports/nearby.pdf", {
     method: "POST", credentials: "same-origin", signal,
     headers: { "Content-Type": "application/json" },
@@ -13,7 +16,8 @@ export async function downloadNearbyReport(point: ReferencePoint, radiusKm: numb
   if (!response.headers.get("Content-Type")?.startsWith("application/pdf")) {
     throw new Error("PDF 응답을 확인하지 못했습니다. 다시 시도해 주세요.");
   }
-  if (response.headers.get("X-Nearby-Facility-Count") !== String(expectedCount)) {
+  if (response.headers.get("X-Nearby-Facility-Count") !== String(expectedIds.length)
+    || response.headers.get("X-Nearby-Facility-Digest") !== expectedDigest) {
     throw new Error("시설 자료가 변경되었습니다. 화면을 새로고침한 뒤 대상을 다시 확인해 주세요.");
   }
   const blob = await response.blob();

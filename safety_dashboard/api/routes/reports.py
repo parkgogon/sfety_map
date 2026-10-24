@@ -1,6 +1,8 @@
 from __future__ import annotations
 import datetime as dt
 import logging
+import hashlib
+import json
 from typing import Literal
 from fastapi import Cookie, Header, HTTPException, Query, Response
 from safety_dashboard.admin.session import AdminSessionManager
@@ -42,6 +44,10 @@ def build_router(services: ApiServices) -> APIRouter:
             "Cache-Control": "no-store",
             "Content-Disposition": f'attachment; filename="nearby_facilities_{report.generated_at:%Y%m%d_%H%M%S}.pdf"',
             "X-Nearby-Facility-Count": str(len(report.facilities)),
+            "X-Nearby-Facility-Digest": hashlib.sha256(json.dumps(
+                sorted(r.facility.id for r in report.facilities),
+                ensure_ascii=False, separators=(",", ":"),
+            ).encode("utf-8")).hexdigest(),
         })
 
     @router.get("/api/v1/monitoring/report.pdf")

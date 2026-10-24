@@ -28,7 +28,7 @@ export function NearbyReportDialog({ point, facilities, onClose }: {
     running.current = controller;
     setPending(true); setMessage("");
     try {
-      await downloadNearbyReport(point, radius, rows.length, controller.signal);
+      await downloadNearbyReport(point, radius, rows.map((row) => row.facility.id), controller.signal);
       if (!controller.signal.aborted) setMessage("PDF를 다운로드했습니다.");
     } catch (error) {
       if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : "보고서를 생성하지 못했습니다.");
