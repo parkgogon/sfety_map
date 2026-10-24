@@ -75,7 +75,10 @@ export function useFacilityMarkers(
       });
       subscriptions.add(clusterer, "clustered", (clusters: KakaoCluster[]) => {
         clusters.forEach((cluster) => {
-          cluster.getClusterMarker()?.setZIndex(MAP_MARKER_Z_INDEX);
+          const marker = cluster.getClusterMarker();
+          marker?.setZIndex(MAP_MARKER_Z_INDEX);
+          const content = marker?.getContent?.();
+          if (content instanceof HTMLElement) content.setAttribute("data-facility-cluster", "");
         });
       });
       subscriptions.add(clusterer, "clusterclick", () => {

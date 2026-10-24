@@ -248,6 +248,7 @@ export function drawScalarLayer(
   height: number,
   points: ScreenWeatherPoint[],
   kind: ScalarLayerKind,
+  alpha = scalarLayerAlpha(kind),
 ): void {
   const raster = buildScalarRaster(points, kind, width, height);
   if (!raster) return;
@@ -280,7 +281,7 @@ export function drawScalarLayer(
   offCtx.putImageData(imageData, 0, 0);
 
   visibleContext.save();
-  visibleContext.globalAlpha = scalarLayerAlpha(kind);
+  visibleContext.globalAlpha = alpha;
   visibleContext.imageSmoothingEnabled = true;
   visibleContext.imageSmoothingQuality = "high";
   visibleContext.drawImage(

@@ -321,8 +321,8 @@ export function windParticleSpeed(speed: number): number {
   );
 }
 
-export function screenWindVelocity(vector: WindVector): ScreenWindVelocity {
-  const visualSpeed = windParticleSpeed(vector.speed);
+export function screenWindVelocity(vector: WindVector, speedScale = windParticleSpeed): ScreenWindVelocity {
+  const visualSpeed = speedScale(vector.speed);
   if (vector.speed < 0.0001) return { x: 0, y: 0, speed: visualSpeed };
   return {
     x: (vector.dx / vector.speed) * visualSpeed,
@@ -408,6 +408,7 @@ function advanceWindParticle(
   particle: WindParticle,
   deltaSeconds: number,
   randomState: number,
+  speedScale: (speed: number) => number,
 ): ParticleSpawnResult | null {
   if (
     particle.ageSeconds >= particle.maxAgeSeconds ||
@@ -420,7 +421,7 @@ function advanceWindParticle(
   }
   const vector = sampleWindVectorField(field, particle.x, particle.y);
   if (!vector) return spawnWindParticle(field, randomState);
-  const velocity = screenWindVelocity(vector);
+  const velocity = screenWindVelocity(vector, speedScale);
   const nextX = particle.x + velocity.x * deltaSeconds;
   const nextY = particle.y + velocity.y * deltaSeconds;
   const nextAge = particle.ageSeconds + deltaSeconds;
@@ -451,6 +452,7 @@ export function advanceWindParticleSystem(
   field: WindVectorField,
   state: WindParticleSystemState,
   deltaSeconds: number,
+  speedScale = windParticleSpeed,
 ): WindParticleSystemState {
   const safeDelta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
   let randomState = state.randomState;
@@ -461,6 +463,7 @@ export function advanceWindParticleSystem(
       particle,
       safeDelta,
       randomState,
+      speedScale,
     );
     if (!advanced) return;
     particles.push(advanced.particle);

@@ -15,7 +15,7 @@ export interface KakaoOverlay {
   setMap(map: KakaoMapInstance | null): void;
 }
 export interface KakaoCluster {
-  getClusterMarker(): { setZIndex(value: number): void } | null;
+  getClusterMarker(): { setZIndex(value: number): void; getContent?(): HTMLElement | string } | null;
 }
 export interface KakaoClusterer {
   clear(): void;
@@ -51,6 +51,7 @@ export interface KakaoEventArgs {
   dragstart: [];
   center_changed: [];
   zoom_start: [];
+  zoom_changed: [];
   idle: [];
   resize: [];
 }

@@ -5,11 +5,20 @@ import {
   createAnimationFrameScheduler,
   offsetWeatherCanvasPoint,
   weatherCanvasTransform,
+  weatherCanvasAffineTransform,
   WEATHER_CANVAS_MAX_OVERSCAN,
   WEATHER_CANVAS_MIN_OVERSCAN,
 } from "./weatherCanvasMotion";
 
 describe("weatherCanvasMotion", () => {
+  it("같은 세 지점의 투영으로 기존 그림의 이동·확대를 구하며 잘못된 투영은 거절한다", () => {
+    const points = [{ x: 128, y: 128 }, { x: 428, y: 128 }, { x: 128, y: 428 }];
+    expect(weatherCanvasAffineTransform(points, points.map((p) => ({ x: p.x * 2 - 108, y: p.y * 2 - 118 })))).toBe("matrix(2, 0, 0, 2, -108, -118)");
+    expect(weatherCanvasAffineTransform(points, points.map((p) => ({ x: p.x + 37, y: p.y - 21 })))).toBe("matrix(1, 0, 0, 1, 37, -21)");
+    expect(weatherCanvasAffineTransform([points[0], points[0], points[0]], points)).toBeNull();
+    expect(weatherCanvasAffineTransform([], points)).toBeNull();
+    expect(weatherCanvasAffineTransform(points, [{ x: Number.NaN, y: 0 }, points[1], points[2]])).toBeNull();
+  });
   it("짧은 변의 30%를 128~256px로 제한해 buffer를 만든다", () => {
     const mobile = calculateWeatherCanvasLayout(390, 844);
     expect(mobile).toEqual({
