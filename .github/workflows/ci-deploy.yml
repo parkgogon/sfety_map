@@ -69,10 +69,14 @@ jobs:
       - name: Build and push API image
         run: |
           IMAGE="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$ARTIFACT_REPOSITORY/api:$GITHUB_SHA"
+          WORKER_IMAGE="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$ARTIFACT_REPOSITORY/worker:$GITHUB_SHA"
           gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev" --quiet
-          docker build -f Dockerfile.api -t "$IMAGE" .
+          docker build -f Dockerfile.api --target api -t "$IMAGE" .
+          docker build -f Dockerfile.api --target worker -t "$WORKER_IMAGE" .
           docker push "$IMAGE"
+          docker push "$WORKER_IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "WORKER_IMAGE=$WORKER_IMAGE" >> "$GITHUB_ENV"
       - name: Deploy API to Cloud Run Seoul
         run: |-
           SECRET_BINDINGS="KMA_API_KEY=KMA_API_KEY:1,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1,ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest"
@@ -88,11 +92,11 @@ jobs:
             --service-account safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com \
             --port 8080 \
             --cpu 1 \
-            --memory 512Mi \
+            --memory 1Gi \
             --concurrency 40 \
             --min-instances 0 \
             --max-instances 3 \
-            --set-env-vars MONITORING_CACHE_SECONDS=300,MONITORING_REFRESH_COOLDOWN_SECONDS=60,MONITORING_SNAPSHOT_FRESH_SECONDS=900,ADMIN_SESSION_SECONDS=28800,ADMIN_LOGIN_FAILURE_LIMIT=5,ADMIN_LOGIN_FAILURE_WINDOW_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,APP_REVISION=$GITHUB_SHA,ALERT_AUTOMATION_MODE=$ALERT_AUTOMATION_MODE,ALERT_USER_DELIVERY_MODE=$ALERT_USER_DELIVERY_MODE,ALERT_DAILY_CAP=100,ALERT_CAP_WARNING=80,ALERT_MONTHLY_CAP=500,ALERT_MONTHLY_CAP_WARNING=400,DASHBOARD_BASE_URL=$DASHBOARD_BASE_URL \
+            --set-env-vars MONITORING_CACHE_SECONDS=300,MONITORING_REFRESH_COOLDOWN_SECONDS=60,MONITORING_SNAPSHOT_FRESH_SECONDS=900,ADMIN_SESSION_SECONDS=28800,ADMIN_LOGIN_FAILURE_LIMIT=5,ADMIN_LOGIN_FAILURE_WINDOW_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,APP_REVISION=$GITHUB_SHA,ALERT_AUTOMATION_MODE=$ALERT_AUTOMATION_MODE,ALERT_USER_DELIVERY_MODE=$ALERT_USER_DELIVERY_MODE,ALERT_DAILY_CAP=100,ALERT_CAP_WARNING=80,ALERT_MONTHLY_CAP=500,ALERT_MONTHLY_CAP_WARNING=400,DASHBOARD_BASE_URL=$DASHBOARD_BASE_URL,NEARBY_MAP_CAPTURE_ENABLED=true,NEARBY_MAP_TIMEOUT_SECONDS=20 \
             --set-secrets "$SECRET_BINDINGS" \
             --quiet
       - name: Deploy private automatic alert worker
@@ -103,7 +107,7 @@ jobs:
             WORKER_SECRETS="$WORKER_SECRETS,SOLAPI_API_KEY=SOLAPI_API_KEY:1,SOLAPI_API_SECRET=SOLAPI_API_SECRET:1,SOLAPI_SENDER_NUMBER=SOLAPI_SENDER_NUMBER:1,CONTACT_SHEET_ID=CONTACT_SHEET_ID:1,ALERT_HMAC_SECRET=ALERT_HMAC_SECRET:1,ALERT_TEST_PHONE=ALERT_TEST_PHONE:1"
           fi
           gcloud run deploy safety-alert-worker \
-            --image "$IMAGE" \
+            --image "$WORKER_IMAGE" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --platform managed \
