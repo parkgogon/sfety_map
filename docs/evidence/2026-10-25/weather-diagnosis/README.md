@@ -1,12 +1,13 @@
 # 기상 실황 조회 실패 진단 — 2026-10-25 KST
 
-**운영 API의 KMA 연결 시간 초과는 18:33 KST에도 남는다.** 반면 같은 배포 이미지의 임시 Cloud Run Job은
-18:19에는 연결 실패, 18:29에는 TCP·TLS와 홈페이지 HTTP 200이었다. 실행 인스턴스·출구·요청 시점 등의 차이를
-더 구분해야 하며, Cloud Run 전체의 상시 차단이나 고정된 TLS 버전 오류로 단정할 수 없다.
-운영 격자도 약 7초 후 초기 좌표 조회 실패로 끝난다. 정확한 원인은 아직 미확정이다.
+**동일한 운영 이미지·`KMA_API_KEY:1`·원래 provider는 별도 Cloud Run 실행에서 모두 LIVE지만,
+운영 API는 19:03 KST에도 연결 시간 초과다.** 19:01 인증 포함 Job에서 기온 1,244점과 시설 기상을 실제 조회했다.
+운영 인스턴스의 DNS·출구·실행 조건 차이가 우선 확인 대상이며 정확한 실패 원인은 아직 미확정이다.
+다음 권장 복구 조치는 **API만 동일 이미지로 새 리비전에 1회 재기동**하고 실제 운영 실황을 확인하는 것이다.
+이 운영 변경은 아직 실행하지 않았다. 추가 keyless Job 반복이나 키 교체·TLS 완화·IP 고정은 현재 근거로 진행하지 않는다.
 
 운영 앱 소스 `616d7a2`, 문서 기준 `55045ea`. 애플리케이션 코드·API 계약·운영 설정을 바꾸거나 재배포하지 않았다.
-실제 발송·운영 dispatch·Worker 시험 경로도 호출하지 않았다. 초기 환경 revision 24, 후속 31/current/enforced,
+실제 발송·운영 dispatch·Worker 시험 경로도 호출하지 않았다. 초기 환경 revision 24, 후속 32/current/enforced,
 HTTPS 프록시·CA 신뢰·TLS 검증을 유지했다. 키·쿠키·query·외부 응답 원문은 저장하지 않았다.
 
 ## 확인된 사실
@@ -24,11 +25,15 @@ HTTPS 프록시·CA 신뢰·TLS 검증을 유지했다. 키·쿠키·query·외�
 | 같은 배포 이미지의 서울 Cloud Run Job | 홈페이지·격자 좌표·시설 격자 모두 `ConnectTimeout`, 7.012/7.027/7.020초 | 키/앱을 쓰지 않는 별도 Cloud Run 실행에서도 연결 실패를 재현 |
 | 두 번째 서울 Cloud Run Job | API Hub TCP 58ms·TLS 7ms·HTTP 200/131ms, 날씨누리 HTTP 200/70ms | 해당 실행에서는 정상 연결. 인증 API·운영 인스턴스의 성공은 아님 |
 | 두 번째 Job 후 운영 직접 재확인 | 시설 `ConnectTimeout`/7.555초, 바람 ERROR·0점/7.715초 | 별도 Job 성공과 운영 API의 회복을 구분 |
+| 인증 포함 서울 Cloud Run Job | 동일 이미지/Secret 참조, 기온 LIVE·1,244점·시설 3077 기상 LIVE, 실제 KMA 요청 모두 200 | 해당 이미지·자격증명·provider가 별도 Cloud Run 실행에서 정상 동작 |
+| 인증 Job 후 운영 직접 재확인 | 19:03 KST 시설 `ConnectTimeout`/7.555초, 바람 ERROR·0점/7.634초 | 운영 장애는 계속 남음 |
 
 [원본/운영 비교](checks.json), [API 이미지 확인](container-check.json), [운영 HTTPS 대조](production-egress-control.json).
 [사용자 제공 Cloud Run 실제 진단·삭제 결과](cloud-run-keyless-result.json)는 18:19 KST 실행이다.
 [두 번째 Job의 단계 계측·삭제 결과](cloud-run-stages-result.json)는 18:29 KST,
 [그 이후 운영 API 재확인](production-after-stage-success.json)은 18:33 KST다.
+[인증 포함 Job·삭제 결과](cloud-run-authenticated-result.json)는 19:01 KST,
+[그 이후 운영 API 재확인](production-after-authenticated-job.json)은 19:03 KST다.
 위도/경도 비교는 실제 응답을 재사용해 계산과 자료 조회를 분리했고, 이미지 확인은 원래 provider로 전체 원본 요청을 다시 실행했다.
 **관리 환경·로컬 이미지 결과를 운영 Cloud Run 성공으로 표시하지 않는다.** 두 환경의 실제 키 값이 같다는 것도 확인하지 않았다.
 PDF 대조의 Chromium과 Python requests는 HTTP 클라이언트가 달라, 모든 프록시/연결 설정이 같다는 보증은 아니다.
@@ -90,7 +95,57 @@ DNS 결과는 Cloud Shell과 같은 `203.247.91.39`였다. 실행 명령 성공�
 API 프로세스 자신의 DNS/출구 IP, 두 Job의 실제 출구 IP, 운영 key의 현재 서비스 권한/리디렉션은 아직 미확인이다.
 연결 실패의 존재와 현재 운영 실패의 단일 원인을 혼동하지 않는다.
 
-## 다음 확인: 같은 Secret 참조와 원래 provider의 인증된 실황 비교
+## 완료한 인증 비교와 남은 원인 범위
+
+사용자가 인증 포함 Job을 실행했다. 활성 API revision `safety-dashboard-api-00086-zn7`의 동일 immutable 이미지와
+`KMA_API_KEY:1`을 사용했고 기온 1,244점·시설 3077 기상 모두 LIVE였다. 원래 provider의 실제 요청 5건은 모두 HTTP 200이며
+관찰된 리디렉션은 없었다. 진단 Job 삭제도 성공했다. 키 값이나 응답 원문은 제공/저장하지 않았다.
+
+이번 Job의 KMA **목적지** DNS 주소는 `203.247.96.25`였고 앞선 두 Job/Cloud Shell은 `203.247.91.39`였다.
+이는 우리 서비스의 **출구 IP**가 아니다. 운영 API 프로세스의 DNS 결과·실제 출구 IP는 아직 관찰하지 못했다.
+이전 `203.247.91.39`에서도 성공한 Job이 있으므로 해당 IP가 항상 실패한다거나 DNS 변화만이 원인이라고 확정하지 않는다.
+동일 Secret로 인증·격자·파서·시설 기상이 정상 처리된 사실은 확인했지만, 운영 요청의 IP 기반 접근 정책까지 배제한 것은 아니다.
+
+19:03 KST 운영 시설 기상·바람 격자는 새 observed_at으로 여전히 실패했다. 오래된 브라우저 화면만의 문제가 아니다.
+실제 운영 인스턴스와 별도 Job의 차이를 구분하며 복구나 영구 원인 규명을 완료로 표시하지 않는다.
+
+## 복구 제안: API만 동일 이미지 새 리비전에 재기동
+
+**아직 실행하지 않은 운영 변경 명령**이다. Job 진단과 달리 운영 API 리비전/트래픽을 바꾼다.
+현재 이미지 digest·환경 변수·Secret 참조·서비스 계정·자원 설정을 유지하며 새 리비전 이름으로 기동한다.
+웹/main 소스·API 계약·위험도·Worker·Scheduler·발송 경로는 변경/호출하지 않는다. Firebase rewrite는 서비스 ID를 사용하며 `pinTag`는 없다.
+
+현재 활성 API가 위 `00086-zn7`/이미지 기준인 것을 확인한 뒤 Cloud Shell에서 실행할 1회 복구 명령:
+
+```bash
+gcloud run deploy safety-dashboard-api \
+  --project=keco-safety-map --region=asia-northeast3 \
+  --image=asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api@sha256:7e8385ef90431de8e949282f011aa31cbae947ed8e8e8d37f75c0f7222ce2fe8 \
+  --revision-suffix="kma-refresh-$(date -u +%Y%m%d%H%M%S)" --quiet &&
+gcloud run services update-traffic safety-dashboard-api \
+  --project=keco-safety-map --region=asia-northeast3 --to-latest --quiet
+```
+
+이미지/앱 소스는 같으므로 웹 버전은 `616d7a2`로 남고 Cloud Run revision만 새 이름이다.
+`--to-latest`는 이번 새 리비전과 이후 정상 자동 배포의 최신 리비전으로 트래픽을 보내는 정책이다.
+이 명령은 재기동으로 DNS/출구가 바뀌거나 반드시 복구된다는 보증이 아니다. 현재 환경에 GCP identity/gcloud가 없어 실행하지 못했다.
+실행 후 운영 공개 health·시설 3077 기상·바람/기온/강수 LIVE와 점 수, 실제 지도 표현을 확인한다.
+실제 발송/Worker·dispatch 호출이나 특보 강제 갱신을 복구 검증에 사용하지 않는다.
+
+회귀가 생기거나 복구하지 못해 이전 리비전으로 되돌리기로 한 경우의 **별도 롤백 명령**:
+
+```bash
+gcloud run services update-traffic safety-dashboard-api \
+  --project=keco-safety-map --region=asia-northeast3 \
+  --to-revisions=safety-dashboard-api-00086-zn7=100 --quiet
+```
+
+롤백은 이전 장애 상태까지 되돌리는 것이며 기상 복구 성공은 아니다. 명시적 리비전 100%로 고정되므로
+다음 검증된 배포를 운영 반영할 때 `--to-latest` 복원이 필요하다. 반복 재배포로 영구 원인 규명을 대신하지 않는다.
+CLI 근거: [동일 이미지 배포](https://cloud.google.com/sdk/gcloud/reference/run/deploy),
+[트래픽 전환/롤백](https://cloud.google.com/sdk/gcloud/reference/run/services/update-traffic).
+
+## 인증 비교 도구와 검증 범위
 
 Cloud Shell의 curl과 운영 Python requests는 실행 위치와 TLS 클라이언트가 다르다.
 이를 좁히기 위해 [임시 진단 도구](run_temporary_kma_probe.py)를 보완했다.
@@ -118,7 +173,7 @@ Cloud Shell의 curl과 운영 Python requests는 실행 위치와 TLS 클라이�
 - Job은 운영 중인 API 인스턴스와 **출구 IP·실행 세대·CPU 할당 방식이 같다는 보증이 없다.**
   Job 성공을 운영 복구로 표시하지 않는다. 결과가 비어 있거나 실행이 실패하면 미검증으로 남긴다.
 
-사용자의 기존 Cloud Shell 저장소에서 실행할 명령:
+사용한 인증 진단 명령(현재 권장 다음 단계는 위 API 재기동이며 이 Job 재실행이 아님):
 
 ```bash
 git -C ~/sfety_map-diagnosis pull --ff-only &&
@@ -126,7 +181,7 @@ python3 ~/sfety_map-diagnosis/docs/evidence/2026-10-25/weather-diagnosis/run_tem
 ```
 
 현재 관리 환경에는 GCP identity/gcloud가 없어 직접 제어 영역 조회/Job 실행은 할 수 없다.
-**keyless Job 두 번은 사용자가 실제 실행·삭제했다. 인증된 provider의 Cloud Run 검사는 아직 실행하지 않았다.**
+**keyless Job 두 번과 인증 포함 Job 한 번을 사용자가 실제 실행·삭제했다.**
 가짜 gcloud/HTTP 응답을 사용하는 도구 테스트 13개를 공통 외부 통신 차단 실행기로 확인했다(실제 HTTP/TCP 0건).
 TCP/TLS 구분·복원, 고정 Secret 하나만 연결·누락 시 생성 전 중단, 키/본문/리디렉션 query 제외를 확인했다.
 또한 [로컬 개발 이미지의 실제 계측 확인](local-stage-instrumentation.json)에서 두 호스트 모두 HTTP 200과 TCP/TLS 단계 기록을 확인했다.
@@ -138,8 +193,7 @@ CLI 명령·인자 전달·로그 필터는 [Job 생성](https://cloud.google.co
 [인자 구분자](https://cloud.google.com/sdk/gcloud/reference/topic/escaping),
 [Cloud Run 로그](https://cloud.google.com/run/docs/logging) 공식 문서와 대조했다.
 
-인증된 provider도 LIVE이면 같은 이미지·Secret 참조·원래 처리 로직이 별도 Cloud Run 실행에서 동작한 것으로 보고
-운영 인스턴스의 경로·실행 조건 차이를 우선 비교한다. 인증/리디렉션/파싱 오류가 관찰되면 그 실제 HTTP 증거로 범위를 좁힌다.
+인증된 provider가 별도 Cloud Run 실행에서 LIVE인 것까지 확인했으므로 현재 시작점은 위 API 복구 시도다.
 어느 결과도 단독으로 특정 주체의 IP 차단이나 운영 복구를 확정하지 않는다. 현재 근거로 TLS를 낮추거나 유료 고정 출구를 도입하지 않는다.
 
 진단 증빙 무결성: [SHA-256](SHA256SUMS). [현재 인계](../../../HANDOFF.md).

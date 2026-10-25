@@ -44,7 +44,10 @@ Cloud Shell과 같은 목적지 IP `203.247.91.39`를 확인했고, 임시 Job �
 그러나 18:33 KST 운영 직접 재확인은 시설 `ConnectTimeout`/7.555초·바람 ERROR/7.715초로 남는다.
 Cloud Run 전체 상시 차단·고정된 TLS 버전 오류로 단정하지 않는다. 다음 도구는 같은 KMA Secret 참조로 원래 provider의 인증된 조회도 지원한다.
 도구 테스트 13개(실제 외부 통신 0건), 관리 환경 자격증명·프록시를 쓰는 로컬 실제 provider의 기온 LIVE/1,244점·시설 기상 LIVE를 확인했다.
-**인증된 provider의 실제 Cloud Run 검사는 미실행**이다.
+19:01 KST 인증 포함 Job도 같은 이미지·`KMA_API_KEY:1`로 실제 기온 LIVE/1,244점·시설 기상 LIVE였고 삭제됐다.
+이때 KMA 목적지 DNS는 `203.247.96.25`였다(앞선 Job은 `203.247.91.39`). 출구 IP로 혼동하지 않는다.
+그러나 19:03 KST 운영은 시설 `ConnectTimeout`/7.555초·바람 ERROR/7.634초로 남는다.
+운영 인스턴스의 DNS·출구·실행 조건 차이가 우선 확인 대상이다. **API 재기동/트래픽 변경은 아직 하지 않았다.**
 앱/운영 설정을 바꾸거나 재배포하지 않았다.
 
 이전 [최종 리뷰](evidence/2026-10-25/final-review/README.md), [로컬 통합](evidence/2026-10-25/nearby-integration/README.md),
@@ -193,11 +196,10 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: 사용자의 Cloud Shell에서 [임시 Cloud Run 진단 도구](evidence/2026-10-25/weather-diagnosis/run_temporary_kma_probe.py)를
-`--execute --with-kma-key`로 실행해 같은 이미지·KMA Secret 참조의 **원래 기온/시설 기상 provider** 결과를 받는다.
-진단 Job 생성·1회 실행·삭제이며 KMA Secret 값은 Job 안에서만 사용하고 출력하지 않는다. 운영 서비스/Worker/발송은 호출하지 않는다.
-[검증 범위와 명령](evidence/2026-10-25/weather-diagnosis/README.md)을 따른다. keyless Job 두 번은 실패/성공으로 결과가 달랐다.
-운영은 18:33 KST에도 오류다. 임시 Job 결과를 실제 운영 API 인스턴스의 복구로 표시하지 않는다.
+**다음 시작점 하나**: [복구 제안의 동일 이미지 API 재기동 명령](evidence/2026-10-25/weather-diagnosis/README.md)을 검토·실행한 뒤
+실제 운영 시설 기상과 바람/기온/강수 LIVE를 확인한다. 이는 운영 API 새 리비전/트래픽 변경이며 진단 Job과 구분한다.
+이미지·앱 소스·설정 참조를 유지하며 Worker/발송 경로는 호출하지 않는다. 이전 `00086-zn7` 롤백 명령도 같은 문서에 있다.
+인증 포함 Job은 실제 KMA LIVE였지만 운영은 19:03 KST에도 오류다. Job 성공을 운영 복구로 표시하지 않는다.
 현재 관리 환경에는 GCP identity/manifest와 gcloud가 없어 제어 영역 직접 조회는 실행하지 못했다.
 연결 문제 해결 후 실제 실황으로 바람/기온/강수 표현을 재검수한다.
 프록시·TLS 우회나 시험 발송/Worker·dispatch 호출로 확인하지 않는다.
