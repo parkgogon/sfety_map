@@ -29,7 +29,7 @@ describe("독립적인 주변 시설 보고서", () => {
   beforeEach(async () => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.clearAllMocks();
-    vi.mocked(downloadNearbyReport).mockResolvedValue();
+    vi.mocked(downloadNearbyReport).mockResolvedValue({ mapIncluded: true });
     container = document.createElement("div"); document.body.append(container); root = createRoot(container);
     await act(async () => root.render(<NearbyReportDialog point={point} facilities={facilities} onClose={onClose} />));
   });
@@ -55,15 +55,15 @@ describe("독립적인 주변 시설 보고서", () => {
     expect(downloadNearbyReport).toHaveBeenCalledWith(expect.objectContaining({ latitude: 35 }), 0.1, [], expect.any(AbortSignal));
   });
   it("중복 요청을 막고 닫을 때 취소하며 늦게 완료돼도 다운로드 성공을 표시하지 않는다", async () => {
-    let resolve!: () => void;
-    vi.mocked(downloadNearbyReport).mockImplementation(() => new Promise<void>((r) => { resolve = r; }));
+    let resolve!: (value: { mapIncluded: boolean }) => void;
+    vi.mocked(downloadNearbyReport).mockImplementation(() => new Promise<{ mapIncluded: boolean }>((r) => { resolve = r; }));
     await click("PDF 생성");
     const signal = vi.mocked(downloadNearbyReport).mock.calls[0][3];
     await act(async () => document.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
     expect(downloadNearbyReport).toHaveBeenCalledTimes(1);
     await click("생성 취소·닫기");
     expect(signal.aborted).toBe(true); expect(onClose).toHaveBeenCalledOnce();
-    await act(async () => resolve());
+    await act(async () => resolve({ mapIncluded: true }));
     expect(document.body.textContent).not.toContain("다운로드했습니다");
   });
   it("실패를 0개로 표현하지 않고 재시도할 수 있다", async () => {
@@ -72,5 +72,11 @@ describe("독립적인 주변 시설 보고서", () => {
     expect(document.body.textContent).toContain("시설 자료를 읽지 못했습니다.");
     expect(document.body.textContent).toContain("대상 4개소");
     expect(button("PDF 생성").disabled).toBe(false);
+  });
+  it("지도 없는 보고서가 발급됐음을 알리고 대상 목록을 유지한다", async () => {
+    vi.mocked(downloadNearbyReport).mockResolvedValue({ mapIncluded: false });
+    await click("PDF 생성");
+    expect(document.body.textContent).toContain("시설 목록·집계 보고서를 다운로드했습니다");
+    expect(document.body.textContent).toContain("대상 4개소");
   });
 });

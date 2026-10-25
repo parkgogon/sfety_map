@@ -11,6 +11,7 @@ from safety_dashboard.api.service import MonitoringApiService
 from safety_dashboard.api.weather_layer_service import WeatherLayerService
 from safety_dashboard.alerts.admin import AlertAdminService
 from safety_dashboard.operations.readiness import OperationalReadinessService
+from safety_dashboard.api.nearby_reports import NearbyReportGenerator
 
 from safety_dashboard.api.dependencies import build_services
 from safety_dashboard.api.schemas import (
@@ -44,6 +45,7 @@ def create_app(
     alert_admin_service: AlertAdminService | None = None,
     admin_access_service: AdminAccessVerifier | None = None,
     operational_readiness_service: OperationalReadinessService | None = None,
+    nearby_report_generator: NearbyReportGenerator | None = None,
 ) -> FastAPI:
     services = build_services(
         service,
@@ -52,6 +54,7 @@ def create_app(
         alert_admin_service,
         admin_access_service,
         operational_readiness_service,
+        nearby_report_generator,
     )
     application = FastAPI(
         title="K-ECO Safety Monitoring API",

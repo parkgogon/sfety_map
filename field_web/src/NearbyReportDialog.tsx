@@ -28,8 +28,9 @@ export function NearbyReportDialog({ point, facilities, onClose }: {
     running.current = controller;
     setPending(true); setMessage("");
     try {
-      await downloadNearbyReport(point, radius, rows.map((row) => row.facility.id), controller.signal);
-      if (!controller.signal.aborted) setMessage("PDF를 다운로드했습니다.");
+      const outcome = await downloadNearbyReport(point, radius, rows.map((row) => row.facility.id), controller.signal);
+      if (!controller.signal.aborted) setMessage(outcome?.mapIncluded === false
+        ? "지도를 생성하지 못해 시설 목록·집계 보고서를 다운로드했습니다." : "PDF를 다운로드했습니다.");
     } catch (error) {
       if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : "보고서를 생성하지 못했습니다.");
     } finally {
@@ -67,6 +68,7 @@ export function NearbyReportDialog({ point, facilities, onClose }: {
         {rows.length === 0 && <p>반경 내 등록시설이 없습니다. 0개소 보고서를 생성합니다.</p>}
       </>}
       <p className="nearby-report-note">직선거리 기준입니다. 반경 안의 위치가 실제 피해나 영향을 뜻하지 않습니다.</p>
+      {pending && <p role="status">지도와 보고서를 생성하고 있습니다. 지도 생성에 실패하면 시설 목록·집계를 제공합니다.</p>}
       <div className="nearby-report-buttons">
         <button type="button" onClick={close}>{pending ? "생성 취소·닫기" : "취소"}</button>
         <button className="nearby-report-submit" type="submit" disabled={pending || !valid || !complete}>
