@@ -80,6 +80,26 @@ class TemporaryKmaProbeTests(unittest.TestCase):
                 probe.run_probe("project", "region", SOURCE)
         self.assertEqual(command.call_args.args[0][:3], ["run", "jobs", "delete"])
 
+    def test_authenticated_job_binds_only_fixed_kma_secret(self):
+        source = {**SOURCE, "kmaSecretReference": {"name": "KMA_API_KEY", "version": "1"}}
+        responses = [{"status": {"latestCreatedExecution": {"name": "diagnostic-execution"}}},
+                     [{"textPayload": probe.PREFIX + '{"authenticatedMode": true}'}]]
+        with patch.object(probe, "command", return_value=subprocess.CompletedProcess([], 0, "", "")) as command, \
+             patch.object(probe, "read_json", side_effect=responses), contextlib.redirect_stdout(io.StringIO()):
+            probe.run_probe("project", "region", source, authenticated=True)
+        create = command.call_args_list[0].args[0]
+        self.assertEqual(create[create.index("--set-secrets")+1], "KMA_API_KEY=KMA_API_KEY:1")
+        self.assertEqual(create[create.index("--task-timeout")+1], "180s")
+        self.assertNotIn("ADMIN_ACCESS_PASSWORD", str(create))
+        self.assertNotIn("TELEGRAM_BOT_TOKEN", str(create))
+        self.assertEqual(command.call_args.args[0][:3], ["run", "jobs", "delete"])
+
+    def test_authenticated_mode_requires_fixed_reference_before_creation(self):
+        with patch.object(probe, "command") as command:
+            with self.assertRaisesRegex(RuntimeError, "fixed numeric"):
+                probe.run_probe("project", "region", SOURCE, authenticated=True)
+            command.assert_not_called()
+
     def test_cleanup_failure_is_explicit(self):
         with patch.object(probe, "command", side_effect=[RuntimeError("create failed"),
                           subprocess.TimeoutExpired("gcloud", 1)]), contextlib.redirect_stdout(io.StringIO()) as output:
@@ -159,6 +179,40 @@ class TemporaryKmaProbeTests(unittest.TestCase):
         self.assertTrue(steps[0]["succeeded"])
         self.assertFalse(steps[1]["succeeded"])
         self.assertEqual(steps[1]["stage"], "tls_wrap")
+
+    def test_authenticated_transport_excludes_key_body_and_redirect_query(self):
+        from types import SimpleNamespace
+        from safety_dashboard.domain.enums import DataHealth
+        sentinel = "PRIVATE_AUTH_VALUE_MUST_NOT_APPEAR"
+        response = Mock(status_code=302, headers={"Location": "https://example.test/return?authKey=" + sentinel})
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        def grid_factory(key, scope, **kwargs):
+            transport = kwargs["session"]
+            def fetch(kind):
+                transport.get("https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+                              params={"authKey": key}, timeout=7)
+                return SimpleNamespace(health=DataHealth.ERROR, points=[])
+            return SimpleNamespace(fetch=fetch)
+        observation = SimpleNamespace(health=DataHealth.ERROR)
+        with patch.dict(os.environ, {"KMA_PROBE_AUTHENTICATED": "true", "KMA_API_KEY": sentinel}), \
+             patch("requests.get", return_value=response) as get, \
+             patch("socket.getaddrinfo", return_value=[]), \
+             patch("safety_dashboard.adapters.weather_layers.load_monitoring_scope", return_value=Mock()), \
+             patch("safety_dashboard.adapters.weather_layers.GridWeatherLayerProvider", side_effect=grid_factory), \
+             patch("safety_dashboard.adapters.current_weather.CurrentWeatherProvider") as current, \
+             patch("safety_dashboard.adapters.facility_csv.CsvFacilityRepository") as facilities, \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            current.return_value.fetch.return_value = observation
+            facilities.return_value.list_monitored.return_value = [SimpleNamespace(id="3077", location=Mock())]
+            exec(compile(probe.PAYLOAD, "<diagnostic>", "exec"), {})
+        data = json.loads(output.getvalue()[len(probe.PREFIX):])
+        self.assertTrue(data["authenticatedMode"])
+        self.assertTrue(data["kmaKeyConfigured"])
+        self.assertNotIn(sentinel, output.getvalue())
+        self.assertEqual(data["checks"][-1]["redirectTargetHost"], "example.test")
+        self.assertFalse(get.call_args.kwargs["allow_redirects"])
+        self.assertEqual(len(data["authenticatedProviders"]), 2)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,184 @@
+{
+  "scope": "Local development API image using the managed KMA credential through inherited proxy and trusted CA. Real upstream/provider verification, not Cloud Run or production credential verification.",
+  "checkedAtUTC": "2026-10-25T09:40:57.380259+00:00",
+  "python": "3.12.15",
+  "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+  "requests": "2.34.2",
+  "tlsVerification": true,
+  "proxyVariableNamesPresent": [
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy"
+  ],
+  "checks": [
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/",
+      "authenticated": false,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 22
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 3875
+    },
+    {
+      "host": "www.weather.go.kr",
+      "path": "/w/special-report/overall.do",
+      "authenticated": false,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 2611
+    },
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+      "operation": "grid-temperature",
+      "authenticated": true,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 4579
+    },
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+      "operation": "grid-temperature",
+      "authenticated": true,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 2205
+    },
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_odam_grd",
+      "operation": "grid-temperature",
+      "authenticated": true,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 1254
+    },
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat",
+      "operation": "facility-weather-3077",
+      "authenticated": true,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 1
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 610
+    },
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtNcst",
+      "operation": "facility-weather-3077",
+      "authenticated": true,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 598
+    }
+  ],
+  "dnsErrorType": "gaierror",
+  "authenticatedMode": true,
+  "kmaKeyConfigured": true,
+  "authenticatedProviders": [
+    {
+      "provider": "grid-temperature",
+      "health": "LIVE",
+      "points": 1244
+    },
+    {
+      "provider": "facility-weather-3077",
+      "health": "LIVE"
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 """운영 API 이미지의 임시 Cloud Run Job으로 KMA 연결만 검사한다.
 
 기본 실행은 제어 영역 조회/계획 출력뿐이다. --execute는 임시 Job을 생성·1회 실행·삭제한다.
-운영 서비스/Worker/Scheduler를 변경하거나 호출하지 않고 Secret을 연결하지 않는다.
+--with-kma-key는 운영과 같은 KMA Secret 참조만 연결해 원래 기상 provider도 조회한다.
+운영 서비스/Worker/Scheduler를 변경하거나 호출하지 않고 키·응답 원문은 출력하지 않는다.
 """
 from __future__ import annotations
 
@@ -18,9 +19,12 @@ PAYLOAD = r'''
 import datetime, json, os, platform, socket, ssl, time
 import requests
 import urllib3.util.connection
+from pathlib import Path
+from types import SimpleNamespace
+from urllib.parse import urlsplit, urljoin
 
 result = {
-    "scope": "Temporary Cloud Run Job, not the running production API instance. No key, app or Worker calls.",
+    "scope": "Temporary Cloud Run Job, not the running production API instance. No running application API or Worker calls. Key use is separately indicated.",
     "checkedAtUTC": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     "python": platform.python_version(), "openssl": ssl.OPENSSL_VERSION,
     "requests": requests.__version__, "tlsVerification": True,
@@ -77,6 +81,59 @@ try:
         record["errorType"] = type(error).__name__
     record["elapsedMs"] = round((time.monotonic() - start) * 1000)
     result["checks"].append(record)
+  authenticated = os.environ.get("KMA_PROBE_AUTHENTICATED") == "true"
+  result["authenticatedMode"] = authenticated
+  if authenticated:
+    key = os.environ.get("KMA_API_KEY", "").strip()
+    result["kmaKeyConfigured"] = bool(key)
+    result["authenticatedProviders"] = []
+    operation = ""
+    def provider_get(url, **kwargs):
+        global steps
+        steps = []
+        parsed = urlsplit(url)
+        if parsed.scheme != "https" or parsed.hostname != "apihub.kma.go.kr":
+            raise ValueError("Unexpected provider destination")
+        record = {"host": parsed.hostname, "path": parsed.path, "operation": operation,
+                  "authenticated": True, "stages": steps}
+        start = time.monotonic()
+        try:
+            # 첫 HTTP 응답을 진단한다. 리디렉션을 따라 키를 전달하지 않는다.
+            kwargs["allow_redirects"] = False
+            response = requests.get(url, **kwargs)
+            record.update(httpStatus=response.status_code, headersReceived=True,
+                          redirectPresent=bool(response.headers.get("Location")))
+            if response.headers.get("Location"):
+                record["redirectTargetHost"] = urlsplit(urljoin(url, response.headers["Location"])).hostname
+            return response
+        except requests.RequestException as error:
+            record["errorType"] = type(error).__name__
+            raise
+        finally:
+            record["elapsedMs"] = round((time.monotonic() - start) * 1000)
+            result["checks"].append(record)
+    transport = SimpleNamespace(get=provider_get)
+    operation = "grid-temperature"
+    try:
+        from safety_dashboard.adapters.weather_layers import GridWeatherLayerProvider, load_monitoring_scope
+        from safety_dashboard.domain.enums import WeatherLayerKind
+        grid = GridWeatherLayerProvider(key, load_monitoring_scope(Path("/app/data/kma_warning_zones.geojson.gz")),
+                                        timeout=7, session=transport)
+        feed = grid.fetch(WeatherLayerKind.TEMPERATURE)
+        result["authenticatedProviders"].append({"provider": operation, "health": feed.health.value,
+                                                "points": len(feed.points)})
+    except Exception as error:
+        result["authenticatedProviders"].append({"provider": operation, "errorType": type(error).__name__})
+    operation = "facility-weather-3077"
+    try:
+        from safety_dashboard.adapters.current_weather import CurrentWeatherProvider
+        from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
+        facility = next(item for item in CsvFacilityRepository(Path("/app/facilities_info.csv")).list_monitored()
+                        if item.id == "3077")
+        observation = CurrentWeatherProvider(key, timeout=7, session=transport).fetch(facility.location)
+        result["authenticatedProviders"].append({"provider": operation, "health": observation.health.value})
+    except Exception as error:
+        result["authenticatedProviders"].append({"provider": operation, "errorType": type(error).__name__})
 finally:
     urllib3.util.connection.create_connection = original_connect
     ssl.SSLContext.wrap_socket = original_wrap
@@ -131,11 +188,21 @@ def production_image(project, region):
         image = image.split("@", 1)[0].rsplit(":", 1)[0] + "@" + digest
     if "@sha256:" not in image or not spec.get("serviceAccountName"):
         raise RuntimeError("Immutable API image or service account is unknown; no Job created.")
+    kma = next((item for item in containers[0].get("env", []) if item.get("name") == "KMA_API_KEY"), {})
+    reference = kma.get("valueFrom", {}).get("secretKeyRef", {})
     return {"revision": revision, "image": image, "serviceAccount": spec["serviceAccountName"],
+            "kmaSecretReference": {"name": reference.get("name"), "version": reference.get("key")},
             "executionEnvironmentAnnotation": annotations.get("run.googleapis.com/execution-environment")}
 
 
-def run_probe(project, region, source, *, pause=time.sleep):
+def run_probe(project, region, source, *, authenticated=False, pause=time.sleep):
+    secret_flags = []
+    if authenticated:
+        reference = source.get("kmaSecretReference", {})
+        if reference.get("name") != "KMA_API_KEY" or not str(reference.get("version", "")).isdigit():
+            raise RuntimeError("A fixed numeric KMA_API_KEY Secret version is required; no Job created.")
+        secret_flags = ["--set-secrets", "KMA_API_KEY=KMA_API_KEY:" + str(reference["version"]),
+                        "--set-env-vars", "KMA_PROBE_AUTHENTICATED=true"]
     name = "kma-net-diag-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S") + "-" + uuid.uuid4().hex[:6]
     scope = ["--project", project, "--region", region]
     created = False
@@ -146,9 +213,10 @@ def run_probe(project, region, source, *, pause=time.sleep):
                  "--image", source["image"], "--service-account", source["serviceAccount"],
                  "--command", "python", "--args=^@^-c@" + PAYLOAD,
                  "--cpu", "1", "--memory", "1Gi", "--tasks", "1", "--parallelism", "1",
-                 "--max-retries", "0", "--task-timeout", "90s"], timeout=180)
+                 "--max-retries", "0", "--task-timeout", "180s" if authenticated else "90s",
+                 *secret_flags], timeout=180)
         execution = command(["run", "jobs", "execute", name, *scope,
-                             "--wait", "--format=json", "--quiet"], check=False, timeout=240)
+                             "--wait", "--format=json", "--quiet"], check=False, timeout=300)
         data = read_json(["run", "jobs", "describe", name, *scope])
         execution_name = data.get("status", {}).get("latestCreatedExecution", {}).get("name")
         if not execution_name:
@@ -192,16 +260,18 @@ def main(argv=None):
     parser.add_argument("--project", default="keco-safety-map")
     parser.add_argument("--region", default="asia-northeast3")
     parser.add_argument("--execute", action="store_true", help="임시 Job을 생성·1회 실행하고 삭제한다")
+    parser.add_argument("--with-kma-key", action="store_true", help="같은 KMA Secret 참조로 실제 provider를 조회한다(값 출력 없음)")
     args = parser.parse_args(argv)
     if not shutil.which("gcloud"):
         parser.error("Cloud Shell 등 gcloud 계정이 있는 환경에서 실행하세요.")
     source = production_image(args.project, args.region)
     if not args.execute:
         print(json.dumps({"mode": "read-only plan", "productionSource": source,
-                          "withExecute": "Create one temporary Job, run keyless KMA checks, collect its logs, delete it. No production updates or Worker calls."},
+                          "authenticatedMode": args.with_kma_key,
+                          "withExecute": "Create one temporary Job, run KMA checks, collect its logs, delete it. Only --with-kma-key binds the KMA Secret; no production updates or Worker calls."},
                          ensure_ascii=False, indent=2))
         return 0
-    print(json.dumps(run_probe(args.project, args.region, source), ensure_ascii=False, indent=2))
+    print(json.dumps(run_probe(args.project, args.region, source, authenticated=args.with_kma_key), ensure_ascii=False, indent=2))
     return 0
 
 

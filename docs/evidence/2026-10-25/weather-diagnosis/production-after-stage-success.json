@@ -1,0 +1,26 @@
+{
+  "scope": "Public production APIs through inherited managed proxy with TLS verification; no response overrides, Worker/dispatch calls or forced monitoring refresh.",
+  "checkedAtKST": "2026-10-25T18:33:05.465394+09:00",
+  "records": [
+    {
+      "path": "/api/v1/facilities/3077/weather",
+      "httpStatus": 200,
+      "status": "ERROR",
+      "detail": "현재 기상 조회 실패: ConnectTimeout",
+      "points": 0,
+      "observedAt": "2026-10-25T18:32:58.173873+09:00",
+      "fetchedAt": null,
+      "elapsedMs": 7555
+    },
+    {
+      "path": "/api/v1/weather/layers/wind",
+      "httpStatus": 200,
+      "status": "ERROR",
+      "detail": "기상청 격자 위치를 확인하지 못했습니다.",
+      "points": 0,
+      "observedAt": "2026-10-25T18:32:58.347173+09:00",
+      "fetchedAt": "2026-10-25T18:32:58.347181+09:00",
+      "elapsedMs": 7715
+    }
+  ]
+}

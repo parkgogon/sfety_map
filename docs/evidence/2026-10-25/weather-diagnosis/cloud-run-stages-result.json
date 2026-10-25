@@ -1,0 +1,33 @@
+{
+  "source": "User-provided Cloud Shell output; assistant did not query GCP directly.",
+  "job": "kma-net-diag-20261025092912-33c36d",
+  "execution": "kma-net-diag-20261025092912-33c36d-dsh9j",
+  "executionCommandSucceeded": true,
+  "deleteCommandSucceeded": true,
+  "productionSource": {
+    "revision": "safety-dashboard-api-00086-zn7",
+    "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api@sha256:7e8385ef90431de8e949282f011aa31cbae947ed8e8e8d37f75c0f7222ce2fe8",
+    "serviceAccount": "safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com",
+    "executionEnvironmentAnnotation": null
+  },
+  "probeResult": {
+    "scope": "Temporary Cloud Run Job, not the running production API instance. No key, app or Worker calls.",
+    "checkedAtUTC": "2026-10-25T09:29:21.123087+00:00",
+    "python": "3.12.15",
+    "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+    "requests": "2.34.2",
+    "tlsVerification": true,
+    "proxyVariableNamesPresent": [],
+    "resolvedIPs": ["203.247.91.39"],
+    "checks": [
+      {"host": "apihub.kma.go.kr", "path": "/", "authenticated": false,
+       "stages": [{"stage": "tcp_connect", "succeeded": true, "elapsedMs": 58},
+                  {"stage": "tls_wrap", "succeeded": true, "elapsedMs": 7}],
+       "httpStatus": 200, "headersReceived": true, "redirectPresent": false, "elapsedMs": 131},
+      {"host": "www.weather.go.kr", "path": "/w/special-report/overall.do", "authenticated": false,
+       "stages": [{"stage": "tcp_connect", "succeeded": true, "elapsedMs": 32},
+                  {"stage": "tls_wrap", "succeeded": true, "elapsedMs": 7}],
+       "httpStatus": 200, "headersReceived": true, "redirectPresent": false, "elapsedMs": 70}
+    ]
+  }
+}
