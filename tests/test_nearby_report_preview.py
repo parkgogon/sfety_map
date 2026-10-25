@@ -14,6 +14,7 @@ from PIL import Image
 from design.nearby_report.model import capture_input, destination, summary
 from design.nearby_report.pdf import NearbyPreviewRenderer, validate_map
 from design.nearby_report.cases import build_cases
+from safety_dashboard.adapters.enhanced_nearby_pdf import EnhancedNearbyPdfRenderer
 from safety_dashboard.application.nearby_report import NearbyReport, distance_meters
 from safety_dashboard.domain.models import Facility, GeoPoint
 
@@ -116,6 +117,23 @@ class NearbyPreviewTests(unittest.TestCase):
         self.assertEqual(len(re.findall(rb"/Type /Page\b", renderer.render(report, image.getvalue(), data))), 1)
         with self.assertRaisesRegex(ValueError, "이미지와 캡처"):
             renderer.render(report, image.getvalue(), data | {"pngSha256": "wrong-image"})
+
+    def test_missing_map_keeps_full_report_and_explicit_failure_without_preview_badge(self):
+        _, report = next(case for case in build_cases() if case[0]["id"] == "urban-5km")
+        renderer = EnhancedNearbyPdfRenderer(Path(__file__).parents[1] / "fonts/NotoSansKR.ttf")
+        for status in ("unavailable", "busy", "timeout"):
+            pdf = renderer.render(report, map_status=status)
+            self.assertEqual(len(re.findall(rb"/Type /Page\b", pdf)), 1)
+            if shutil.which("pdftotext"):
+                with tempfile.NamedTemporaryFile(suffix=".pdf") as output:
+                    output.write(pdf); output.flush()
+                    text = subprocess.check_output(["pdftotext", output.name, "-"], text=True)
+                self.assertIn("지도 생성 실패", text)
+                self.assertIn("산격동", text)
+                self.assertIn("침산동", text)
+                self.assertIn("만촌동", text)
+                self.assertIn("담당부서", text)
+                self.assertNotIn("개발용 시안", text)
 
 
 if __name__ == "__main__":
