@@ -41,9 +41,17 @@ PDF 대조의 Chromium과 Python requests는 HTTP 클라이언트가 달라, 모
 
 ## 아직 확인하지 못한 설정과 다음 확인
 
-현재 환경에는 연결된 GCP outbound identity/자격증명 manifest와 `gcloud`가 없다.
-Cloud Run의 실제 VPC connector/direct VPC·egress·NAT/방화벽 설정과 runtime 로그를 읽을 수 없어
-특정 규칙·출구 IP·IPv4/IPv6·KMA 측 차단 중 하나로 확정하지 않았다. 관리 환경 허용 도메인 추가가 필요한 상태로 단정하지 않는다.
+현재 관리 환경에는 연결된 GCP outbound identity/자격증명 manifest와 `gcloud`가 없다.
+사용자가 Cloud Shell에서 아래 도구를 실행한 결과를 제공했다. API/Worker 조회 모두 성공했고, 최신 ready revision은
+각각 `safety-dashboard-api-00086-zn7` / `safety-alert-worker-00074-47k`였다.
+두 서비스 모두 같은 runtime 서비스 계정과 `KMA_API_KEY:1`을 사용하며, 검사한 VPC connector/direct VPC·egress annotation은
+모두 null, 프록시 환경 변수 이름은 없었다. **조회한 항목에서 두 서비스의 네트워크 설정 차이는 발견되지 않았다.**
+프로젝트 전체 경로·상속 정책·실제 출구 IP·runtime 로그를 확인한 것은 아니므로 특정 NAT/방화벽·KMA 측 차단으로 확정하지 않는다.
+관리 환경 허용 도메인 추가가 필요한 상태로 단정하지 않는다.
+
+후속 공개 운영 재확인에서도 시설 기상은 `ConnectTimeout`/7.510초였다. 동시에 특보는 17:55:01 KST 기준 LIVE였다.
+관리 환경에서 격자 좌표·시설 격자·특보 주소를 각각 리디렉션 없이 조회하면 모두 HTTP 200이었고 Location 헤더가 없었다.
+따라서 이번 관리 환경 요청에서는 다른 호스트/프로토콜로의 리디렉션을 관찰하지 못했다. 운영 요청의 redirect history는 미확인이다.
 
 Cloud Shell의 저장소 루트에서 다음 **읽기 전용** 수집 명령으로 API/Worker의 네트워크 설정 차이를 확인할 수 있다.
 
@@ -54,11 +62,20 @@ python3 docs/evidence/2026-10-25/weather-diagnosis/collect_cloud_run_readonly.py
 
 이 도구는 두 Cloud Run 서비스의 제어 영역 메타데이터만 조회한다. Worker 애플리케이션 URL에 접속/실행하지 않는다.
 Secret 값·프록시 값은 출력하지 않으며 리비전·네트워크 annotation·프록시 변수의 존재·KMA Secret 참조만 출력한다.
-현재 환경에서는 문법/`--help`와 가짜 제어 영역 응답으로 `describe` 명령 제한·비밀값 제외를 확인했다.
-이 도구의 **GCP 실제 조회는 실행하지 않았다.**
+관리 환경에서는 문법/`--help`와 가짜 제어 영역 응답으로 `describe` 명령 제한·비밀값 제외를 확인했다.
+**GCP 실제 조회는 사용자의 Cloud Shell에서 실행됐고, 관리 환경에서 직접 실행한 것은 아니다.**
 annotation이 없다는 사실만으로 프로젝트의 상속 정책·NAT·방화벽이 정상이라고 결론 내리지 않는다.
 
-비교 순서는 API/Worker의 실제 리비전과 네트워크 경로 → VPC 사용 시 route/NAT/egress firewall →
-KMA 호스트까지의 연결/TLS 및 접근 허용 정책이다. 비밀값을 노출하거나 프록시/TLS를 우회하지 않는다.
+다음은 Cloud Shell의 별도 출구에서 인증키 없이 KMA 홈페이지 연결/TLS가 성립하는지 확인하는 것이다.
+아래 명령은 환경 프록시와 기본 인증서 검증을 유지하며, Worker/dispatch나 Secret을 사용하지 않는다.
+
+```bash
+curl -sS --connect-timeout 7 --max-time 12 -o /dev/null \
+  -w 'HTTP=%{http_code} IP=%{remote_ip} 연결=%{time_connect}s TLS=%{time_appconnect}s 전체=%{time_total}s\n' \
+  https://apihub.kma.go.kr/
+```
+
+Cloud Shell 결과는 **Cloud Run API의 실제 출구 검사와 구분**한다. 이후 필요하면 실제 revision/traffic·출구 IP와
+KMA 접근 허용 정책을 대조한다. 비밀값을 노출하거나 프록시/TLS를 우회하지 않는다.
 
 진단 증빙 무결성: [SHA-256](SHA256SUMS). [현재 인계](../../../HANDOFF.md).
