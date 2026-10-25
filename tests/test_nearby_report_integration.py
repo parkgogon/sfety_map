@@ -102,6 +102,54 @@ class CaptureLimitsTests(unittest.IsolatedAsyncioTestCase):
         content, status = await generator.generate(report())
         self.assertTrue(content.startswith(b"%PDF"));self.assertEqual(status,"unavailable")
 
+    async def test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report(self):
+        started, release = threading.Event(), threading.Event()
+        rendered = []
+        def render(_, value, *_args, **_kwargs):
+            rendered.append(value.label)
+            if value.label == "first":
+                started.set()
+                release.wait(timeout=3)
+            return b"%PDF-unit"
+        from dataclasses import replace
+        generator = NearbyReportGenerator(KakaoReportCapture(enabled=False,
+            origin="https://keco-safety-map.web.app"), ROOT / "fonts/NotoSansKR.ttf")
+        with patch("safety_dashboard.api.nearby_reports.EnhancedNearbyPdfRenderer.render", render):
+            first = asyncio.create_task(generator.generate(replace(report(), label="first")))
+            self.assertTrue(await asyncio.to_thread(started.wait, 1))
+            waiting = asyncio.create_task(generator.generate(replace(report(), label="cancelled")))
+            try:
+                await asyncio.sleep(.05)
+                waiting.cancel()
+                await asyncio.sleep(.05)
+                cancelled_without_waiting_for_first = waiting.done()
+            finally:
+                release.set()
+                await first
+                await asyncio.gather(waiting, return_exceptions=True)
+            self.assertTrue(cancelled_without_waiting_for_first)
+            self.assertTrue(waiting.cancelled())
+            self.assertEqual(rendered, ["first"])
+            await generator.generate(replace(report(), label="after-cancel"))
+            self.assertEqual(rendered, ["first", "after-cancel"])
+
+    async def test_pdf_slot_wait_timeout_does_not_render_and_returns_request_slot(self):
+        generator = NearbyReportGenerator(KakaoReportCapture(enabled=False,
+            origin="https://keco-safety-map.web.app"), ROOT / "fonts/NotoSansKR.ttf")
+        generator._pdf.acquire()
+        timeout = asyncio.timeout
+        try:
+            with patch("safety_dashboard.api.nearby_reports.asyncio.timeout", lambda _: timeout(.03)), \
+                 patch("safety_dashboard.api.nearby_reports.EnhancedNearbyPdfRenderer.render") as render:
+                with self.assertRaises(NearbyReportBusy):
+                    await generator.generate(report())
+                render.assert_not_called()
+        finally:
+            generator._pdf.release()
+        content, status = await generator.generate(report())
+        self.assertTrue(content.startswith(b"%PDF"))
+        self.assertEqual(status, "unavailable")
+
 
 class ReportRouteTests(unittest.IsolatedAsyncioTestCase):
     async def test_existing_post_contract_with_map_failure_and_no_monitoring(self):

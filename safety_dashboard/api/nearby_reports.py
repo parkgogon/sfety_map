@@ -27,6 +27,7 @@ class NearbyReportGenerator:
             raise NearbyReportBusy()
         # 생성 스레드가 시작된 뒤에는 스레드의 finally가 요청 슬롯도 반환한다.
         transferred = False
+        pdf_reserved = False
         try:
             try:
                 result = await self.capture.capture(report)
@@ -42,6 +43,15 @@ class NearbyReportGenerator:
                         raise ValueError("지도 이미지 불일치")
                 except (KeyError, TypeError, ValueError):
                     result = NearbyMapResult("unavailable")
+            try:
+                # 계산 슬롯을 기다리는 동안에는 스레드를 시작하지 않는다.
+                # 닫힌 요청은 즉시 취소하고, 이미 시작한 PDF 계산만 끝까지 정리한다.
+                async with asyncio.timeout(10):
+                    while not self._pdf.acquire(blocking=False):
+                        await asyncio.sleep(.025)
+                pdf_reserved = True
+            except TimeoutError:
+                raise NearbyReportBusy() from None
             task = asyncio.create_task(run_in_threadpool(self._render, report, result))
             transferred = True
             # 호출이 취소돼도 이미 실행 중인 PDF 스레드의 슬롯은 실제 종료 때까지 유지한다.
@@ -53,16 +63,14 @@ class NearbyReportGenerator:
                 raise
         finally:
             if not transferred:
+                if pdf_reserved:
+                    self._pdf.release()
                 self._requests.release()
 
     def _render(self, report, result):
         try:
-            if not self._pdf.acquire(timeout=10):
-                raise NearbyReportBusy()
-            try:
-                content = EnhancedNearbyPdfRenderer(self.font_path).render(report, result.png, result.metadata, map_status=result.status)
-                return content, result.status
-            finally:
-                self._pdf.release()
+            content = EnhancedNearbyPdfRenderer(self.font_path).render(report, result.png, result.metadata, map_status=result.status)
+            return content, result.status
         finally:
+            self._pdf.release()
             self._requests.release()
