@@ -33,6 +33,10 @@ class ApiSettings:
     weather_layer_error_cache_seconds: int = 60
     cctv_cache_seconds: int = 60
     context_error_cache_seconds: int = 30
+    nearby_map_capture_enabled: bool = False
+    nearby_map_origin: str = "https://keco-safety-map.web.app"
+    nearby_map_timeout_seconds: int = 20
+    nearby_chromium_executable: str = "/usr/bin/chromium"
 
     @classmethod
     def from_environment(cls) -> "ApiSettings":
@@ -80,4 +84,8 @@ class ApiSettings:
             ),
             cctv_cache_seconds=seconds("CCTV_CACHE_SECONDS", 60, 30),
             context_error_cache_seconds=seconds("CONTEXT_ERROR_CACHE_SECONDS", 30, 10),
+            nearby_map_capture_enabled=enabled("NEARBY_MAP_CAPTURE_ENABLED", False),
+            nearby_map_origin=env_text("DASHBOARD_BASE_URL") or cls.nearby_map_origin,
+            nearby_map_timeout_seconds=min(30, seconds("NEARBY_MAP_TIMEOUT_SECONDS", 20, 5)),
+            nearby_chromium_executable=env_text("NEARBY_CHROMIUM_EXECUTABLE") or cls.nearby_chromium_executable,
         )

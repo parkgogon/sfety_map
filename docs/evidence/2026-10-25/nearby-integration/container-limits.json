@@ -1,0 +1,16 @@
+{
+  "scope": "Local Docker container only; no production deployment",
+  "memoryLimitBytes": 1073741824,
+  "memorySwapLimitBytes": 1073741824,
+  "nanoCpus": 1000000000,
+  "oomKilled": false,
+  "idleProcesses": {
+    "tini S": 1,
+    "uvicorn S": 1,
+    "python R": 1
+  },
+  "memoryPeakBytes": 631762944,
+  "memoryCurrentBytes": 249462784,
+  "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+  "cpuMax": "100000 100000"
+}

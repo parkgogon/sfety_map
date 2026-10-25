@@ -1,0 +1,2 @@
+# API image only. System Chromium is installed by Dockerfile.api.
+playwright==1.64.1

@@ -1,0 +1,31 @@
+.nearby-report-dialog { position: fixed; inset: 0; z-index: 1500; background: #14274666; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.nearby-report-dialog .mobile-bottom-sheet { background: var(--color-bg-surface, white); color: var(--color-text-primary, #142746); width: min(560px, 100%); max-height: calc(100dvh - 32px); border-radius: 16px; box-shadow: 0 12px 48px #14274644; display: flex; flex-direction: column; overflow: hidden; font-size: 14px; }
+.nearby-report-dialog .mobile-sheet-heading { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #dbe3ec; flex-shrink: 0; }
+.nearby-report-dialog h2 { margin: 0; font-size: 18px; }
+.nearby-report-dialog .mobile-sheet-body { padding: 16px; overflow: auto; overscroll-behavior: contain; }
+.nearby-report-dialog button { min-height: 44px; border: 1px solid #ccd7e2; border-radius: 8px; background: white; color: #142746; padding: 8px 12px; font: inherit; cursor: pointer; }
+.nearby-report-dialog button:disabled { opacity: .55; cursor: default; }
+.nearby-report-dialog .mobile-icon-button { display: grid; place-items: center; width: 44px; padding: 10px; }
+.nearby-report-dialog .mobile-icon-button svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; fill: none; }
+.nearby-report-reference { display: grid; gap: 4px; overflow-wrap: anywhere; }
+.nearby-report-reference strong { font-size: 16px; }
+.nearby-report-form small { color: #52647c; display: block; line-height: 1.5; }
+.nearby-report-form fieldset { border: 0; margin: 16px 0 0; padding: 0; min-width: 0; }
+.nearby-report-form legend { font-weight: 700; margin-bottom: 8px; }
+.nearby-report-radii { display: flex; gap: 8px; margin-bottom: 10px; }
+.nearby-report-radii button { flex: 1; }
+.nearby-report-radii button[aria-pressed="true"], .nearby-report-dialog .nearby-report-submit { background: #142746; color: white; border-color: #142746; }
+.nearby-report-radius-input { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+.nearby-report-radius-input input { width: 100px; min-width: 0; min-height: 44px; box-sizing: border-box; border: 1px solid #b6c4d5; border-radius: 8px; font: inherit; font-size: 16px; padding: 8px; }
+.nearby-report-count { border-top: 1px solid #dbe3ec; padding-top: 14px; font-size: 16px; margin-bottom: 4px; }
+.nearby-report-list { list-style: none; margin: 8px 0; padding: 0; max-height: 220px; overflow: auto; border-bottom: 1px solid #dbe3ec; }
+.nearby-report-list li { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #e4eaf1; }
+.nearby-report-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.nearby-report-list li > b { white-space: nowrap; font-size: 13px; }
+.nearby-report-note { color: #52647c; font-size: 12px; line-height: 1.6; }
+.nearby-report-buttons { display: flex; gap: 8px; margin-top: 14px; }
+.nearby-report-buttons button { flex: 1; }
+@media (max-width: 700px) {
+  .nearby-report-dialog { padding: 0; align-items: end; }
+  .nearby-report-dialog .mobile-bottom-sheet { width: 100%; max-height: 92dvh; border-radius: 18px 18px 0 0; }
+}

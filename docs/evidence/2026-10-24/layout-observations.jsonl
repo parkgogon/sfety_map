@@ -1,0 +1,19 @@
+{"url": "/", "viewport": {"width": 360, "height": 740}, "documentWidth": 360, "bodyWidth": 360, "refresh": [], "build": [], "label": "mobile360-candidate"}
+{"url": "/", "viewport": {"width": 360, "height": 740}, "documentWidth": 360, "bodyWidth": 360, "refresh": [], "build": [], "label": "mobile360-nearby"}
+{"url": "/", "viewport": {"width": 360, "height": 740}, "documentWidth": 360, "bodyWidth": 360, "refresh": [], "build": [], "label": "field-360x740-reference-weather"}
+{"url": "/", "viewport": {"width": 390, "height": 844}, "documentWidth": 390, "bodyWidth": 390, "refresh": [], "build": [], "label": "field-390x844-reference-weather"}
+{"url": "/", "viewport": {"width": 430, "height": 932}, "documentWidth": 430, "bodyWidth": 430, "refresh": [], "build": [], "label": "field-430x932-reference-weather"}
+{"url": "/", "viewport": {"width": 700, "height": 360}, "documentWidth": 700, "bodyWidth": 700, "refresh": [], "build": [], "label": "field-700x360-reference-weather"}
+{"url": "/control", "viewport": {"width": 360, "height": 740}, "documentWidth": 406, "bodyWidth": 406, "refresh": [{"x": 362.40625, "right": 406.40625, "width": 44}], "build": ["ve1f6c0d · 10.24 18:47 배포"], "label": "control-overview-360x740"}
+{"url": "/control", "viewport": {"width": 390, "height": 844}, "documentWidth": 406, "bodyWidth": 406, "refresh": [{"x": 362.40625, "right": 406.40625, "width": 44}], "build": ["ve1f6c0d · 10.24 18:47 배포"], "label": "control-overview-390x844"}
+{"url": "/control", "viewport": {"width": 430, "height": 932}, "documentWidth": 430, "bodyWidth": 430, "refresh": [{"x": 374, "right": 418, "width": 44}], "build": ["ve1f6c0d · 10.24 18:47 배포"], "label": "control-overview-430x932"}
+{"url": "/control", "viewport": {"width": 700, "height": 360}, "documentWidth": 700, "bodyWidth": 700, "refresh": [{"x": 644, "right": 688, "width": 44}], "build": ["ve1f6c0d · 10.24 18:47 배포"], "label": "control-overview-700x360"}
+{"url": "/control", "viewport": {"width": 1440, "height": 900}, "documentWidth": 1440, "bodyWidth": 1440, "refresh": [{"x": 1372, "right": 1416, "width": 44}], "build": ["ve1f6c0d · 10.24 18:47 배포"], "label": "control-overview-1440x900"}
+{"url": "/settings", "viewport": {"width": 360, "height": 740}, "documentWidth": 360, "bodyWidth": 360, "refresh": [], "build": [], "label": "settings-preauth-360x740"}
+{"url": "/settings", "viewport": {"width": 390, "height": 844}, "documentWidth": 390, "bodyWidth": 390, "refresh": [], "build": [], "label": "settings-preauth-390x844"}
+{"url": "/settings", "viewport": {"width": 430, "height": 932}, "documentWidth": 430, "bodyWidth": 430, "refresh": [], "build": [], "label": "settings-preauth-430x932"}
+{"url": "/settings", "viewport": {"width": 700, "height": 360}, "documentWidth": 700, "bodyWidth": 700, "refresh": [], "build": [], "label": "settings-preauth-700x360"}
+{"url": "/settings", "viewport": {"width": 1440, "height": 900}, "documentWidth": 1440, "bodyWidth": 1440, "refresh": [], "build": [], "label": "settings-preauth-1440x900"}
+{"path": "/control", "width": 360, "documentWidth": 406, "bodyWidth": 406, "label": "control-analysis"}
+{"path": "/control", "width": 390, "documentWidth": 406, "bodyWidth": 406, "label": "control-analysis"}
+{"path": "/control", "width": 430, "documentWidth": 430, "bodyWidth": 430, "label": "control-analysis"}

@@ -4,6 +4,7 @@ import { FacilityIcon } from "./facilityIcons";
 import { formatDistance, nearbyFacilities, type ReferencePoint } from "./locationReference";
 import { searchLocations } from "./locationSearch";
 import type { LocationReferenceState } from "./useLocationReference";
+import { NearbyReportDialog } from "./NearbyReportDialog";
 
 interface Props {
   reference: LocationReferenceState;
@@ -21,6 +22,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
   const [name, setName] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [limit, setLimit] = useState(10);
+  const [reportOpen, setReportOpen] = useState(false);
   const request = useRef(0);
   const nearby = useMemo(
     () => reference.point ? nearbyFacilities(facilities, reference.point) : [],
@@ -31,7 +33,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
   useEffect(() => { setLimit(10); }, [reference.point]);
   // Capture Escape before the page's facility/weather dismissal shortcuts.
   useEffect(() => {
-    if (!keyboardActive) return;
+    if (!keyboardActive || reportOpen) return;
     const close = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (reference.picking || reference.candidate) reference.cancel();
@@ -42,7 +44,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
     };
     window.addEventListener("keydown", close, true);
     return () => window.removeEventListener("keydown", close, true);
-  }, [reference, collapsed, keyboardActive]);
+  }, [reference, collapsed, keyboardActive, reportOpen]);
 
   function invalidateSearch() {
     request.current += 1;
@@ -94,6 +96,10 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
   );
 
   return (
+    <>
+    {reportOpen && reference.point && !reference.candidate && <NearbyReportDialog
+      key={`${reference.point.latitude},${reference.point.longitude},${reference.point.label}`}
+      point={reference.point} facilities={facilities} onClose={() => setReportOpen(false)} />}
     <section className={`location-reference-panel ${collapsed ? "is-collapsed" : ""} ${reference.candidate ? "has-candidate" : ""}`} aria-label="장소·주소와 주변 시설">
       <div className="location-panel-heading">
         <strong title={reference.point?.label}>{reference.point ? reference.point.label : "장소·주소 찾기"}</strong>
@@ -140,6 +146,7 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
             1·3·5km 거리 원 표시
           </label>
           <p>전체 {facilities.length}개소 기준 · 5km 이내 {nearby.filter((row) => row.meters <= 5000).length}개소</p>
+          <button type="button" data-nearby-report-trigger onClick={() => setReportOpen(true)}>주변 시설 보고서</button>
           {nearby.length === 0 ? <p>좌표를 확인할 수 있는 시설이 없습니다.</p> : <>
             <ol className="location-nearby-list" aria-label="가까운 시설 순서">
               {nearby.slice(0, limit).map(({ facility, meters }) => <li key={facility.id}>
@@ -168,5 +175,6 @@ export function LocationReferencePanel({ reference, facilities, visibleFacilityI
         <button type="button" onClick={reference.cancel}>취소</button>
       </div>}
     </section>
+    </>
   );
 }

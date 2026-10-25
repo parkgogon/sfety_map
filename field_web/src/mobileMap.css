@@ -213,9 +213,8 @@
 .mobile-field-map .mobile-readonly-legend dl > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; padding: 7px 0; }
 .mobile-field-map .mobile-readonly-legend dt { display: flex; align-items: center; gap: 7px; font-weight: 800; }
 .mobile-field-map .mobile-readonly-legend dd { margin: 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.4; }
-.mobile-field-map .mobile-settings-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.mobile-field-map .mobile-settings-footer { display: flex; align-items: center; }
 .mobile-field-map .mobile-settings-footer span { color: var(--color-text-secondary); font-size: 13px; }
-.mobile-field-map .mobile-settings-footer .primary-button { min-width: 104px; }
 .mobile-field-map .weather-layer-legend { max-width: min(240px, calc(100% - 70px)); }
 .mobile-field-map .mobile-map-top-controls {
   position: absolute;

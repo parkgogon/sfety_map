@@ -194,7 +194,7 @@ describe("모바일 헤더와 패널", () => {
     await render();
     await click(container.querySelector<HTMLButtonElement>(".mobile-map-settings-trigger")!);
     expect(container.querySelector('[role="dialog"]')?.textContent).not.toContain("모의훈련 화면 보기");
-    await click(byText("지도 보기")); await click(byLabel("더보기"));
+    await click(byLabel("지도 설정 닫기")); await click(byLabel("더보기"));
     await click(byText("모의훈련 화면 보기"));
     expect(window.location.search).toContain("mode=simulation");
     expect(container.querySelector('[role="dialog"]')).toBeNull();
@@ -234,9 +234,10 @@ describe("모바일 헤더와 패널", () => {
     expect(dialog.querySelectorAll("input")).toHaveLength(0);
     expect(dialog.textContent).toContain("시설 마커 위험등급");
     expect(dialog.textContent).toContain("특보 발효 구역");
-    await click(byText("지도 보기"));
+    await click(byLabel("지도 설정 닫기"));
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(container.querySelector(".mobile-map-settings-trigger")?.textContent).toContain("바람");
+    expect(document.activeElement).toBe(container.querySelector(".mobile-map-settings-trigger"));
   });
 
   it("자료 갱신 후 해제한 기존 유형은 유지하고 새 유형만 선택한다", async () => {
@@ -286,6 +287,11 @@ describe("모바일 헤더와 패널", () => {
     const map = container.querySelector('[data-testid="map"]');
     expect(map?.getAttribute("data-reference")).toBe("사고 확인 지점");
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("주변 시설");
+    await click(byText("주변 시설 보고서"));
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("보고서 반경");
+    await key("Escape");
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("주변 시설");
     await click(byLabel("주변 시설 닫기"));
     await click(byLabel("더보기")); await key("Escape");
     expect(container.querySelector('[role="dialog"]')).toBeNull();
@@ -303,7 +309,7 @@ describe("모바일 헤더와 패널", () => {
     await click(container.querySelector<HTMLButtonElement>(".mobile-map-settings-trigger")!);
     const group = container.querySelector<HTMLInputElement>('.group-options input[type="checkbox"]')!;
     await act(async () => group.click());
-    await click(byText("지도 보기"));
+    await click(byLabel("지도 설정 닫기"));
     expect(container.querySelector('[data-testid="map"] button')).toBeNull();
 
     await click(byLabel("시설·장소·주소 검색"));
@@ -353,7 +359,7 @@ describe("모바일 헤더와 패널", () => {
     await act(async () => group.click());
     await click(byText("기상"));
     await click(byLabel("바람 기상 레이어"));
-    await click(byText("지도 보기"));
+    await click(byLabel("지도 설정 닫기"));
     expect(container.querySelector('[data-testid="map"] button')).toBeNull();
 
     await click(byLabel("지도 확대"));

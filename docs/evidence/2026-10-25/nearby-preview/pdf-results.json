@@ -1,0 +1,146 @@
+[
+  {
+    "id": "urban-0.1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 302,
+    "afterPdfMs": 492,
+    "beforeBytes": 22291,
+    "afterBytes": 1044552
+  },
+  {
+    "id": "urban-1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 296,
+    "afterPdfMs": 543,
+    "beforeBytes": 22299,
+    "afterBytes": 1580219
+  },
+  {
+    "id": "urban-3km",
+    "synthetic": false,
+    "facilities": 2,
+    "beforePdfMs": 307,
+    "afterPdfMs": 509,
+    "beforeBytes": 24959,
+    "afterBytes": 1268764
+  },
+  {
+    "id": "urban-5km",
+    "synthetic": false,
+    "facilities": 3,
+    "beforePdfMs": 304,
+    "afterPdfMs": 499,
+    "beforeBytes": 26095,
+    "afterBytes": 1368091
+  },
+  {
+    "id": "urban-50km",
+    "synthetic": false,
+    "facilities": 41,
+    "beforePdfMs": 354,
+    "afterPdfMs": 573,
+    "beforeBytes": 40956,
+    "afterBytes": 1344050
+  },
+  {
+    "id": "rural-0.1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 304,
+    "afterPdfMs": 486,
+    "beforeBytes": 22302,
+    "afterBytes": 891172
+  },
+  {
+    "id": "rural-1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 316,
+    "afterPdfMs": 597,
+    "beforeBytes": 22305,
+    "afterBytes": 1916976
+  },
+  {
+    "id": "rural-3km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 295,
+    "afterPdfMs": 446,
+    "beforeBytes": 22433,
+    "afterBytes": 837524
+  },
+  {
+    "id": "rural-5km",
+    "synthetic": false,
+    "facilities": 1,
+    "beforePdfMs": 299,
+    "afterPdfMs": 517,
+    "beforeBytes": 24146,
+    "afterBytes": 1363554
+  },
+  {
+    "id": "rural-50km",
+    "synthetic": false,
+    "facilities": 59,
+    "beforePdfMs": 360,
+    "afterPdfMs": 574,
+    "beforeBytes": 43825,
+    "afterBytes": 1332714
+  },
+  {
+    "id": "coast-0.1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 297,
+    "afterPdfMs": 497,
+    "beforeBytes": 22258,
+    "afterBytes": 1087484
+  },
+  {
+    "id": "coast-1km",
+    "synthetic": false,
+    "facilities": 0,
+    "beforePdfMs": 303,
+    "afterPdfMs": 479,
+    "beforeBytes": 22265,
+    "afterBytes": 926955
+  },
+  {
+    "id": "coast-3km",
+    "synthetic": false,
+    "facilities": 3,
+    "beforePdfMs": 300,
+    "afterPdfMs": 461,
+    "beforeBytes": 24229,
+    "afterBytes": 803035
+  },
+  {
+    "id": "coast-5km",
+    "synthetic": false,
+    "facilities": 4,
+    "beforePdfMs": 308,
+    "afterPdfMs": 478,
+    "beforeBytes": 25695,
+    "afterBytes": 973972
+  },
+  {
+    "id": "coast-50km",
+    "synthetic": false,
+    "facilities": 10,
+    "beforePdfMs": 315,
+    "afterPdfMs": 491,
+    "beforeBytes": 29390,
+    "afterBytes": 971195
+  },
+  {
+    "id": "synthetic-dense-long",
+    "synthetic": true,
+    "facilities": 195,
+    "beforePdfMs": 471,
+    "afterPdfMs": 671,
+    "beforeBytes": 48093,
+    "afterBytes": 1460613
+  }
+]

@@ -68,6 +68,12 @@ describe("장소·주소와 주변 시설 패널", () => {
     await click("이곳을 기준점으로 지정");
     expect(state.point).toEqual(point);
     expect(state.candidate).toBeNull();
+    await click("주변 시설 보고서");
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("대상 1개소");
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("지도 필터·전파 선택과 무관");
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelector(".location-panel-body")).not.toBeNull();
     expect(container.textContent).toContain("5km 이내 1개소");
     expect(container.textContent).toContain("필터로 숨김 — 선택하면 표시");
     const rows = container.querySelectorAll<HTMLButtonElement>(".location-nearby-list button");

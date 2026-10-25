@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,7 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements-api.txt ./
-RUN pip install --no-cache-dir -r requirements-api.txt
+RUN --mount=type=secret,id=ca_bundle \
+    if [ -f /run/secrets/ca_bundle ]; then export PIP_CERT=/run/secrets/ca_bundle; fi; \
+    pip install --no-cache-dir -r requirements-api.txt
 
 COPY safety_dashboard ./safety_dashboard
 COPY data ./data
@@ -19,3 +22,20 @@ COPY facilities_info.csv ./facilities_info.csv
 EXPOSE 8080
 
 CMD ["sh", "-c", "uvicorn ${APP_MODULE:-safety_dashboard.api.app:app} --host 0.0.0.0 --port ${PORT}"]
+
+# Worker는 기존 Python 실행 환경을 유지하며 브라우저를 포함하지 않는다.
+FROM base AS worker
+
+FROM base AS api
+COPY requirements-report-map.txt ./
+RUN --mount=type=secret,id=ca_bundle \
+    if [ -f /run/secrets/ca_bundle ]; then \
+      export PIP_CERT=/run/secrets/ca_bundle; \
+      apt_options="-o Acquire::https::CaInfo=/run/secrets/ca_bundle"; \
+    fi; \
+    apt-get ${apt_options} update && \
+    apt-get ${apt_options} install -y --no-install-recommends chromium libnss3-tools tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir -r requirements-report-map.txt
+ENTRYPOINT ["tini", "-g", "--"]
+CMD ["sh", "-c", "exec uvicorn ${APP_MODULE:-safety_dashboard.api.app:app} --host 0.0.0.0 --port ${PORT}"]

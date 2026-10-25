@@ -79,10 +79,10 @@ export function MobileMapSettings({
 }: Props) {
   return <MobileBottomSheet
     title="지도 설정"
+    returnFocusSelector=".mobile-map-settings-trigger"
     onClose={onClose}
     footer={<div className="mobile-settings-footer">
       <span>현재 <b>{visibleCount}개</b> / 전체 {totalCount}개 표시</span>
-      <button className="primary-button" type="button" onClick={onClose}>지도 보기</button>
     </div>}
   >
     <div className="mobile-settings-tabs" role="tablist" aria-label="지도 설정 항목">

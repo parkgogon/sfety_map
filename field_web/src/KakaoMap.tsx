@@ -169,7 +169,7 @@ export function KakaoMap({
     interactions,
   );
 
-  useWeatherMapLayer(runtime, { weatherLayer }, interactions);
+  useWeatherMapLayer(runtime, { weatherLayer, facilities }, interactions);
 
   useEffect(() => {
     if (pickingReference) dismissMapInformation();

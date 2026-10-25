@@ -1,0 +1,25 @@
+{
+  "dateKST": "2026-10-25",
+  "baseCommit": "9c9c1782de3c40bf1abf62c8d45e2656d41406ed",
+  "fixedCodeCommit": "94d23d3c3393f4fb10e29ba987a54c9e5aa3ee92",
+  "workingTreeInitiallyClean": true,
+  "handoffInLocalAndRemote": true,
+  "policyRevision": "21",
+  "policyCurrent": true,
+  "policyEnforced": true,
+  "sdkHosts": [
+    "dapi.kakao.com",
+    "t1.kakaocdn.net",
+    "mts.kakaocdn.net"
+  ],
+  "proxyPreserved": true,
+  "tlsVerificationPreserved": true,
+  "additionalRequiredHosts": [],
+  "publicProductionHealthStatus": 200,
+  "productionVersionNotRechecked": true,
+  "apiImageId": "sha256:cc02ca30c21433a2bafee7ca87c00a720a8536ec18143c37dcbfc3ac0e3f2f1f",
+  "imageGeneratorMatchesSourceSha256": "997e02249a291a2dbfca84ad140b6ce9063f5c3ebe0ac220ba8b20ef55b78603",
+  "pythonTests": 256,
+  "externalTestTraffic": 0,
+  "reactAndBrowserEvidence": "Prior 9c9c178 evidence reused; UI and weather implementation unchanged in this review."
+}

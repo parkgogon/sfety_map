@@ -14,6 +14,9 @@ from safety_dashboard.adapters.telegram import TelegramNotifier
 from safety_dashboard.alerts.admin import AlertAdminService
 from safety_dashboard.alerts.settings import AlertSettings
 from safety_dashboard.operations.readiness import OperationalReadinessService
+from safety_dashboard.api.nearby_reports import NearbyReportGenerator
+from safety_dashboard.adapters.kakao_report_capture import KakaoReportCapture
+from safety_dashboard.api.settings import ROOT
 
 from dataclasses import dataclass
 from collections.abc import Callable
@@ -30,6 +33,7 @@ class ApiServices:
     session_manager: AdminSessionManager
     notification_admin: Callable[[], AlertAdminService]
     operational_readiness: Callable[[], OperationalReadinessService]
+    nearby_reports: NearbyReportGenerator
 
 
 def build_services(
@@ -39,6 +43,7 @@ def build_services(
     alert_admin_service: AlertAdminService | None = None,
     admin_access_service: AdminAccessVerifier | None = None,
     operational_readiness_service: OperationalReadinessService | None = None,
+    nearby_report_generator: NearbyReportGenerator | None = None,
 ) -> ApiServices:
     settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
@@ -59,6 +64,11 @@ def build_services(
         secret_key=admin_access.settings.password or "keco-session-secret",
         default_lifetime_seconds=admin_access.settings.session_seconds,
     )
+    try:
+        capture = KakaoReportCapture(enabled=settings.nearby_map_capture_enabled, origin=settings.nearby_map_origin,
+                                     executable=settings.nearby_chromium_executable, timeout=settings.nearby_map_timeout_seconds)
+    except ValueError:
+        capture = KakaoReportCapture(enabled=False, origin=ApiSettings.nearby_map_origin)
 
     def notification_admin() -> AlertAdminService:
         nonlocal alert_admin
@@ -115,4 +125,5 @@ def build_services(
         session_manager=session_manager,
         notification_admin=notification_admin,
         operational_readiness=operational_readiness,
+        nearby_reports=nearby_report_generator or NearbyReportGenerator(capture, ROOT / "fonts/NotoSansKR.ttf"),
     )

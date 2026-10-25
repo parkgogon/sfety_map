@@ -109,7 +109,6 @@ export function WeatherLayerLegend({
   const noRain = kind === "rainfall"
     && data?.status !== "ERROR"
     && data?.points.every((point) => (point.value ?? 0) <= 0);
-  const windMeaning = "입자 방향=풍향, 이동 속도·꼬리=풍속";
   const labelPrefix = isSimulation
     ? `${WEATHER_LAYER_LABELS[kind]} 모의훈련 기상 가정 (실제 관측이 아님)`
     : `${WEATHER_LAYER_LABELS[kind]} 범례`;
@@ -119,7 +118,7 @@ export function WeatherLayerLegend({
       className={`weather-layer-legend ${data?.status === "STALE" ? "stale" : ""} ${isSimulation ? "simulation" : ""}`}
       aria-live="polite"
       aria-label={kind === "wind"
-        ? `${labelPrefix}. 풍속 색면 0에서 25m/s 이상. ${windMeaning}`
+        ? `${labelPrefix}. 풍속 색면 0에서 25m/s 이상`
         : labelPrefix}
     >
       <div className="weather-layer-legend-title">
@@ -157,12 +156,6 @@ export function WeatherLayerLegend({
                   ))}
                 </div>
                 <span>{values.at(-1)}{data.unit}+</span>
-              </div>
-              <div className="weather-particle-key" role="img" aria-label={windMeaning}>
-                <span className="weather-particle-swatch" aria-hidden="true">
-                  <i /><i /><i />
-                </span>
-                <span>{windMeaning}</span>
               </div>
             </>
           ) : (

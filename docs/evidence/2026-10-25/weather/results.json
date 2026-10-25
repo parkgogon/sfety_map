@@ -1,0 +1,151 @@
+{
+  "scope": "Synthetic inputs + schematic. Current renderer reused; SDK zoom behavior simulated. Mobile viewport emulation, not a physical device.",
+  "results": [
+    {
+      "width": 1440,
+      "time": 1,
+      "state": {
+        "layer": "wind",
+        "speed": 0,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 1440,
+      "time": 4,
+      "state": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 1440,
+      "time": 8,
+      "state": {
+        "layer": "wind",
+        "speed": 15,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 1440,
+      "time": 12.5,
+      "state": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1.6005216961323363,
+        "pan": {
+          "x": 21.213203435596427,
+          "y": 11.08655439013544
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 390,
+      "time": 1,
+      "state": {
+        "layer": "wind",
+        "speed": 0,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 390,
+      "time": 4,
+      "state": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 390,
+      "time": 8,
+      "state": {
+        "layer": "wind",
+        "speed": 15,
+        "zoom": 1,
+        "pan": {
+          "x": 0,
+          "y": 0
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    },
+    {
+      "width": 390,
+      "time": 12.5,
+      "state": {
+        "layer": "wind",
+        "speed": 0.5,
+        "zoom": 1.6005216961323363,
+        "pan": {
+          "x": 21.213203435596427,
+          "y": 11.08655439013544
+        },
+        "reduced": false,
+        "paused": false,
+        "actualData": false,
+        "background": "self-authored schematic",
+        "sdk": false
+      }
+    }
+  ],
+  "errors": [],
+  "unexpectedRequests": []
+}

@@ -6,6 +6,7 @@ import { MobileBottomSheet } from "./MobileBottomSheet";
 import type { Facility } from "./types";
 import type { LocationReferenceState } from "./useLocationReference";
 import type { MobilePanel, MobileSearchTab } from "./useMobileLayout";
+import { NearbyReportDialog } from "./NearbyReportDialog";
 
 interface Props {
   panel: MobilePanel;
@@ -43,6 +44,7 @@ export function MobileMapSearch({
   const [candidateName, setCandidateName] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [limit, setLimit] = useState(10);
+  const [reportOpen, setReportOpen] = useState(false);
   const request = useRef(0);
   const nearby = useMemo(
     () => reference.point ? nearbyFacilities(facilities, reference.point) : [],
@@ -55,6 +57,7 @@ export function MobileMapSearch({
     setEditingName(false);
   }, [reference.candidate]);
   useEffect(() => { setLimit(10); }, [reference.point]);
+  useEffect(() => { setReportOpen(false); }, [reference.point, panel]);
   useEffect(() => {
     if (panel === "search") return;
     request.current += 1;
@@ -150,6 +153,9 @@ export function MobileMapSearch({
     </section>;
   }
 
+  if (panel === "nearby" && reference.point && reportOpen) return <NearbyReportDialog
+    point={reference.point} facilities={facilities} onClose={() => setReportOpen(false)} />;
+
   if (panel === "nearby" && reference.point) return <MobileBottomSheet
     title="주변 시설"
     onClose={onClose}
@@ -164,6 +170,7 @@ export function MobileMapSearch({
       <button type="button" onClick={() => { reference.preview(reference.point!); onPanelChange("none"); }}>이름·위치 수정</button>
     </div>
     <p className="mobile-nearby-count">전체 {facilities.length}개소 기준 · 5km 이내 {nearby.filter((row) => row.meters <= 5000).length}개소</p>
+    <button className="mobile-nearby-more" type="button" data-nearby-report-trigger onClick={() => setReportOpen(true)}>주변 시설 보고서</button>
     {nearby.length ? <>
       <ol className="mobile-nearby-list" aria-label="가까운 시설 순서">
         {nearby.slice(0, limit).map(({ facility, meters }) => <li key={facility.id}>

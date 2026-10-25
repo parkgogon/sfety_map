@@ -1,0 +1,77 @@
+[
+  {
+    "viewport": 360,
+    "button": {
+      "x": 266,
+      "y": 375.5,
+      "width": 47.8125,
+      "height": 137
+    },
+    "input": {
+      "x": 65,
+      "y": 375.5,
+      "width": 193,
+      "height": 137
+    }
+  },
+  {
+    "viewport": 390,
+    "button": {
+      "x": 266,
+      "y": 427.5,
+      "width": 59,
+      "height": 137
+    },
+    "input": {
+      "x": 65,
+      "y": 427.5,
+      "width": 193,
+      "height": 137
+    }
+  },
+  {
+    "viewport": 430,
+    "button": {
+      "x": 266,
+      "y": 516.5,
+      "width": 99,
+      "height": 47
+    },
+    "input": {
+      "x": 65,
+      "y": 516.5,
+      "width": 193,
+      "height": 47
+    }
+  },
+  {
+    "viewport": 700,
+    "button": {
+      "x": 415.984375,
+      "y": 232,
+      "width": 121.015625,
+      "height": 44
+    },
+    "input": {
+      "x": 163,
+      "y": 232,
+      "width": 244.984375,
+      "height": 44
+    }
+  },
+  {
+    "viewport": 1440,
+    "button": {
+      "x": 785.984375,
+      "y": 509.5,
+      "width": 121.015625,
+      "height": 44
+    },
+    "input": {
+      "x": 533,
+      "y": 509.5,
+      "width": 244.984375,
+      "height": 44
+    }
+  }
+]

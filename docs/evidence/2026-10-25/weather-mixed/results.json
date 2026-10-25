@@ -1,0 +1,2203 @@
+{
+  "scope": "Local development build, fixed monitoring and synthetic weather; REAL Kakao SDK and tiles. Registered origin reused via response overrides, no production application/API validation or deployment. Viewport emulation, no physical devices.",
+  "records": [
+    {
+      "app": "field",
+      "width": 1440,
+      "kind": "wind",
+      "initial": {
+        "hash": 2301224759,
+        "alpha": 5025064,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 70
+      },
+      "final": {
+        "hash": 4133661384,
+        "alpha": 5027573,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 45
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 1440,
+      "kind": "temperature",
+      "initial": {
+        "hash": 3543372133,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 335,
+            "y": 281,
+            "width": 46,
+            "height": 22,
+            "text": "31.4°"
+          },
+          {
+            "x": 1012,
+            "y": 270,
+            "width": 46,
+            "height": 22,
+            "text": "31.7°"
+          },
+          {
+            "x": 339,
+            "y": 558,
+            "width": 46,
+            "height": 22,
+            "text": "31.4°"
+          },
+          {
+            "x": 1242,
+            "y": 543,
+            "width": 46,
+            "height": 22,
+            "text": "31.1°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 70
+      },
+      "final": {
+        "hash": 3543372133,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 375,
+            "y": 306,
+            "width": 46,
+            "height": 22,
+            "text": "31.4°"
+          },
+          {
+            "x": 1052,
+            "y": 295,
+            "width": 46,
+            "height": 22,
+            "text": "31.7°"
+          },
+          {
+            "x": 379,
+            "y": 583,
+            "width": 46,
+            "height": 22,
+            "text": "31.4°"
+          },
+          {
+            "x": 831,
+            "y": 576,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 70
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 1440,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 3543372133,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 378.4,
+            "y": 306,
+            "width": 39.200000000000045,
+            "height": 22,
+            "text": "22mm"
+          },
+          {
+            "x": 1048.6,
+            "y": 295,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.4mm"
+          },
+          {
+            "x": 382.4,
+            "y": 583,
+            "width": 39.200000000000045,
+            "height": 22,
+            "text": "22mm"
+          },
+          {
+            "x": 827.5999999999999,
+            "y": 576,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 70
+      },
+      "final": {
+        "hash": 3543372133,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 418.4,
+            "y": 331,
+            "width": 39.200000000000045,
+            "height": 22,
+            "text": "22mm"
+          },
+          {
+            "x": 1088.6,
+            "y": 320,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.4mm"
+          },
+          {
+            "x": 422.4,
+            "y": 608,
+            "width": 39.200000000000045,
+            "height": 22,
+            "text": "22mm"
+          },
+          {
+            "x": 867.5999999999999,
+            "y": 601,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 70
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 1440,
+      "videoFrames": 109
+    },
+    {
+      "app": "field",
+      "width": 1440,
+      "reducedMotionStable": true
+    },
+    {
+      "app": "field",
+      "width": 390,
+      "kind": "wind",
+      "initial": {
+        "hash": 766414099,
+        "alpha": 5318916,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 30
+      },
+      "final": {
+        "hash": 3625515843,
+        "alpha": 5173476,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 25
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 390,
+      "kind": "temperature",
+      "initial": {
+        "hash": 1922825573,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 36,
+            "y": 232,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 261,
+            "y": 229,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 40,
+            "y": 510,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 266,
+            "y": 506,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 30
+      },
+      "final": {
+        "hash": 1922825573,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 76,
+            "y": 257,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 301,
+            "y": 254,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 80,
+            "y": 535,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 306,
+            "y": 531,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 30
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 390,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 1922825573,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 72.6,
+            "y": 257,
+            "width": 52.79999999999998,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 297.6,
+            "y": 254,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.9mm"
+          },
+          {
+            "x": 76.6,
+            "y": 535,
+            "width": 52.79999999999998,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 302.6,
+            "y": 531,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 30
+      },
+      "final": {
+        "hash": 1922825573,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 112.6,
+            "y": 282,
+            "width": 52.79999999999998,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 116.6,
+            "y": 560,
+            "width": 52.79999999999998,
+            "height": 22,
+            "text": "22.7mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 30
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "field",
+      "width": 390,
+      "videoFrames": 112
+    },
+    {
+      "app": "field",
+      "width": 390,
+      "reducedMotionStable": true
+    },
+    {
+      "app": "control",
+      "width": 1440,
+      "kind": "wind",
+      "initial": {
+        "hash": 924176246,
+        "alpha": 1383883,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 25
+      },
+      "final": {
+        "hash": 3831028405,
+        "alpha": 1400038,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 32
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 1440,
+      "kind": "temperature",
+      "initial": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 183,
+            "y": 684.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 409,
+            "y": 680.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 32
+      },
+      "final": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 219,
+            "y": 431.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 444,
+            "y": 428.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 223,
+            "y": 709.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 449,
+            "y": 705.5,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 32
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 1440,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 215.60000000000002,
+            "y": 431.5,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 440.6,
+            "y": 428.5,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          },
+          {
+            "x": 219.60000000000002,
+            "y": 709.5,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 445.6,
+            "y": 705.5,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 32
+      },
+      "final": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 255.60000000000002,
+            "y": 456.5,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 480.6,
+            "y": 453.5,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          },
+          {
+            "x": 259.6,
+            "y": 734.5,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.7mm"
+          },
+          {
+            "x": 485.6,
+            "y": 730.5,
+            "width": 52.799999999999955,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 32
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 1440,
+      "reducedMotionStable": true
+    },
+    {
+      "app": "control",
+      "width": 390,
+      "kind": "wind",
+      "initial": {
+        "hash": 1741818913,
+        "alpha": 3115040,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "final": {
+        "hash": 31876934,
+        "alpha": 3052875,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 390,
+      "kind": "temperature",
+      "initial": {
+        "hash": 1965428165,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 40,
+            "y": 727.109375,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          },
+          {
+            "x": 266,
+            "y": 723.109375,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "final": {
+        "hash": 1965428165,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 306,
+            "y": 748.109375,
+            "width": 46,
+            "height": 22,
+            "text": "31.9°"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 390,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 1965428165,
+        "alpha": 0,
+        "labels": [
+          {
+            "x": 302.6,
+            "y": 748.109375,
+            "width": 52.80000000000001,
+            "height": 22,
+            "text": "22.9mm"
+          }
+        ],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "final": {
+        "hash": 1965428165,
+        "alpha": 0,
+        "labels": [],
+        "overlaps": 0,
+        "opacity": "1",
+        "horizontalOverflow": false,
+        "tiles": 18
+      },
+      "viewportWeatherRequests": 0,
+      "minimumOpacity": 1,
+      "startLevel": 8,
+      "zoomedLevel": 7,
+      "centerMoved": true
+    },
+    {
+      "app": "control",
+      "width": 390,
+      "reducedMotionStable": true
+    }
+  ],
+  "requests": [
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_zoom_control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/42.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/94.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/88.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/94.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/94.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/88.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/94.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/88.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/94.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/88.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/88.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/82/87.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/87.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/87.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/87.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/87.png",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/42/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/42/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/42/44.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/82/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/82/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/82/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/82/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/89.png",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_zoom_control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/control.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/93.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/78/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/81/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/80/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/7/79/89.png",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/2/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/0/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/0/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/14/0/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/47.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/78/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/91.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/92.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/90.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/80/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/79/89.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/7/81/89.png",
+      "status": 200
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/0.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/1.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/2.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/3.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/0.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/2.png",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "errors": [],
+  "forbidden": []
+}

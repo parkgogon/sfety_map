@@ -1,0 +1,18 @@
+
+> k-eco-field-map@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.10 /workspace/sfety_map-improvements/field_web
+
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+
+ Test Files  33 passed (33)
+      Tests  212 passed (212)
+   Start at  22:24:10
+   Duration  5.43s (transform 1.36s, setup 373ms, import 2.26s, tests 2.27s, environment 7.17s)
+

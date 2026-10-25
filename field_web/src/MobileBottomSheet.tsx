@@ -5,10 +5,12 @@ interface Props {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  returnFocusSelector?: string;
+  className?: string;
 }
 
 /** Mobile field-map modal. The map stays mounted and becomes inert underneath. */
-export function MobileBottomSheet({ title, onClose, children, footer }: Props) {
+export function MobileBottomSheet({ title, onClose, children, footer, returnFocusSelector, className = "" }: Props) {
   const titleId = useId();
   const backdropRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -70,12 +72,15 @@ export function MobileBottomSheet({ title, onClose, children, footer }: Props) {
         if (inert === null) element.removeAttribute("inert"); else element.setAttribute("inert", inert);
         if (hidden === null) element.removeAttribute("aria-hidden"); else element.setAttribute("aria-hidden", hidden);
       });
-      if (previousFocus?.isConnected) previousFocus.focus();
+      if (returnFocusSelector) {
+        // Map controls are recreated when their sheet closes.
+        queueMicrotask(() => document.querySelector<HTMLElement>(returnFocusSelector)?.focus());
+      } else if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, []);
 
   return (
-    <div ref={backdropRef} className="mobile-sheet-backdrop" onClick={(event) => {
+    <div ref={backdropRef} className={`mobile-sheet-backdrop ${className}`} onClick={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section ref={dialogRef} className="mobile-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
