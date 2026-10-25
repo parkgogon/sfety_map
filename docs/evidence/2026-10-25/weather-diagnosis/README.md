@@ -66,16 +66,44 @@ Secret 값·프록시 값은 출력하지 않으며 리비전·네트워크 anno
 **GCP 실제 조회는 사용자의 Cloud Shell에서 실행됐고, 관리 환경에서 직접 실행한 것은 아니다.**
 annotation이 없다는 사실만으로 프로젝트의 상속 정책·NAT·방화벽이 정상이라고 결론 내리지 않는다.
 
-다음은 Cloud Shell의 별도 출구에서 인증키 없이 KMA 홈페이지 연결/TLS가 성립하는지 확인하는 것이다.
-아래 명령은 환경 프록시와 기본 인증서 검증을 유지하며, Worker/dispatch나 Secret을 사용하지 않는다.
+사용자 Cloud Shell에서 인증키 없는 KMA 홈페이지 연결을 확인했다. 결과는 HTTP 200,
+원격 IP `203.247.91.39`, 연결 0.382302초·TLS 완료 0.438218초·전체 2.355972초였다.
+이는 **Cloud Shell 경로의 연결 성공**이며, 운영 Cloud Run 인스턴스의 통신 성공은 아니다.
+KMA 전체 장애나 모든 Google Cloud 출구 차단으로 해석할 근거는 줄었지만, 운영의 정확한 실패 원인은 미확정이다.
+
+## 다음 확인: 같은 이미지의 임시 Cloud Run 진단
+
+Cloud Shell의 curl과 운영 Python requests는 실행 위치와 TLS 클라이언트가 다르다.
+이를 좁히기 위해 [임시 진단 도구](run_temporary_kma_probe.py)를 준비했다.
+기본 실행은 운영 트래픽 100%인 API revision과 immutable 이미지 digest를 읽고 계획만 출력한다.
+`--execute`를 주면 **임시 Cloud Run Job을 새로 생성·1회 실행·로그 수집·삭제**한다. 읽기 전용 동작과 구분한다.
+운영 API·Worker·Scheduler 설정과 트래픽은 변경하지 않으며, 기존 애플리케이션/발송 경로를 호출하지 않는다.
+
+- 같은 API 이미지·서울 리전·runtime 서비스 계정, 1 CPU/1GiB, 1 task·재시도 0·최대 실행 90초다.
+  Python 명령을 덮어써 서버를 시작하지 않고, Secret/운영 환경 변수/시설 자료를 읽거나 연결하지 않는다.
+- DNS 주소, Python/OpenSSL/requests 버전과 KMA 홈페이지·격자 두 주소의 HTTP 응답 또는 예외 종류·소요 시간만 출력한다.
+  인증키를 사용하지 않으므로 401/403 등의 HTTP 응답도 연결 성립 증거이며, 기상 자료/API 권한 검증은 아니다.
+  응답 본문·프록시 값·예외 원문은 출력하지 않고 기본 프록시/CA/TLS 검증을 유지한다.
+- API의 실제 revision에 명시적 VPC·프록시가 있거나 트래픽이 분할되어 있으면 일치 여부를 추측하지 않고 생성 전에 중단한다.
+  실행 중 오류에도 해당 임시 Job만 삭제를 시도하고 성공 여부를 출력한다. false이면 출력된 `kma-net-diag-*` Job만 정리한다.
+- Job은 운영 중인 API 인스턴스와 **출구 IP·실행 세대·CPU 할당 방식이 같다는 보증이 없다.**
+  Job 성공을 운영 복구로 표시하지 않는다. 결과가 비어 있거나 실행이 실패하면 미검증으로 남긴다.
+
+사용자의 기존 Cloud Shell 저장소에서 실행할 명령:
 
 ```bash
-curl -sS --connect-timeout 7 --max-time 12 -o /dev/null \
-  -w 'HTTP=%{http_code} IP=%{remote_ip} 연결=%{time_connect}s TLS=%{time_appconnect}s 전체=%{time_total}s\n' \
-  https://apihub.kma.go.kr/
+git -C ~/sfety_map-diagnosis pull --ff-only &&
+python3 ~/sfety_map-diagnosis/docs/evidence/2026-10-25/weather-diagnosis/run_temporary_kma_probe.py --execute
 ```
 
-Cloud Shell 결과는 **Cloud Run API의 실제 출구 검사와 구분**한다. 이후 필요하면 실제 revision/traffic·출구 IP와
-KMA 접근 허용 정책을 대조한다. 비밀값을 노출하거나 프록시/TLS를 우회하지 않는다.
+현재 관리 환경에는 GCP identity/gcloud가 없어 **실제 Job 생성·실행·삭제는 아직 하지 않았다.**
+가짜 gcloud/HTTP 응답을 사용하는 도구 테스트 8개만 공통 외부 통신 차단 실행기로 확인했다(실제 HTTP/TCP 0건).
+문법/`--help`를 확인했고, 기존에 통과한 제품 테스트·브라우저 검수는 반복하지 않았다.
+CLI 명령·인자 전달·로그 필터는 [Job 생성](https://cloud.google.com/sdk/gcloud/reference/run/jobs/create),
+[인자 구분자](https://cloud.google.com/sdk/gcloud/reference/topic/escaping),
+[Cloud Run 로그](https://cloud.google.com/run/docs/logging) 공식 문서와 대조했다.
+
+같은 이미지의 Job도 실패하면 Cloud Run 환경/대상 연결·TLS의 범위를 더 좁히고,
+Job이 성공하면 운영 인스턴스의 경로·DNS·요청 시점 차이를 따로 확인한다. 어느 결과도 단독으로 IP 차단을 확정하지 않는다.
 
 진단 증빙 무결성: [SHA-256](SHA256SUMS). [현재 인계](../../../HANDOFF.md).
