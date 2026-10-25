@@ -1,0 +1,61 @@
+{
+  "scope": "Local development API image through managed proxy and trusted CA; instrumentation verification only. Not a Cloud Run execution or direct KMA TLS proof.",
+  "checkedAtUTC": "2026-10-25T09:25:45.024613+00:00",
+  "python": "3.12.15",
+  "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+  "requests": "2.34.2",
+  "tlsVerification": true,
+  "proxyVariableNamesPresent": [
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy"
+  ],
+  "checks": [
+    {
+      "host": "apihub.kma.go.kr",
+      "path": "/",
+      "authenticated": false,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 4035
+    },
+    {
+      "host": "www.weather.go.kr",
+      "path": "/w/special-report/overall.do",
+      "authenticated": false,
+      "stages": [
+        {
+          "stage": "tcp_connect",
+          "succeeded": true,
+          "elapsedMs": 1
+        },
+        {
+          "stage": "tls_wrap",
+          "succeeded": true,
+          "elapsedMs": 2
+        }
+      ],
+      "httpStatus": 200,
+      "headersReceived": true,
+      "redirectPresent": false,
+      "elapsedMs": 2533
+    }
+  ],
+  "dnsErrorType": "gaierror"
+}

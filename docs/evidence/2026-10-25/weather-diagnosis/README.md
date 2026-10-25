@@ -19,8 +19,11 @@ HTTPS 프록시·CA 신뢰·TLS 검증을 유지했다. 키·쿠키·query·외�
 | 같은 실제 좌표로 KMA 기온 조회 | LIVE·1,244점, 1.975초 | 관리 환경에서는 실제 기온 자료와 파서 정상 |
 | 로컬 API 이미지 1 CPU/1GiB | 원래 provider의 좌표→기온 전체 조회 LIVE·1,244점, 8.502초 | 단위 테스트용 가짜 응답 없이 이미지/의존성/계산 경로 정상 |
 | 운영의 새 지도 포함 PDF | HTTP 200·지도 captured, 7.925초 | 같은 서비스에서 소유 원점/Kakao로 나가는 HTTPS는 동작. 외부 통신 전체 장애로 보기 어려움 |
+| 사용자 Cloud Shell의 KMA 홈페이지 | HTTP 200, IP `203.247.91.39`, TLS 완료 0.438초 | Cloud Shell 경로는 정상. 운영 API 경로와 다름 |
+| 같은 배포 이미지의 서울 Cloud Run Job | 홈페이지·격자 좌표·시설 격자 모두 `ConnectTimeout`, 7.012/7.027/7.020초 | 키/앱을 쓰지 않는 별도 Cloud Run 실행에서도 연결 실패를 재현 |
 
 [원본/운영 비교](checks.json), [API 이미지 확인](container-check.json), [운영 HTTPS 대조](production-egress-control.json).
+[사용자 제공 Cloud Run 실제 진단·삭제 결과](cloud-run-keyless-result.json)는 18:19 KST 실행이다.
 위도/경도 비교는 실제 응답을 재사용해 계산과 자료 조회를 분리했고, 이미지 확인은 원래 provider로 전체 원본 요청을 다시 실행했다.
 **관리 환경·로컬 이미지 결과를 운영 Cloud Run 성공으로 표시하지 않는다.** 두 환경의 실제 키 값이 같다는 것도 확인하지 않았다.
 PDF 대조의 Chromium과 Python requests는 HTTP 클라이언트가 달라, 모든 프록시/연결 설정이 같다는 보증은 아니다.
@@ -71,17 +74,27 @@ annotation이 없다는 사실만으로 프로젝트의 상속 정책·NAT·방�
 이는 **Cloud Shell 경로의 연결 성공**이며, 운영 Cloud Run 인스턴스의 통신 성공은 아니다.
 KMA 전체 장애나 모든 Google Cloud 출구 차단으로 해석할 근거는 줄었지만, 운영의 정확한 실패 원인은 미확정이다.
 
-## 다음 확인: 같은 이미지의 임시 Cloud Run 진단
+이어 사용자 Cloud Shell에서 최초 임시 Cloud Run Job의 실행을 완료했다. 실제 운영 트래픽 100%인 API revision의
+이미지 digest를 사용했고, keyless 홈페이지와 격자 두 주소 모두 약 7초 후 `ConnectTimeout`이었다.
+DNS 결과는 Cloud Shell과 같은 `203.247.91.39`였다. 실행 명령 성공은 **진단 프로그램 완료**를 뜻하며 통신 성공이 아니다.
+임시 Job 삭제 명령 성공도 확인했다. 운영 API·Worker·발송 기능은 호출/변경하지 않았다.
+
+키 없는 홈페이지도 실패하므로 API 사용 권한·쿼터나 격자 파싱보다 앞선 연결 문제에 집중한다.
+그러나 원본 예외와 TCP/TLS 단계는 아직 없으므로 `ConnectTimeout` 문구만으로 특정 패킷 차단·IP 정책을 확정하지 않는다.
+
+## 다음 확인: TCP·TLS 단계와 다른 기상청 호스트 대조
 
 Cloud Shell의 curl과 운영 Python requests는 실행 위치와 TLS 클라이언트가 다르다.
-이를 좁히기 위해 [임시 진단 도구](run_temporary_kma_probe.py)를 준비했다.
+이를 좁히기 위해 [임시 진단 도구](run_temporary_kma_probe.py)를 보완했다.
 기본 실행은 운영 트래픽 100%인 API revision과 immutable 이미지 digest를 읽고 계획만 출력한다.
 `--execute`를 주면 **임시 Cloud Run Job을 새로 생성·1회 실행·로그 수집·삭제**한다. 읽기 전용 동작과 구분한다.
 운영 API·Worker·Scheduler 설정과 트래픽은 변경하지 않으며, 기존 애플리케이션/발송 경로를 호출하지 않는다.
 
 - 같은 API 이미지·서울 리전·runtime 서비스 계정, 1 CPU/1GiB, 1 task·재시도 0·최대 실행 90초다.
   Python 명령을 덮어써 서버를 시작하지 않고, Secret/운영 환경 변수/시설 자료를 읽거나 연결하지 않는다.
-- DNS 주소, Python/OpenSSL/requests 버전과 KMA 홈페이지·격자 두 주소의 HTTP 응답 또는 예외 종류·소요 시간만 출력한다.
+- DNS 주소, Python/OpenSSL/requests 버전과 KMA API 홈페이지·기상청 날씨누리의 HTTP 응답 또는 예외 종류·소요 시간을 출력한다.
+  기존 requests가 호출하는 TCP 연결과 TLS socket wrapping을 그대로 감싸 단계별 성공·예외 종류·시간을 기록한다.
+  직접 socket 연결이나 TLS 버전·cipher·timeout 설정 변경은 하지 않는다. 원래 API revision의 실행 세대 annotation도 읽는다.
   인증키를 사용하지 않으므로 401/403 등의 HTTP 응답도 연결 성립 증거이며, 기상 자료/API 권한 검증은 아니다.
   응답 본문·프록시 값·예외 원문은 출력하지 않고 기본 프록시/CA/TLS 검증을 유지한다.
 - API의 실제 revision에 명시적 VPC·프록시가 있거나 트래픽이 분할되어 있으면 일치 여부를 추측하지 않고 생성 전에 중단한다.
@@ -96,14 +109,19 @@ git -C ~/sfety_map-diagnosis pull --ff-only &&
 python3 ~/sfety_map-diagnosis/docs/evidence/2026-10-25/weather-diagnosis/run_temporary_kma_probe.py --execute
 ```
 
-현재 관리 환경에는 GCP identity/gcloud가 없어 **실제 Job 생성·실행·삭제는 아직 하지 않았다.**
-가짜 gcloud/HTTP 응답을 사용하는 도구 테스트 8개만 공통 외부 통신 차단 실행기로 확인했다(실제 HTTP/TCP 0건).
-문법/`--help`를 확인했고, 기존에 통과한 제품 테스트·브라우저 검수는 반복하지 않았다.
+현재 관리 환경에는 GCP identity/gcloud가 없어 직접 제어 영역 조회/Job 실행은 할 수 없다.
+**최초 Job은 사용자가 실제 실행·삭제했으며, 단계 계측을 추가한 새 Job은 아직 실행하지 않았다.**
+가짜 gcloud/HTTP 응답을 사용하는 도구 테스트 10개를 공통 외부 통신 차단 실행기로 확인했다(실제 HTTP/TCP 0건).
+TCP 실패와 TCP 성공 후 TLS 실패를 구분하고 원래 함수를 복원하는 검사 2개를 추가했다.
+또한 [로컬 개발 이미지의 실제 계측 확인](local-stage-instrumentation.json)에서 두 호스트 모두 HTTP 200과 TCP/TLS 단계 기록을 확인했다.
+이는 관리 프록시·신뢰 CA를 통한 계측 동작 확인이며, 직접 KMA TLS나 운영 Cloud Run 성공이 아니다.
+문법/`--help`를 확인했고 기존에 통과한 제품 테스트·브라우저 검수는 반복하지 않았다.
 CLI 명령·인자 전달·로그 필터는 [Job 생성](https://cloud.google.com/sdk/gcloud/reference/run/jobs/create),
 [인자 구분자](https://cloud.google.com/sdk/gcloud/reference/topic/escaping),
 [Cloud Run 로그](https://cloud.google.com/run/docs/logging) 공식 문서와 대조했다.
 
-같은 이미지의 Job도 실패하면 Cloud Run 환경/대상 연결·TLS의 범위를 더 좁히고,
-Job이 성공하면 운영 인스턴스의 경로·DNS·요청 시점 차이를 따로 확인한다. 어느 결과도 단독으로 IP 차단을 확정하지 않는다.
+API Hub의 TCP 단계가 실패하고 날씨누리가 성공하면 해당 목적지로의 출구/접근 정책을 우선 확인한다.
+TCP 성공 후 TLS만 실패하면 TLS 협상·서버/중간 장비 호환성으로 좁힌다. 두 호스트 모두 실패하면 더 넓은 연결 경로를 확인한다.
+어느 결과도 단독으로 특정 주체의 IP 차단이나 운영 복구를 확정하지 않는다.
 
 진단 증빙 무결성: [SHA-256](SHA256SUMS). [현재 인계](../../../HANDOFF.md).

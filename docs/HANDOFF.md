@@ -38,8 +38,11 @@ Telegram·SMS 시험 발송과 운영 수동전파·Worker·dispatch·발송 시
 API의 KMA 연결 경로 문제가 가장 유력하다. 후속 사용자 Cloud Shell 조회에서 API/Worker의 VPC·egress annotation은 null,
 프록시 변수는 없고 서비스 계정·KMA Secret 참조는 같았다. 격자 경로의 세부 예외·실제 출구 차이·정확한 차단 원인은
 아직 확인하지 못했다. 사용자 Cloud Shell의 KMA 홈페이지 조회는 HTTP 200/TLS 완료 0.438초였다.
-같은 이미지·리전의 임시 Cloud Run Job용 진단 도구를 준비했고, 가짜 응답으로 도구 테스트 8개(외부 통신 0건)를 통과했다.
-실제 Job 실행은 아직 하지 않았다. 앱/운영 설정을 바꾸거나 재배포하지 않았다.
+18:19 KST 사용자 실행 임시 Cloud Run Job도 KMA 홈페이지·격자 두 주소에서 약 7초 후 `ConnectTimeout`이었다.
+Cloud Shell과 같은 목적지 IP `203.247.91.39`를 확인했고, 임시 Job 삭제 성공을 확인했다.
+다음 계측용 도구에 TCP/TLS 단계·날씨누리 대조를 추가했다. 도구 테스트 10개(실제 외부 통신 0건)와 관리 프록시를 쓰는
+로컬 개발 이미지의 계측 기록을 확인했다. **단계 계측을 추가한 실제 Cloud Run 재검사는 미실행**이다.
+앱/운영 설정을 바꾸거나 재배포하지 않았다.
 
 이전 [최종 리뷰](evidence/2026-10-25/final-review/README.md), [로컬 통합](evidence/2026-10-25/nearby-integration/README.md),
 [보고서 시안](evidence/2026-10-25/nearby-preview/README.md), [기상 시안·선택](WEATHER_VISUAL_REVIEW.md)은 당시 단계 기록이다.
@@ -188,9 +191,10 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
 **다음 시작점 하나**: 사용자의 Cloud Shell에서 [임시 Cloud Run 진단 도구](evidence/2026-10-25/weather-diagnosis/run_temporary_kma_probe.py)를
-`--execute`로 실행해 같은 API 이미지·리전의 KMA 연결 결과를 받는다. 이 옵션은 읽기 전용이 아니라
+`--execute`로 실행해 같은 API 이미지·리전의 **TCP/TLS 단계와 날씨누리 대조** 결과를 받는다. 이 옵션은 읽기 전용이 아니라
 진단 Job 생성·1회 실행·삭제이며 운영 서비스/Worker/발송은 호출하지 않는다. [검증 범위와 명령](evidence/2026-10-25/weather-diagnosis/README.md)을 따른다.
-API/Worker 설정 비교와 Cloud Shell curl은 완료했다. 임시 Job 결과를 실제 운영 API 인스턴스의 복구로 표시하지 않는다.
+API/Worker 설정 비교·Cloud Shell curl·최초 Cloud Run Job은 완료했고 최초 Job의 연결 실패를 확인했다.
+단계별 결과로 목적지 연결 경로와 TLS 협상을 구분한다. 임시 Job 결과를 실제 운영 API 인스턴스의 복구로 표시하지 않는다.
 현재 관리 환경에는 GCP identity/manifest와 gcloud가 없어 제어 영역 직접 조회는 실행하지 못했다.
 연결 문제 해결 후 실제 실황으로 바람/기온/강수 표현을 재검수한다.
 프록시·TLS 우회나 시험 발송/Worker·dispatch 호출로 확인하지 않는다.

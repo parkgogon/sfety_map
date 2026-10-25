@@ -92,7 +92,7 @@ class TemporaryKmaProbeTests(unittest.TestCase):
         response = Mock(status_code=403, headers={})
         response.__enter__ = Mock(return_value=response)
         response.__exit__ = Mock(return_value=False)
-        with patch("requests.get", side_effect=[response, requests.ConnectTimeout(sentinel), response]) as get, \
+        with patch("requests.get", side_effect=[response, requests.ConnectTimeout(sentinel)]) as get, \
              patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("203.247.91.39", 443))]), \
              patch.dict(os.environ, {"HTTPS_PROXY": sentinel, "KMA_API_KEY": sentinel}), \
              contextlib.redirect_stdout(io.StringIO()) as output:
@@ -100,13 +100,65 @@ class TemporaryKmaProbeTests(unittest.TestCase):
         self.assertNotIn(sentinel, output.getvalue())
         data = json.loads(output.getvalue()[len(probe.PREFIX):])
         self.assertEqual(data["checks"][1]["errorType"], "ConnectTimeout")
-        self.assertEqual(len(get.call_args_list), 3)
+        self.assertEqual(len(get.call_args_list), 2)
         for call in get.call_args_list:
-            self.assertTrue(call.args[0].startswith("https://apihub.kma.go.kr/"))
+            self.assertTrue(call.args[0].startswith(("https://apihub.kma.go.kr/", "https://www.weather.go.kr/")))
             self.assertNotIn("?", call.args[0])
             self.assertTrue(call.kwargs.get("verify", True))
             self.assertFalse(call.kwargs["allow_redirects"])
             self.assertNotIn("proxies", call.kwargs)
+
+    def test_stage_tracing_preserves_tcp_failure_and_restores_originals(self):
+        import ssl
+        import urllib3.util.connection
+        response = Mock(status_code=200, headers={})
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        sentinel = "PRIVATE_ERROR_MUST_NOT_APPEAR"
+        def fake_get(url, **kwargs):
+            if "apihub" in url:
+                try:
+                    urllib3.util.connection.create_connection(("apihub.kma.go.kr", 443), 7)
+                except TimeoutError as error:
+                    raise requests.ConnectTimeout(sentinel) from error
+            else:
+                urllib3.util.connection.create_connection(("www.weather.go.kr", 443), 7)
+                ssl.SSLContext.wrap_socket(Mock(), Mock(), server_hostname="www.weather.go.kr")
+            return response
+        with patch("urllib3.util.connection.create_connection", side_effect=[TimeoutError(sentinel), Mock()]) as connect, \
+             patch("ssl.SSLContext.wrap_socket", return_value=Mock()) as wrap, \
+             patch("socket.getaddrinfo", return_value=[]), patch("requests.get", side_effect=fake_get), \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            exec(compile(probe.PAYLOAD, "<diagnostic>", "exec"), {})
+            self.assertIs(urllib3.util.connection.create_connection, connect)
+            self.assertIs(ssl.SSLContext.wrap_socket, wrap)
+        data = json.loads(output.getvalue()[len(probe.PREFIX):])
+        self.assertNotIn(sentinel, output.getvalue())
+        self.assertEqual(data["checks"][0]["stages"][0]["stage"], "tcp_connect")
+        self.assertFalse(data["checks"][0]["stages"][0]["succeeded"])
+        self.assertEqual([step["stage"] for step in data["checks"][1]["stages"]], ["tcp_connect", "tls_wrap"])
+        self.assertTrue(all(step["succeeded"] for step in data["checks"][1]["stages"]))
+
+    def test_tls_failure_is_separate_from_successful_tcp(self):
+        import ssl
+        import urllib3.util.connection
+        def fake_get(url, **kwargs):
+            urllib3.util.connection.create_connection(("target", 443), 7)
+            try:
+                ssl.SSLContext.wrap_socket(Mock(), Mock(), server_hostname="target")
+            except TimeoutError as error:
+                raise requests.ConnectTimeout("private TLS details") from error
+        with patch("urllib3.util.connection.create_connection", return_value=Mock()), \
+             patch("ssl.SSLContext.wrap_socket", side_effect=TimeoutError("private TLS details")), \
+             patch("socket.getaddrinfo", return_value=[]), patch("requests.get", side_effect=fake_get), \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            exec(compile(probe.PAYLOAD, "<diagnostic>", "exec"), {})
+        data = json.loads(output.getvalue()[len(probe.PREFIX):])
+        self.assertNotIn("private TLS details", output.getvalue())
+        steps = data["checks"][0]["stages"]
+        self.assertTrue(steps[0]["succeeded"])
+        self.assertFalse(steps[1]["succeeded"])
+        self.assertEqual(steps[1]["stage"], "tls_wrap")
 
 
 if __name__ == "__main__":

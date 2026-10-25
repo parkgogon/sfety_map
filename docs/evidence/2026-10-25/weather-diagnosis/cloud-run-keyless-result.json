@@ -1,0 +1,30 @@
+{
+  "source": "User-provided Cloud Shell diagnostic output; assistant did not query GCP directly.",
+  "job": "kma-net-diag-20261025091930-8a70ab",
+  "execution": "kma-net-diag-20261025091930-8a70ab-kqr4m",
+  "executionCommandSucceeded": true,
+  "deleteCommandSucceeded": true,
+  "productionSource": {
+    "revision": "safety-dashboard-api-00086-zn7",
+    "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api@sha256:7e8385ef90431de8e949282f011aa31cbae947ed8e8e8d37f75c0f7222ce2fe8",
+    "serviceAccount": "safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com"
+  },
+  "probeResult": {
+    "scope": "Temporary Cloud Run Job, not the running production API instance. No key, app or Worker calls.",
+    "checkedAtUTC": "2026-10-25T09:19:38.939602+00:00",
+    "python": "3.12.15",
+    "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+    "requests": "2.34.2",
+    "tlsVerification": true,
+    "proxyVariableNamesPresent": [],
+    "resolvedIPs": ["203.247.91.39"],
+    "checks": [
+      {"host": "apihub.kma.go.kr", "path": "/", "authenticated": false,
+       "errorType": "ConnectTimeout", "elapsedMs": 7012},
+      {"host": "apihub.kma.go.kr", "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api", "authenticated": false,
+       "errorType": "ConnectTimeout", "elapsedMs": 7027},
+      {"host": "apihub.kma.go.kr", "path": "/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat", "authenticated": false,
+       "errorType": "ConnectTimeout", "elapsedMs": 7020}
+    ]
+  }
+}

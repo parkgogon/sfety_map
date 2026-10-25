@@ -17,6 +17,7 @@ PREFIX = "KMA_NET_DIAG "
 PAYLOAD = r'''
 import datetime, json, os, platform, socket, ssl, time
 import requests
+import urllib3.util.connection
 
 result = {
     "scope": "Temporary Cloud Run Job, not the running production API instance. No key, app or Worker calls.",
@@ -32,14 +33,42 @@ try:
         "apihub.kma.go.kr", 443, type=socket.SOCK_STREAM)})
 except OSError as error:
     result["dnsErrorType"] = type(error).__name__
-paths = ["/", "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
-         "/api/typ01/cgi-bin/url/nph-dfs_xy_lonlat"]
-for path in paths:
-    record = {"host": "apihub.kma.go.kr", "path": path, "authenticated": False}
+original_connect = urllib3.util.connection.create_connection
+original_wrap = ssl.SSLContext.wrap_socket
+steps = []
+
+def measured(stage, function, *args, **kwargs):
+    start = time.monotonic()
+    entry = {"stage": stage}
+    try:
+        value = function(*args, **kwargs)
+        entry["succeeded"] = True
+        return value
+    except Exception as error:
+        entry.update(succeeded=False, errorType=type(error).__name__)
+        raise
+    finally:
+        entry["elapsedMs"] = round((time.monotonic() - start) * 1000)
+        steps.append(entry)
+
+def traced_connect(*args, **kwargs):
+    return measured("tcp_connect", original_connect, *args, **kwargs)
+
+def traced_wrap(*args, **kwargs):
+    return measured("tls_wrap", original_wrap, *args, **kwargs)
+
+# 계측은 기존 호출을 그대로 감싼다. 직접 socket 연결·프록시 우회·TLS 설정 변경은 없다.
+urllib3.util.connection.create_connection = traced_connect
+ssl.SSLContext.wrap_socket = traced_wrap
+try:
+  for host, path in [("apihub.kma.go.kr", "/"),
+                     ("www.weather.go.kr", "/w/special-report/overall.do")]:
+    steps = []
+    record = {"host": host, "path": path, "authenticated": False, "stages": steps}
     start = time.monotonic()
     try:
         # requests의 기본 프록시/CA/TLS 검증 유지. 본문/query/비밀값을 출력하지 않는다.
-        with requests.get("https://apihub.kma.go.kr" + path, timeout=(7, 7),
+        with requests.get("https://" + host + path, timeout=(7, 7),
                           allow_redirects=False, stream=True) as response:
             record["httpStatus"] = response.status_code
             record["headersReceived"] = True
@@ -48,6 +77,9 @@ for path in paths:
         record["errorType"] = type(error).__name__
     record["elapsedMs"] = round((time.monotonic() - start) * 1000)
     result["checks"].append(record)
+finally:
+    urllib3.util.connection.create_connection = original_connect
+    ssl.SSLContext.wrap_socket = original_wrap
 print("KMA_NET_DIAG " + json.dumps(result, ensure_ascii=False), flush=True)
 '''
 
@@ -99,7 +131,8 @@ def production_image(project, region):
         image = image.split("@", 1)[0].rsplit(":", 1)[0] + "@" + digest
     if "@sha256:" not in image or not spec.get("serviceAccountName"):
         raise RuntimeError("Immutable API image or service account is unknown; no Job created.")
-    return {"revision": revision, "image": image, "serviceAccount": spec["serviceAccountName"]}
+    return {"revision": revision, "image": image, "serviceAccount": spec["serviceAccountName"],
+            "executionEnvironmentAnnotation": annotations.get("run.googleapis.com/execution-environment")}
 
 
 def run_probe(project, region, source, *, pause=time.sleep):
