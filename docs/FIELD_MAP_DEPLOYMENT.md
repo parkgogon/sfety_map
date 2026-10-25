@@ -117,6 +117,39 @@ unset ADMIN_PASSWORD_INPUT
 - Firebase 보호 API rewrite: `/internal/**`
 - 기본 Artifact Registry 저장소: `safety-dashboard`
 
+## 주변 시설 보고서 지도 캡처 — 배포 전 구현
+
+2026-10-25 기능 브랜치에 준비한 설정이다. 실제 운영 배포·수동 워크플로 실행은 하지 않았다.
+기존 `POST /api/v1/reports/nearby.pdf`에 실제 지도와 고도화 PDF를 연결했으며 입력은 유지한다.
+
+| 설정 | 기본값 / 향후 배포 설정 |
+|---|---|
+| `NEARBY_MAP_CAPTURE_ENABLED` | 코드 기본 `false`, 준비한 API 배포 설정 `true` |
+| `DASHBOARD_BASE_URL` | 등록된 소유 HTTPS 원점, 기본 `https://keco-safety-map.web.app` |
+| `NEARBY_MAP_TIMEOUT_SECONDS` | 20초, 허용 5~30초 |
+| `NEARBY_CHROMIUM_EXECUTABLE` | `/usr/bin/chromium` |
+| API 자원 | 1 CPU / 1GiB, 기존 concurrency 40·min 0·max 3 유지 |
+| Worker 자원 | 기존 1 CPU / 512Mi·concurrency 1·max 1 유지, 브라우저 미포함 |
+
+`Dockerfile.api --target api`는 Chromium·Python Playwright·tini를 포함하고 `--target worker`는
+기존 Python 실행 환경만 포함한다. CI에서 서로 다른 API/Worker 이미지로 빌드한다.
+인스턴스당 캡처 1·보고서 요청 3·PDF 계산 1건을 제한한다. 서비스 전체 캡처 1건 제한은 아니다.
+전용 `report-map.html`은 같은 웹 빌드에서 생성하며 기존 `VITE_KAKAO_MAP_APP_KEY`만 사용한다.
+서버용 카카오 비밀키를 추가하지 않는다. 새 페이지도 no-store, 해시 assets는 immutable이다.
+
+별도 배포 요청을 받았을 때의 수용 조건:
+
+- 등록된 원점의 `report-map.html`과 연결된 assets가 200이며 지도 페이지 계약 버전이 1인지 확인한다.
+- 해당 정적 페이지와 API를 같은 변경으로 반영한다. API가 먼저 반영돼 페이지가 없으면 목록/집계 PDF로 전환한다.
+- Cloud Run에서 실제 SDK/타일·CA 신뢰·시작 시간·메모리·기존 조회 API 지연을 확인한다.
+- 현장/관제에서 지도 포함 PDF와 실패 안내 PDF, 닫기 취소·중복 방지를 배포 후 확인한다.
+- 지도 장애 복구는 API의 `NEARBY_MAP_CAPTURE_ENABLED=false`로 캡처를 끈다. 목록/집계 PDF는 유지된다.
+
+서버는 지정 원점의 지도 HTML/assets 및 `dapi.kakao.com`, `t1.kakaocdn.net`, `mts.kakaocdn.net` GET만
+허용하며 보고서 생성으로 업무 API·KMA·Worker·발송 경로를 호출하지 않는다. 기준점·캡처·PDF를 영구 저장하지 않는다.
+로컬 1 CPU/1GiB 검수 결과는 [통합 증빙](evidence/2026-10-25/nearby-integration/README.md)에 있으며
+Cloud Run 배포 후 검증을 대신하지 않는다.
+
 ## Firebase Hosting 캐시
 
 Firebase의 사용자 지정 헤더는 rewrite 후 파일이 아니라 최초 요청 URL에 맞춰

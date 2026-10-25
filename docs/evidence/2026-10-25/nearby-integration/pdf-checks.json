@@ -1,0 +1,65 @@
+{
+  "scope": "Final local API output; Poppler text/bounds checks and separately reviewed raster pages. Native Kakao map pixels are not used for text validation.",
+  "records": [
+    {
+      "case": "three",
+      "facilityCount": 3,
+      "pages": 1,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": false
+    },
+    {
+      "case": "zero",
+      "facilityCount": 0,
+      "pages": 1,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": false
+    },
+    {
+      "case": "single",
+      "facilityCount": 1,
+      "pages": 1,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": false
+    },
+    {
+      "case": "many",
+      "facilityCount": 41,
+      "pages": 4,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": false
+    },
+    {
+      "case": "map-timeout",
+      "facilityCount": 3,
+      "pages": 1,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": true
+    },
+    {
+      "case": "concurrent-busy",
+      "facilityCount": 3,
+      "pages": 1,
+      "allFacilityNamesPresent": true,
+      "textOutsidePage": 0,
+      "contactPatterns": 0,
+      "productionBadge": true,
+      "mapFailureLabel": true
+    }
+  ]
+}

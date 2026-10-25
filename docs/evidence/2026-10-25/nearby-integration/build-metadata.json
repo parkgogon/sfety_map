@@ -1,0 +1,57 @@
+{
+  "localOnly": true,
+  "versions": {
+    "chromium": "Chromium 156.0.8078.47 built on Debian GNU/Linux 13 (trixie)",
+    "playwright": "1.64.1"
+  },
+  "images": {
+    "sfety-nearby-api:local": "sha256:bd06d62b7188894cd63e0f960fad74f76d2e56fd8ed620accb25b8a74ab65424",
+    "sfety-nearby-worker:local": "sha256:30ee459f2dec57053d8a441c185ce25a720d098f3c7f073eed4c1455d867f283"
+  },
+  "webBuildAssets": [
+    {
+      "name": "assets/index-DHKrX7S_.js",
+      "sha256": "34b3c0fb65a7f8a6910c6588a869fcfcd96127e216ab111d9a5906bf5f76d016"
+    },
+    {
+      "name": "assets/index-DHKrX7S_.js.map",
+      "sha256": "7408675cb2cdfdd3dadbcb871e141893e0789679144222dd3402a3dd0f68fcd1"
+    },
+    {
+      "name": "assets/index-DumPJTgr.css",
+      "sha256": "ae8bc0448eb2742eae81f8a6deb737301b72b9b8f53f582f546038f65347e375"
+    },
+    {
+      "name": "assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "sha256": "418c206484b89b68ef5f067277831e583fc9193a62aadf4de269acaaeb12a85f"
+    },
+    {
+      "name": "assets/report-map-2oIgmCdc.js",
+      "sha256": "b6fd952123e5a93f302b6e125c872eb69aad3aa4a8d8dc7ceedf1a106c322898"
+    },
+    {
+      "name": "assets/report-map-2oIgmCdc.js.map",
+      "sha256": "4251a17607bc28cee2f929e54665cd8a9cf0b0d20646e079e76272b52f0fc379"
+    },
+    {
+      "name": "assets/report-map-CAZGlDsn.css",
+      "sha256": "3469282c1fb810ef3ea171582016615c6bc78144df08312954f7c66e0d3a8786"
+    },
+    {
+      "name": "assets/report-map-font-0JXniyoK.ttf",
+      "sha256": "c33fd4bb463a222abbb887dcac09716907f2e9c723d9e061722ddb503663acce"
+    },
+    {
+      "name": "index.html",
+      "sha256": "11367567e03aba3d7d557d05b9ff1e76cc66c423b1426bd0506b3c235c134025"
+    },
+    {
+      "name": "report-map.html",
+      "sha256": "710ac730f6ed28efdefc384adbdfec5b2e1dfa9e9ee83fb320903f9bec184bdd"
+    }
+  ],
+  "apiSourceCommit": "6eaf81d",
+  "webSourceCommit": "c359064065fdfb095ba01392172f6058bc8ba0ef",
+  "fontLicenseEmbedded": true,
+  "fontGlyphAndMetricTablesUnchanged": true
+}

@@ -1,0 +1,170 @@
+{
+  "scope": "Real SDK local API smoke after embedding font license; same glyphs/metrics, final rebuilt assets, no production deployment.",
+  "status": 200,
+  "mapStatus": "captured",
+  "facilityCount": 3,
+  "facilityDigest": "155982007d530c6c9b9ce1ef3f13d38f66f3ebc34154e861b27286937f67115d",
+  "milliseconds": 6797,
+  "pdfBytes": 1367261,
+  "pdfSha256": "7ff4eeb9478ed843a15487a6adb6aec708c7211645bf31f93ac146fe2215cb4b",
+  "server": {
+    "scope": "Local API container and real SDK/tiles; static page response overrides only. No production app/API requests.",
+    "activeCaptures": 0,
+    "maxActiveCaptures": 1,
+    "captures": [
+      {
+        "status": "captured"
+      }
+    ],
+    "responses": [
+      {
+        "host": "dapi.kakao.com",
+        "path": "/v2/maps/sdk.js",
+        "status": 200
+      },
+      {
+        "host": "t1.kakaocdn.net",
+        "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+        "status": 200
+      },
+      {
+        "host": "t1.kakaocdn.net",
+        "path": "/mapjsapi/images/2x/bg_tile.png",
+        "status": 200
+      },
+      {
+        "host": "t1.kakaocdn.net",
+        "path": "/mapjsapi/images/2x/m_bi_b.png",
+        "status": 200
+      },
+      {
+        "host": "t1.kakaocdn.net",
+        "path": "/mapjsapi/images/2x/transparent.gif",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/46.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/44.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/45.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/48.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/46.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/44.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/46.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/43.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/43.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/47.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/48.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/44.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/43.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/47.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/48.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/45.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/41/45.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/43.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/38/45.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/48.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/46.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/39/47.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/44.png",
+        "status": 200
+      },
+      {
+        "host": "mts.kakaocdn.net",
+        "path": "/api/v1/tile/PNG02/v27_pps0b/latest/8/40/47.png",
+        "status": 200
+      }
+    ],
+    "failures": [],
+    "lastCaptureMs": 6156,
+    "cgroupMemoryBytes": 166346752
+  }
+}
