@@ -1,0 +1,39 @@
+{
+  "scope": "Actual production browser metadata only; query strings, headers, cookies, credentials and raw API responses excluded. Tile ERR_ABORTED events are transition cancellations; settled captures had all visible tiles complete.",
+  "records": [
+    {
+      "source": "live-browser-checks.json",
+      "responses": 364,
+      "statusCounts": {
+        "200": 364
+      },
+      "hostStatusCounts": {
+        "keco-safety-map.web.app 200": 27,
+        "dapi.kakao.com 200": 3,
+        "t1.kakaocdn.net 200": 30,
+        "mts.kakaocdn.net 200": 304
+      },
+      "failureCounts": {
+        "mts.kakaocdn.net net::ERR_ABORTED": 73
+      },
+      "pageErrors": 0,
+      "guardBlockedRequests": 0
+    },
+    {
+      "source": "settled-browser-checks.json",
+      "responses": 62,
+      "statusCounts": {
+        "200": 62
+      },
+      "hostStatusCounts": {
+        "keco-safety-map.web.app 200": 13,
+        "dapi.kakao.com 200": 2,
+        "t1.kakaocdn.net 200": 16,
+        "mts.kakaocdn.net 200": 31
+      },
+      "failureCounts": {},
+      "pageErrors": 0,
+      "guardBlockedRequests": 0
+    }
+  ]
+}

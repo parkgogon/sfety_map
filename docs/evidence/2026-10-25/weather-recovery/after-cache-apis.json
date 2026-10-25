@@ -1,0 +1,61 @@
+{
+  "scope": "Normal public production reads after the initial 600-second grid cache lifetime; no cache-bypass parameters, force refresh, response overrides or Worker/send calls.",
+  "checkedAtKST": "2026-10-25T19:27:37.810296+09:00",
+  "records": [
+    {
+      "path": "/api/v1/health",
+      "httpStatus": 200,
+      "status": "ok",
+      "detail": null,
+      "actualData": null,
+      "points": 0,
+      "observedAt": null,
+      "fetchedAt": null,
+      "elapsedMs": 519
+    },
+    {
+      "path": "/api/v1/facilities/3077/weather",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 초단기실황",
+      "actualData": true,
+      "points": 0,
+      "observedAt": "2026-10-25T18:00:00+09:00",
+      "fetchedAt": null,
+      "elapsedMs": 773
+    },
+    {
+      "path": "/api/v1/weather/layers/wind",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:10:00+09:00",
+      "fetchedAt": "2026-10-25T19:26:20.286380+09:00",
+      "elapsedMs": 625
+    },
+    {
+      "path": "/api/v1/weather/layers/temperature",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:10:00+09:00",
+      "fetchedAt": "2026-10-25T19:27:36.973743+09:00",
+      "elapsedMs": 872
+    },
+    {
+      "path": "/api/v1/weather/layers/rainfall",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:10:00+09:00",
+      "fetchedAt": "2026-10-25T19:27:37.341944+09:00",
+      "elapsedMs": 810
+    }
+  ]
+}

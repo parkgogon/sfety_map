@@ -121,6 +121,9 @@ unset ADMIN_PASSWORD_INPUT
 
 2026-10-25 사용자 승인으로 main `616d7a2`를 자동 배포했다. [운영 검수](evidence/2026-10-25/production-deploy/README.md). 수동 워크플로 실행은 하지 않았다.
 기존 `POST /api/v1/reports/nearby.pdf`에 실제 지도와 고도화 PDF를 연결했으며 입력은 유지한다.
+19:14 KST 사용자가 같은 이미지로 API만 `safety-dashboard-api-kma-refresh-20261025101443`에 재기동하고 100% LATEST로 전환했다.
+[후속 운영 복구 검수](evidence/2026-10-25/weather-recovery/README.md)에서 시설/세 실황 LIVE·캐시 만료 후 새 자료 갱신·지도 PDF를 확인했다.
+웹 소스는 `616d7a2`로 같고 Worker/Scheduler는 이번 복구에서 변경하지 않았다.
 
 | 설정 | 기본값 / 운영 설정 |
 |---|---|

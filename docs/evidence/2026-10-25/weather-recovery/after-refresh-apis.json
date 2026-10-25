@@ -1,0 +1,62 @@
+{
+  "scope": "Actual public production APIs after user-deployed same-image API refresh. Proxy/TLS verification retained. No response overrides, simulation, Worker/dispatch or forced monitoring refresh.",
+  "checkedAtKST": "2026-10-25T19:16:15.938508+09:00",
+  "reportedRevision": "safety-dashboard-api-kma-refresh-20261025101443",
+  "records": [
+    {
+      "path": "/api/v1/health",
+      "httpStatus": 200,
+      "status": "ok",
+      "detail": null,
+      "actualData": null,
+      "points": 0,
+      "observedAt": null,
+      "fetchedAt": null,
+      "elapsedMs": 676
+    },
+    {
+      "path": "/api/v1/facilities/3077/weather",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 초단기실황",
+      "actualData": true,
+      "points": 0,
+      "observedAt": "2026-10-25T18:00:00+09:00",
+      "fetchedAt": null,
+      "elapsedMs": 1170
+    },
+    {
+      "path": "/api/v1/weather/layers/wind",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:00:00+09:00",
+      "fetchedAt": "2026-10-25T19:16:13.260849+09:00",
+      "elapsedMs": 2313
+    },
+    {
+      "path": "/api/v1/weather/layers/temperature",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:00:00+09:00",
+      "fetchedAt": "2026-10-25T19:16:15.035165+09:00",
+      "elapsedMs": 2320
+    },
+    {
+      "path": "/api/v1/weather/layers/rainfall",
+      "httpStatus": 200,
+      "status": "LIVE",
+      "detail": "기상청 동네예보 격자 실황",
+      "actualData": true,
+      "points": 1244,
+      "observedAt": "2026-10-25T19:00:00+09:00",
+      "fetchedAt": "2026-10-25T19:16:15.556541+09:00",
+      "elapsedMs": 737
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "source": "User-provided Cloud Shell deployment output; not a direct assistant GCP metadata query.",
+  "service": "safety-dashboard-api",
+  "project": "keco-safety-map",
+  "region": "asia-northeast3",
+  "revision": "safety-dashboard-api-kma-refresh-20261025101443",
+  "reportedTraffic": "100% LATEST",
+  "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api@sha256:7e8385ef90431de8e949282f011aa31cbae947ed8e8e8d37f75c0f7222ce2fe8",
+  "appSource": "616d7a2",
+  "operation": "Same-image API deploy and --to-latest. No app code, web, Worker or Scheduler deployment; no send/Worker/dispatch test calls."
+}

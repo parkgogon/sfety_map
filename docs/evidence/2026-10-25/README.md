@@ -12,9 +12,10 @@
 | 개발용 시안·캡처 검증 완료 | 실제 Kakao 지도·고도화 주변 시설 PDF·기존 비교·성능 측정 | [보고서 시안](nearby-preview/README.md) |
 | 기존 API 통합·SDK 검수 완료 | 카카오 캡처·실패 목록 PDF·취소/동시 요청·1GiB 제한·현장/관제 5폭 | [최종 보고서](nearby-integration/README.md) |
 | 최종 리뷰·보완 완료 | PDF 대기 취소 결함 수정·배포 연동 점검 | [최종 리뷰](final-review/README.md) |
-| 운영 배포·직접 검수 | UI·실제 지도 PDF 확인, 실황 격자 조회 실패, 모의훈련 표현 구분 | [운영 증빙](production-deploy/README.md) |
-| 진단 | 운영 시설 기상 ConnectTimeout 확인·로컬 실제 자료 정상·GCP 경로 설정 미확인 | [기상 진단](weather-diagnosis/README.md) |
-| 미검증 | 실황 기상 회복 후·스마트폰 실기기·관리자 인증 후 | [현재 상태](../../HANDOFF.md) |
+| 최초 운영 배포·직접 검수 | UI·실제 지도 PDF 확인, 당시 실황 격자 오류와 모의훈련 구분 | [운영 증빙](production-deploy/README.md) |
+| 진단 완료·원인 범위 확인 | 운영 ConnectTimeout과 같은 이미지/Secret의 별도 Job LIVE 대조 | [기상 진단](weather-diagnosis/README.md) |
+| 실황 복구·운영 검수 완료 | 동일 이미지 API 재기동 후 세 실황 LIVE·캐시 만료 후 갱신·지도/영상/PDF 직접 검토 | [복구 증빙](weather-recovery/README.md) |
+| 미검증 | 스마트폰 실기기·관리자 인증 후·정확한 DNS/출구 장애 원인/장기 재발 | [현재 상태](../../HANDOFF.md) |
 
 최종 Python 검증: 256개(외부 HTTP/TCP 0건), 시설 195개 데이터 검증·컴파일 통과.
 React 215개·일반 빌드와 앞선 별도 시안 TypeScript/빌드도 통과했다. PDF를 실제 생성·렌더하고 화면과 연속 프레임을 직접 봤다.
@@ -23,5 +24,5 @@ React 215개·일반 빌드와 앞선 별도 시안 TypeScript/빌드도 통과�
 초기 기상 시안은 합성 입력·자체 개략도다. 이후 혼합형 구현은 실제 SDK·타일과 합성 입력으로 검수했다.
 보고서 시안은 실제 SDK·타일/CSV와 명시한 합성 시설을 사용했다. 채택안을 기존 API에 연결했으며
 로컬 통합 검수 이후 실제 운영 UI/API/SDK로도 검수했다. 모바일은 실기기가 아니다.
-운영 모의훈련 값의 기상 표현은 실제 관측값 검수와 구분한다. 실황 격자 좌표 조회 실패는 남는다.
+운영 모의훈련 값의 기상 표현은 실제 관측값 검수와 구분한다. 19:14 동일 이미지 API 재기동 후 실제 실황도 LIVE로 검수했다.
 main 병합·자동 배포는 승인받아 완료했다. 운영 dispatch·Worker·발송 시험은 하지 않았다.
