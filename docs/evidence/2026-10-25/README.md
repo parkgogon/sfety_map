@@ -11,9 +11,10 @@
 | 구현·SDK 검수 완료 | 혼합형 공통 레이어·현장/관제 PC/모바일 12개 조작 조합 | [구현 검수](weather-mixed/README.md) |
 | 개발용 시안·캡처 검증 완료 | 실제 Kakao 지도·고도화 주변 시설 PDF·기존 비교·성능 측정 | [보고서 시안](nearby-preview/README.md) |
 | 기존 API 통합·SDK 검수 완료 | 카카오 캡처·실패 목록 PDF·취소/동시 요청·1GiB 제한·현장/관제 5폭 | [최종 보고서](nearby-integration/README.md) |
+| 최종 리뷰·보완 완료 | PDF 대기 취소 결함 수정·배포 연동 점검 | [최종 리뷰](final-review/README.md) |
 | 미검증 | 운영 배포 후·스마트폰 실기기 | [현재 상태](../../HANDOFF.md) |
 
-최종 Python 검증: 254개(외부 HTTP/TCP 0건), 시설 195개 데이터 검증·컴파일 통과.
+최종 Python 검증: 256개(외부 HTTP/TCP 0건), 시설 195개 데이터 검증·컴파일 통과.
 React 215개·일반 빌드와 앞선 별도 시안 TypeScript/빌드도 통과했다. PDF를 실제 생성·렌더하고 화면과 연속 프레임을 직접 봤다.
 초기 UI/보고서 브라우저는 로컬 자료·가짜 SDK였다. 최종 통합은 실제 SDK/타일·로컬 수정 앱/API를 사용한다.
 모바일은 모두 viewport 에뮬레이션이다.

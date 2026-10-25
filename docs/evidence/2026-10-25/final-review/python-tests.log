@@ -1,0 +1,20 @@
+/workspace/sfety_map/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+admin_access_denied ip=testclient
+admin_access_rejected_empty ip=testclient
+.................................monitoring_snapshot_save_failed type=RuntimeError
+................................................................................../workspace/sfety_map/.venv/lib/python3.12/site-packages/httpx/_client.py:1053: StarletteDeprecationWarning: You should not use the 'timeout' argument with the TestClient. See https://github.com/Kludex/starlette/issues/1108 for more information.
+  return self.request(
+.......monitoring_snapshot_read_failed type=RuntimeError
+.........................nearby_report_facilities_unavailable
+.............Executing <Task pending name='Task-186' coro=<ReportRouteTests.test_captured_pdf_and_identity_contract() running at /workspace/sfety_map-improvements/tests/test_nearby_report_integration.py:195> cb=[_run_until_complete_cb() at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:181] created at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:100> took 0.106 seconds
+.Executing <Task pending name='Task-194' coro=<ReportRouteTests.test_existing_post_contract_with_map_failure_and_no_monitoring() running at /workspace/sfety_map-improvements/tests/test_nearby_report_integration.py:163> cb=[_run_until_complete_cb() at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:181] created at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:100> took 0.109 seconds
+.Executing <Task pending name='Task-202' coro=<ReportRouteTests.test_request_deadline_and_disconnect_cancel_generation() running at /workspace/sfety_map-improvements/tests/test_nearby_report_integration.py:216> cb=[_run_until_complete_cb() at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:181] created at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:100> took 0.214 seconds
+Executing <Task pending name='Task-202' coro=<ReportRouteTests.test_request_deadline_and_disconnect_cancel_generation() running at /workspace/sfety_map-improvements/tests/test_nearby_report_integration.py:216> cb=[_run_until_complete_cb() at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:181, <1 more>, WorkerThread.stop()] created at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:100> took 0.109 seconds
+.Executing <Task pending name='Task-211' coro=<ReportRouteTests.test_saturated_generation_is_429_and_does_not_block_health() running at /workspace/sfety_map-improvements/tests/test_nearby_report_integration.py:178> cb=[_run_until_complete_cb() at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:181] created at /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:100> took 0.117 seconds
+.............................................................................................
+----------------------------------------------------------------------
+Ran 256 tests in 29.757s
+
+OK
+실제 외부 HTTP·TCP 통신 시도: 0건 (가짜 제공자로 검증)

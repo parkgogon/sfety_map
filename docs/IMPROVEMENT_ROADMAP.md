@@ -21,7 +21,9 @@
   [대표 시안·증빙](evidence/2026-10-25/nearby-preview/README.md). 운영 앱/API 통합 전 개발용이며 Python 244개가 통과했다.
 - [x] 보고서 시안 채택·기존 API 통합·실행 자원/제한 검증. 인스턴스당 캡처 1·보고서 요청 3·PDF 계산 1건,
   지도 실패 시 목록/집계 제공. API 1 CPU/1GiB 검증, Worker 브라우저 제외, 현장/관제 5폭 조작 완료.
-  [통합 증빙](evidence/2026-10-25/nearby-integration/README.md). Python 254·React 215개 통과. 운영 배포 전이다.
+  [통합 증빙](evidence/2026-10-25/nearby-integration/README.md).
+  [최종 리뷰](evidence/2026-10-25/final-review/README.md)에서 PDF 대기 취소를 보완하고 Python 256개를 재검증했다.
+  이전 React 215개·웹 검수 결과는 유지한다. 운영 배포 전이다.
 
 ## 이전 구조 개선 — 2026-10-24
 

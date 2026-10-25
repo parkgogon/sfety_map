@@ -45,7 +45,11 @@ API 전용 Chromium/Playwright/tini 이미지와 브라우저 없는 Worker 이�
 향후 배포 설정은 API 1 CPU/1GiB·캡처 활성화를 준비했지만 실제 배포/워크플로는 실행하지 않았다.
 기본 설정은 캡처 비활성이며, 기능 플래그를 끄면 목록/집계 PDF를 계속 제공한다.
 
-전체 Python **254개**(외부 HTTP/TCP 0건)·React **215개**·데이터/컴파일/빌드 통과.
+최종 리뷰에서 PDF 계산 슬롯 대기 중 닫아도 불필요한 계산이 진행되는 결함을 재현·수정했다.
+대기는 취소할 수 있게 하고, 이미 시작한 계산은 종료·슬롯 반환까지 기다린다.
+전체 Python **256개**(외부 HTTP/TCP 0건)·컴파일을 재검증했다. UI/기상은 바꾸지 않았으며
+이전 React **215개**·데이터/빌드·브라우저 결과를 재사용했다.
+[최종 리뷰·보완 증빙](evidence/2026-10-25/final-review/README.md).
 [완료한 연결 계획](archive/NEARBY_REPORT_INTEGRATION_PLAN_20261025.md),
 [보고서 동작·설정](NEARBY_FACILITY_REPORT.md), [통합 증빙·대표 PDF](evidence/2026-10-25/nearby-integration/README.md).
 [이전 시안·비교 자료](evidence/2026-10-25/nearby-preview/README.md)는 당시 개발 검증 기록이다.
@@ -222,9 +226,10 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 지도 개선 5단계·보고서 시안과 기존 API 연결·통합 검증을 완료했다. 운영 배포는 하지 않았다.
 완료 계획은 보관 폴더에 옮겼으며 [통합 증빙](evidence/2026-10-25/nearby-integration/README.md)에 결과를 모았다.
 
-**다음 시작점 하나**: 기능 브랜치의 [대표 PDF·실패 PDF](evidence/2026-10-25/nearby-integration/README.md)와
-통합 diff를 리뷰한다. 배포 검토 시 전용 정적 페이지/API 동시 반영·카카오 등록 원점·API 1GiB·플래그 복구를
-[배포 문서](FIELD_MAP_DEPLOYMENT.md)의 수용 조건과 대조한다. 실제 배포는 별도 사용자 요청 전 수행하지 않는다.
+**다음 시작점 하나**: [최종 리뷰 결과](evidence/2026-10-25/final-review/README.md)의 배포 후 수용 조건으로
+운영 반영을 준비한다. 전용 정적 페이지/API 연동·카카오 등록 원점·API 1GiB·플래그 복구는
+[배포 문서](FIELD_MAP_DEPLOYMENT.md)를 따른다. 확인된 미해결 코드 차단 사항은 없으며,
+실제 main 병합/push·배포는 별도 사용자 요청 전 수행하지 않는다.
 Geoapify의 실제 품질·실청구는 미검증 대안으로 남는다.
 
 기상 혼합형은 기능 브랜치 구현·SDK 검수를 완료했다. 운영 배포 후 검증·실기기 성능·관리자 인증 후 검수는 남는다.

@@ -1,0 +1,22 @@
+test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report (tests.test_nearby_report_integration.CaptureLimitsTests.test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report) ... FAIL
+
+======================================================================
+FAIL: test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report (tests.test_nearby_report_integration.CaptureLimitsTests.test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/sfety_map-improvements/tests/test_nearby_report_integration.py", line 130, in test_cancel_while_waiting_for_pdf_does_not_render_cancelled_report
+    self.assertTrue(cancelled_without_waiting_for_first)
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 1 test in 0.116s
+
+FAILED (failures=1)
+External HTTP/TCP attempts: 0
+Baseline reproduction confirmed against 9c9c178; working source was not reverted
