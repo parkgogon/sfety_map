@@ -1,0 +1,26 @@
+{
+  "scope": "Read-only public monitoring metadata, no Worker endpoint call.",
+  "status": {
+    "health": "LIVE",
+    "fetched_at": "2026-10-25T13:25:02.550021+09:00",
+    "detail": "",
+    "zone_health": "LIVE",
+    "zone_detail": "KMA 공식 특보구역 최신본"
+  },
+  "generatedAt": "2026-10-25T13:25:02.547269+09:00",
+  "snapshot": null,
+  "topLevelKeys": [
+    "api_version",
+    "generated_at",
+    "status",
+    "policy",
+    "summary",
+    "groups",
+    "warnings",
+    "warning_zones",
+    "facilities",
+    "notices"
+  ],
+  "notices": [],
+  "checkedAtUTC": "2026-10-25T04:30:24.577173+00:00"
+}

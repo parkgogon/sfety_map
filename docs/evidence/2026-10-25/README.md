@@ -13,6 +13,7 @@
 | 기존 API 통합·SDK 검수 완료 | 카카오 캡처·실패 목록 PDF·취소/동시 요청·1GiB 제한·현장/관제 5폭 | [최종 보고서](nearby-integration/README.md) |
 | 최종 리뷰·보완 완료 | PDF 대기 취소 결함 수정·배포 연동 점검 | [최종 리뷰](final-review/README.md) |
 | 운영 배포·직접 검수 | UI·실제 지도 PDF 확인, 실황 격자 조회 실패, 모의훈련 표현 구분 | [운영 증빙](production-deploy/README.md) |
+| 진단 | 운영 시설 기상 ConnectTimeout 확인·로컬 실제 자료 정상·GCP 경로 설정 미확인 | [기상 진단](weather-diagnosis/README.md) |
 | 미검증 | 실황 기상 회복 후·스마트폰 실기기·관리자 인증 후 | [현재 상태](../../HANDOFF.md) |
 
 최종 Python 검증: 256개(외부 HTTP/TCP 0건), 시설 195개 데이터 검증·컴파일 통과.

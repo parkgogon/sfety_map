@@ -3,7 +3,7 @@
 > 마지막 정리: 2026-10-25 KST
 > 운영 소스: `616d7a2` — 최종 검토한 기능 브랜치 `51672b1`을 main에 병합·push했다.
 > 배포 근거: [GitHub Actions 40160348628](https://github.com/parkgogon/sfety_map/actions/runs/40160348628) 테스트·API/Worker·웹·외부 감시 설정 모두 성공.
-> 운영 직접 검수: 2026-10-25 13:06~13:19 KST. 웹 버전 `616d7a2`, UI·카카오 지도 포함 PDF 확인. **실황 기상 격자는 좌표 조회 실패가 남는다.**
+> 운영 직접 검수: 2026-10-25 13:06~13:19 KST. 웹 버전 `616d7a2`, UI·카카오 지도 포함 PDF 확인. **실황 기상 격자 조회 실패가 남으며, 후속 진단에서 시설 기상의 `ConnectTimeout`을 확인했다.**
 
 새 작업자는 [AGENTS.md](../AGENTS.md)와 이 문서를 읽고 실제 Git·코드·테스트를 대조한다.
 문서 인계 커밋은 배포 후 `[skip ci]`로 추가하며 운영 앱 소스 버전과 구분한다.
@@ -33,6 +33,11 @@ Telegram·SMS 시험 발송과 운영 수동전파·Worker·dispatch·발송 시
 
 개인 로컬 브라우저 도구가 없어 클라우드 Chromium으로 조작했다. 모바일은 viewport 에뮬레이션이며 실기기가 아니다.
 운영 검수에는 정적/SDK/API 응답 대체나 가짜 기상 주입을 쓰지 않았다. 운영 모의훈련은 명시한 합성 훈련값이다.
+후속 [기상 진단](evidence/2026-10-25/weather-diagnosis/README.md)에서 운영 시설별 기상이 `ConnectTimeout`/7.342초임을 확인했다.
+같은 provider의 로컬 API 이미지(1 CPU/1GiB)는 실제 기온 1,244점을 정상 처리했고 운영 지도 캡처도 다시 성공했다.
+API의 KMA 연결 경로 문제가 가장 유력하다. 격자 경로의 세부 예외·VPC/NAT/방화벽 중 정확한 원인은
+GCP 조회 연결이 없어 아직 확인하지 못했다. 앱/운영 설정을 바꾸거나 재배포하지 않았다.
+
 이전 [최종 리뷰](evidence/2026-10-25/final-review/README.md), [로컬 통합](evidence/2026-10-25/nearby-integration/README.md),
 [보고서 시안](evidence/2026-10-25/nearby-preview/README.md), [기상 시안·선택](WEATHER_VISUAL_REVIEW.md)은 당시 단계 기록이다.
 
@@ -179,9 +184,11 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: 운영 Cloud Run의 기상 격자 좌표 조회 실패 원인을 읽기 전용으로 진단한다.
-[관측 사실](evidence/2026-10-25/production-deploy/README.md)의 운영 `ERROR`와 관리 환경 원본 200을 구분하고,
-Cloud Run 출구 경로/로그·KMA API 사용 권한을 대조한다. 정상 실황 회복 후 실제 값으로 바람/기온/강수 표현을 재검수한다.
+**다음 시작점 하나**: GCP 조회 계정이 있는 환경에서 [읽기 전용 수집 도구](evidence/2026-10-25/weather-diagnosis/collect_cloud_run_readonly.py)로
+API/Worker의 VPC·egress·프록시 설정을 대조한다. [진단 증빙](evidence/2026-10-25/weather-diagnosis/README.md)의
+운영 `ConnectTimeout`과 관리 환경/로컬 이미지의 실제 KMA 성공을 구분한다.
+현재 환경에는 GCP identity/manifest와 gcloud가 없어 네트워크 제어 영역 조회를 실행하지 못했다.
+연결 문제 해결 후 실제 실황으로 바람/기온/강수 표현을 재검수한다.
 프록시·TLS 우회나 시험 발송/Worker·dispatch 호출로 확인하지 않는다.
 
 현재 배포/인계 작업공간: `/workspace/sfety_map-release-20261025`, main. 운영 앱 소스는 `616d7a2`다.

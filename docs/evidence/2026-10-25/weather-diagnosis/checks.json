@@ -1,0 +1,82 @@
+{
+  "checkedAtUTC": "2026-10-25T04:29:00.498125+00:00",
+  "scope": "Managed environment with configured KMA credential through proxy, compared with public production APIs. No Cloud Run identity or logs are available.",
+  "records": [
+    {
+      "case": "source-coordinate-lat",
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+      "timeoutSeconds": 7,
+      "httpStatus": 200,
+      "bytes": 380781,
+      "elapsedHeaderMs": 3511,
+      "parsedValues": 37697,
+      "minValue": 31.651814,
+      "maxValue": 43.426315,
+      "milliseconds": 4296
+    },
+    {
+      "case": "source-coordinate-lon",
+      "host": "apihub.kma.go.kr",
+      "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+      "timeoutSeconds": 7,
+      "httpStatus": 200,
+      "bytes": 418478,
+      "elapsedHeaderMs": 3494,
+      "parsedValues": 37697,
+      "minValue": 123.310165,
+      "maxValue": 132.774963,
+      "milliseconds": 4277
+    },
+    {
+      "case": "coordinate-scope",
+      "coordinates": 37697,
+      "scopePoints": 1244,
+      "milliseconds": 274
+    },
+    {
+      "case": "temperature-with-real-coordinates",
+      "health": "LIVE",
+      "points": 1244,
+      "message": "기상청 동네예보 격자 실황",
+      "milliseconds": 1975
+    },
+    {
+      "case": "production",
+      "path": "/api/v1/weather/layers/wind",
+      "httpStatus": 200,
+      "status": "ERROR",
+      "health": null,
+      "detail": "기상청 격자 위치를 확인하지 못했습니다.",
+      "message": null,
+      "points": 0,
+      "milliseconds": 7523
+    },
+    {
+      "case": "production",
+      "path": "/api/v1/facilities/3077/weather",
+      "httpStatus": 200,
+      "status": "ERROR",
+      "health": null,
+      "detail": "현재 기상 조회 실패: ConnectTimeout",
+      "message": null,
+      "points": 0,
+      "milliseconds": 7342
+    },
+    {
+      "case": "production",
+      "path": "/api/v1/monitoring",
+      "httpStatus": 200,
+      "status": {
+        "health": "LIVE",
+        "detail": "",
+        "fetched_at": "2026-10-25T13:25:02.550021+09:00"
+      },
+      "health": null,
+      "detail": null,
+      "message": null,
+      "points": 0,
+      "milliseconds": 636
+    }
+  ]
+}

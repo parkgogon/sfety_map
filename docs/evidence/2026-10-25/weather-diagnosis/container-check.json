@@ -1,0 +1,11 @@
+{
+  "scope": "Local API image under 1 CPU/1GiB, real KMA through inherited managed proxy. Not Cloud Run. No API/Worker server is started.",
+  "health": "LIVE",
+  "points": 1244,
+  "message": "기상청 동네예보 격자 실황",
+  "milliseconds": 8502,
+  "requestsVersion": "2.34.2",
+  "providerSourceSha256": "608f7e3a5f6a1d8c3d0510d76b73e42584e68ba10b5472d1a0854982eea2e389",
+  "proxyPresent": true,
+  "tlsVerificationEnabled": true
+}
