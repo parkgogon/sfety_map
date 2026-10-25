@@ -74,15 +74,31 @@ def main():
         records.append(pdf("zero",radius=.1))
         records.append(pdf("single",latitude=36.3526,longitude=128.697,radius=5))
         records.append(pdf("many",radius=50))
+        burst_body={"latitude":35.8714,"longitude":128.6014,"label":"동시 요청 검수","radius_km":5}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            replies=list(pool.map(lambda _:request("POST","/api/v1/reports/nearby.pdf",burst_body), range(4)))
+        outcomes=[{"status":r[0],"mapStatus":{k.lower():v for k,v in r[1].items()}.get("x-nearby-map-status"),"milliseconds":r[3]} for r in replies]
+        assert sum(r["status"]==429 for r in outcomes)==1,outcomes
+        assert sum(r["mapStatus"]=="captured" for r in outcomes)==1,outcomes
+        assert sum(r["mapStatus"]=="busy" for r in outcomes)==2,outcomes
+        records.append({"case":"burst-four","outcomes":outcomes})
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             first=pool.submit(pdf,"concurrent-map")
             wait_active(1)
             records.append(pdf("concurrent-busy",expected="busy"))
             records.append(first.result())
+        before_cancel=state()
         connection = http.client.HTTPConnection("127.0.0.1",8877,timeout=50)
         connection.request("POST","/api/v1/reports/nearby.pdf",body=json.dumps({"latitude":35.8714,"longitude":128.6014,"label":"취소 검수","radius_km":5}),headers={"Content-Type":"application/json"})
-        wait_active(1);connection.close();wait_active(0)
-        records.append({"case":"disconnect","browserReleased":True})
+        limit=time.monotonic()+10
+        while time.monotonic()<limit:
+            current=state()
+            if current["activeCaptures"]==1 and len(current["responses"])>len(before_cancel["responses"]):break
+            time.sleep(.05)
+        else:raise AssertionError("Did not observe live SDK before disconnect")
+        cancel_started=time.monotonic();connection.close();wait_active(0)
+        assert len(state()["captures"])==len(before_cancel["captures"]),"Disconnected SDK capture completed instead of cancelling"
+        records.append({"case":"disconnect","browserReleased":True,"cleanupMs":round((time.monotonic()-cancel_started)*1000),"completedReportsAfterCancel":0})
         records.append(pdf("after-cancel"))
         request("POST","/__qa/mode",{"mode":"blocked"})
         records.append(pdf("map-timeout",expected="timeout"))

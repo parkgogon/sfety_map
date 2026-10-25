@@ -45,7 +45,12 @@ class NearbyReportGenerator:
             task = asyncio.create_task(run_in_threadpool(self._render, report, result))
             transferred = True
             # 호출이 취소돼도 이미 실행 중인 PDF 스레드의 슬롯은 실제 종료 때까지 유지한다.
-            return await asyncio.shield(task)
+            try:
+                return await asyncio.shield(task)
+            except asyncio.CancelledError:
+                # Cloud Run 요청 CPU가 해제되기 전에 이미 시작한 계산과 슬롯 정리를 마친다.
+                await asyncio.shield(asyncio.gather(task, return_exceptions=True))
+                raise
         finally:
             if not transferred:
                 self._requests.release()

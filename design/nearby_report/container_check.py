@@ -69,11 +69,18 @@ for p in Path('/proc').iterdir():
  try:
   lines=(p/'status').read_text().splitlines();name=next(l.split(':',1)[1].strip() for l in lines if l.startswith('Name:'));state=next(l.split()[1] for l in lines if l.startswith('State:'));states[name+' '+state]+=1
  except (OSError,StopIteration):pass
-import json;print(json.dumps(dict(states)))'''
-    processes = json.loads(docker("exec", value, "python", "-c", code))
+import json
+def cgroup(name):
+ try:return Path('/sys/fs/cgroup/'+name).read_text().strip()
+ except OSError:return None
+print(json.dumps({'processes':dict(states),'memoryPeakBytes':cgroup('memory.peak'),'memoryCurrentBytes':cgroup('memory.current'),'memoryEvents':cgroup('memory.events'),'cpuMax':cgroup('cpu.max')}))'''
+    observed = json.loads(docker("exec", value, "python", "-c", code))
     result = {"scope":"Local Docker container only; no production deployment", "memoryLimitBytes":data["HostConfig"]["Memory"],
         "memorySwapLimitBytes":data["HostConfig"]["MemorySwap"], "nanoCpus":data["HostConfig"]["NanoCpus"],
-        "oomKilled":data["State"]["OOMKilled"], "idleProcesses":processes}
+        "oomKilled":data["State"]["OOMKilled"], "idleProcesses":observed["processes"],
+        "memoryPeakBytes":int(observed["memoryPeakBytes"]) if observed["memoryPeakBytes"] else None,
+        "memoryCurrentBytes":int(observed["memoryCurrentBytes"]) if observed["memoryCurrentBytes"] else None,
+        "memoryEvents":observed["memoryEvents"],"cpuMax":observed["cpuMax"]}
     (args.directory / "container-limits.json").write_text(json.dumps(result, indent=2))
     print(json.dumps(result))
 

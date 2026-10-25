@@ -40,9 +40,10 @@ def build_router(services: ApiServices) -> APIRouter:
         stop_watching = asyncio.Event()
         async def disconnected():
             while not stop_watching.is_set():
-                if await connection.is_disconnected():
+                # 본문 파싱은 끝났다. middleware의 체크포인트에 영향받는 비차단 peek 대신
+                # 실제 ASGI disconnect 이벤트를 기다린다.
+                if (await connection.receive())["type"] == "http.disconnect":
                     return
-                await asyncio.sleep(.1)
         generation = asyncio.create_task(services.nearby_reports.generate(report))
         watcher = asyncio.create_task(disconnected())
         try:
@@ -61,10 +62,9 @@ def build_router(services: ApiServices) -> APIRouter:
             LOGGER.error("nearby_report_generation_failed type=%s", type(exc).__name__)
             raise HTTPException(status_code=500, detail="주변 시설 보고서를 생성하지 못했습니다.") from None
         finally:
-            # is_disconnected의 AnyIO CancelScope가 취소를 소비해도 다음 반복에서 끝낸다.
             stop_watching.set()
             watcher.cancel()
-            if not generation.done():
+            if not generation.done() and not generation.cancelling():
                 generation.cancel()
             await asyncio.gather(watcher, generation, return_exceptions=True)
         return Response(content=content, media_type="application/pdf", headers={

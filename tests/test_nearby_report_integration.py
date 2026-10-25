@@ -2,9 +2,10 @@
 import asyncio
 import hashlib
 import io
+import threading
 from pathlib import Path
 import unittest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 import httpx
 from PIL import Image
@@ -81,6 +82,26 @@ class CaptureLimitsTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(content.startswith(b"%PDF"))
         self.assertEqual(status, "unavailable")
 
+    async def test_cancel_during_pdf_waits_for_computation_and_slot_cleanup(self):
+        started, release, finished = threading.Event(), threading.Event(), threading.Event()
+        class HeldRender(NearbyReportGenerator):
+            def _render(self, value, result):
+                started.set()
+                release.wait(timeout=3)
+                try: return super()._render(value, result)
+                finally: finished.set()
+        generator = HeldRender(KakaoReportCapture(enabled=False, origin="https://keco-safety-map.web.app"), ROOT / "fonts/NotoSansKR.ttf")
+        task = asyncio.create_task(generator.generate(report()))
+        self.assertTrue(await asyncio.to_thread(started.wait, 1))
+        task.cancel()
+        await asyncio.sleep(.02)
+        self.assertFalse(task.done())
+        release.set()
+        with self.assertRaises(asyncio.CancelledError): await task
+        self.assertTrue(finished.is_set())
+        content, status = await generator.generate(report())
+        self.assertTrue(content.startswith(b"%PDF"));self.assertEqual(status,"unavailable")
+
 
 class ReportRouteTests(unittest.IsolatedAsyncioTestCase):
     async def test_existing_post_contract_with_map_failure_and_no_monitoring(self):
@@ -139,8 +160,11 @@ class ReportRouteTests(unittest.IsolatedAsyncioTestCase):
             app = create_app(nearby_report_generator=slow)
             timeout = asyncio.timeout
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                async def receive():
+                    if disconnect: return {"type":"http.disconnect"}
+                    await asyncio.Event().wait()
                 with patch("safety_dashboard.api.routes.reports.asyncio.timeout", lambda _: timeout(.03)), \
-                     patch("starlette.requests.Request.is_disconnected", AsyncMock(return_value=disconnect)):
+                     patch("starlette.requests.Request.receive", property(lambda _: receive)):
                     response = await client.post("/api/v1/reports/nearby.pdf", json={"latitude":35,"longitude":129,"label":"검수","radius_km":5})
                 self.assertEqual(response.status_code, 499 if disconnect else 504)
                 self.assertTrue(slow.cleaned)
