@@ -1,0 +1,986 @@
+{
+  "scope": "Actual deployed UI, APIs, Kakao SDK and tiles; real place search/reference/rings/nearest facility selection and mouse pan/zoom. No response overrides.",
+  "records": [
+    {
+      "case": "reference-geometry",
+      "rings": [
+        "1km",
+        "3km",
+        "5km"
+      ],
+      "distance": "직선거리 1.9km",
+      "afterMovingDistance": "직선거리 1.9km"
+    }
+  ],
+  "responses": [
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-DumPJTgr.css",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-BX3YrAJ7.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/monitoring",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_zoom_control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/address.json",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/keyword.json",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/42/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/41/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/40/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/45.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/47.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/48.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/43.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/46.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/44.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/38/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/8/39/42.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/367.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/368.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/370.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/369.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/366.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/367.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/368.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/365.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/320/364.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/369.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/364.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/366.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/369.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/368.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/365.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/367.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/365.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/366.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/367.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/368.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/366.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/364.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/369.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/366.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/369.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/364.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/364.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/365.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/365.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/367.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/368.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/370.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/370.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/370.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/370.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/187.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/186.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/186.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/184.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/182.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/185.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/181.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/161/183.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/185.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/184.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/182.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/183.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/185.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/183.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/184.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/184.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/182.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/181.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/186.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/181.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/183.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/186.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/182.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/181.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/184.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/183.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/186.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/185.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/185.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/181.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/182.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/160/187.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/159/187.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/157/187.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/6/158/187.png",
+      "status": 200
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/369.png",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "errors": [],
+  "forbidden": []
+}

@@ -1,0 +1,112 @@
+{
+  "scope": "Actual production unauthenticated UI; viewport emulation.",
+  "records": [
+    {
+      "app": "control",
+      "width": 360,
+      "overflow": false,
+      "refreshColor": "rgb(20, 39, 70)",
+      "refreshBackground": "rgb(246, 249, 252)",
+      "login": null
+    },
+    {
+      "app": "settings",
+      "width": 360,
+      "overflow": false,
+      "refreshColor": null,
+      "refreshBackground": null,
+      "login": {
+        "text": "관리자 로그인",
+        "whiteSpace": "nowrap",
+        "buttonInViewport": true,
+        "inputInViewport": true
+      }
+    },
+    {
+      "app": "control",
+      "width": 390,
+      "overflow": false,
+      "refreshColor": "rgb(20, 39, 70)",
+      "refreshBackground": "rgb(246, 249, 252)",
+      "login": null
+    },
+    {
+      "app": "settings",
+      "width": 390,
+      "overflow": false,
+      "refreshColor": null,
+      "refreshBackground": null,
+      "login": {
+        "text": "관리자 로그인",
+        "whiteSpace": "nowrap",
+        "buttonInViewport": true,
+        "inputInViewport": true
+      }
+    },
+    {
+      "app": "control",
+      "width": 430,
+      "overflow": false,
+      "refreshColor": "rgb(20, 39, 70)",
+      "refreshBackground": "rgb(246, 249, 252)",
+      "login": null
+    },
+    {
+      "app": "settings",
+      "width": 430,
+      "overflow": false,
+      "refreshColor": null,
+      "refreshBackground": null,
+      "login": {
+        "text": "관리자 로그인",
+        "whiteSpace": "nowrap",
+        "buttonInViewport": true,
+        "inputInViewport": true
+      }
+    },
+    {
+      "app": "control",
+      "width": 700,
+      "overflow": false,
+      "refreshColor": "rgb(20, 39, 70)",
+      "refreshBackground": "rgb(246, 249, 252)",
+      "login": null
+    },
+    {
+      "app": "settings",
+      "width": 700,
+      "overflow": false,
+      "refreshColor": null,
+      "refreshBackground": null,
+      "login": {
+        "text": "관리자 로그인",
+        "whiteSpace": "nowrap",
+        "buttonInViewport": true,
+        "inputInViewport": true
+      }
+    },
+    {
+      "app": "control",
+      "width": 1440,
+      "overflow": false,
+      "refreshColor": "rgb(20, 39, 70)",
+      "refreshBackground": "rgb(246, 249, 252)",
+      "login": null
+    },
+    {
+      "app": "settings",
+      "width": 1440,
+      "overflow": false,
+      "refreshColor": null,
+      "refreshBackground": null,
+      "login": {
+        "text": "관리자 로그인",
+        "whiteSpace": "nowrap",
+        "buttonInViewport": true,
+        "inputInViewport": true
+      }
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

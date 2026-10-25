@@ -1,0 +1,11 @@
+{
+  "scope": "Read-only source request from managed environment, not a Cloud Run log or proof of its failure cause. Proxy and TLS retained.",
+  "host": "apihub.kma.go.kr",
+  "path": "/api/typ01/cgi-bin/url/nph-dfs_latlon_api",
+  "axis": "lat",
+  "httpStatus": 200,
+  "bytes": 380781,
+  "contentType": "text/plain; charset=euc-kr",
+  "parsedValues": 37697,
+  "milliseconds": 4204
+}

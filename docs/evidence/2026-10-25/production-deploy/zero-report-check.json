@@ -1,0 +1,28 @@
+{
+  "scope": "Actual production nearby report POST, zero facilities, no dispatch or persisted server state. HTTPS proxy and TLS retained.",
+  "status": 200,
+  "milliseconds": 7335,
+  "bytes": 1045075,
+  "mapStatus": "captured",
+  "facilityCount": "0",
+  "facilityDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "cacheControl": "no-store",
+  "healthDuringReport": [
+    {
+      "status": 200,
+      "milliseconds": 437
+    },
+    {
+      "status": 200,
+      "milliseconds": 401
+    },
+    {
+      "status": 200,
+      "milliseconds": 368
+    },
+    {
+      "status": 200,
+      "milliseconds": 313
+    }
+  ]
+}

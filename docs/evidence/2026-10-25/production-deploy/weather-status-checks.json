@@ -1,0 +1,35 @@
+[
+  {
+    "layer": "wind",
+    "httpStatus": 200,
+    "status": "ERROR",
+    "detail": "기상청 격자 위치를 확인하지 못했습니다.",
+    "pointCount": 0,
+    "observedAt": "2026-10-25T13:15:42.100467+09:00",
+    "actualData": true,
+    "milliseconds": 7613,
+    "checkedAtUTC": "2026-10-25T04:15:49.243876+00:00"
+  },
+  {
+    "layer": "temperature",
+    "httpStatus": 200,
+    "status": "ERROR",
+    "detail": "기상청 격자 위치를 확인하지 못했습니다.",
+    "pointCount": 0,
+    "observedAt": "2026-10-25T13:15:49.584597+09:00",
+    "actualData": true,
+    "milliseconds": 7468,
+    "checkedAtUTC": "2026-10-25T04:15:56.712095+00:00"
+  },
+  {
+    "layer": "rainfall",
+    "httpStatus": 200,
+    "status": "ERROR",
+    "detail": "기상청 격자 위치를 확인하지 못했습니다.",
+    "pointCount": 0,
+    "observedAt": "2026-10-25T13:15:57.207921+09:00",
+    "actualData": true,
+    "milliseconds": 7628,
+    "checkedAtUTC": "2026-10-25T04:16:04.339953+00:00"
+  }
+]

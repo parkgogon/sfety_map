@@ -1,0 +1,34 @@
+[
+  {
+    "file": "field-1440.pdf",
+    "expectedFacilities": 3,
+    "mapCaptured": true,
+    "kstTimestampPresent": true,
+    "contactPatterns": 0,
+    "sha256": "7d142446d844d198a66ae130a85c2565c8b00badd78d540e823f797aead5062f"
+  },
+  {
+    "file": "field-390.pdf",
+    "expectedFacilities": 3,
+    "mapCaptured": true,
+    "kstTimestampPresent": true,
+    "contactPatterns": 0,
+    "sha256": "c0211a796567d4132693d5ba48feee7034bb9361cf057b3798c8dc888fe6885c"
+  },
+  {
+    "file": "control-1440.pdf",
+    "expectedFacilities": 3,
+    "mapCaptured": true,
+    "kstTimestampPresent": true,
+    "contactPatterns": 0,
+    "sha256": "560e9fce741c56d469e0ee78f0069887aaeae0549e8aeeec007f7a95f4bc02d3"
+  },
+  {
+    "file": "zero-production.pdf",
+    "expectedFacilities": 0,
+    "mapCaptured": true,
+    "kstTimestampPresent": true,
+    "contactPatterns": 0,
+    "sha256": "d474c60ece0ced6e5c58f4454dd75e18e2849e57a081f0455b8ec8d297b890e3"
+  }
+]

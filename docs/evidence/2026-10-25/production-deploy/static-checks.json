@@ -1,0 +1,46 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "cacheControl": "no-cache, no-store, must-revalidate",
+    "scripts": [
+      "/assets/index-BX3YrAJ7.js"
+    ]
+  },
+  {
+    "path": "/control",
+    "status": 200,
+    "cacheControl": "no-cache, no-store, must-revalidate",
+    "scripts": [
+      "/assets/index-BX3YrAJ7.js"
+    ]
+  },
+  {
+    "path": "/settings",
+    "status": 200,
+    "cacheControl": "no-cache, no-store, must-revalidate",
+    "scripts": [
+      "/assets/index-BX3YrAJ7.js"
+    ]
+  },
+  {
+    "path": "/report-map.html",
+    "status": 200,
+    "cacheControl": "no-cache, no-store, must-revalidate",
+    "scripts": [
+      "/assets/report-map-2oIgmCdc.js"
+    ]
+  },
+  {
+    "path": "/assets/report-map-2oIgmCdc.js",
+    "status": 200,
+    "cacheControl": "public, max-age=31536000, immutable",
+    "contractVersion1": true
+  },
+  {
+    "path": "/api/v1/health",
+    "status": 200,
+    "cacheControl": "private",
+    "scripts": []
+  }
+]

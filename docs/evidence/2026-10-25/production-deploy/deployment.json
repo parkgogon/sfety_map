@@ -1,0 +1,45 @@
+{
+  "runId": 40160348628,
+  "mergeCommit": "616d7a2f478b889b4edb62ff2a6c1a8795909f4d",
+  "url": "https://github.com/parkgogon/sfety_map/actions/runs/40160348628",
+  "pythonTests": 256,
+  "pythonNetworkAttempts": 0,
+  "reactTests": 215,
+  "buildSuccess": true,
+  "apiRevision": "safety-dashboard-api-00086-zn7",
+  "workerRevision": "safety-alert-worker-00074-47k",
+  "apiCpu": 1,
+  "apiMemory": "1Gi",
+  "workerCpu": 1,
+  "workerMemory": "512Mi",
+  "workerBrowserIncluded": false,
+  "workflowInvokedBy": "main push",
+  "manualWorkflowDispatch": false,
+  "jobs": [
+    {
+      "id": 121070391543,
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 121070601646,
+      "name": "deploy-api",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 121071153420,
+      "name": "deploy-web",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 121071284661,
+      "name": "configure-uptime-monitoring",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "completedAt": "2026-10-25T04:06:57Z"
+}

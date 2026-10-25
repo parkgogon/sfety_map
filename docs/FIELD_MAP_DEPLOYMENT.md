@@ -117,14 +117,14 @@ unset ADMIN_PASSWORD_INPUT
 - Firebase 보호 API rewrite: `/internal/**`
 - 기본 Artifact Registry 저장소: `safety-dashboard`
 
-## 주변 시설 보고서 지도 캡처 — 배포 전 구현
+## 주변 시설 보고서 지도 캡처 — 운영 적용
 
-2026-10-25 기능 브랜치에 준비한 설정이다. 실제 운영 배포·수동 워크플로 실행은 하지 않았다.
+2026-10-25 사용자 승인으로 main `616d7a2`를 자동 배포했다. [운영 검수](evidence/2026-10-25/production-deploy/README.md). 수동 워크플로 실행은 하지 않았다.
 기존 `POST /api/v1/reports/nearby.pdf`에 실제 지도와 고도화 PDF를 연결했으며 입력은 유지한다.
 
-| 설정 | 기본값 / 향후 배포 설정 |
+| 설정 | 기본값 / 운영 설정 |
 |---|---|
-| `NEARBY_MAP_CAPTURE_ENABLED` | 코드 기본 `false`, 준비한 API 배포 설정 `true` |
+| `NEARBY_MAP_CAPTURE_ENABLED` | 코드 기본 `false`, 운영 API `true` |
 | `DASHBOARD_BASE_URL` | 등록된 소유 HTTPS 원점, 기본 `https://keco-safety-map.web.app` |
 | `NEARBY_MAP_TIMEOUT_SECONDS` | 20초, 허용 5~30초 |
 | `NEARBY_CHROMIUM_EXECUTABLE` | `/usr/bin/chromium` |
@@ -137,7 +137,7 @@ unset ADMIN_PASSWORD_INPUT
 전용 `report-map.html`은 같은 웹 빌드에서 생성하며 기존 `VITE_KAKAO_MAP_APP_KEY`만 사용한다.
 서버용 카카오 비밀키를 추가하지 않는다. 새 페이지도 no-store, 해시 assets는 immutable이다.
 
-별도 배포 요청을 받았을 때의 수용 조건:
+배포·재검수 수용 조건:
 
 - 등록된 원점의 `report-map.html`과 연결된 assets가 200이며 지도 페이지 계약 버전이 1인지 확인한다.
 - 해당 정적 페이지와 API를 같은 변경으로 반영한다. API가 먼저 반영돼 페이지가 없으면 목록/집계 PDF로 전환한다.

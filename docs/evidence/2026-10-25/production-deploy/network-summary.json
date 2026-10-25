@@ -1,0 +1,40 @@
+{
+  "scope": "Only browser files that record request events; excludes server-side browser internals and separate layout contexts.",
+  "responses": [
+    {
+      "host": "dapi.kakao.com",
+      "status": 200,
+      "count": 18
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "status": 200,
+      "count": 76
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "status": 200,
+      "count": 772
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "status": 200,
+      "count": 84
+    }
+  ],
+  "requestFailures": [
+    {
+      "host": "keco-safety-map.web.app",
+      "error": "net::ERR_ABORTED",
+      "count": 1
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "error": "net::ERR_ABORTED",
+      "count": 135
+    }
+  ],
+  "pageErrors": 0,
+  "guardBlockedRequests": 0,
+  "additionalRequiredSdkHosts": []
+}

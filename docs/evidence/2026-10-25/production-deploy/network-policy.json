@@ -1,0 +1,17 @@
+{
+  "dateKST": "2026-10-25",
+  "specRevision": "23",
+  "observationsCurrent": true,
+  "policyState": "enforced",
+  "allowedHosts": [
+    "apihub.kma.go.kr",
+    "dapi.kakao.com",
+    "keco-safety-map.web.app",
+    "mts.kakaocdn.net",
+    "t1.kakaocdn.net",
+    "www.weather.go.kr"
+  ],
+  "proxyPreserved": true,
+  "tlsVerificationPreserved": true,
+  "additionalRequiredSdkHosts": []
+}

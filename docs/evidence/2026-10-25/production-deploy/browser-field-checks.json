@@ -1,0 +1,1639 @@
+{
+  "scope": "Actual production app, APIs, SDK and tiles. No response replacements or synthetic weather. Cloud Chromium; mobile viewport emulation, not physical devices.",
+  "records": [
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 1440,
+      "kind": "wind",
+      "initial": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "video",
+      "width": 1440,
+      "frames": 35
+    },
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 1440,
+      "kind": "temperature",
+      "initial": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 1440,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3551258821,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "nearby-report",
+      "app": "field",
+      "width": 1440,
+      "firstCandidate": "대구광역시청 동인청사 주차장\n대구 중구 공평로 88\n장소 · 지도에서 위치 확인",
+      "count": "반경 5km · 대상 3개소",
+      "message": "PDF를 다운로드했습니다.",
+      "posts": 1,
+      "focusRestored": true
+    },
+    {
+      "case": "settings",
+      "width": 390,
+      "before": "현재 195개 / 전체 195개 표시",
+      "after": "현재 140개 / 전체 195개 표시",
+      "duplicateMapButton": false,
+      "escapeFocusRestored": true
+    },
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 390,
+      "kind": "wind",
+      "initial": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "video",
+      "width": 390,
+      "frames": 29
+    },
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 390,
+      "kind": "temperature",
+      "initial": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "weather-motion",
+      "app": "field",
+      "width": 390,
+      "kind": "rainfall",
+      "initial": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3006967397,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "nearby-report",
+      "app": "field",
+      "width": 390,
+      "firstCandidate": "대구광역시청 동인청사 주차장\n대구 중구 공평로 88\n장소 · 지도에서 위치 확인",
+      "count": "반경 5km · 대상 3개소",
+      "message": "PDF를 다운로드했습니다.",
+      "posts": 1,
+      "focusRestored": true
+    }
+  ],
+  "reports": [
+    {
+      "status": 200,
+      "mapStatus": "captured",
+      "count": "3",
+      "digest": "155982007d530c6c9b9ce1ef3f13d38f66f3ebc34154e861b27286937f67115d"
+    },
+    {
+      "status": 200,
+      "mapStatus": "captured",
+      "count": "3",
+      "digest": "155982007d530c6c9b9ce1ef3f13d38f66f3ebc34154e861b27286937f67115d"
+    }
+  ],
+  "weather": [
+    {
+      "layer": "wind",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:26.343847+09:00",
+      "points": 0
+    },
+    {
+      "layer": "temperature",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:37.353552+09:00",
+      "points": 0
+    },
+    {
+      "layer": "rainfall",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:47.361248+09:00",
+      "points": 0
+    },
+    {
+      "layer": "wind",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:26.343847+09:00",
+      "points": 0
+    },
+    {
+      "layer": "temperature",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:37.353552+09:00",
+      "points": 0
+    },
+    {
+      "layer": "rainfall",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:06:47.361248+09:00",
+      "points": 0
+    }
+  ],
+  "responses": [
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-DumPJTgr.css",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-BX3YrAJ7.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/monitoring",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/control.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/2.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_zoom_control.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/5/1.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/wind",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/9.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/8.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/8/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/8.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/8.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/9.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/8.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/8.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/9.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/9.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/6/9.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/4/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/5/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/11/7/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/6.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/7.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/6.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/temperature",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/rainfall",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/keyword.json",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/address.json",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/21.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/21.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/20.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/25.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/21.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/25.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/25.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/25.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/21.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/20.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/21.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/20.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/26.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/20.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/23/20.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/25.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/22/26.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/20/26.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/19/26.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/9/21/26.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/reports/nearby.pdf",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-BX3YrAJ7.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-DumPJTgr.css",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/monitoring",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/0.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/wind",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/0/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/13/-1/3.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/2x/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/4/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/4/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/0/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/0/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/0/5.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/temperature",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/5/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/5/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/12/5/3.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/rainfall",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/keyword.json",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/address.json",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/20/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/20/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/19/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/22/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/18/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/22/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/21/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/21/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/22/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/19/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/18/22.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/21/23.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/18/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/20/24.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/9/19/24.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/reports/nearby.pdf",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/control",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-DumPJTgr.css",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-BX3YrAJ7.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/monitoring",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/internal/v1/admin/session",
+      "status": 200
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/315/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/363.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/368.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/369.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/315/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/315/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/315/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/316/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/316/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/316/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/317/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/317/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/317/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/318/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/318/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/318/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/319/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/319/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNG02/v27_pps0b/latest/5/319/367.png",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "errors": [],
+  "forbidden": []
+}

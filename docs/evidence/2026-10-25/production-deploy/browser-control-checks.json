@@ -1,0 +1,514 @@
+{
+  "scope": "Actual production app, APIs, SDK and tiles. No response replacements or synthetic weather. Cloud Chromium; mobile viewport emulation, not physical devices.",
+  "records": [
+    {
+      "case": "version",
+      "text": "K-ECO SAFETY MONITORING\n중앙 관제\nv616d7a2 · 10.25 13:05 배포"
+    },
+    {
+      "case": "weather-motion",
+      "app": "control",
+      "width": 1440,
+      "kind": "wind",
+      "initial": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "final": {
+        "hash": 3836115653,
+        "alpha": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "opacity": "0",
+        "overflow": false
+      },
+      "weatherResponsesDuringMotion": 0,
+      "minimumOpacity": 0
+    },
+    {
+      "case": "nearby-report",
+      "app": "control",
+      "width": 1440,
+      "firstCandidate": "대구광역시청 동인청사 주차장\n대구 중구 공평로 88\n장소 · 지도에서 위치 확인",
+      "count": "반경 5km · 대상 3개소",
+      "message": "PDF를 다운로드했습니다.",
+      "posts": 1,
+      "focusRestored": true
+    }
+  ],
+  "reports": [
+    {
+      "status": 200,
+      "mapStatus": "captured",
+      "count": "3",
+      "digest": "155982007d530c6c9b9ce1ef3f13d38f66f3ebc34154e861b27286937f67115d"
+    }
+  ],
+  "weather": [
+    {
+      "layer": "wind",
+      "status": "ERROR",
+      "actualData": true,
+      "observedAt": "2026-10-25T13:08:44.341143+09:00",
+      "points": 0
+    }
+  ],
+  "responses": [
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/control",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-DumPJTgr.css",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/assets/index-BX3YrAJ7.js",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/internal/v1/admin/session",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/monitoring",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/maps/sdk.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/main/4.5.29/kakao.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/clusterer/1.1.5/clusterer.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/transparent.gif",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/js/libs/services/1.1.5/services.js",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/openhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_zoom_control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/m_bi_b.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/control.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/bg_tile.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/3/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/1.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/weather/layers/wind",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/2/1.png",
+      "status": 200
+    },
+    {
+      "host": "t1.kakaocdn.net",
+      "path": "/mapjsapi/images/cursor/closedhand.cur.ico",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/3/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/5.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/1/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/4.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/2/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/12/4/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/3.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/1/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/0.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/2.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/13/0/1.png",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/keyword.json",
+      "status": 200
+    },
+    {
+      "host": "dapi.kakao.com",
+      "path": "/v2/local/search/address.json",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/12/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/12/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/12/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/11/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/12/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/11/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/11/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/10/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/10/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/9/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/10/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/11/10.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/9/12.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/9/11.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/10/13.png",
+      "status": 200
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/10/9/10.png",
+      "status": 200
+    },
+    {
+      "host": "keco-safety-map.web.app",
+      "path": "/api/v1/reports/nearby.pdf",
+      "status": 200
+    }
+  ],
+  "failures": [
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/316/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/317/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/318/367.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/364.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/365.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/366.png",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "mts.kakaocdn.net",
+      "path": "/api/v1/tile/PNGSD02/v26_9gizf/latest/5/319/367.png",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "errors": [],
+  "forbidden": []
+}
