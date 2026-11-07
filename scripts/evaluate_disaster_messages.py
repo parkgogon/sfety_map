@@ -82,6 +82,9 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
         if case_id == "destination":
             checks["separate_incident_and_destination_queries"] = not any(
                 "와룡산" in candidate["query"] and "성서초등학교" in candidate["query"] for candidate in candidates.values())
+            destination_ids = {key for location in locations if location["role"] == "evacuation_destination" for key in location["candidate_ids"]}
+            checks["destination_school_kind_matches"] = all(
+                candidates[key].get("category_group_code") == "SC4" for key in destination_ids if key in candidates)
         if case_id in {"event", "destination"}:
             primary_ids = {key for location in locations if location["role"] == "incident_site" for key in location["candidate_ids"]}
             primary = [candidates[key] for key in primary_ids if key in candidates]

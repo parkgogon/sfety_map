@@ -19,7 +19,8 @@ from safety_dashboard.application.message_analysis import (
 from safety_dashboard.domain.models import Facility, GeoPoint
 
 EXAMPLES = json.loads((Path(__file__).resolve().parents[1] / "field_web/src/messageExamples.json").read_text())
-PLACE = {"name": "시험 장소", "address": "대구 시험 주소", "latitude": 35.85, "longitude": 128.5, "provider": "fake"}
+PLACE = {"name": "성서산업단지", "address": "대구 시험 주소", "latitude": 35.85, "longitude": 128.5,
+         "category_name": "서비스,산업 > 산업단지", "provider": "fake"}
 FACILITIES = (Facility(id="F-test", name="시험 시설", facility_type="측정소", address="시험 주소",
                        location=GeoPoint(35.851, 128.5), manager="private-manager", metadata={"phone": "private-phone"}),)
 
@@ -43,8 +44,10 @@ def location(text="성서산업단지", role="incident_site", candidate_ids=None
     return {"text": text, "role": role, "evidence": text, "candidate_ids": candidate_ids or []}
 
 
-def search_args(text="성서산업단지", role="incident_site", region_hint="대구"):
-    return {"location_text": text, "role": role, "region_hint": region_hint, "evidence": text}
+def search_args(text="성서산업단지", role="incident_site", region_hint="대구", *, search_name=None, place_kind=None):
+    kind = place_kind or ("school" if "초등학교" in text else "road" if "중앙동" in text else "industrial_complex")
+    return {"location_text": text, "search_name": search_name or text, "place_kind": kind,
+            "role": role, "region_hint": region_hint, "evidence": text}
 
 
 def call(name, args, extra=None):
@@ -162,7 +165,7 @@ class MessageAgentTests(unittest.TestCase):
             call("search_places", search_args("성서초등학교", "evacuation_destination")),
             call("find_nearby_facilities", {"candidate_id": "P1"}),
             call("submit_analysis", draft([part(req.text, locations=[location("성서초등학교", "evacuation_destination", ["P1"])])])),
-        ])
+        ], FakePlaces([{**PLACE, "name": "성서초등학교", "category_name": "교육 > 학교 > 초등학교", "category_group_code": "SC4"}]))
         svc.facilities = Mock(side_effect=AssertionError("대피 목적지로 시설 자료를 조회하면 안 됩니다."))
         result = svc.analyze(req)
         self.assertEqual(result["nearby"], [])
@@ -174,7 +177,8 @@ class MessageAgentTests(unittest.TestCase):
         svc = service([
             call("search_places", search_args("중앙동", "restricted_area", None)),
             call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동", "restricted_area", ["P1", "P2"])])], ["어느 시·군의 중앙동인가요?"])),
-        ], FakePlaces([PLACE, {**PLACE, "name": "다른 중앙동"}]))
+        ], FakePlaces([{**PLACE, "name": name, "category_name": "교통 > 도로시설 > 교차로"}
+                      for name in ("중앙동 사거리", "다른 중앙동 사거리")]))
         result = svc.analyze(req)
         self.assertEqual(len(result["candidates"]), 2)
         self.assertTrue(result["analysis"]["questions"])
@@ -202,7 +206,7 @@ class MessageAgentTests(unittest.TestCase):
             call("search_places", search_args("중앙동 사거리", "restricted_area", None)),
             call("find_nearby_facilities", {"candidate_id": "P1"}),
             call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동 사거리", "restricted_area", ["P1"])])], ["어느 시·군의 중앙동인가요?"])),
-        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동"}]))
+        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동", "category_name": "교통 > 도로시설 > 교차로"}]))
         svc.facilities = Mock(side_effect=AssertionError("지역 미상으로 시설 조회 금지"))
         result = svc.analyze(req)
         self.assertFalse(result["candidates"][0]["scope_matches_source"])
@@ -226,7 +230,7 @@ class MessageAgentTests(unittest.TestCase):
             call("search_places", search_args("중앙동 사거리", "restricted_area", "창원시")),
             call("find_nearby_facilities", {"candidate_id": "P1"}),
             call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동 사거리", "restricted_area", ["P1"])])], ["정확한 통제 구간을 확인해 주세요."])),
-        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동"}]))
+        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동", "category_name": "교통 > 도로시설 > 교차로"}]))
         result = svc.analyze(req)
         self.assertTrue(result["candidates"][0]["scope_matches_source"])
         self.assertEqual(result["trace"][1]["status"], "ok")
@@ -243,6 +247,50 @@ class MessageAgentTests(unittest.TestCase):
         result = svc.analyze(req)
         self.assertEqual(result["nearby"], [])
         svc.facilities.assert_not_called()
+
+    def test_school_ground_is_searched_by_parent_school_and_not_replaced_by_stadium(self):
+        req = request("destination")
+        places = FakePlaces([
+            {**PLACE, "name": "대구성서초등학교", "category_group_code": "SC4", "category_name": "교육 > 학교 > 초등학교"},
+            {**PLACE, "name": "대구성서운동장", "category_name": "스포츠 > 운동장"},
+        ])
+        svc = service([
+            call("search_places", search_args("성서초등학교 운동장", "evacuation_destination", search_name="성서초등학교")),
+            call("submit_analysis", draft([part(req.text, "advisory", [location("성서초등학교 운동장", "evacuation_destination", ["P1"])])])),
+        ], places)
+        result = svc.analyze(req)
+        self.assertEqual(places.queries, ["대구 성서초등학교"])
+        self.assertEqual([place["name"] for place in result["candidates"]], ["대구성서초등학교"])
+
+    def test_matching_reference_candidate_requires_actual_facility_tool_before_finish(self):
+        req = request()
+        final = draft([part(req.text, locations=[location(candidate_ids=["P1"])])], ["정확한 발생 공장을 확인해 주세요."])
+        svc = service([
+            call("search_places", search_args()), call("submit_analysis", final),
+            call("find_nearby_facilities", {"candidate_id": "P1"}), call("submit_analysis", final),
+        ])
+        result = svc.analyze(req)
+        self.assertEqual(result["trace"][1]["status"], "invalid")
+        self.assertIn("find_nearby_facilities", svc.client.inputs[2][-1]["output"])
+        self.assertEqual(result["nearby"][0]["facilities"][0]["id"], "F-test")
+
+    def test_industrial_complex_qualifiers_match_but_named_station_is_excluded(self):
+        req = request()
+        places = FakePlaces([
+            {**PLACE, "name": "성서 제1차일반산업단지"},
+            {**PLACE, "name": "성서산업단지역", "category_name": "교통 > 지하철", "category_group_code": "SW8"},
+        ])
+        final = draft([part(req.text, locations=[location(candidate_ids=["P1"])])], ["공장 위치를 확인해 주세요."])
+        svc = service([call("search_places", search_args()), call("find_nearby_facilities", {"candidate_id": "P1"}), call("submit_analysis", final)], places)
+        self.assertEqual([place["name"] for place in svc.analyze(req)["candidates"]], ["성서 제1차일반산업단지"])
+
+    def test_generic_ground_name_does_not_resolve_an_arbitrary_stadium(self):
+        req = request("destination")
+        svc = service([
+            call("search_places", search_args("성서초등학교 운동장", "evacuation_destination", search_name="운동장", place_kind="other")),
+            call("submit_analysis", draft([part(req.text, "advisory", [location("성서초등학교 운동장", "evacuation_destination")])])),
+        ], FakePlaces([{**PLACE, "name": "대구성서운동장", "category_name": "스포츠 > 운동장"}]))
+        self.assertEqual(svc.analyze(req)["candidates"], [])
 
     def test_invented_quote_unknown_candidate_and_naive_time_are_rejected(self):
         variants = [part("원문에 없는 근거"), part(request().text, locations=[location(candidate_ids=["invented"])]),

@@ -17,6 +17,15 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_school_destination_cannot_be_replaced_by_general_sports_ground(self):
+        example = next(row for row in EXAMPLES if row["id"] == "destination")
+        response = result([part(example["text"], locations=[{
+            "text": "성서초등학교 운동장", "role": "evacuation_destination", "candidate_ids": ["P1"], "evidence": example["text"]}])])
+        response["candidates"] = [{"id": "P1", "query": "대구 성서초등학교", "category_group_code": ""}]
+        self.assertFalse(check_case(example, response, with_places=True)["destination_school_kind_matches"])
+        response["candidates"][0]["category_group_code"] = "SC4"
+        self.assertTrue(check_case(example, response, with_places=True)["destination_school_kind_matches"])
+
     def test_reference_lookup_requires_matching_place_kind_and_actual_lookup(self):
         example = EXAMPLES[1]
         response = result([part(example["text"], locations=[{
