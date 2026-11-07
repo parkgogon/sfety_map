@@ -67,7 +67,10 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
         searches = [step for step in result["trace"] if step["tool"] == "search_places"]
         lookups = [step for step in result["trace"] if step["tool"] == "find_nearby_facilities" and step["status"] == "ok"]
         candidates = {candidate["id"]: candidate for candidate in result.get("candidates", [])}
-        checks["place_provider_responded"] = all(step["status"] in {"ok", "not_found"} for step in searches)
+        # Locally rejected arguments have not reached the provider. A corrected
+        # retry is legitimate agent recovery; only an unavailable provider fails
+        # this check. Required primary searches are checked separately below.
+        checks["no_place_provider_failures"] = all(step["status"] != "unavailable" for step in searches)
         checks["auditable_facility_lookup_scope"] = all(
             step.get("candidate_id") in candidates
             and candidates[step["candidate_id"]].get("scope_matches_source") is True
@@ -147,6 +150,8 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
              "- 아래 통과는 지정한 점검 항목의 결과입니다. 전체 의미·장소 후보는 사람이 검토해야 합니다.",
              "- 실제 과금은 OpenAI Usage에서 확인합니다. 토큰 수를 비용으로 단정하지 않습니다.", "",
              "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 | 장소 후보 | 시설 조회 |", "|---|---|---:|---:|---:|---:|---:|---:|"]
+    if report.get("reassessment"):
+        lines[2:2] = ["- 기존 실제 API 응답 재평가입니다. 추가 OpenAI/Kakao 호출은 0건이며, 아래 사용량·시간은 원본 실행 값입니다."]
     for row in report["cases"]:
         usage = row["usage"]
         result = row.get("result", {})

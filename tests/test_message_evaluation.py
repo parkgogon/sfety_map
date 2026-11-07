@@ -59,8 +59,21 @@ class EvaluationTests(unittest.TestCase):
         response = result([part(example["text"])])
         response["trace"] = [{"tool": "search_places", "role": "incident_site", "status": "unavailable"}]
         checks = check_case(example, response, with_places=True)
-        self.assertFalse(checks["place_provider_responded"])
+        self.assertFalse(checks["no_place_provider_failures"])
         self.assertFalse(checks["primary_place_search_attempted"])
+
+    def test_locally_rejected_search_is_not_mistaken_for_provider_outage(self):
+        example = EXAMPLES[1]
+        response = result([part(example["text"])])
+        response["trace"] = [
+            {"tool": "search_places", "status": "invalid"},
+            {"tool": "search_places", "role": "incident_site", "status": "ok"},
+        ]
+        checks = check_case(example, response, with_places=True)
+        self.assertTrue(checks["no_place_provider_failures"])
+        self.assertTrue(checks["primary_place_search_attempted"])
+        response["trace"].append({"tool": "search_places", "role": "incident_site", "status": "unavailable"})
+        self.assertFalse(check_case(example, response, with_places=True)["no_place_provider_failures"])
 
     def test_paid_batch_cannot_expand_when_ui_examples_are_added(self):
         self.assertEqual(len(select_examples(EXAMPLES, "all")), 6)
