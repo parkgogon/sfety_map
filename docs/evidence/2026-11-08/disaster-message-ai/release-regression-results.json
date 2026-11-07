@@ -1,0 +1,94 @@
+{
+  "report_version": 1,
+  "evaluated_at": "2026-11-08T06:51:06.437186+09:00",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "status": "pass",
+  "cases": [
+    {
+      "id": "partial_release",
+      "label": "일부만 해제",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "released_segment": true,
+        "still_restricted_segment": true,
+        "release_end_time": true
+      },
+      "result": {
+        "input": {
+          "text": "[훈련시] 가람교 하부도로 통제는 15시 해제되었습니다. 푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+          "issued_at": "2026-11-07T15:00:00+09:00",
+          "source": "창작 예문 · 가상 지명",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "가람교 하부도로 통제는 15시 해제되었고, 푸른교 하부도로는 침수로 계속 통제 중이라는 안내입니다.",
+          "parts": [
+            {
+              "intent": "release",
+              "description": "가람교 하부도로 통제는 15시 해제되었습니다.",
+              "evidence": "[훈련시] 가람교 하부도로 통제는 15시 해제되었습니다.",
+              "time_text": "15시",
+              "starts_at": null,
+              "ends_at": "2026-11-07T15:00:00+09:00",
+              "locations": [
+                {
+                  "text": "가람교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "가람교 하부도로 통제는 15시 해제되었습니다.",
+                  "candidate_ids": []
+                }
+              ]
+            },
+            {
+              "intent": "active_restriction",
+              "description": "푸른교 하부도로는 침수로 계속 통제 중입니다.",
+              "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "푸른교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "가람교 하부도로와 푸른교 하부도로의 실제 위치를 특정할 수 있는 추가 지역 정보가 있습니까?"
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 1,
+        "elapsed_ms": 3258
+      },
+      "usage": {
+        "requests": 1,
+        "usage_reports": 1,
+        "input_tokens": 1442,
+        "cached_input_tokens": 0,
+        "output_tokens": 318,
+        "total_tokens": 1760
+      },
+      "elapsed_ms": 3259
+    }
+  ],
+  "human_review_required": true,
+  "place_search_mode": "disabled"
+}
