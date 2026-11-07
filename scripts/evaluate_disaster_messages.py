@@ -26,6 +26,13 @@ CASE_IDS = ("prevention", "event", "scheduled", "partial_release", "ambiguous", 
 KST = dt.timezone(dt.timedelta(hours=9))
 
 
+def select_examples(examples: list[dict], case: str) -> list[dict]:
+    # Keep the paid batch fixed even if the UI examples are expanded later.
+    if len(examples) != len(CASE_IDS) or {example["id"] for example in examples} != set(CASE_IDS):
+        raise ValueError("The live evaluation requires exactly the six reviewed example IDs.")
+    return [example for example in examples if case == "all" or example["id"] == case]
+
+
 def check_case(example: dict, result: dict) -> dict[str, bool]:
     """Small, explicit acceptance checks; passing still requires human review."""
     parts = result["analysis"]["parts"]
@@ -145,7 +152,7 @@ def main(argv=None):
     else:
         try:
             examples = json.loads((ROOT / "field_web/src/messageExamples.json").read_text(encoding="utf-8"))
-            selected = [example for example in examples if args.case == "all" or example["id"] == args.case]
+            selected = select_examples(examples, args.case)
             facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
             service = MessageAnalysisService(client, places, lambda: facilities)
             report["cases"] = evaluate(selected, service, client)

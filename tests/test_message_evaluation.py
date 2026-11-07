@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from scripts.evaluate_disaster_messages import check_case, evaluate, main, write_report
+from scripts.evaluate_disaster_messages import check_case, evaluate, main, select_examples, write_report
 from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
 from tests.test_message_analysis import EXAMPLES, draft, part, request
 
@@ -17,6 +17,13 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_paid_batch_cannot_expand_when_ui_examples_are_added(self):
+        self.assertEqual(len(select_examples(EXAMPLES, "all")), 6)
+        self.assertEqual([row["id"] for row in select_examples(EXAMPLES, "event")], ["event"])
+        for changed in (EXAMPLES + [EXAMPLES[0]], EXAMPLES[:-1], EXAMPLES[:-1] + [EXAMPLES[0]]):
+            with self.assertRaises(ValueError):
+                select_examples(changed, "all")
+
     def test_partial_release_checks_fail_when_both_segments_are_called_released(self):
         example = next(row for row in EXAMPLES if row["id"] == "partial_release")
         correct = [part("가람교 해제", "release"), part("푸른교 계속 통제", "active_restriction")]

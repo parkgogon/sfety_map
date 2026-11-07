@@ -77,6 +77,19 @@ def service(responses, places=None, **kwargs):
 
 
 class MessageAgentTests(unittest.TestCase):
+    def test_incident_site_does_not_replace_a_restricted_area_in_a_road_closure(self):
+        req = request("ambiguous")
+        wrong_location = location("중앙동 사거리 인근", "incident_site")
+        corrected_location = location("중앙동 사거리 인근", "restricted_area")
+        svc = service([
+            call("submit_analysis", draft([part(req.text, "active_restriction", [wrong_location])])),
+            call("submit_analysis", draft([part(req.text, "active_restriction", [corrected_location])], ["어느 지역의 중앙동인가요?"])),
+        ])
+        result = svc.analyze(req)
+        self.assertEqual(result["trace"][0]["status"], "invalid")
+        self.assertIn("restricted_area", svc.client.inputs[1][-1]["output"])
+        self.assertEqual(result["analysis"]["parts"][0]["locations"][0]["role"], "restricted_area")
+
     def test_prevention_can_finish_without_location_or_facility_lookup(self):
         req = request("prevention")
         svc = service([call("submit_analysis", draft([part(req.text, "prevention")]))])

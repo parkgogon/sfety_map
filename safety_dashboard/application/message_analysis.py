@@ -28,6 +28,10 @@ class AnalysisBusy(AnalysisUnavailable):
     pass
 
 
+class DraftEvidenceError(ValueError):
+    """Only application-authored, safe feedback for a correctable draft."""
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -91,6 +95,10 @@ INSTRUCTIONS = """당신은 공공기관 소관시설 관제 담당자의 재난
 문자 한 건을 근거로만 판단한다. 예방 안내를 사고로, 예정 통제를 현재 통제로,
 일부 구간 해제를 전체 해제로, 대피 목적지를 사고 발생 장소로 해석하지 않는다.
 한 문자에 다른 구간/상황이 있으면 parts를 나눈다. 원문 그대로의 evidence를 인용한다.
+인용·장소 text·time_text는 띄어쓰기와 문장부호를 바꾸지 않은 원문의 연속된 부분 문자열이다.
+active_restriction/scheduled_restriction의 장소는 restricted_area로 보존한다.
+같은 곳이 사고 발생 장소이기도 하면 incident_site를 별도로 추가할 수 있지만,
+통제 대상 역할을 빠뜨리지 않는다. 위치가 미상이더라도 원문의 지명과 역할은 남긴다.
 time_text는 시간 표현의 원문 인용 또는 빈 문자열이다. 오늘/내일은 issued_at의 한국 날짜를
 기준으로 풀고 명확할 때만 starts_at/ends_at을 ISO8601 +09:00으로 쓴다. 미상은 null이다.
 현재 시각으로 과거 상황을 재판정하지 않는다. 이 문자 이후의 해제/정정 여부는 알 수 없다.
@@ -107,6 +115,7 @@ time_text는 시간 표현의 원문 인용 또는 빈 문자열이다. 오늘/�
 최종 summary/description에는 원문의 내용과 해석만 쓴다. 시설명/시설 수/거리/좌표는
 별도 검증된 조회 표로 표시되므로 다시 쓰지 않는다. 피해/안전/확산/위험등급/대피 경로를 추정하지 않는다.
 자료가 부족하면 unknown과 구체적인 확인 질문을 사용한다. 도구 오류는 실패로 남긴다.
+질문은 업무상 필요한 정보가 부족할 때만 남긴다. 명확한 예방 안내에서 추가 조회 필요 여부를 묻지 않는다.
 한국어로 submit_analysis를 호출해 완료한다. 모든 결과는 검토 전 자료다.
 최대 6회 모델 응답 안에 끝내야 하므로 불필요한 반복 검색은 하지 않는다.
 """
@@ -193,6 +202,9 @@ class MessageAnalysisService:
                     raise AnalysisUnavailable("분석 제한 시간에 도달했습니다.")
                 result, detail = self._tool(name, args, request, candidates, nearby, remaining)
                 trace.append({"tool": name, "detail": detail, "status": result.get("status", "ok")})
+            except DraftEvidenceError as error:
+                result = {"status": "invalid", "detail": str(error)}
+                trace.append({"tool": str(name)[:80], "detail": f"근거 검증 실패 · {error}", "status": "invalid"})
             except (ValidationError, ValueError, TypeError, KeyError):
                 result = {"status": "invalid", "detail": "입력 형식, 원문 인용, 시간, 후보 ID를 확인하고 수정하세요."}
                 trace.append({"tool": str(name)[:80], "detail": "형식 또는 근거 검증 실패 · 수정 요청", "status": "invalid"})
@@ -236,8 +248,11 @@ class MessageAnalysisService:
     @staticmethod
     def _validate(draft: AnalysisDraft, request: MessageAnalysisInput, candidates: dict) -> None:
         for part in draft.parts:
+            if (part.intent in {"active_restriction", "scheduled_restriction"} and part.locations
+                    and not any(location.role == "restricted_area" for location in part.locations)):
+                raise DraftEvidenceError("통제 상황의 장소에는 restricted_area 역할을 남겨야 합니다. 발생 장소와 겹치면 역할을 각각 보존하세요.")
             if part.evidence not in request.text or (part.time_text and part.time_text not in request.text):
-                raise ValueError("ungrounded evidence")
+                raise DraftEvidenceError("evidence와 time_text는 띄어쓰기·문장부호를 바꾸지 않은 원문의 연속된 부분 문자열이어야 합니다.")
             parsed = []
             for timestamp in (part.starts_at, part.ends_at):
                 if timestamp is None:
@@ -245,13 +260,13 @@ class MessageAnalysisService:
                     continue
                 value = dt.datetime.fromisoformat(timestamp)
                 if not part.time_text or value.tzinfo is None or value.utcoffset() != dt.timedelta(hours=9):
-                    raise ValueError("time needs evidence and KST offset")
+                    raise DraftEvidenceError("해석한 시간에는 원문 time_text와 한국 시간 +09:00 오프셋이 필요합니다.")
                 parsed.append(value)
             if all(parsed) and parsed[0] > parsed[1]:
-                raise ValueError("invalid time range")
+                raise DraftEvidenceError("시작 시각은 종료 시각보다 늦을 수 없습니다.")
             for location in part.locations:
                 if location.evidence not in request.text or location.text not in location.evidence:
-                    raise ValueError("ungrounded location")
+                    raise DraftEvidenceError("장소 evidence는 원문 인용이며 text는 해당 evidence 안의 연속된 문자열이어야 합니다.")
                 for candidate_id in location.candidate_ids:
                     if candidate_id not in candidates or location.text not in candidates[candidate_id]["evidence"]:
-                        raise ValueError("unknown or unrelated candidate")
+                        raise DraftEvidenceError("후보 ID는 실제 조회한 결과여야 하며 장소 text가 검색 evidence에 포함되어야 합니다. 미확인 위치는 빈 배열로 남기세요.")
