@@ -35,7 +35,7 @@ export interface MessageAnalysisResult {
     questions: string[];
   };
   review_required: true;
-  candidates: Array<{ id: string; name: string; address: string; latitude: number; longitude: number; query: string; evidence: string }>;
+  candidates: Array<{ id: string; name: string; address: string; latitude: number; longitude: number; query: string; evidence: string; scope_matches_source?: boolean }>;
   nearby: Array<{
     candidate_id: string; total_count: number; shown_count: number;
     facilities: Array<{ id: string; name: string; facility_type: string; address: string; distance_m: number }>;

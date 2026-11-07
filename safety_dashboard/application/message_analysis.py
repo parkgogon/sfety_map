@@ -6,6 +6,7 @@ from collections import deque
 from collections.abc import Callable
 import datetime as dt
 import json
+import re
 import threading
 import time
 from typing import Literal, Protocol
@@ -18,6 +19,29 @@ from safety_dashboard.domain.models import Facility, GeoPoint
 KST = dt.timezone(dt.timedelta(hours=9))
 MAX_MODEL_CALLS = 6
 MAX_SECONDS = 80
+LocationRole = Literal["incident_site", "restricted_area", "evacuation_area", "evacuation_destination", "reference"]
+REGION_ALIASES = {
+    "서울특별시": "서울", "부산광역시": "부산", "대구광역시": "대구", "인천광역시": "인천",
+    "광주광역시": "광주", "대전광역시": "대전", "울산광역시": "울산", "세종특별자치시": "세종",
+    "경기도": "경기", "강원특별자치도": "강원", "강원도": "강원", "충청북도": "충북", "충청남도": "충남",
+    "전북특별자치도": "전북", "전라북도": "전북", "전라남도": "전남", "경상북도": "경북", "경상남도": "경남",
+    "제주특별자치도": "제주", "제주도": "제주",
+}
+
+
+def source_region_matches(hint: str | None, address: str) -> bool:
+    """Textual source/address agreement, not boundary or incident-site confirmation."""
+    if not hint:
+        return False
+    tokens = hint.split()
+    # A dong or a district by itself does not establish the city. Known repeated
+    # municipality names also need a higher-level qualifier.
+    upper = any(token in REGION_ALIASES or token in REGION_ALIASES.values()
+                or (token.endswith(("시", "군")) and token not in {"광주시", "고성군"}) for token in tokens)
+    normalized_address = address
+    for full, short in REGION_ALIASES.items():
+        normalized_address = normalized_address.replace(full, short)
+    return upper and all(REGION_ALIASES.get(token, token) in normalized_address for token in tokens)
 
 
 class AnalysisUnavailable(RuntimeError):
@@ -46,7 +70,7 @@ class MessageAnalysisInput(StrictModel):
 
 class LocationMention(StrictModel):
     text: str = Field(min_length=1, max_length=160)
-    role: Literal["incident_site", "restricted_area", "evacuation_area", "evacuation_destination", "reference"]
+    role: LocationRole
     evidence: str = Field(min_length=1, max_length=600)
     candidate_ids: list[str] = Field(max_length=5)
 
@@ -69,7 +93,9 @@ class AnalysisDraft(StrictModel):
 
 
 class SearchPlaces(StrictModel):
-    query: str = Field(min_length=2, max_length=120)
+    location_text: str = Field(min_length=2, max_length=100)
+    role: LocationRole
+    region_hint: str | None
     evidence: str = Field(min_length=1, max_length=600)
 
 
@@ -107,8 +133,16 @@ release에서는 starts_at을 null로 남기고, 명확한 해제 시각만 ends
 
 도구를 필요한 만큼 선택한다. 예방/일반 안내만 있으면 장소 조회 없이 submit_analysis로 끝낼 수 있다.
 구체적 사건/통제/대피 대상 지역이 있으면 search_places를 사용해 실제 후보를 확인한다.
-검색어는 원문의 지역 한정어를 활용하며 모르면 추측해 보충하지 않는다.
+search_places에는 단일 장소의 location_text, 역할 role, 원문/발신처에 있는 지역 region_hint를 넣는다.
+사고지와 대피 목적지처럼 서로 다른 장소를 한 번의 검색에 합치지 않는다.
+region_hint는 원문/발신처에 명시된 광역지역 또는 시·군을 그대로 인용한다. 없으면 null이다.
+읍·면·동만 있으면 어느 시·군인지 알 수 없다. 지역을 추측하지 말고 먼저 확인 질문을 남긴다.
+지역 미상 후보와 대피 목적지/reference 후보의 주변 시설 조회는 서버에서 보류된다.
+place_search_available가 true이고 지역이 명시된 구체적 사고지/통제 장소가 있으면 실제로 검색한다.
+place_search_available가 false면 검색을 반복하지 말고 위치 확인 질문으로 보류한다.
 동명 장소/넓은 지역/도로 구간은 단일 지점 확정이 아니다. 불확실하면 questions에 확인 질문을 남긴다.
+검색 결과의 category_name과 이름을 함께 본다. 산업단지와 관리기관/체육관/역/상점,
+산과 학교/행정실은 서로 다른 장소다. 대표점을 쓰더라도 실제 발생 지점이 미상임을 질문에 남긴다.
 후보를 검색하지 못하면 candidate_ids는 빈 배열이다. 좌표/시설/후보 ID를 만들지 않는다.
 사고 장소 또는 통제/대피 대상 지역의 후보가 유용하면 find_nearby_facilities로 참고 시설을 확인한다.
 대피 목적지, 단순 참고 지점, 예방 안내, 해제만인 구간은 주변 시설을 조회하지 않는다.
@@ -129,7 +163,7 @@ def function_tool(name: str, description: str, model: type[BaseModel]) -> dict:
 
 
 TOOLS = [
-    function_tool("search_places", "원문 장소의 실제 지도 후보를 검색한다. evidence는 원문 인용이다.", SearchPlaces),
+    function_tool("search_places", "단일 원문 장소와 역할, 명시된 지역으로 실제 지도 후보를 검색한다. 지역 미상은 null이다.", SearchPlaces),
     function_tool("find_nearby_facilities", "검색된 후보 주변의 소관시설을 사용자가 고른 참고 반경으로 조회한다.", FindNearby),
     function_tool("submit_analysis", "근거와 장소 역할, 구간별 상태를 포함한 최종 검토 초안을 제출한다.", AnalysisDraft),
 ]
@@ -166,7 +200,7 @@ class MessageAnalysisService:
     def _run(self, request: MessageAnalysisInput, started: float) -> dict:
         source = request.model_dump(mode="json")
         source["issued_at"] = request.issued_at.astimezone(KST).isoformat()
-        items = [{"role": "user", "content": json.dumps(source, ensure_ascii=False)}]
+        items = [{"role": "user", "content": json.dumps({**source, "place_search_available": self.places.configured}, ensure_ascii=False)}]
         candidates: dict[str, dict] = {}
         nearby: dict[str, dict] = {}
         trace: list[dict] = []
@@ -174,7 +208,8 @@ class MessageAnalysisService:
             remaining = MAX_SECONDS - (self.clock() - started)
             if remaining <= 1:
                 raise AnalysisUnavailable("분석 제한 시간에 도달했습니다. 입력을 줄여 다시 시도해 주세요.")
-            output = self.client.respond(items, TOOLS, INSTRUCTIONS, min(30, remaining))
+            tools = TOOLS if turn < MAX_MODEL_CALLS - 1 else [TOOLS[-1]]
+            output = self.client.respond(items, tools, INSTRUCTIONS, min(30, remaining))
             # Preserve all response items, including reasoning state, for stateless Responses.
             items.extend(output)
             calls = [item for item in output if item.get("type") == "function_call"]
@@ -203,7 +238,8 @@ class MessageAnalysisService:
                 if remaining <= 1:
                     raise AnalysisUnavailable("분석 제한 시간에 도달했습니다.")
                 result, detail = self._tool(name, args, request, candidates, nearby, remaining)
-                trace.append({"tool": name, "detail": detail, "status": result.get("status", "ok")})
+                trace.append({"tool": name, "detail": detail, "status": result.get("status", "ok"),
+                              **{key: result[key] for key in ("candidate_id", "role") if key in result}})
             except DraftEvidenceError as error:
                 result = {"status": "invalid", "detail": str(error)}
                 trace.append({"tool": str(name)[:80], "detail": f"근거 검증 실패 · {error}", "status": "invalid"})
@@ -216,29 +252,42 @@ class MessageAnalysisService:
 
     def _tool(self, name, args, request, candidates, nearby, remaining):
         if name == "search_places":
-            query = SearchPlaces.model_validate(args)
-            if query.evidence not in request.text:
-                raise ValueError("ungrounded evidence")
+            search = SearchPlaces.model_validate(args)
+            if search.evidence not in request.text or search.location_text not in search.evidence:
+                raise DraftEvidenceError("검색 location_text는 단일 원문 장소이며 evidence 안의 연속된 문자열이어야 합니다.")
+            if search.region_hint and any(token not in request.text and token not in request.source for token in search.region_hint.split()):
+                raise DraftEvidenceError("region_hint는 원문 또는 발신처에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
+            query = search.location_text
+            if search.region_hint and search.region_hint not in query:
+                query = f"{search.region_hint} {query}"
             if not self.places.configured:
                 return {"status": "unavailable", "candidates": []}, "장소 검색 미설정 · 위치 확인 필요"
             try:
-                found = self.places.search(query.query, min(8, remaining))
+                found = self.places.search(query, min(8, remaining))
             except AnalysisUnavailable:
                 return {"status": "unavailable", "candidates": []}, "장소 검색 실패 · 위치 확인 필요"
             rows = []
             for item in found[:5]:
                 candidate_id = f"P{len(candidates) + 1}"
-                candidate = {**item, "id": candidate_id, "query": query.query, "evidence": query.evidence}
+                candidate = {**item, "id": candidate_id, "query": query, "evidence": search.evidence,
+                             "location_text": search.location_text, "role": search.role, "region_hint": search.region_hint,
+                             "scope_matches_source": source_region_matches(search.region_hint, item["address"])}
                 candidates[candidate_id] = candidate
                 rows.append(candidate)
-            return {"status": "ok" if rows else "not_found", "candidates": rows}, f"{query.query} · 후보 {len(rows)}곳"
+            return {"status": "ok" if rows else "not_found", "role": search.role, "candidates": rows}, f"{query} · 후보 {len(rows)}곳"
         if name == "find_nearby_facilities":
             lookup = FindNearby.model_validate(args)
             place = candidates[lookup.candidate_id]
+            if place["role"] not in {"incident_site", "restricted_area", "evacuation_area"}:
+                return {"status": "needs_confirmation", "candidate_id": place["id"], "role": place["role"],
+                        "detail": "대피 목적지/참고 장소는 사고·통제 대상 주변 시설 조회에 사용하지 않습니다."}, "대피 목적지/참고 장소 · 시설 조회 보류"
+            if not place["scope_matches_source"]:
+                return {"status": "needs_confirmation", "candidate_id": place["id"], "role": place["role"],
+                        "detail": "원문/발신처의 상위 지역을 후보 주소에서 확인하지 못했습니다. 시·군·광역지역을 질문하세요."}, "지역 범위 미확인 · 시설 조회 보류"
             report = NearbyReport.build(GeoPoint(place["latitude"], place["longitude"]),
                                         place["name"], place["address"], request.reference_radius_km, self.facilities())
             # Only whitelisted fields leave the facility repository. No managers/metadata/contacts.
-            result = {"status": "ok", "candidate_id": place["id"], "total_count": len(report.facilities),
+            result = {"status": "ok", "candidate_id": place["id"], "role": place["role"], "total_count": len(report.facilities),
                       "shown_count": min(20, len(report.facilities)),
                       "facilities": [{"id": row.facility.id, "name": row.facility.name,
                                       "facility_type": row.facility.facility_type, "address": row.facility.address,
@@ -274,3 +323,15 @@ class MessageAnalysisService:
                 for candidate_id in location.candidate_ids:
                     if candidate_id not in candidates or location.text not in candidates[candidate_id]["evidence"]:
                         raise DraftEvidenceError("후보 ID는 실제 조회한 결과여야 하며 장소 text가 검색 evidence에 포함되어야 합니다. 미확인 위치는 빈 배열로 남기세요.")
+                    place = candidates[candidate_id]
+                    if place["role"] != location.role:
+                        raise DraftEvidenceError("검색 당시 장소 역할과 최종 역할이 다릅니다. 사고지/대피 목적지는 각각 검색하고 해당 역할의 후보만 연결하세요.")
+                    target = re.sub(r"\s+", "", place["location_text"])
+                    mention = re.sub(r"\s+", "", location.text)
+                    if target not in mention and mention not in target:
+                        raise DraftEvidenceError("검색한 단일 장소와 최종 장소 text가 다릅니다. 해당 장소의 후보만 연결하세요.")
+                unresolved = not location.candidate_ids or any(not candidates[key]["scope_matches_source"] for key in location.candidate_ids)
+                if (part.intent in {"event", "active_restriction", "scheduled_restriction"}
+                        and location.role in {"incident_site", "restricted_area", "evacuation_area"}
+                        and unresolved and not draft.questions):
+                    raise DraftEvidenceError("사고/통제 장소가 미확인입니다. 필요한 지역·위치를 묻는 구체적 확인 질문을 남기세요.")

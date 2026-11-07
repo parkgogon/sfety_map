@@ -30,7 +30,8 @@ export function MessageAnalysisOutput({ result }: { result: MessageAnalysisResul
         {location.candidate_ids.length === 0 ? <p>위치 미확인 · 원문 지역 또는 지도 위치를 확인해 주세요.</p> : <ul>
           {location.candidate_ids.map(id => {
             const candidate = result.candidates.find(row => row.id === id);
-            return candidate ? <li key={id}>미확정 후보: {candidate.name}<span className="message-caption"> · {candidate.address}</span></li> : null;
+            return candidate ? <li key={id}>미확정 후보: {candidate.name}<span className="message-caption"> · {candidate.address}</span>
+              {candidate.scope_matches_source === false && <p className="message-notice">지역을 먼저 확인해 주세요. 이 후보의 주변 시설 조회는 보류합니다.</p>}</li> : null;
           })}
         </ul>}
       </div>)}

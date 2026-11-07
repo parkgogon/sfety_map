@@ -33,7 +33,7 @@ def select_examples(examples: list[dict], case: str) -> list[dict]:
     return [example for example in examples if case == "all" or example["id"] == case]
 
 
-def check_case(example: dict, result: dict) -> dict[str, bool]:
+def check_case(example: dict, result: dict, *, with_places: bool = False) -> dict[str, bool]:
     """Small, explicit acceptance checks; passing still requires human review."""
     parts = result["analysis"]["parts"]
     intents = {part["intent"] for part in parts}
@@ -63,10 +63,29 @@ def check_case(example: dict, result: dict) -> dict[str, bool]:
         checks["incident_site"] = any("와룡산" in place["text"] and place["role"] == "incident_site" for place in locations)
         checks["destination_role"] = any("성서초등학교" in place["text"] and place["role"] == "evacuation_destination" for place in locations)
         checks["destination_not_incident"] = not any("성서초등학교" in place["text"] and place["role"] in {"incident_site", "restricted_area"} for place in locations)
+    if with_places:
+        searches = [step for step in result["trace"] if step["tool"] == "search_places"]
+        lookups = [step for step in result["trace"] if step["tool"] == "find_nearby_facilities" and step["status"] == "ok"]
+        candidates = {candidate["id"]: candidate for candidate in result.get("candidates", [])}
+        checks["place_provider_responded"] = all(step["status"] in {"ok", "not_found"} for step in searches)
+        checks["auditable_facility_lookup_scope"] = all(
+            step.get("candidate_id") in candidates
+            and candidates[step["candidate_id"]].get("scope_matches_source") is True
+            and step.get("role") == candidates[step["candidate_id"]].get("role")
+            and step["role"] in {"incident_site", "restricted_area", "evacuation_area"}
+            for step in lookups)
+        if case_id in {"event", "scheduled", "destination"}:
+            role = "restricted_area" if case_id == "scheduled" else "incident_site"
+            checks["primary_place_search_attempted"] = any(step.get("role") == role and step["status"] in {"ok", "not_found"} for step in searches)
+        if case_id == "ambiguous":
+            checks["no_city_guess_facility_lookup"] = not lookups and not result["nearby"]
+        if case_id == "destination":
+            checks["separate_incident_and_destination_queries"] = not any(
+                "와룡산" in candidate["query"] and "성서초등학교" in candidate["query"] for candidate in candidates.values())
     return checks
 
 
-def evaluate(examples, service, client, *, pause=time.sleep, clock=time.monotonic):
+def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, clock=time.monotonic):
     rows = []
     last_started = None
     for example in examples:
@@ -83,7 +102,7 @@ def evaluate(examples, service, client, *, pause=time.sleep, clock=time.monotoni
             result = service.analyze(MessageAnalysisInput(
                 **{key: example[key] for key in ("text", "source", "issued_at")},
                 reference_radius_km=3, input_kind="example"))
-            checks = check_case(example, result)
+            checks = check_case(example, result, with_places=with_places)
             row.update(status="pass" if all(checks.values()) else "needs_review", checks=checks, result=result)
         except OpenAIConnectionError as error:
             row["error"] = str(error)  # Only adapter-authored public messages.
@@ -116,10 +135,12 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
              "- 창작 예문 평가이며 실제 재난·발송 실적이 아닙니다.",
              "- 아래 통과는 지정한 점검 항목의 결과입니다. 전체 의미·장소 후보는 사람이 검토해야 합니다.",
              "- 실제 과금은 OpenAI Usage에서 확인합니다. 토큰 수를 비용으로 단정하지 않습니다.", "",
-             "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 |", "|---|---|---:|---:|---:|---:|"]
+             "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 | 장소 후보 | 시설 조회 |", "|---|---|---:|---:|---:|---:|---:|---:|"]
     for row in report["cases"]:
         usage = row["usage"]
-        lines.append(f"| {row['label']} | {row['status']} | {usage['requests']} | {usage['input_tokens']} | {usage['output_tokens']} | {row['elapsed_ms']/1000:.1f}s |")
+        result = row.get("result", {})
+        lookups = sum(step["tool"] == "find_nearby_facilities" and step["status"] == "ok" for step in result.get("trace", []))
+        lines.append(f"| {row['label']} | {row['status']} | {usage['requests']} | {usage['input_tokens']} | {usage['output_tokens']} | {row['elapsed_ms']/1000:.1f}s | {len(result.get('candidates', []))} | {lookups} |")
     if report.get("error"):
         lines.extend(["", report["error"]])
     for row in report["cases"]:
@@ -157,7 +178,7 @@ def main(argv=None):
             selected = select_examples(examples, args.case)
             facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
             service = MessageAnalysisService(client, places, lambda: facilities)
-            report["cases"] = evaluate(selected, service, client)
+            report["cases"] = evaluate(selected, service, client, with_places=args.with_places)
             report["status"] = "pass" if len(report["cases"]) == len(selected) and all(row["status"] == "pass" for row in report["cases"]) else "needs_review"
         except Exception:
             report["error"] = "평가 준비 오류. 원본 예외·설정값은 기록하지 않았습니다."

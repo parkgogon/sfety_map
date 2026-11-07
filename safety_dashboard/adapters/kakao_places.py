@@ -35,7 +35,9 @@ class KakaoPlaceSearch:
                     continue
                 result.append({"name": str(row["place_name"])[:160],
                                "address": str(row.get("road_address_name") or row.get("address_name", ""))[:240],
-                               "latitude": lat, "longitude": lon, "provider": "Kakao Local"})
+                               "latitude": lat, "longitude": lon, "provider": "Kakao Local",
+                               "category_name": str(row.get("category_name", ""))[:160],
+                               "category_group_code": str(row.get("category_group_code", ""))[:20]})
             return result
         except (requests.RequestException, ValueError, TypeError, KeyError, AttributeError):
             raise AnalysisUnavailable("장소 검색에 실패했습니다.") from None

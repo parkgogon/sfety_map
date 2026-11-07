@@ -17,6 +17,29 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_live_place_checks_reject_school_lookup_and_unscoped_zero_facility_lookup(self):
+        example = next(row for row in EXAMPLES if row["id"] == "ambiguous")
+        response = result([part(example["text"], "active_restriction")])
+        response["analysis"]["questions"] = ["어느 시·군의 중앙동인가요?"]
+        response["trace"] = [{"tool": "find_nearby_facilities", "status": "ok", "candidate_id": "P1", "role": "restricted_area"}]
+        response["candidates"] = [{"id": "P1", "scope_matches_source": False, "role": "restricted_area"}]
+        # A zero-result lookup is still a lookup at an invented/unscoped city.
+        response["nearby"] = [{"candidate_id": "P1", "total_count": 0, "facilities": []}]
+        checks = check_case(example, response, with_places=True)
+        self.assertFalse(checks["auditable_facility_lookup_scope"])
+        self.assertFalse(checks["no_city_guess_facility_lookup"])
+        response["trace"][0]["role"] = "evacuation_destination"
+        response["candidates"][0].update(role="evacuation_destination", scope_matches_source=True)
+        self.assertFalse(check_case(example, response, with_places=True)["auditable_facility_lookup_scope"])
+
+    def test_live_provider_failures_do_not_pass_as_location_verification(self):
+        example = EXAMPLES[1]
+        response = result([part(example["text"])])
+        response["trace"] = [{"tool": "search_places", "role": "incident_site", "status": "unavailable"}]
+        checks = check_case(example, response, with_places=True)
+        self.assertFalse(checks["place_provider_responded"])
+        self.assertFalse(checks["primary_place_search_attempted"])
+
     def test_paid_batch_cannot_expand_when_ui_examples_are_added(self):
         self.assertEqual(len(select_examples(EXAMPLES, "all")), 6)
         self.assertEqual([row["id"] for row in select_examples(EXAMPLES, "event")], ["event"])

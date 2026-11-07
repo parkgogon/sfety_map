@@ -43,6 +43,10 @@ def location(text="성서산업단지", role="incident_site", candidate_ids=None
     return {"text": text, "role": role, "evidence": text, "candidate_ids": candidate_ids or []}
 
 
+def search_args(text="성서산업단지", role="incident_site", region_hint="대구"):
+    return {"location_text": text, "role": role, "region_hint": region_hint, "evidence": text}
+
+
 def call(name, args, extra=None):
     return [*(extra or []), {"type": "function_call", "name": name, "call_id": "test-call", "arguments": json.dumps(args, ensure_ascii=False)}]
 
@@ -115,7 +119,7 @@ class MessageAgentTests(unittest.TestCase):
         req = request()
         reasoning = {"type": "reasoning", "id": "rs-test", "summary": [], "encrypted_content": "opaque-state"}
         svc = service([
-            call("search_places", {"query": "대구 성서산업단지", "evidence": "성서산업단지"}, [reasoning]),
+            call("search_places", search_args(), [reasoning]),
             call("find_nearby_facilities", {"candidate_id": "P1"}),
             call("submit_analysis", draft([part(req.text, locations=[location(candidate_ids=["P1"])])])),
         ])
@@ -155,16 +159,20 @@ class MessageAgentTests(unittest.TestCase):
     def test_destination_lookup_is_not_returned_as_incident_nearby_facilities(self):
         req = request("destination")
         svc = service([
-            call("search_places", {"query": "성서초등학교", "evidence": "성서초등학교"}),
+            call("search_places", search_args("성서초등학교", "evacuation_destination")),
             call("find_nearby_facilities", {"candidate_id": "P1"}),
             call("submit_analysis", draft([part(req.text, locations=[location("성서초등학교", "evacuation_destination", ["P1"])])])),
         ])
-        self.assertEqual(svc.analyze(req)["nearby"], [])
+        svc.facilities = Mock(side_effect=AssertionError("대피 목적지로 시설 자료를 조회하면 안 됩니다."))
+        result = svc.analyze(req)
+        self.assertEqual(result["nearby"], [])
+        self.assertEqual(result["trace"][1]["status"], "needs_confirmation")
+        svc.facilities.assert_not_called()
 
     def test_ambiguous_candidates_are_preserved_and_do_not_become_confirmed_points(self):
         req = request("ambiguous")
         svc = service([
-            call("search_places", {"query": "중앙동 사거리", "evidence": "중앙동"}),
+            call("search_places", search_args("중앙동", "restricted_area", None)),
             call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동", "restricted_area", ["P1", "P2"])])], ["어느 시·군의 중앙동인가요?"])),
         ], FakePlaces([PLACE, {**PLACE, "name": "다른 중앙동"}]))
         result = svc.analyze(req)
@@ -181,12 +189,60 @@ class MessageAgentTests(unittest.TestCase):
                 if state == "failed":
                     places.search = Mock(side_effect=AnalysisUnavailable("search failed"))
                 svc = service([
-                    call("search_places", {"query": "성서산업단지", "evidence": "성서산업단지"}),
+                    call("search_places", search_args()),
                     call("submit_analysis", draft([part(request().text)], ["정확한 장소를 확인해 주세요."])),
                 ], places)
                 result = svc.analyze(request())
                 self.assertEqual(result["trace"][0]["status"], "not_found" if state == "empty" else "unavailable")
                 self.assertEqual(result["nearby"], [])
+
+    def test_unknown_city_candidate_cannot_trigger_facility_lookup(self):
+        req = request("ambiguous")
+        svc = service([
+            call("search_places", search_args("중앙동 사거리", "restricted_area", None)),
+            call("find_nearby_facilities", {"candidate_id": "P1"}),
+            call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동 사거리", "restricted_area", ["P1"])])], ["어느 시·군의 중앙동인가요?"])),
+        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동"}]))
+        svc.facilities = Mock(side_effect=AssertionError("지역 미상으로 시설 조회 금지"))
+        result = svc.analyze(req)
+        self.assertFalse(result["candidates"][0]["scope_matches_source"])
+        self.assertEqual(result["trace"][1]["status"], "needs_confirmation")
+        self.assertEqual(result["nearby"], [])
+        svc.facilities.assert_not_called()
+
+    def test_invented_city_is_rejected_before_provider_search(self):
+        req = request("ambiguous")
+        svc = service([
+            call("search_places", search_args("중앙동 사거리", "restricted_area", "창원시")),
+            call("submit_analysis", draft([part(req.text, "active_restriction")], ["어느 시·군의 중앙동인가요?"])),
+        ])
+        result = svc.analyze(req)
+        self.assertEqual(result["trace"][0]["status"], "invalid")
+        self.assertEqual(svc.places.queries, [])
+
+    def test_city_added_to_source_allows_reference_facility_lookup(self):
+        req = request("ambiguous", source="창원시 공개 재난문자")
+        svc = service([
+            call("search_places", search_args("중앙동 사거리", "restricted_area", "창원시")),
+            call("find_nearby_facilities", {"candidate_id": "P1"}),
+            call("submit_analysis", draft([part(req.text, "active_restriction", [location("중앙동 사거리", "restricted_area", ["P1"])])], ["정확한 통제 구간을 확인해 주세요."])),
+        ], FakePlaces([{**PLACE, "name": "시청사거리", "address": "경남 창원시 성산구 중앙동"}]))
+        result = svc.analyze(req)
+        self.assertTrue(result["candidates"][0]["scope_matches_source"])
+        self.assertEqual(result["trace"][1]["status"], "ok")
+        self.assertEqual(result["nearby"][0]["candidate_id"], "P1")
+
+    def test_candidate_outside_quoted_city_cannot_trigger_facility_lookup(self):
+        req = request()
+        svc = service([
+            call("search_places", search_args()),
+            call("find_nearby_facilities", {"candidate_id": "P1"}),
+            call("submit_analysis", draft([part(req.text, locations=[location(candidate_ids=["P1"])])], ["대구의 어느 공장인지 확인해 주세요."])),
+        ], FakePlaces([{**PLACE, "address": "부산 시험 주소"}]))
+        svc.facilities = Mock(side_effect=AssertionError("다른 시의 후보로 시설 조회 금지"))
+        result = svc.analyze(req)
+        self.assertEqual(result["nearby"], [])
+        svc.facilities.assert_not_called()
 
     def test_invented_quote_unknown_candidate_and_naive_time_are_rejected(self):
         variants = [part("원문에 없는 근거"), part(request().text, locations=[location(candidate_ids=["invented"])]),
