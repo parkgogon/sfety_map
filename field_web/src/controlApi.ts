@@ -79,7 +79,7 @@ export interface AdminSessionStatus {
 export async function checkAdminSession(token = ""): Promise<AdminSessionStatus> {
   try {
     const headers: Record<string, string> = {};
-    if (token) headers["X-Alert-Admin-Token"] = token;
+    if (token && token !== "active-session") headers["X-Alert-Admin-Token"] = token;
     const response = await fetch("/internal/v1/admin/session", {
       headers,
       credentials: "same-origin",

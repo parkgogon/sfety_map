@@ -17,6 +17,10 @@ from safety_dashboard.operations.readiness import OperationalReadinessService
 from safety_dashboard.api.nearby_reports import NearbyReportGenerator
 from safety_dashboard.adapters.kakao_report_capture import KakaoReportCapture
 from safety_dashboard.api.settings import ROOT
+from safety_dashboard.application.message_analysis import MessageAnalysisService
+from safety_dashboard.adapters.openai_messages import OpenAIResponsesClient
+from safety_dashboard.adapters.kakao_places import KakaoPlaceSearch
+from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 
 from dataclasses import dataclass
 from collections.abc import Callable
@@ -34,6 +38,7 @@ class ApiServices:
     notification_admin: Callable[[], AlertAdminService]
     operational_readiness: Callable[[], OperationalReadinessService]
     nearby_reports: NearbyReportGenerator
+    message_analysis: MessageAnalysisService
 
 
 def build_services(
@@ -44,6 +49,7 @@ def build_services(
     admin_access_service: AdminAccessVerifier | None = None,
     operational_readiness_service: OperationalReadinessService | None = None,
     nearby_report_generator: NearbyReportGenerator | None = None,
+    message_analysis_service: MessageAnalysisService | None = None,
 ) -> ApiServices:
     settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
@@ -126,4 +132,8 @@ def build_services(
         notification_admin=notification_admin,
         operational_readiness=operational_readiness,
         nearby_reports=nearby_report_generator or NearbyReportGenerator(capture, ROOT / "fonts/NotoSansKR.ttf"),
+        message_analysis=message_analysis_service or MessageAnalysisService(
+            OpenAIResponsesClient.from_environment(), KakaoPlaceSearch.from_environment(),
+            CsvFacilityRepository(settings.facility_path).list_monitored,
+        ),
     )

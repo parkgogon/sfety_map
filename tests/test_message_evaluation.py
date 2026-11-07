@@ -1,0 +1,96 @@
+import contextlib
+import copy
+import io
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import Mock, patch
+
+from scripts.evaluate_disaster_messages import check_case, evaluate, main, write_report
+from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
+from tests.test_message_analysis import EXAMPLES, draft, part, request
+
+
+def result(parts):
+    return {"analysis": draft(parts), "review_required": True, "trace": [], "nearby": []}
+
+
+class EvaluationTests(unittest.TestCase):
+    def test_partial_release_checks_fail_when_both_segments_are_called_released(self):
+        example = next(row for row in EXAMPLES if row["id"] == "partial_release")
+        correct = [part("가람교 해제", "release"), part("푸른교 계속 통제", "active_restriction")]
+        correct[1]["locations"] = [{"text": "푸른교", "role": "restricted_area", "evidence": "푸른교", "candidate_ids": []}]
+        self.assertTrue(all(check_case(example, result(correct)).values()))
+        incorrect = copy.deepcopy(correct)
+        incorrect[1]["intent"] = "release"
+        checks = check_case(example, result(incorrect))
+        self.assertFalse(checks["still_restricted_segment"])
+        self.assertFalse(checks["expected_intents"])
+
+    def test_prevention_does_not_pass_if_agent_unnecessarily_looks_up_facilities(self):
+        example = EXAMPLES[0]
+        response = result([part(example["text"], "prevention")])
+        self.assertTrue(all(check_case(example, response).values()))
+        response["trace"] = [{"tool": "find_nearby_facilities"}]
+        self.assertFalse(check_case(example, response)["no_incident_or_unnecessary_lookup"])
+
+    def test_batch_stops_on_auth_failure_without_charging_for_remaining_cases(self):
+        service = Mock()
+        service.analyze.side_effect = OpenAIConnectionError("API 인증 실패")
+        client = Mock()
+        client.usage_snapshot.side_effect = [dict(requests=0), dict(requests=1)]
+        with contextlib.redirect_stdout(io.StringIO()):
+            rows = evaluate(EXAMPLES, service, client)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["usage"]["requests"], 1)
+        self.assertEqual(service.analyze.call_count, 1)
+
+    def test_batch_observes_start_interval_and_does_not_send_expected_answers_to_model(self):
+        service = Mock()
+        service.analyze.return_value = result([part(request("prevention").text, "prevention")])
+        client = Mock()
+        client.usage_snapshot.return_value = dict(requests=0)
+        seconds = [0.0]
+        pauses = []
+        def pause(delay):
+            pauses.append(delay)
+            seconds[0] += delay
+        with contextlib.redirect_stdout(io.StringIO()):
+            rows = evaluate([EXAMPLES[0], EXAMPLES[0]], service, client, pause=pause, clock=lambda: seconds[0])
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(pauses, [20.1])
+        sent = service.analyze.call_args.args[0].model_dump()
+        self.assertNotIn("expected_intents", sent)
+        self.assertNotIn("expected_start", sent)
+
+    def test_live_flag_and_missing_key_never_make_external_requests(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            main([])
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
+            self.assertEqual(main(["--live", "--output-dir", directory]), 1)
+            report = json.loads((Path(directory) / "results.json").read_text())
+            self.assertEqual(report["cases"], [])
+            self.assertIn("OPENAI_API_KEY", report["error"])
+
+    def test_reports_redact_secret_values_and_record_unverified_place_search(self):
+        report = {"model": "fake", "status": "error", "cases": [], "place_search_mode": "disabled", "error": "secret-value"}
+        with tempfile.TemporaryDirectory() as directory:
+            write_report(report, Path(directory), ("secret-value",))
+            for path in Path(directory).iterdir():
+                text = path.read_text()
+                self.assertNotIn("secret-value", text)
+                self.assertIn("[REDACTED]", text)
+            self.assertIn("미검증", (Path(directory) / "summary.md").read_text())
+
+    def test_usage_is_counted_even_when_the_model_response_is_incomplete(self):
+        session = Mock()
+        session.post.return_value.status_code = 200
+        session.post.return_value.json.return_value = {
+            "status": "incomplete", "output": [],
+            "usage": {"input_tokens": 100, "input_tokens_details": {"cached_tokens": 20}, "output_tokens": 50, "total_tokens": 150},
+        }
+        client = OpenAIResponsesClient("not-real", session=session)
+        with self.assertRaisesRegex(RuntimeError, "완료"):
+            client.respond([], [], "", 20)
+        self.assertEqual(client.usage_snapshot(), dict(requests=1, usage_reports=1, input_tokens=100, cached_input_tokens=20, output_tokens=50, total_tokens=150))

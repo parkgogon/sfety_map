@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import ControlApp from "./ControlApp";
 import SettingsApp from "./SettingsApp";
+import MessageAnalysisApp from "./MessageAnalysisApp";
 import { useLocation } from "./router";
 import "./styles/design_tokens.css";
 import "./styles.css";
@@ -11,6 +12,8 @@ function Root() {
   const location = useLocation();
   const isControl = location.pathname === "/control" || location.pathname.startsWith("/control/");
   const isSettings = location.pathname === "/settings" || location.pathname.startsWith("/settings/");
+
+  if (location.pathname === "/control/messages") return <MessageAnalysisApp />;
 
   if (isControl) {
     return <ControlApp />;

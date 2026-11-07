@@ -1,0 +1,71 @@
+name: Evaluate disaster message AI
+run-name: Disaster message AI · ${{ github.event.pull_request.number || github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      case:
+        description: Example to evaluate
+        type: choice
+        default: all
+        options: [all, prevention, event, scheduled, partial_release, ambiguous, destination]
+      with_places:
+        description: Also call Kakao Local (requires KAKAO_REST_API_KEY)
+        type: boolean
+        default: false
+  # Enables an explicitly requested evaluation before this file exists on main.
+  # Only repository collaborators can add labels. Fork PRs never receive secrets.
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: disaster-message-live-evaluation
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'ai-evaluation' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-api.txt
+      - name: Evaluate authored examples with OpenAI
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-5.4-mini-2026-03-17
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          EVALUATION_CASE: ${{ inputs.case || 'all' }}
+          WITH_PLACES: ${{ inputs.with_places || false }}
+        run: |
+          args=(--live --case "$EVALUATION_CASE" --output-dir evaluation-results)
+          if [[ "$WITH_PLACES" == "true" ]]; then
+            args+=(--with-places)
+          fi
+          python scripts/evaluate_disaster_messages.py "${args[@]}"
+      - name: Publish evaluation summary
+        if: always()
+        run: |
+          if [[ -f evaluation-results/summary.md ]]; then
+            cat evaluation-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: disaster-message-ai-results
+          path: evaluation-results/
+          retention-days: 7
+          if-no-files-found: warn

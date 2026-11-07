@@ -127,6 +127,9 @@ export default function ControlApp() {
           </div>
         </div>
         <div className="control-header-actions">
+          <button className="secondary-button" type="button" onClick={() => navigateWithMode("/control/messages")}>
+            문자 검토
+          </button>
           {adminToken ? (
             <button
               className="secondary-button auth-status-btn logged-in"
