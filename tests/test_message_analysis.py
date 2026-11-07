@@ -77,6 +77,18 @@ def service(responses, places=None, **kwargs):
 
 
 class MessageAgentTests(unittest.TestCase):
+    def test_release_time_cannot_be_displayed_as_restriction_start(self):
+        req = request("partial_release")
+        released = part("가람교 하부도로 통제는 15시 해제되었습니다.", "release",
+                        time_text="15시", starts_at="2026-11-07T15:00:00+09:00")
+        corrected = {**released, "starts_at": None, "ends_at": "2026-11-07T15:00:00+09:00"}
+        svc = service([call("submit_analysis", draft([released])), call("submit_analysis", draft([corrected]))])
+        result = svc.analyze(req)
+        self.assertEqual(result["trace"][0]["status"], "invalid")
+        self.assertIn("ends_at", svc.client.inputs[1][-1]["output"])
+        self.assertIsNone(result["analysis"]["parts"][0]["starts_at"])
+        self.assertEqual(result["analysis"]["parts"][0]["ends_at"], "2026-11-07T15:00:00+09:00")
+
     def test_incident_site_does_not_replace_a_restricted_area_in_a_road_closure(self):
         req = request("ambiguous")
         wrong_location = location("중앙동 사거리 인근", "incident_site")

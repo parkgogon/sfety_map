@@ -54,6 +54,9 @@
   평가한다. 재실행은 라벨을 제거한 뒤 다시 붙인다. fork PR에는 키를 제공하지 않는다.
 - main 반영 후: Actions → Evaluate disaster message AI → Run workflow에서
   전체 또는 특정 예문을 고를 수 있다. `with_places`는 기본 false다.
+- 현재 기능 브랜치도 API/CLI 수동 실행이 가능함을 확인했다.
+  `gh workflow run 410682737 --repo parkgogon/sfety_map --ref feature/disaster-message-ai -f case=partial_release`
+  처럼 특정 예문만 재평가할 수 있다. 실제 장소 검색은 `-f with_places=true`를 추가한다.
 - 기본 실행은 실제 OpenAI + 장소 검색 미설정 상태다. 위치 미확인/질문 보류를
   검토할 수 있지만 실제 장소·시설 조회 품질은 검증하지 못한다.
 - 실제 장소 검색 평가는 별도 secret `KAKAO_REST_API_KEY` 등록 후 PR에
@@ -118,3 +121,7 @@ Python 공통 네트워크 차단 실행기, 프런트엔드 테스트/빌드, �
 통제 대상 역할을 별도로 보존하지 않아 실패했다. 통제 상황의 장소 역할 보존을
 명확히 하고 재평가한다. 이 실행은 실제 위치 검색이 꺼져 있으므로 시설 조회 품질을
 평가한 결과로 사용하지 않는다.
+
+2차 [실행 42417274445](https://github.com/parkgogon/sfety_map/actions/runs/42417274445), 커밋 `fa9cfe1`에서는
+6종 지정 점검이 모두 통과했다. 사람이 읽은 결과 해제 시각이 starts_at에 들어간 사례를
+발견해, 해제 시각은 ends_at에만 기록하는 계약과 점검을 추가하고 해당 예문을 재평가한다.

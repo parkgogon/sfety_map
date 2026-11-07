@@ -55,6 +55,8 @@ def check_case(example: dict, result: dict) -> dict[str, bool]:
     if case_id == "partial_release":
         checks["released_segment"] = any(part["intent"] == "release" and "가람교" in part["evidence"] for part in parts)
         checks["still_restricted_segment"] = any(part["intent"] == "active_restriction" and "푸른교" in part["evidence"] for part in parts)
+        checks["release_end_time"] = any(part["intent"] == "release" and part["starts_at"] is None
+                                         and part["ends_at"] == "2026-11-07T15:00:00+09:00" for part in parts)
     if case_id == "ambiguous":
         checks["asks_for_location_confirmation"] = bool(result["analysis"]["questions"])
     if case_id == "destination":

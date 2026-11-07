@@ -101,6 +101,8 @@ active_restriction/scheduled_restriction의 장소는 restricted_area로 보존�
 통제 대상 역할을 빠뜨리지 않는다. 위치가 미상이더라도 원문의 지명과 역할은 남긴다.
 time_text는 시간 표현의 원문 인용 또는 빈 문자열이다. 오늘/내일은 issued_at의 한국 날짜를
 기준으로 풀고 명확할 때만 starts_at/ends_at을 ISO8601 +09:00으로 쓴다. 미상은 null이다.
+starts_at은 사고·통제의 시작, ends_at은 종료·해제 시각이다.
+release에서는 starts_at을 null로 남기고, 명확한 해제 시각만 ends_at에 넣는다.
 현재 시각으로 과거 상황을 재판정하지 않는다. 이 문자 이후의 해제/정정 여부는 알 수 없다.
 
 도구를 필요한 만큼 선택한다. 예방/일반 안내만 있으면 장소 조회 없이 submit_analysis로 끝낼 수 있다.
@@ -248,6 +250,8 @@ class MessageAnalysisService:
     @staticmethod
     def _validate(draft: AnalysisDraft, request: MessageAnalysisInput, candidates: dict) -> None:
         for part in draft.parts:
+            if part.intent == "release" and part.starts_at is not None:
+                raise DraftEvidenceError("해제 시각은 ends_at에 기록하고 release의 starts_at은 null로 남겨야 합니다.")
             if (part.intent in {"active_restriction", "scheduled_restriction"} and part.locations
                     and not any(location.role == "restricted_area" for location in part.locations)):
                 raise DraftEvidenceError("통제 상황의 장소에는 restricted_area 역할을 남겨야 합니다. 발생 장소와 겹치면 역할을 각각 보존하세요.")

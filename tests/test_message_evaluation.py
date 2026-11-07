@@ -27,6 +27,7 @@ class EvaluationTests(unittest.TestCase):
     def test_partial_release_checks_fail_when_both_segments_are_called_released(self):
         example = next(row for row in EXAMPLES if row["id"] == "partial_release")
         correct = [part("가람교 해제", "release"), part("푸른교 계속 통제", "active_restriction")]
+        correct[0].update(ends_at="2026-11-07T15:00:00+09:00", time_text="15시")
         correct[1]["locations"] = [{"text": "푸른교", "role": "restricted_area", "evidence": "푸른교", "candidate_ids": []}]
         self.assertTrue(all(check_case(example, result(correct)).values()))
         incorrect = copy.deepcopy(correct)
