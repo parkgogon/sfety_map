@@ -320,7 +320,8 @@ class MessageAdapterTests(unittest.TestCase):
         payload = session.post.call_args.kwargs
         self.assertFalse(payload["json"]["store"])
         self.assertFalse(payload["json"]["parallel_tool_calls"])
-        self.assertEqual(payload["json"]["max_output_tokens"], 2200)
+        self.assertEqual(payload["json"]["max_output_tokens"], 4000)
+        self.assertEqual(payload["json"]["reasoning"]["effort"], "low")
         self.assertFalse(payload["allow_redirects"])
 
     def test_provider_error_never_exposes_raw_response(self):

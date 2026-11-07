@@ -82,6 +82,14 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
         if case_id == "destination":
             checks["separate_incident_and_destination_queries"] = not any(
                 "와룡산" in candidate["query"] and "성서초등학교" in candidate["query"] for candidate in candidates.values())
+        if case_id in {"event", "destination"}:
+            primary_ids = {key for location in locations if location["role"] == "incident_site" for key in location["candidate_ids"]}
+            primary = [candidates[key] for key in primary_ids if key in candidates]
+            kind = "산업단지" if case_id == "event" else "산"
+            checks["primary_place_kind_matches"] = bool(primary) and all(
+                candidate.get("category_name", "").split(" > ")[-1] == kind for candidate in primary)
+            checks["reference_facility_lookup_exercised"] = any(
+                step.get("candidate_id") in primary_ids and step.get("role") == "incident_site" for step in lookups)
     return checks
 
 
@@ -166,7 +174,8 @@ def main(argv=None):
     client = OpenAIResponsesClient.from_environment()
     places = KakaoPlaceSearch.from_environment() if args.with_places else KakaoPlaceSearch("")
     report = {"report_version": 1, "evaluated_at": dt.datetime.now(KST).isoformat(),
-              "model": client.model, "status": "error", "cases": [], "human_review_required": True,
+              "model": client.model, "reasoning_effort": client.reasoning_effort,
+              "status": "error", "cases": [], "human_review_required": True,
               "place_search_mode": "live" if args.with_places else "disabled"}
     if not client.configured:
         report["error"] = "GitHub Repository secret OPENAI_API_KEY가 설정되지 않았습니다."

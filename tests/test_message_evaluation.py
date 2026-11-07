@@ -17,6 +17,19 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_reference_lookup_requires_matching_place_kind_and_actual_lookup(self):
+        example = EXAMPLES[1]
+        response = result([part(example["text"], locations=[{
+            "text": "성서산업단지", "role": "incident_site", "candidate_ids": ["P1"], "evidence": "성서산업단지"}])])
+        response["candidates"] = [{"id": "P1", "query": "대구 성서산업단지", "role": "incident_site",
+                                   "scope_matches_source": True, "category_name": "스포츠 > 체육관"}]
+        response["trace"] = [{"tool": "find_nearby_facilities", "status": "ok", "role": "incident_site", "candidate_id": "P1"}]
+        self.assertFalse(check_case(example, response, with_places=True)["primary_place_kind_matches"])
+        response["candidates"][0]["category_name"] = "서비스,산업 > 산업단지"
+        self.assertTrue(check_case(example, response, with_places=True)["primary_place_kind_matches"])
+        response["trace"] = []
+        self.assertFalse(check_case(example, response, with_places=True)["reference_facility_lookup_exercised"])
+
     def test_live_place_checks_reject_school_lookup_and_unscoped_zero_facility_lookup(self):
         example = next(row for row in EXAMPLES if row["id"] == "ambiguous")
         response = result([part(example["text"], "active_restriction")])

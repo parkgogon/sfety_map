@@ -14,10 +14,11 @@ class OpenAIConnectionError(AnalysisUnavailable):
 
 
 class OpenAIResponsesClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, *, session=None):
+    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, *, reasoning_effort: str = "low", session=None):
         self._api_key = api_key
         self.model = model
         self.configured = bool(api_key)
+        self.reasoning_effort = reasoning_effort if reasoning_effort in {"none", "low"} else "low"
         self._session = session or requests.Session()
         self._usage = dict.fromkeys(("requests", "usage_reports", "input_tokens", "cached_input_tokens", "output_tokens", "total_tokens"), 0)
 
@@ -26,7 +27,8 @@ class OpenAIResponsesClient:
 
     @classmethod
     def from_environment(cls):
-        return cls(env_text("OPENAI_API_KEY"), os.getenv("OPENAI_MODEL", "").strip() or DEFAULT_MODEL)
+        return cls(env_text("OPENAI_API_KEY"), os.getenv("OPENAI_MODEL", "").strip() or DEFAULT_MODEL,
+                   reasoning_effort=os.getenv("OPENAI_REASONING_EFFORT", "low"))
 
     def respond(self, items, tools, instructions, timeout):
         if not self.configured:
@@ -38,8 +40,8 @@ class OpenAIResponsesClient:
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
                 json={"model": self.model, "instructions": instructions, "input": items, "tools": tools,
                       "tool_choice": "required", "parallel_tool_calls": False, "store": False,
-                      "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "none"},
-                      "max_output_tokens": 2200},
+                      "include": ["reasoning.encrypted_content"], "reasoning": {"effort": self.reasoning_effort},
+                      "max_output_tokens": 4000},
                 timeout=(min(5, timeout / 2), max(1, timeout - min(5, timeout / 2))),
                 allow_redirects=False,
             )
