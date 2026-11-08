@@ -5,13 +5,16 @@ on:
     inputs:
       mode:
         type: choice
-        options: [baseline, verify]
+        options: [baseline, verify, collect]
         default: baseline
       revision:
         description: Deployed main image SHA for verification
         type: string
       record_id:
         description: Resume only a previously registered verification example
+        type: string
+      verification_run_id:
+        description: Prior verification run ID for read-only evidence recovery
         type: string
   pull_request:
     types: [labeled]
@@ -90,15 +93,40 @@ jobs:
             --format='json(metadata.name,status.conditions,status.succeededCount,status.failedCount)' > release-check/execution.json
       - name: Collect scoped verification evidence
         if: always()
-        run: |
-          if [[ -s release-check/execution.json ]]; then
-            python3 scripts/collect_message_release_check.py
-          fi
+        run: python3 scripts/collect_message_release_check.py
       - name: Remove only the temporary verification job
         if: always()
         run: gcloud run jobs delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet
       - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: message-release-verification
+          path: release-check/
+          retention-days: 14
+
+  collect:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'collect' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERIFICATION_RUN_ID: ${{ inputs.verification_run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate previous verification job
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch(r"[0-9]+",os.environ["VERIFICATION_RUN_ID"])'
+          echo "CHECK_JOB=message-review-check-$VERIFICATION_RUN_ID" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: python3 scripts/collect_message_release_check.py
+      - uses: actions/upload-artifact@v4
         with:
           name: message-release-verification
           path: release-check/

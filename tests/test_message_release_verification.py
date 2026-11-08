@@ -44,6 +44,22 @@ class ReleaseVerificationTests(unittest.TestCase):
                 self.assertEqual(json.loads(text)['hosting']['version'],'version')
             finally:os.chdir(old)
 
+    def test_failed_execution_with_empty_cli_output_still_collects_own_tagged_logs(self):
+        payload=[{'jsonPayload':{'kind':'checkpoint','record_id':'manual-'+'b'*32}},
+                 {'jsonPayload':{'kind':'result','status':'failed','phase':'login','error_type':'Error','password':'private'}}]
+        run=Mock(return_value=Mock(returncode=0,stdout=json.dumps(payload)))
+        with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'CHECK_JOB':'message-review-check-123'}),patch('scripts.collect_message_release_check.subprocess.run',run),contextlib.redirect_stdout(io.StringIO()):
+            old=os.getcwd()
+            try:
+                os.chdir(directory);out=Path('release-check');out.mkdir();(out/'execution.json').write_text('')
+                collect_message_release_check.main()
+                report=json.loads((out/'verification.json').read_text())
+                self.assertEqual(report['browser']['phase'],'login')
+                self.assertEqual(report['record_id'],'manual-'+'b'*32)
+                self.assertNotIn('private',json.dumps(report))
+                self.assertIn('job_name="message-review-check-123"',run.call_args.args[0][3])
+            finally:os.chdir(old)
+
     def test_scoped_log_collection_omits_unexpected_fields_and_keeps_no_credentials(self):
         payload=[{'jsonPayload':{'kind':'result','status':'passed','record_id':'manual-'+'a'*32,'token':'private-token'}},
                  {'jsonPayload':{'kind':'screenshot','name':'desktop','jpeg_base64':base64.b64encode(b'\xff\xd8fakejpeg').decode()}}]

@@ -54,10 +54,12 @@ def verify():
                 r.continue_()
             context.route("**/*",route)
             def api(path):
-                token = page.evaluate("sessionStorage.getItem('keco_admin_token')")
-                response = context.request.get(BASE+path,headers={"X-Alert-Admin-Token":token or ""},timeout=20000,max_redirects=0)
-                if response.status != 200: raise RuntimeError("protected_read")
-                return response.json()
+                return page.evaluate("""async path => {
+                    const response = await fetch(path, {redirect:'error', signal:AbortSignal.timeout(20000),
+                        headers:{'X-Alert-Admin-Token':sessionStorage.getItem('keco_admin_token') || ''}});
+                    if (response.status !== 200) throw new Error('protected_read');
+                    return response.json();
+                }""", path)
             page.goto(BASE+"/control/messages"+("?record_id="+resume if resume else ""),wait_until="networkidle",timeout=60000)
             phase="login"
             page.get_by_label("관리자 비밀번호",exact=True).fill(password)
@@ -68,7 +70,7 @@ def verify():
             assert status["configured"] and status["place_search_configured"]
             asset = page.locator('script[type="module"][src]').first.get_attribute("src")
             assert asset and asset.startswith("/assets/")
-            assert revision in context.request.get(BASE+asset,max_redirects=0).text()
+            assert revision in page.evaluate("path=>fetch(path,{redirect:'error'}).then(r=>r.text())",asset)
             phase="register"
             if resume:
                 identifier=resume

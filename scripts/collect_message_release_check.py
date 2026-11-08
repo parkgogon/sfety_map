@@ -9,18 +9,22 @@ import subprocess
 
 def main():
     out=Path("release-check");out.mkdir(exist_ok=True)
-    execution=json.loads((out/"execution.json").read_text())
+    path=out/"execution.json"
+    execution=json.loads(path.read_text()) if path.exists() and path.stat().st_size else {}
     name=execution.get("metadata",{}).get("name","").split("/")[-1]
-    if not re.fullmatch(r"[a-z0-9-]+",name):raise ValueError("execution_name")
+    if name and not re.fullmatch(r"[a-z0-9-]+",name):raise ValueError("execution_name")
     job=os.environ["CHECK_JOB"]
     if not re.fullmatch(r"message-review-check-[0-9]+",job):raise ValueError("job_name")
     result={"execution":name,"job":job,"conditions":execution.get("status",{}).get("conditions",[]),"logs_status":"unavailable"}
-    query=f'resource.type="cloud_run_job" AND resource.labels.job_name="{job}" AND labels."run.googleapis.com/execution_name"="{name}" AND jsonPayload.release_check=true'
+    query=f'resource.type="cloud_run_job" AND resource.labels.job_name="{job}" AND jsonPayload.release_check=true'
+    if name:query+=f' AND labels."run.googleapis.com/execution_name"="{name}"'
     r=subprocess.run(["gcloud","logging","read",query,"--project=keco-safety-map","--limit=40","--order=asc","--format=json"],capture_output=True,text=True,timeout=30)
     if not r.returncode:
         rows=json.loads(r.stdout);result["logs_status"]="observed"
         for row in rows:
             data=row.get("jsonPayload",{})
+            if data.get("kind")=="checkpoint" and re.fullmatch(r"manual-[a-f0-9]{32}",data.get("record_id","")):
+                result["record_id"]=data["record_id"]
             if data.get("kind")=="screenshot" and data.get("name") in ("desktop","mobile"):
                 raw=base64.b64decode(data.get("jpeg_base64",""),validate=True)
                 if raw.startswith(b'\xff\xd8') and len(raw)<180000:(out/(data["name"]+".jpg")).write_bytes(raw)
