@@ -162,7 +162,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 ## 5. 다음 시작점
 
-다음 시작점은 **소유자 Cloud Shell에서 SafetyData 키의 버전·runtime 읽기 권한·1회 API 조회 확인**이다.
+다음 시작점은 **IAM 비공개 임시 점검으로 Cloud Run 실제 키 사용과 문자/지역/페이지 응답 확인**이다.
 사용자 캡처에서 기존 긴급재난문자 이용신청의 `승인` 상태를 확인했고, 기존 인증키도 찾았다.
 사용자는 GCP `keco-safety-map`에 `SAFETY_DATA_API_KEY`를 만들었다고 확인했다. 재신청/재발급/재등록을 반복하지 않는다.
 키 값은 채팅/GitHub 파일로 받지 않는다. 기존 OpenAI/Kakao Secret 버전 1도 다시 등록하지 않는다.
@@ -170,10 +170,13 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 API ready·운영 이미지 `43b40e0`·SafetyData 환경변수 참조 미연결을 확인했다. 점검 계정의 Secret/DB/IAM 메타데이터 조회가
 권한 부족이어서 실행은 실패했다. 이것은 키 등록 실패나 기존 AI/Firestore의 운영 장애를 증명하지 않는다.
 실제 키 값 조회·API 호출·DB 접근·배포·발송은 0건이다.
-소유자용 [점검 도구](../scripts/check_safetydata_connection.py)를 고정 commit에서 Cloud Shell로 내려받아 `--grant-runtime`으로 실행한다.
-등록된 ENABLED 버전을 확인하고 해당 Secret에만 runtime `secretAccessor`를 부여한 뒤 소유자 Cloud Shell에서 API를 1회 조회한다.
-키는 Cloud Shell 프로세스 메모리 안에서만 사용하며 출력/파일/채팅으로 가져오지 않는다. 이 도구는 운영 서버를 배포·연결·활성화하지 않는다.
-성공 후에도 Cloud Run 실제 호출 경로와 응답/페이지·제공 지연/쿼터·이용 조건은 [연결 기준](MESSAGE_AUTOMATION.md)에 따라 확인한다.
+사용자가 소유자용 도구 `467234b --grant-runtime`을 실행했다. [키 값 없는 실행 결과](evidence/2026-11-08/safetydata-registration-preflight/owner-check.json)에서
+ENABLED 버전 **1**, runtime 읽기 역할 추가, API 1회 응답을 확인했다. 오늘 대구 조건은 `valid_empty_response`/0건이었다.
+이 결과는 Cloud Shell에서의 응답이며 실제 문자 필드·날짜/지역/페이지·Cloud Run 통신 확인은 아직 아니다. 권한 추가를 반복하지 않는다.
+추가 점검은 기존 읽기 전용 워크플로의 명시적 `mode=official-feed`로 실행한다. 고정 운영 worker 이미지/동일 runtime 계정과 이 Secret 버전 1만 쓰는
+새 임시 비공개 서비스를 생성하고, 최대 6회 읽기 후 삭제한다. 운영 API/기존 Worker/예약 실행/DB/AI/발송 경로는 바꾸지 않는다.
+최근 전국 3일을 찾고 빈 목록만 있으면 날짜/지역 없는 대조 1회도 확인한다. 실제 원문/ID·키 값은 결과에 담지 않는다.
+빈 응답이나 날짜/지역/페이지 불일치를 정상 상시 수집으로 판정하지 않는다. 제공 지연/쿼터·이용 조건은 [연결 기준](MESSAGE_AUTOMATION.md)에 따라 추가 확인한다.
 실제 계약 확인 전 `MESSAGE_COLLECTION_ENABLED`와 `MESSAGE_COLLECTION_CONTRACT_VERIFIED`는 false다.
 별도 사용자 요청 전 main 반영/운영 배포·실제 전파 시험을 하지 않는다. 3단계 후속 제안/비교는 아직 미구현이다.
 후속 문자 자동 제안/변경 검토와 운영 전환은 3·4단계다. 단계별 수용 조건은 위 계획을 따른다.

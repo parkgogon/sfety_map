@@ -42,9 +42,13 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def read_api(key, day):
-    query = urllib.parse.urlencode({"serviceKey": key, "pageNo": 1, "numOfRows": 1,
-                                   "returnType": "json", "crtDt": day.strftime("%Y%m%d"), "rgnNm": "대구광역시"})
+def read_api(key, day, *, region="대구광역시", page=1, size=1):
+    params = {"serviceKey": key, "pageNo": page, "numOfRows": size, "returnType": "json"}
+    if day is not None:
+        params["crtDt"] = day.strftime("%Y%m%d")
+    if region:
+        params["rgnNm"] = region
+    query = urllib.parse.urlencode(params)
     # Never log this URL or a provider exception: either may contain the key.
     try:
         request = urllib.request.Request(API_URL+"?"+query, headers={"Accept": "application/json"})

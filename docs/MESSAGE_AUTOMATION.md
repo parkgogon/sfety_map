@@ -1,7 +1,8 @@
 # 공식 재난문자 자동 수집·분석
 
 간소화 2단계 구현 기준이다. **운영 미배포·자동 수집 비활성**이다. 기존 SafetyData 이용승인과 인증키를 찾았으며,
-사용자는 GCP `SAFETY_DATA_API_KEY` 생성을 확인했다. 실제 버전·읽기 권한·API 연결 검증은 남았다.
+소유자 실행 결과에서 GCP `SAFETY_DATA_API_KEY:1`과 runtime 읽기 역할 추가, Cloud Shell의 빈 API 응답을 확인했다.
+실제 문자 필드·날짜/지역/페이지 조건·Cloud Run 통신 검증은 남았다.
 가짜 제공자 검증과 실제 API 계약·IAM·예약 실행 검증을 구분한다.
 
 ## 사용 흐름
@@ -78,14 +79,18 @@ worker에는 OpenAI/Kakao/SafetyData의 고정 버전만 연결한다. 관리자
 
 연결 작업자는 다음을 순서대로 수행한다. 이 문서는 활성화 승인을 대신하지 않는다.
 
-1. 등록된 Secret Manager `SAFETY_DATA_API_KEY`의 runtime 읽기 권한/고정 버전을 확인한다.
+1. Secret Manager `SAFETY_DATA_API_KEY`는 소유자 실행 결과에서 버전 **1**과 runtime 읽기 역할 추가를 확인했다.
    현재 GitHub 점검 계정은 해당 메타데이터를 조회할 권한이 없다. 소유자가 Cloud Shell에서
    [점검 도구](../scripts/check_safetydata_connection.py)를 고정 commit으로 내려받아 `--grant-runtime`으로 실행한다.
    이 옵션은 해당 Secret에만 `safety-dashboard-runtime`의 `roles/secretmanager.secretAccessor`를 부여한다.
    ENABLED 버전을 조회해 고정한 뒤 값을 Cloud Shell 메모리 안에서만 사용해 오늘 대구 지역 1페이지/1건을 1회 조회한다.
    원문/키/원본 오류를 출력하거나 파일로 저장하지 않으며 재시도·배포·수집 시작·DB 쓰기·AI/장소/발송 호출을 하지 않는다.
-   출력의 `version`을 다음 고정 버전으로 사용한다. `passed`는 소유자 Cloud Shell에서의 1회 응답 확인이며,
-   운영 Cloud Run의 키 읽기/통신 성공이나 페이지 계약 전체를 대신하지 않는다.
+   이 준비 명령은 이미 실행했으므로 반복하지 않는다. `passed`/`valid_empty_response`는 소유자 Cloud Shell의 1회 빈 응답 확인이다.
+   Cloud Run의 키 읽기/통신 성공이나 페이지 계약 전체를 대신하지 않는다.
+   이어서 기존 메타데이터 워크플로의 `mode=official-feed`를 명시적으로 실행해 비공개 임시 서비스에서 최대 6회 읽기로
+   전국 최근 자료·날짜/지역 조건·요청 페이지 크기·페이지 간 ID 겹침·첫 페이지 변화를 대조한다. 최근 3일이 모두 비면 날짜 없는 대조 1회만 한다.
+   결과에는 조건·건수·필드 존재/검사 여부만 담는다. 원문/ID·키는 내보내지 않으며 운영 DB/AI/발송과 연결하지 않는다.
+   임시 서비스는 항상 삭제하고, 실제 기능 배포와 구분한다.
    `MESSAGE_REVIEW_FEED_ENABLED=true`, `MESSAGE_REVIEW_FEED_VERSION=<고정 숫자 버전>`으로 수동 읽기만 먼저 준비한다.
 2. 실제 API의 날짜/지역/페이지·정렬/중복·빈 결과/수신지역·오류 형식·지연·쿼터·이용/보관 조건을 제한된 읽기로 대조한다.
    키 미발급 상태의 현재 검수는 이 확인을 대체하지 않는다.

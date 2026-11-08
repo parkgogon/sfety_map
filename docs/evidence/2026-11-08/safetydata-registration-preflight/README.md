@@ -21,4 +21,6 @@ Cloud Shell의 1회 응답 성공과 실제 Cloud Run의 통신/전체 API 계�
 
 도구의 가짜 gcloud/API 검사 8개를 포함한 전체 Python 499개·compileall 통과(외부 HTTP/TCP 0).
 고정 프로젝트/Secret/runtime·버전 고정·역할 범위·오류/불완전 응답·키/원문 출력 방지·명시적 권한 추가 옵션·1회 조회를 검사했다.
-도구의 실제 소유자 실행은 아직 하지 않았으며 결과를 성공으로 기록하지 않는다.
+사용자가 고정 소스 `467234b --grant-runtime` 실행 결과를 제공했다. [소유자 결과](owner-check.json)에서
+버전 1·runtime 역할 추가·API 1회 빈 응답을 확인했다. 실제 키/원문은 출력·공유하지 않았다.
+`passed`는 이 소유자 Cloud Shell 단계의 결과이며, 0건 응답으로 실제 문자 필드·날짜/지역/페이지나 Cloud Run 통신을 검증한 것은 아니다.

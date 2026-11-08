@@ -1,0 +1,16 @@
+{
+  "evidence_source": "user_supplied_cloud_shell_output",
+  "script_commit": "467234b56611cb5df2c6de3d4d9e2c855423eb70",
+  "project": "keco-safety-map",
+  "secret": "SAFETY_DATA_API_KEY",
+  "runtime_access_granted": true,
+  "api_calls": 1,
+  "deployments": 0,
+  "messages_sent": 0,
+  "collection_started": false,
+  "probe_origin": "owner_cloud_shell",
+  "version": "1",
+  "api_result": "valid_empty_response",
+  "sample_rows": 0,
+  "status": "passed"
+}
