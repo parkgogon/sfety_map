@@ -8,6 +8,8 @@ import os
 import socket
 import ssl
 import time
+import traceback
+from pathlib import Path
 from contextlib import contextmanager
 import urllib3.util.connection
 
@@ -50,6 +52,20 @@ def exception_summary(error):
         queue.extend([value.__cause__,value.__context__,getattr(value,'reason',None)])
         queue.extend(a for a in value.args if isinstance(a,BaseException))
     return {'exception_types':list(dict.fromkeys(classes)),'errno':list(dict.fromkeys(codes))}
+
+
+def snapshot_probe():
+    """Use the worker's exact read-only snapshot path, without constructing dispatch."""
+    from safety_dashboard.api.settings import ApiSettings
+    from safety_dashboard.api.service import MonitoringApiService
+    try:
+        snapshot=MonitoringApiService(ApiSettings.from_environment()).snapshot(simulation=False,bypass_stored=True)
+        diagnostic=snapshot.warning_feed.diagnostic
+        return {'state':snapshot.warning_feed.health.value,'warnings':len(snapshot.warning_feed.warnings),
+                'facilities':len(snapshot.facilities),'diagnostic_category':diagnostic.category.value if diagnostic else None,
+                'diagnostic_cause_type':diagnostic.cause_type if diagnostic else None}
+    except Exception as error:
+        return {'error':exception_summary(error),'locations':[{'file':Path(frame.filename).name,'line':frame.lineno,'function':frame.name} for frame in traceback.extract_tb(error.__traceback__)]}
 
 
 def page_summary(payload,day,today,start_at):
@@ -126,6 +142,8 @@ def diagnose():
             entry['redirect']=300<=response.status_code<400
         except Exception as error:entry.update(exception_summary(error))
         entry['elapsed_ms']=round((time.monotonic()-started)*1000);result['kma_requests'].append(entry)
+    result['kma_calls']+=1
+    result['worker_snapshot']=snapshot_probe()
     return result
 
 
