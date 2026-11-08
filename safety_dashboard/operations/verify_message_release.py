@@ -152,7 +152,7 @@ def verify(sink=emit):
                 const u=new URL(img.currentSrc || img.src,location.href);
                 return img.complete && img.naturalWidth>=128 &&
                     ((u.hostname==='mts.kakaocdn.net' && u.pathname.startsWith('/api/v1/tile/')) ||
-                     (/^map[0-9]*\\.daumcdn\\.net$/.test(u.hostname) && /^\/map_(2d|sky|hybrid)/.test(u.pathname)));
+                     (/^map[0-9]*\\.daumcdn\\.net$/.test(u.hostname) && ['2d','sky','hybrid'].some(kind=>u.pathname.startsWith('/map_'+kind))));
             }).length""")
             assert not denied and not errors and len(analysis_requests)<=1 and map_images
             sink({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
