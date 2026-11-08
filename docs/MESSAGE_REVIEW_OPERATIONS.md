@@ -71,8 +71,9 @@ runtime의 문서 읽기/쓰기·버전 이력/권한은 검증하지 않았다.
 GitHub Actions에 보관한 기존 키는 [키 등록 준비 절차](MESSAGE_REVIEW_KEY_SETUP.md)에 따라 전달할 수 있도록 도구를 준비했다.
 추가 사용자 캡처로 배포 계정 `github-deployer`, API 실행 계정 `safety-dashboard-runtime`을 확인했다.
 사용자 캡처로 두 Secret 생성·권한 준비와 만료 `2026-11-08 03:39:23 UTC`를 확인했다.
-키 값을 채팅으로 받거나 새 키 발급을 먼저 요구하지 않는다. 실제 키 이관은 아직 하지 않았다.
-자동 승인 검토가 정확한 복사/대상에 대한 명시적 승인을 요구해 등록 트리거를 거부했고 사용자 확인을 요청했다.
+키 값을 채팅으로 받거나 새 키를 발급하지 않고 기존 GitHub 두 값을 등록했다.
+사용자의 명시적 승인 후 실행 `42439928442`에서 두 Secret 모두 **버전 1** 생성을 확인했다.
+[등록 증빙](evidence/2026-11-08/message-key-copy/README.md). 실제 Cloud Run 키 참조는 아직 적용하지 않았다.
 
 ### 소유자 계정으로 다음에 확인할 최소 명령
 
@@ -97,8 +98,8 @@ gcloud secrets describe KAKAO_REST_API_KEY --project=keco-safety-map --format='v
 | GitHub Repository variable | 기본값 | 켤 때 설정 |
 | --- | --- | --- |
 | `MESSAGE_REVIEW_AI_ENABLED` | `false` | 키/권한 검증 후 `true` |
-| `MESSAGE_REVIEW_OPENAI_VERSION` | 비어 있음 | OpenAI Secret Manager의 승인한 숫자 버전 |
-| `MESSAGE_REVIEW_KAKAO_VERSION` | 비어 있음 | 카카오 REST Secret Manager의 승인한 숫자 버전 |
+| `MESSAGE_REVIEW_OPENAI_VERSION` | 비어 있음 | 등록 결과 `1` |
+| `MESSAGE_REVIEW_KAKAO_VERSION` | 비어 있음 | 등록 결과 `1` |
 | `MESSAGE_REVIEW_FEED_ENABLED` | `false` | 공식 키·응답·이용 조건 확인 후 `true` |
 | `MESSAGE_REVIEW_FEED_VERSION` | 비어 있음 | 공식 피드 Secret Manager의 승인한 숫자 버전 |
 
@@ -122,9 +123,9 @@ AI를 켜면 평가 모델/low를 설정하고 저장은 `firestore`로 명시�
 
 ## 적용 변경을 준비할 때
 
-1. 점검 결과로 Secret Manager의 존재/버전·runtime 권한과 누락 연결을 확정한다.
+1. 두 API Secret은 버전 1 등록을 완료했다. runtime 접근의 실제 동작과 누락 연결을 확인한다.
    GitHub secret의 값을 채팅·로그로 가져오지 않는다. 기존 키를 새로 발급할 필요가 있는지부터 단정하지 않는다.
-2. Secret Manager에 필요한 값/버전 등록과 runtime 최소 접근은 실제 운영 연결 요청 때 진행한다.
+2. 사용자 준비 스크립트의 두 Secret runtime 읽기 권한과 등록 버전 1을 사용한다. 재등록은 필요하지 않다.
    배포에 사용할 secret 이름/고정 버전, 모델 `gpt-5.4-mini-2026-03-17`·reasoning `low`,
    `MESSAGE_REVIEW_STORE=firestore`를 검토 가능한 변경으로 준비한다.
 3. PR에 준비한 선택적 `--set-secrets` 연결과 승인한 버전 변수를 사용해야 이후 배포에도 연결이 유지된다.

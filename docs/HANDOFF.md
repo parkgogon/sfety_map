@@ -114,7 +114,7 @@
   Firestore/Secret 버전·IAM 조회는 현재 Actions 계정의 권한 부족으로 미확인이다. 키/DB 부재로 단정하지 않는다.
   점검 실행은 부분 미확인 때문에 실패 상태이며 같은 소스 `d8f7451` 일반 CI `42435443467`은 성공했다.
 - API 배포에 AI/공식 피드를 별도로 켜는 설정과 승인한 숫자 Secret 버전 검증을 준비했다.
-  기본 꺼짐이며 기존 KMA/관리자/알림 참조를 유지한다. 실제 키 등록/권한/변수 변경·배포는 하지 않았다.
+  기본 꺼짐이며 기존 KMA/관리자/알림 참조를 유지한다. 키/권한은 아래 후속 준비·등록 결과에 반영했다. GitHub 변수 변경/실제 배포는 하지 않았다.
   점검은 비밀값/문자 데이터 읽기·쓰기 없이 메타데이터만 사용했다. 유료 API/발송 0건.
   Python **409개**·compileall·시설 195개 검증 통과. 앱/화면 코드는 이 단계에서 변경하지 않았다.
 
@@ -294,7 +294,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: [키 등록 절차](MESSAGE_REVIEW_KEY_SETUP.md)의 명시적으로 승인받은 두 키 등록 작업을 한 번 실행하고 버전 번호를 확인한다.
+**다음 시작점 하나**: [운영 준비](MESSAGE_REVIEW_OPERATIONS.md)의 세 GitHub 배포 변수를 사용자 설정 화면에서 등록하도록 안내한다.
 문자 등록→AI 분석→지도 기준/시설 선정→검토 완료/초안→후속 연결/부분 해제 재검토를 로컬 검증까지 완료했다.
 [완료 계획](archive/DISASTER_MESSAGE_WORKFLOW_PLAN_20261108.md), [4단계 검증](evidence/2026-11-08/message-records-stage4/README.md)을 기준으로 확인한다.
 사용자 Cloud Shell 캡처로 `FIRESTORE_NATIVE`와 두 Secret(`OPENAI_API_KEY`, `KAKAO_REST_API_KEY`)의 `NOT_FOUND`를 확인했다.
@@ -304,12 +304,15 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 두 Secret에 한정한 준비 스크립트와 기존 GitHub 값 등록 워크플로를 만들고 Python **419개**·compileall·bash 구문을 검증했다.
 준비 스크립트는 배포 계정에 1시간의 버전 추가 권한, runtime에 두 키의 읽기 권한만 부여한다.
 사용자가 `072f416` 준비 명령을 실행했고 두 Secret 생성/네 IAM 갱신과 완료를 캡처로 확인했다.
-버전 추가 권한 만료는 **2026-11-08 03:39:23 UTC**다. 키 이관/배포는 아직 하지 않았다.
-자동 승인 검토가 정확한 두 키/대상에 대한 명시적 승인이 없다는 이유로 `message-keys-copy` 라벨 추가를 거부했다.
-우회하지 않고 사용자에게 GitHub `OPENAI_API_KEY`·`KAKAO_REST_API_KEY`를 GCP `keco-safety-map` 동일 이름 Secret에
-등록해도 되는지 확인을 요청했고, 사용자가 “응, OpenAI·카카오 키를 GCP에 등록해줘”라고 명시적으로 승인했다.
-02:44 UTC에 만료 전임과 등록 코드 동일성을 확인했다. `[skip ci]` head에서는 라벨 이벤트가 실행을 생성하지 않았다.
-등록 run이 없음을 확인하고 일반 커밋으로 승인 기록을 반영한 뒤 실행한다. 실제 키 등록은 아직 진행 중이다.
+버전 추가 권한 만료는 **2026-11-08 03:39:23 UTC**다.
+사용자가 “응, OpenAI·카카오 키를 GCP에 등록해줘”라고 명시적으로 승인했다.
+등록 실행 [42439928442](https://github.com/parkgogon/sfety_map/actions/runs/42439928442)에서 두 Secret 모두 **버전 1** 생성을 확인했다.
+[키 값 없는 원본 증빙](evidence/2026-11-08/message-key-copy/README.md). 실행 소스 `024e02d`의 등록 코드는 검증한 `072f416`과 같다.
+키 값/해시를 채팅·로컬 환경·artifact로 가져오지 않았으며 원본 GitHub 키는 유지했다. 재등록/재발급은 필요하지 않다.
+성공 후 트리거 라벨을 제거했다. `[skip ci]` head의 라벨 이벤트는 실행을 만들지 않으므로 중복 실행 전에 run 생성 여부를 확인한다.
+현재 GitHub 변수 API는 연동 권한에서 403이다. 실제 변수 설정은 사용자 화면으로 안내하며 아직 변경하지 않았다.
+정확한 이름은 `MESSAGE_REVIEW_AI_ENABLED=true`, `MESSAGE_REVIEW_OPENAI_VERSION=1`, `MESSAGE_REVIEW_KAKAO_VERSION=1`이다.
+Cloud Run 참조 적용·운영 배포는 아직 하지 않았다. 키 등록 승인을 main 병합/배포 승인으로 확대하지 않는다.
 공식 피드·실제 SDK·저장 트랜잭션은 별도 실제 검수가 남아 있다.
 자동 수집/전파·현장 회신과 구분하며 main 반영/배포는 별도 사용자 요청 때 수행한다.
 

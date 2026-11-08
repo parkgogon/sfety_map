@@ -1,0 +1,12 @@
+{
+  "run_id": 42439928442,
+  "url": "https://github.com/parkgogon/sfety_map/actions/runs/42439928442",
+  "artifact_id": 13600714827,
+  "conclusion": "success",
+  "source_commit": "024e02d1548236a77739a50788f9bfbe9eb7896f",
+  "registration_code_commit": "072f416869bbfdca94fe873970b3ad4f4d4f11c2",
+  "user_explicitly_approved": true,
+  "bootstrap_writer_expiry_utc": "2026-11-08T03:39:23Z",
+  "cloud_run_deployed": false,
+  "github_variables_updated": false
+}
