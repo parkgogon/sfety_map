@@ -1,6 +1,7 @@
 # 공식 재난문자 자동 수집·분석
 
-간소화 2단계 구현 기준이다. **운영 미배포·자동 수집 비활성**이며 SafetyData 키도 아직 미발급이다.
+간소화 2단계 구현 기준이다. **운영 미배포·자동 수집 비활성**이다. 기존 SafetyData 이용승인과 인증키를 찾았으며,
+사용자는 GCP `SAFETY_DATA_API_KEY` 생성을 확인했다. 실제 버전·읽기 권한·API 연결 검증은 남았다.
 가짜 제공자 검증과 실제 API 계약·IAM·예약 실행 검증을 구분한다.
 
 ## 사용 흐름
@@ -70,13 +71,21 @@ worker에는 OpenAI/Kakao/SafetyData의 고정 버전만 연결한다. 관리자
 
 ## 실제 연결의 남은 시작점
 
-사용자는 SafetyData 키를 아직 발급하지 않았다. 먼저 [행정안전부 긴급재난문자](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)
-페이지의 가입/로그인·활용 신청을 진행한다. **키 값은 채팅·GitHub 파일로 보내지 않는다.** 발급 여부만 알린 뒤 안전한 비밀값 등록 경로를 한 단계씩 안내한다.
+사용자 캡처에서 [행정안전부 긴급재난문자](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)의 기존 `승인` 상태를 확인했다.
+회원정보에서 기존 키를 찾았고, 사용자는 GCP Secret 생성도 확인했다. **키 값은 채팅·GitHub 파일로 보내지 않는다.**
+이용신청이나 키 생성을 반복하지 않고 등록된 Secret을 점검한다.
 기존 OpenAI/Kakao 키는 GCP Secret Manager 버전 1로 준비돼 있으므로 다시 발급하지 않는다.
 
 연결 작업자는 다음을 순서대로 수행한다. 이 문서는 활성화 승인을 대신하지 않는다.
 
-1. 키를 Secret Manager `SAFETY_DATA_API_KEY`에 등록하고 runtime 읽기 권한/고정 버전을 확인한다.
+1. 등록된 Secret Manager `SAFETY_DATA_API_KEY`의 runtime 읽기 권한/고정 버전을 확인한다.
+   현재 GitHub 점검 계정은 해당 메타데이터를 조회할 권한이 없다. 소유자가 Cloud Shell에서
+   [점검 도구](../scripts/check_safetydata_connection.py)를 고정 commit으로 내려받아 `--grant-runtime`으로 실행한다.
+   이 옵션은 해당 Secret에만 `safety-dashboard-runtime`의 `roles/secretmanager.secretAccessor`를 부여한다.
+   ENABLED 버전을 조회해 고정한 뒤 값을 Cloud Shell 메모리 안에서만 사용해 오늘 대구 지역 1페이지/1건을 1회 조회한다.
+   원문/키/원본 오류를 출력하거나 파일로 저장하지 않으며 재시도·배포·수집 시작·DB 쓰기·AI/장소/발송 호출을 하지 않는다.
+   출력의 `version`을 다음 고정 버전으로 사용한다. `passed`는 소유자 Cloud Shell에서의 1회 응답 확인이며,
+   운영 Cloud Run의 키 읽기/통신 성공이나 페이지 계약 전체를 대신하지 않는다.
    `MESSAGE_REVIEW_FEED_ENABLED=true`, `MESSAGE_REVIEW_FEED_VERSION=<고정 숫자 버전>`으로 수동 읽기만 먼저 준비한다.
 2. 실제 API의 날짜/지역/페이지·정렬/중복·빈 결과/수신지역·오류 형식·지연·쿼터·이용/보관 조건을 제한된 읽기로 대조한다.
    키 미발급 상태의 현재 검수는 이 확인을 대체하지 않는다.
