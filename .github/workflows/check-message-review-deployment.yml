@@ -1,0 +1,56 @@
+name: Check message review deployment metadata
+run-name: Message review metadata · ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: message-review-metadata-audit
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'message-review-preflight' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Inspect Cloud Run, database and secret metadata only
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: python scripts/check_message_review_deployment.py --project "$GCP_PROJECT_ID" --output-dir message-review-audit
+      - name: Publish sanitized report
+        if: always()
+        run: |
+          if [[ -f message-review-audit/summary.md ]]; then
+            cat message-review-audit/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-review-deployment-metadata
+          path: message-review-audit/
+          retention-days: 7
+          if-no-files-found: warn

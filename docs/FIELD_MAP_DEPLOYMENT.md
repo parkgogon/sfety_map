@@ -49,6 +49,8 @@ React 현장 지도의 이번 범위에 포함하지 않는다.
 
 ## 관리자 재난문자 검토 기록 (기능 브랜치, 미배포)
 
+운영 연결 준비와 읽기 전용 메타데이터 점검은 [운영 준비 문서](MESSAGE_REVIEW_OPERATIONS.md)를 따른다.
+
 `/control/messages`에서 등록/분석/메모와 변경 이력을 관리한다. 보호된 경로는
 `/internal/v1/message-records`의 목록·등록, `/{id}`의 조회·메모 저장,
 `/{id}/analyze`, `/{id}/history`, `/feed`의 공식 피드 조회, `/import`의 검증 등록이다.
