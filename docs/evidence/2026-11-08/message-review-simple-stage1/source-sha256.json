@@ -1,0 +1,20 @@
+{
+  "field_web/src/MessageAnalysisApp.tsx": "15fa30a9d0e692066975f815a752e408924a76e40bc3d994fac5f15c996268d8",
+  "field_web/src/MessageInbox.test.tsx": "977af72e20e5083c7c9bc110d314eced15f450ab92645b11daf06ddfe720d8f0",
+  "field_web/src/MessageInbox.tsx": "6807d0df27745e2b3e5cd7c259280d6faa4885487348826ef28a46dab9a264bb",
+  "field_web/src/MessageQuickReview.tsx": "52adb8e598d07ed2017ce9fda820732c1c3d96e6aec3e7948499f8182a635d3d",
+  "field_web/src/MessageRecordWorkspace.test.tsx": "fe1edbac3a85cf65585433c411d530e46d51e20f8afd64887e92927dbf01be32",
+  "field_web/src/MessageRecordWorkspace.tsx": "9c77f9c4e852ad8c1be02d069b0b466ae82727dee485f3a92dd4b77657a4dc5c",
+  "field_web/src/MessageReferenceMap.tsx": "f144db58a21ef301b0792ad77caf24eb45d9a6fe9fa346a227391d1525a5eec8",
+  "field_web/src/MessageRelatedPanel.tsx": "3ba414e8282d9eb8d336277944e8e70537b9a74a9195d3df76223c0dc4c553b6",
+  "field_web/src/messageAnalysisApi.ts": "fc317ea2e6d26a5a06ba6026e6e62720a4795f193182bd8b2fff01cb8617679a",
+  "field_web/src/messagePreparationApi.ts": "9fbc5f28bba81ebbc906d6c19cee34c47faa2c507144e83bfe3af10ae714dd78",
+  "field_web/src/messageRecordsApi.ts": "2e463f0401c6cd0b8e020dda0d18e33bb9ea0d9509ccf61c1fe31a3946b1cd82",
+  "field_web/src/styles/message_inbox.css": "0325a7492d1fc577103fb3ef18c1ec18c3f88d3f1cfefabef4149f405b46c7ad",
+  "safety_dashboard/api/routes/message_records.py": "f525851e967ad0d5fa1804367a4d3605f59f0cd39819992ebf5bf646d2c1f097",
+  "safety_dashboard/application/message_analysis.py": "ec356016ab942f99fbce29b5fcd8b0f43e455401a72f5b102ea84bcb70174e48",
+  "safety_dashboard/application/message_preparation.py": "8d8efe8cd0851880c387d37237826ed1de3e6bf8be72d26c28fdd87617fea57b",
+  "safety_dashboard/application/message_records.py": "bd2af48f348985518d9cb8878601172103cd5f47f21b7d8b51d22964b80ee65c",
+  "safety_dashboard/application/message_review.py": "11bd2039704fe2d4f37fabc46c6e3359cc38f083f8a1c90da27b4d9243c19a3e",
+  "tests/test_message_preparation.py": "48afd9712109c7d12692b1847e5ebcd99250718c42bbf45d2511d3c2156c198d"
+}
