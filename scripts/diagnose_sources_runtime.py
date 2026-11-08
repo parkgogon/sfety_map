@@ -6,7 +6,10 @@ from http.server import BaseHTTPRequestHandler,HTTPServer
 import json
 import os
 import socket
+import ssl
 import time
+from contextlib import contextmanager
+import urllib3.util.connection
 
 import requests
 from safety_dashboard.adapters.disaster_messages import (DEFAULT_API_URL,parse_disaster_response,_find_message_rows,_find_total_count,_parse_time,_value)
@@ -18,6 +21,23 @@ from safety_dashboard.application.message_analysis import REGION_ALIASES
 from safety_dashboard.application.message_feed_budget import OfficialRequestBudget
 from safety_dashboard.application.message_records import MessageSource
 from safety_dashboard.application.context_info import KST
+
+
+@contextmanager
+def trace_connection(stages):
+    connect=urllib3.util.connection.create_connection;wrap=ssl.SSLContext.wrap_socket
+    def traced(name,original,*args,**kwargs):
+        start=time.monotonic();item={'stage':name}
+        try:
+            value=original(*args,**kwargs);item['success']=True;return value
+        except Exception as error:
+            item.update(success=False,**exception_summary(error));raise
+        finally:
+            item['elapsed_ms']=round((time.monotonic()-start)*1000);stages.append(item)
+    urllib3.util.connection.create_connection=lambda *a,**kw:traced('tcp',connect,*a,**kw)
+    ssl.SSLContext.wrap_socket=lambda *a,**kw:traced('tls',wrap,*a,**kw)
+    try:yield
+    finally:urllib3.util.connection.create_connection=connect;ssl.SSLContext.wrap_socket=wrap
 
 
 def exception_summary(error):
@@ -78,13 +98,14 @@ def diagnose():
     # Original two dates plus the current Korean day; three reads maximum.
     days=list(dict.fromkeys([dt.date(2026,11,8),dt.date(2026,11,7),today]))
     for day in days:
-        entry={'query_date':day.isoformat()}
+        entry={'query_date':day.isoformat(),'stages':[]}
         try:
             OfficialRequestBudget(store,450).reserve();result['feed_calls']+=1
-            response=requests.get(DEFAULT_API_URL,params={'serviceKey':os.environ['SAFETY_DATA_API_KEY'],'returnType':'json','crtDt':day.strftime('%Y%m%d'),'pageNo':1,'numOfRows':100},timeout=(3,12),allow_redirects=False)
+            with trace_connection(entry['stages']):
+                response=requests.get(DEFAULT_API_URL,params={'serviceKey':os.environ['SAFETY_DATA_API_KEY'],'returnType':'json','crtDt':day.strftime('%Y%m%d'),'pageNo':1,'numOfRows':100},timeout=(7,12),allow_redirects=False)
             response.raise_for_status()
             if not 200<=response.status_code<300:raise ValueError('non_success')
-            entry=page_summary(response.json(),day,today,state.get('start_at'))
+            entry.update(page_summary(response.json(),day,today,state.get('start_at')))
         except Exception as error:entry['error']=exception_summary(error)
         result['feed_pages'].append(entry)
     result['kma_requests']=[]
@@ -93,10 +114,11 @@ def diagnose():
         result['kma_dns']={'families':sorted({a[0].name for a in addresses}),'addresses':sorted({a[4][0] for a in addresses})}
     except Exception as error:result['kma_dns']=exception_summary(error)
     for read_timeout in (7,20,7):
-        started=time.monotonic();entry={'read_timeout_seconds':read_timeout}
+        started=time.monotonic();entry={'read_timeout_seconds':read_timeout,'stages':[]}
         try:
             result['kma_calls']+=1
-            response=requests.get(WARNING_URL,params={'fe':'f','tm':dt.datetime.now(KST).strftime('%Y%m%d%H%M'),'disp':'0','help':'0','authKey':os.environ['KMA_API_KEY']},timeout=(3,read_timeout),allow_redirects=False)
+            with trace_connection(entry['stages']):
+                response=requests.get(WARNING_URL,params={'fe':'f','tm':dt.datetime.now(KST).strftime('%Y%m%d%H%M'),'disp':'0','help':'0','authKey':os.environ['KMA_API_KEY']},timeout=(7,read_timeout),allow_redirects=False)
             entry['http_status']=response.status_code
             if response.status_code==200:
                 try:validate_warning_response(response.text);entry['valid_warning_format']=True

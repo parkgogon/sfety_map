@@ -1,7 +1,10 @@
 import datetime as dt
 import json
 import unittest
-from scripts.diagnose_sources_runtime import page_summary,exception_summary
+from unittest.mock import patch,Mock
+import ssl
+import urllib3.util.connection
+from scripts.diagnose_sources_runtime import page_summary,exception_summary,trace_connection
 from safety_dashboard.application.context_info import KST
 
 class SourceRuntimeDiagnosticTests(unittest.TestCase):
@@ -18,3 +21,14 @@ class SourceRuntimeDiagnosticTests(unittest.TestCase):
         self.assertIn('ConnectionError',result['exception_types'])
         self.assertIn(111,result['errno'])
         self.assertNotIn('private',json.dumps(result))
+
+    def test_tcp_and_tls_are_separate_and_wrappers_are_restored_without_error_messages(self):
+        stages=[]
+        with patch('urllib3.util.connection.create_connection',return_value=Mock()) as connect,patch('ssl.SSLContext.wrap_socket',side_effect=TimeoutError('private-key')) as wrap:
+            with self.assertRaises(TimeoutError),trace_connection(stages):
+                urllib3.util.connection.create_connection(('host',443))
+                ssl.SSLContext.wrap_socket(Mock())
+            self.assertIs(urllib3.util.connection.create_connection,connect)
+            self.assertIs(ssl.SSLContext.wrap_socket,wrap)
+        self.assertEqual([(i['stage'],i['success']) for i in stages],[('tcp',True),('tls',False)])
+        self.assertNotIn('private',json.dumps(stages))
