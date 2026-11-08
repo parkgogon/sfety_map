@@ -294,7 +294,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: [키 등록 절차](MESSAGE_REVIEW_KEY_SETUP.md)의 GitHub 두 키 → GCP 동일 이름 Secret 등록에 대한 명시적 사용자 승인을 받은 뒤 실행한다.
+**다음 시작점 하나**: [키 등록 절차](MESSAGE_REVIEW_KEY_SETUP.md)의 명시적으로 승인받은 두 키 등록 작업을 한 번 실행하고 버전 번호를 확인한다.
 문자 등록→AI 분석→지도 기준/시설 선정→검토 완료/초안→후속 연결/부분 해제 재검토를 로컬 검증까지 완료했다.
 [완료 계획](archive/DISASTER_MESSAGE_WORKFLOW_PLAN_20261108.md), [4단계 검증](evidence/2026-11-08/message-records-stage4/README.md)을 기준으로 확인한다.
 사용자 Cloud Shell 캡처로 `FIRESTORE_NATIVE`와 두 Secret(`OPENAI_API_KEY`, `KAKAO_REST_API_KEY`)의 `NOT_FOUND`를 확인했다.
@@ -307,7 +307,9 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 버전 추가 권한 만료는 **2026-11-08 03:39:23 UTC**다. 키 이관/배포는 아직 하지 않았다.
 자동 승인 검토가 정확한 두 키/대상에 대한 명시적 승인이 없다는 이유로 `message-keys-copy` 라벨 추가를 거부했다.
 우회하지 않고 사용자에게 GitHub `OPENAI_API_KEY`·`KAKAO_REST_API_KEY`를 GCP `keco-safety-map` 동일 이름 Secret에
-등록해도 되는지 확인을 요청했다. 승인 후 만료 시각/검증한 코드 동일성을 확인한 뒤에만 같은 등록 작업을 실행한다.
+등록해도 되는지 확인을 요청했고, 사용자가 “응, OpenAI·카카오 키를 GCP에 등록해줘”라고 명시적으로 승인했다.
+02:44 UTC에 만료 전임과 등록 코드 동일성을 확인했다. `[skip ci]` head에서는 라벨 이벤트가 실행을 생성하지 않았다.
+등록 run이 없음을 확인하고 일반 커밋으로 승인 기록을 반영한 뒤 실행한다. 실제 키 등록은 아직 진행 중이다.
 공식 피드·실제 SDK·저장 트랜잭션은 별도 실제 검수가 남아 있다.
 자동 수집/전파·현장 회신과 구분하며 main 반영/배포는 별도 사용자 요청 때 수행한다.
 
