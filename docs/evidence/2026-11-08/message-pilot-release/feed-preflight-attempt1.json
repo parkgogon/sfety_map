@@ -1,0 +1,12 @@
+{
+  "status": "blocked",
+  "probe_origin": "cloud_run_runtime",
+  "secret_version": "1",
+  "api_calls": 1,
+  "checks": {},
+  "requests": [],
+  "records_written": 0,
+  "model_calls": 0,
+  "messages_sent": 0,
+  "reason": "official_api_read_failed"
+}

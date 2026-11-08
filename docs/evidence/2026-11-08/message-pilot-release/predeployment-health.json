@@ -1,0 +1,8 @@
+{
+  "checked_at": "2026-11-08T13:30:46.825373+00:00",
+  "public_api": "ok",
+  "worker_last_run_at": "2026-11-08T13:30:02.229901+00:00",
+  "automation_mode": "live",
+  "kma_status": "error",
+  "note": "Observed before PR #2 deployment; no refresh/dispatch requested by this check."
+}

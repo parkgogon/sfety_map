@@ -1,11 +1,12 @@
 # 공식 재난문자 자동 수집·분석
 
-간소화 2단계 구현 기준이다. 사용자는 2026-11-08 제한 운영 배포를 승인했고 현재 배포 전 검수 중이다. **운영 미배포·자동 수집 비활성**이다. 기존 SafetyData 이용승인과 인증키를 찾았으며,
-소유자 실행 결과에서 GCP `SAFETY_DATA_API_KEY:1`과 runtime 읽기 역할 추가, Cloud Shell의 빈 API 응답을 확인했다.
-이어진 비공개 임시 Cloud Run 검수에서 오늘 전국/부산 문자, 날짜/지역/페이지 기본 조건과 실제 키 사용을 확인했다.
-사용자는 일일 호출 한도를 **500회**로 확인했다. 이에 맞춰 전국 일괄 조회·15분 주기·최근 24시간 450회 공통 상한을 구현했다.
-운영에는 아직 배포하지 않았다. 과거 날짜 경계/제공 지연·이용 조건과 실제 정규 예약 실행 확인은 남았다.
-가짜 제공자 검증과 실제 API 계약·IAM·예약 실행 검증을 구분한다.
+간소화 1·2단계는 2026-11-08 사용자 승인으로 **제한 운영 배포했다**. 앱 소스 `a63fec5`,
+[배포](https://github.com/parkgogon/sfety_map/actions/runs/42485619427)와
+[창작 예문의 정규 예약 분석/실제 화면 검수](https://github.com/parkgogon/sfety_map/actions/runs/42486131095)를 통과했다.
+OpenAI/Kakao/SafetyData Secret 버전 1을 참조하며 문자 전용 비공개 worker와 15분 수집/1분 분석 예약을 활성화했다.
+사용자 일일 호출 한도는 **500회**, 앱은 전국 일괄 15분 조회·최근 24시간 450회 공통 상한과 AI 하루 20건으로 시작한다.
+첫 정규 수집은 22:45 KST에 실행됐다. 요청 2회가 공유 한도에 기록됐고 진행 잔여 0/건너뜀 2건으로 **partial**이다. 전체 정상 완료로 표시하지 않는다. [현재 운영 증빙](evidence/2026-11-08/message-pilot-release/README.md).
+가짜 제공자 오류/상한 검사와 실제 API/IAM/Firestore/예약 실행 관측을 구분한다.
 
 ## 사용 흐름
 
@@ -88,44 +89,25 @@ worker에는 OpenAI/Kakao/SafetyData의 고정 버전만 연결한다. 관리자
 마지막 정상/시도 시각, 분석 대기·실패·수동 확인 건수와 오늘 시작 횟수를 함께 표시한다.
 `live`는 설정된 API 조회 범위를 완료했다는 뜻이며 모든 실제 재난문자의 즉시 수신을 보증하지 않는다.
 
-## 실제 연결의 남은 시작점
+## 연결 이력과 복구 시작점
 
-사용자 캡처에서 [행정안전부 긴급재난문자](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)의 기존 `승인` 상태를 확인했다.
-회원정보에서 기존 키를 찾았고, 사용자는 GCP Secret 생성도 확인했다. **키 값은 채팅·GitHub 파일로 보내지 않는다.**
-이용신청이나 키 생성을 반복하지 않고 등록된 Secret을 점검한다.
-기존 OpenAI/Kakao 키는 GCP Secret Manager 버전 1로 준비돼 있으므로 다시 발급하지 않는다.
-
-연결 작업자는 다음을 순서대로 수행한다. 이 문서는 활성화 승인을 대신하지 않는다.
-
-1. Secret Manager `SAFETY_DATA_API_KEY`는 소유자 실행 결과에서 버전 **1**과 runtime 읽기 역할 추가를 확인했다.
-   현재 GitHub 점검 계정은 해당 메타데이터를 조회할 권한이 없다. 소유자가 Cloud Shell에서
-   [점검 도구](../scripts/check_safetydata_connection.py)를 고정 commit으로 내려받아 `--grant-runtime`으로 실행한다.
-   이 옵션은 해당 Secret에만 `safety-dashboard-runtime`의 `roles/secretmanager.secretAccessor`를 부여한다.
-   ENABLED 버전을 조회해 고정한 뒤 값을 Cloud Shell 메모리 안에서만 사용해 오늘 대구 지역 1페이지/1건을 1회 조회한다.
-   원문/키/원본 오류를 출력하거나 파일로 저장하지 않으며 재시도·배포·수집 시작·DB 쓰기·AI/장소/발송 호출을 하지 않는다.
-   이 준비 명령은 이미 실행했으므로 반복하지 않는다. `passed`/`valid_empty_response`는 소유자 Cloud Shell의 1회 빈 응답 확인이다.
-   이어서 [실제 서버 검수](evidence/2026-11-08/safetydata-registration-preflight/runtime-check.json)에서 동일 runtime·버전 1로 4회 조회해 기본 검사를 통과했다.
-   당일 2페이지와 부산 지역의 제한 표본이며 과거 날짜 경계·장기 제공 지연·상시 운영을 대신하지 않는다.
-   추가 진단이 필요할 때 기존 메타데이터 워크플로의 `mode=official-feed`를 명시적으로 실행해 비공개 임시 서비스에서 최대 6회 읽기로
-   전국 최근 자료·날짜/지역 조건·요청 페이지 크기·페이지 간 ID 겹침·첫 페이지 변화를 대조한다. 최근 3일이 모두 비면 날짜 없는 대조 1회만 한다.
-   결과에는 조건·건수·필드 존재/검사 여부만 담는다. 원문/ID·키는 내보내지 않으며 운영 DB/AI/발송과 연결하지 않는다.
-   임시 서비스는 항상 삭제하고, 실제 기능 배포와 구분한다.
-   `MESSAGE_REVIEW_FEED_ENABLED=true`, `MESSAGE_REVIEW_FEED_VERSION=<고정 숫자 버전>`으로 수동 읽기만 먼저 준비한다.
-2. 기본 샘플 날짜/지역/페이지·중복·빈 결과/수신지역은 제한 읽기로 확인했다. 과거 날짜와 자정·정렬 변화·오류/지연·계정 쿼터·이용/보관 조건을 추가 대조한다.
-   사용자의 실제 일일 한도 500회에 맞춰 지역별 5분 조회를 전국 일괄 15분 조회와 공통 450회 제한으로 바꿨다.
-   공개 문서의 플랫폼 전체 누적 호출 수를 계정의 일일 한도로 해석하지 않는다.
-   키 미발급 상태의 현재 검수는 이 확인을 대체하지 않는다.
-3. 시작 범위/일일 건수를 정하고 검증 사실이 있을 때만 `MESSAGE_COLLECTION_CONTRACT_VERIFIED=true`,
-   `MESSAGE_COLLECTION_ENABLED=true`를 설정한다. AI/피드 연결 및 세 고정 버전이 없으면 배포 설정 검증이 실패한다.
-   `MESSAGE_ANALYSIS_DAILY_LIMIT=20`, `MESSAGE_COLLECTION_MAX_PAGES=4`, `MESSAGE_COLLECTION_CATCHUP_DAYS=7`,
-   `MESSAGE_COLLECTION_INTERVAL_MINUTES=15`, `MESSAGE_FEED_REQUEST_LIMIT=450`이 기본값이다.
-   조회 주기는 15/30/60분, 회당 페이지는 1~4, 공통 조회 상한은 1~450 범위다. 더 빠른 주기는 먼저 실제 제공자 한도/조회 전략을 다시 검토한다.
-   `MESSAGE_COLLECTION_START_AT`은 선택값이며 최초 활성화 전에만 과거 범위를 바꿀 수 있다. 미래 시각은 수집 오류가 된다.
-4. 별도 배포 요청 후 새 비공개 서비스·OIDC·정규 예약 실행·상태·원문/분석 저장을 제한적으로 확인한다.
-   기존 KMA 예약 실행/알림 실적은 시험에 사용하지 않는다.
-
-비활성 배포는 새 문자 예약 작업 두 개만 일시정지한다. 조회 권한 오류를 `작업 없음`으로 숨기지 않고 실패한다.
-이미 저장된 기록·대기열·한도 집계는 삭제하지 않는다. 진행 중인 실행은 끝날 수 있으며 과거 원문을 자동으로 재결제하지 않는다.
+- 사용자 캡처에서 [긴급재난문자 데이터](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)의 기존 이용승인을 확인했고,
+  기존 인증키로 GCP `SAFETY_DATA_API_KEY:1`을 준비했다. 소유자 Cloud Shell에서 해당 Secret에만 runtime 읽기 역할을 추가하고 1회 조회했다.
+  이 준비 작업은 완료했다. 재신청/재발급/재등록을 반복하거나 키를 채팅/GitHub 파일로 받지 않는다.
+- 앞선 임시 서버 4회 조회에 이어 배포 전 최종 점검은 첫 연결 실패 후 한 차례 재실행에서 5회로 통과했다.
+  당일/전일 조회 범위, 지역, 페이지 크기·겹침·첫 페이지를 대조했고 원문/공식 ID/키를 내보내지 않았다. 임시 서비스를 삭제했다.
+  공개 명세의 `crtDt` 시작일자 semantics를 처리한다. 이것은 장기 제공 지연이나 완전한 수집을 입증하는 지표가 아니다.
+- `MESSAGE_REVIEW_FEED_ENABLED=true`, `MESSAGE_REVIEW_FEED_VERSION=1`,
+  `MESSAGE_COLLECTION_CONTRACT_VERIFIED=true`, `MESSAGE_COLLECTION_ENABLED=true`로 배포했다.
+  AI/피드 연결과 세 고정 버전이 없으면 배포 설정 검증이 실패한다.
+  `MESSAGE_ANALYSIS_DAILY_LIMIT=20`, `MESSAGE_COLLECTION_MAX_PAGES=4`, `MESSAGE_COLLECTION_CATCHUP_DAYS=7`,
+  `MESSAGE_COLLECTION_INTERVAL_MINUTES=15`, `MESSAGE_FEED_REQUEST_LIMIT=450`이다.
+- `MESSAGE_COLLECTION_START_AT`은 비워 최초 활성화 시각을 영구 저장한다. 이미 시작한 뒤 이 설정만 바꿔 과거를 일괄 분석하지 않는다.
+  장애 복구는 화면의 마지막 시도/정상/부분/한도와 보존된 진행 상태를 먼저 확인한다.
+  상세 분석 실패는 자동 재결제하지 않으며 관리자가 근거를 확인하고 명시적으로 재분석한다.
+- 비활성 배포는 문자 예약 두 개만 일시정지한다. 조회 권한 오류를 작업 없음으로 숨기지 않는다.
+  이미 PAUSED인 작업을 다시 pause하거나 ENABLED인 작업을 resume하지 않는다. 진행 중 실행은 끝날 수 있다.
+  저장된 기록/대기열/한도 집계를 삭제하거나 KMA 기준/dispatch를 복구 시험에 사용하지 않는다.
 
 ## 제한 운영 배포와 관찰 기준 (2026-11-08 승인)
 
@@ -138,11 +120,11 @@ worker에는 OpenAI/Kakao/SafetyData의 고정 버전만 연결한다. 관리자
   공공누리 제3유형 안내를 확인했으며 원문을 변경한 공식 문자로 재배포하지 않는다.
   공개 안내에서 확정 보관 일수나 제공 지연 SLA는 확인하지 못했다. 내부 시범 범위와 지연 표시를 유지한다.
 - 필수 검수: 전일 포함 제한 API 조회, 운영 Firestore 상태/한도 저장, IAM 비공개 worker, 두 OIDC 정규 예약,
-  창작 예문 1건의 예약 분석 → 저장 → 새 화면 검토/보류·확정/복사·복구, 기존 KMA 상태 대조.
+  창작 예문 1건의 예약 분석 → 저장 → 새 화면 검토/확정/복사·복구, 기존 KMA 상태 대조.
   브라우저에서 분석 요청 없이 다음 정규 분석 예약이 예문을 처리하게 한다. 예문을 실적으로 집계하지 않는다.
 - `Verify message release`의 `mode=verify`는 명시한 창작 예문만 등록/대기열에 넣고 검토한다.
   실패 시 결과의 record ID를 넣어 같은 예문으로 재개하고, 불확실한 분석을 자동 재결제하지 않는다.
-  `mode=status`는 로그인 뒤 상태·기록 개수만 읽고 정상 수집 완료/상한/예약 설정을 확인한다.
+  `mode=status`는 로그인 뒤 상태·기록 개수만 읽고 실제 수집 실행/부분 또는 완료 상태/상한/예약 설정을 확인한다. partial 관측은 전체 수집 완료 통과를 뜻하지 않으며 결과의 collection_complete는 false다.
   임시 검수 서비스에는 관리자 비밀번호만 연결하며 키 값은 결과나 작업공간으로 가져오지 않는다.
 - 사용 중에는 수집 정상 시각, 대기/실패/한도, 검토 때 고친 위치/대상/문구와 보류 이유를 관찰한다.
   다음 기능은 후속 문자 제안·변경 비교다. 실제 자동 연락/발송·현장 회신은 별도 범위로 유지한다.

@@ -1,0 +1,19 @@
+{
+  "deployed_source": "a63fec51a1ec8a17bd2c2e228a2a0cc12c1be707",
+  "deploy_run": 42485619427,
+  "python_tests": 528,
+  "react_tests": 268,
+  "facilities": 195,
+  "compile": "passed",
+  "web_build": "passed",
+  "automatic_test_external_http_tcp_attempts": 0,
+  "probe_only_followup": "2ff671479f948a5d650b54b4a4fb3935bc14db7a",
+  "probe_only_targeted_tests": 10,
+  "browser_run": 42486131095,
+  "source_status_run": 42486861802,
+  "real_messages_sent_by_checks": 0,
+  "first_regular_collection_state": "partial",
+  "first_regular_collection_requests": 2,
+  "skipped_rows": 2,
+  "complete_coverage_verified": false
+}

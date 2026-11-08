@@ -1,0 +1,59 @@
+{
+  "service": "message-review-check-42486436414-y62i44k74q-du.a.run.app",
+  "verification_exit_code": 1,
+  "automation": {
+    "state": "partial",
+    "auto_collection_enabled": true,
+    "feed_configured": true,
+    "interval_seconds": 900,
+    "last_attempt_at": "2026-11-08T13:45:00.961104+00:00",
+    "last_success_at": null,
+    "start_at": "2026-11-08T13:45:00.961104+00:00",
+    "queue": {
+      "pending": 0,
+      "running": 0,
+      "done": 1,
+      "failed": 0,
+      "obsolete": 0,
+      "deferred": 0
+    },
+    "budget": {
+      "day": "2026-11-08",
+      "attempts": 1,
+      "limit": 20,
+      "remaining": 19,
+      "active": false
+    },
+    "feed_budget": {
+      "limit": 450,
+      "used": 2,
+      "remaining": 448,
+      "window_hours": 24,
+      "next_available_at": null
+    },
+    "remaining_partitions": 0,
+    "skipped_rows": 2,
+    "coverage_gap": false
+  },
+  "operations": {
+    "last_run_at": "2026-11-08T13:45:01.709648+00:00",
+    "kma_health": "ERROR",
+    "kma_failure_category": "KMA_ROUTE",
+    "kma_failure_started_at": "2026-11-08T13:45:01.709648+00:00",
+    "kma_last_success_at": "2026-11-08T13:40:00.366829+00:00",
+    "kma_consecutive_errors": 1,
+    "last_result": "KMA_ERROR"
+  },
+  "browser": {
+    "status": "failed",
+    "phase": "login",
+    "record_id": null,
+    "analysis_requests": 0,
+    "tile_responses": 0,
+    "rendered_map_images": 0,
+    "page_errors": 0,
+    "unexpected_requests": 0,
+    "error_type": "AssertionError",
+    "denied_hosts": []
+  }
+}

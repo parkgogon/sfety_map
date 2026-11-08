@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-11-08T13:40:21.191713+00:00",
+  "status": "ok",
+  "worker_last_run_at": "2026-11-08T13:40:00.366829+00:00",
+  "automation_mode": "live",
+  "kma_status": "live",
+  "reason": "ready",
+  "manually_invoked_jobs": 0
+}

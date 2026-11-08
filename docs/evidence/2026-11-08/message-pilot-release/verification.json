@@ -1,0 +1,67 @@
+{
+  "service": "message-review-check-42486131095-y62i44k74q-du.a.run.app",
+  "verification_exit_code": 0,
+  "automation": {
+    "state": "starting",
+    "auto_collection_enabled": true,
+    "feed_configured": true,
+    "interval_seconds": 900,
+    "last_attempt_at": null,
+    "last_success_at": null,
+    "start_at": null,
+    "queue": {
+      "pending": 0,
+      "running": 0,
+      "done": 1,
+      "failed": 0,
+      "obsolete": 0,
+      "deferred": 0
+    },
+    "budget": {
+      "day": "2026-11-08",
+      "attempts": 1,
+      "limit": 20,
+      "remaining": 19,
+      "active": false
+    },
+    "feed_budget": {
+      "limit": 450,
+      "used": 0,
+      "remaining": 450,
+      "window_hours": 24,
+      "next_available_at": null
+    },
+    "remaining_partitions": 0,
+    "skipped_rows": 0,
+    "coverage_gap": false
+  },
+  "operations": {
+    "kma_health": "LIVE",
+    "last_run_at": "2026-11-08T13:40:00.366829+00:00",
+    "kma_failure_category": "",
+    "kma_failure_started_at": "",
+    "kma_last_success_at": "2026-11-08T13:40:00.366829+00:00",
+    "kma_consecutive_errors": 0,
+    "last_result": "NO_CHANGE"
+  },
+  "record_id": "manual-d12aca68e2b74015983de42ff6c6afc1",
+  "pipeline": {
+    "state": "done",
+    "attempts": 1,
+    "detail": "analysis_saved",
+    "browser_analysis_requests": 0
+  },
+  "browser": {
+    "status": "passed",
+    "record_id": "manual-d12aca68e2b74015983de42ff6c6afc1",
+    "source_revision": "a63fec51a1ec8a17bd2c2e228a2a0cc12c1be707",
+    "model_calls": 4,
+    "selected_count": 7,
+    "analysis_requests": 0,
+    "tile_responses": 35,
+    "rendered_map_images": 9,
+    "page_errors": 0,
+    "unexpected_requests": 0,
+    "real_messages_sent": 0
+  }
+}
