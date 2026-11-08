@@ -13,6 +13,7 @@ from safety_dashboard.application.message_records import (
 from safety_dashboard.application.message_feed import FeedRequest, ImportOfficial
 from safety_dashboard.application.message_spatial import SaveMessageReference, SaveMessageSelection, LocationKey, Digest, SpatialValidationError
 from safety_dashboard.application.message_review import CompleteMessageReview, ReopenMessageReview, SaveMessageNotice, CopyMessageNotice, ReviewValidationError
+from safety_dashboard.application.message_relations import LinkMessage, UnlinkMessage, RelationValidationError
 from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
 
@@ -52,7 +53,7 @@ def build_router(services):
                 raise HTTPException(503, str(error), headers=NO_STORE) from None
             except DisasterMessageDataError:
                 raise HTTPException(503, "공식 문자 조회에 실패했습니다. 이전 목록과 저장 기록은 유지됩니다.", headers=NO_STORE) from None
-            except (SpatialValidationError, ReviewValidationError) as error:
+            except (SpatialValidationError, ReviewValidationError, RelationValidationError) as error:
                 raise HTTPException(422, str(error), headers=NO_STORE) from None
             except FacilityDataError:
                 raise HTTPException(503, "시설 자료를 읽지 못했습니다. 이전 기록을 보존합니다.", headers=NO_STORE) from None
@@ -143,6 +144,31 @@ def build_router(services):
     @guarded
     def review(identifier: str):
         return services.message_review.detail(check_id(identifier))
+
+    @router.get("/{identifier}/related")
+    @guarded
+    def related(identifier: str):
+        return services.message_relations.detail(check_id(identifier))
+
+    @router.get("/{identifier}/related/candidates")
+    @guarded
+    def related_candidates(identifier: str, before: str | None = Query(None, max_length=160)):
+        return services.message_relations.candidates(check_id(identifier), before)
+
+    @router.get("/{identifier}/related/preview")
+    @guarded
+    def related_preview(identifier: str, target_id: str):
+        return services.message_relations.preview(check_id(identifier), check_id(target_id))
+
+    @router.post("/{identifier}/related")
+    @guarded
+    def link(identifier: str, request: LinkMessage):
+        return services.message_relations.link(check_id(identifier), request)
+
+    @router.post("/{identifier}/related/unlink")
+    @guarded
+    def unlink(identifier: str, request: UnlinkMessage):
+        return services.message_relations.unlink(check_id(identifier), request)
 
     @router.post("/{identifier}/complete")
     @guarded

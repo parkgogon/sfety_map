@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { recordRequest, type MessageRecord } from "./messageRecordsApi";
 import type { MessageReviewDetail } from "./messageReviewApi";
 
-export default function MessageReviewPanel({ token, record, disabled, unsavedWork, onRecordChanged, onBusyChange }: {
+export default function MessageReviewPanel({ token, record, disabled, unsavedWork, onRecordChanged, onBusyChange, onDirtyChange }: {
   token: string; record: MessageRecord; disabled: boolean; unsavedWork: boolean;
-  onRecordChanged: (record: MessageRecord) => void; onBusyChange: (busy: boolean) => void;
+  onRecordChanged: (record: MessageRecord) => void; onBusyChange: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [detail, setDetail] = useState<MessageReviewDetail | null>(null);
   const [reload, setReload] = useState(0); const [loading, setLoading] = useState(false); const [busy, setBusy] = useState(false);
@@ -43,6 +43,8 @@ export default function MessageReviewPanel({ token, record, disabled, unsavedWor
   const missing = detail?.locations.filter(l => l.selected_count === 0) || [];
   const totalSelections = detail?.locations.reduce((sum,l) => sum + l.selected_count, 0) || 0;
   const draft = detail?.draft; const draftDirty = !!draft && managerNote !== draft.manager_note;
+  useEffect(() => { onDirtyChange?.(draftDirty); }, [draftDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   return <section className="message-card message-review" aria-label="검토 결과와 안내 초안">
     <div className="message-record-toolbar"><h2>검토 결과 · 안내 초안</h2><button className="secondary-button" disabled={disabled || busy} onClick={() => setReload(n => n + 1)}>검토 결과 다시 불러오기</button></div>
     <p>검토 완료는 내부 판단 기록입니다. 재난 종료나 현장 확인 완료를 의미하지 않습니다.</p>
@@ -58,8 +60,8 @@ export default function MessageReviewPanel({ token, record, disabled, unsavedWor
         {missing.map(loc => <label key={loc.key}>{loc.text} 미선정 사유<textarea aria-label={`${loc.text} 미선정 사유`} maxLength={500} rows={2} disabled={locked || unsavedWork} value={excluded[loc.key] || ""} onChange={e => setExcluded(old => ({ ...old, [loc.key]: e.target.value }))} /></label>)}
       </>}
       <label>검토 완료 사유<textarea aria-label="검토 완료 사유" maxLength={1000} rows={3} disabled={locked || unsavedWork} value={reason} onChange={e => setReason(e.target.value)} placeholder="선정 시설을 확인할 이유 또는 추가 조치가 필요하지 않은 이유" /></label>
-      <label>확인 질문에 대한 보완 메모<textarea aria-label="확인 질문 보완 메모" maxLength={1000} rows={2} disabled={locked || unsavedWork} value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="해결한 질문과 아직 확인할 사항을 구분해 적어 주세요 (선택)" /></label>
-      <button className="primary-button" disabled={locked || unsavedWork || !!detail.stale_reason || !reason.trim() || (outcome === "facilities_selected" && (!totalSelections || missing.some(l => !excluded[l.key]?.trim()))) || (outcome === "no_action" && totalSelections > 0)}
+      <label>확인 질문·후속 변경에 대한 보완 메모{(detail.related_count || 0) > 0 && " (후속 연결 시 필수)"}<textarea aria-label="확인 질문 보완 메모" maxLength={1000} rows={2} disabled={locked || unsavedWork} value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="해결한 질문과 아직 확인할 사항을 구분해 적어 주세요 (선택)" /></label>
+      <button className="primary-button" disabled={locked || unsavedWork || !!detail.stale_reason || !reason.trim() || ((detail.related_count || 0) > 0 && !followUp.trim()) || (outcome === "facilities_selected" && (!totalSelections || missing.some(l => !excluded[l.key]?.trim()))) || (outcome === "no_action" && totalSelections > 0)}
         onClick={() => void save("complete", { expected_version: record.version, outcome, reason: reason.trim(), follow_up_note: followUp.trim(),
           excluded_locations: outcome === "facilities_selected" ? missing.map(l => ({location_key:l.key,reason:excluded[l.key].trim()})) : [] })}>검토 완료하고 초안 만들기</button>
       {outcome === "no_action" && totalSelections > 0 && <p className="message-notice">선정 시설을 해제한 뒤 추가 조치 없음으로 완료할 수 있습니다.</p>}

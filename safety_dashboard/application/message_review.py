@@ -51,8 +51,8 @@ def korean_time(value):
 
 
 class MessageReviewService:
-    def __init__(self, records, catalog):
-        self.records, self.catalog = records, catalog
+    def __init__(self, records, catalog, related_context=None):
+        self.records, self.catalog, self.related_context = records, catalog, related_context
 
     def _snapshot(self, record):
         MessageSpatialService._ready(record)
@@ -92,6 +92,10 @@ class MessageReviewService:
             "source_revision": record["source_revision"], "analysis_revision": record["analysis_revision"],
             "analysis": copy.deepcopy(record["analysis"]["analysis"]), "record_note": record["note"],
             "catalog_digest": digest, "locations": contexts}
+        if record.get("relation_epoch") or record.get("related_messages"):
+            if not self.related_context:
+                raise RecordConflict("후속 문자 검토 정보를 불러올 수 없습니다.")
+            snapshot["related_context"] = self.related_context(record)
         basis = content_hash({"snapshot": snapshot, "content_hash": record["content_hash"], "references": refs})
         return snapshot, basis
 
@@ -111,6 +115,7 @@ class MessageReviewService:
             error = "검토 근거가 변경됐습니다. 다시 열어 검토해 주세요."
         return {"record_version": record["version"], "review_state": record["review_state"], "completion": completion,
             "completion_current": current, "draft": draft, "draft_current": draft_current, "stale_reason": error,
+            "related_count": len(record.get("related_messages", {})),
             "locations": [{"key": l["key"], "text": l["text"], "selected_count": len(record.get("spatial_references", {}).get(l["key"], {}).get("selected", []))}
                           for l in message_locations(record) if l["eligible"]]}
 
@@ -120,6 +125,8 @@ class MessageReviewService:
             raise RecordConflict("기록이 변경됐습니다. 최신 기록을 다시 불러와 주세요.")
         ensure_record_editable(record)
         snapshot, basis = self._snapshot(record)
+        if snapshot.get("related_context", {}).get("links") and not request.follow_up_note.strip():
+            raise ReviewValidationError("후속 문자로 달라진 내용과 구간별 확인 사항을 보완 메모에 남겨 주세요.")
         selected_ids = {f["id"] for loc in snapshot["locations"] for f in loc["selected"]}
         exclusions = {item.location_key: item.reason for item in request.excluded_locations}
         if len(exclusions) != len(request.excluded_locations):
@@ -208,6 +215,23 @@ def render_notice(completion, manager_note, revision):
         if part.get("starts_at"): lines.append(f"   시작: {korean_time(part['starts_at'])}")
         if part.get("ends_at"): lines.append(f"   종료/해제: {korean_time(part['ends_at'])}")
         for loc in part.get("locations", []): lines.append(f"   {roles.get(loc['role'], loc['role'])}: {loc['text']}")
+    related = snapshot.get("related_context", {}).get("links", [])
+    if related:
+        lines += ["", "■ 연결한 후속 문자 (각 원문 별도 보존 · 전체 해제 추정 금지)"]
+        kinds = {"additional": "추가", "correction": "정정", "release": "해제 관련"}
+        for link in related:
+            target, edge = link["target"], link["edge"]
+            lines += [f"후속: {target['id']} · {kinds[edge['kind']]} · 원문 {target['source_revision']}판 / 분석 {target['analysis_revision']}판",
+                      f"연결 기준: {link['parent_id']}", f"입력 구분: {target['origin']} · 출처: {target['message']['source']}",
+                      f"발행: {korean_time(target['message']['issued_at'])} · 수신지역: {', '.join(target['message']['recipient_regions']) or '미상'}",
+                      f"연결 사유: {edge['reason']}", target['message']['text']]
+            if edge.get("cross_region_reason"): lines.append(f"지역 간 연결 근거: {edge['cross_region_reason']}")
+            for part in link["segments"]:
+                lines.append(f"- {labels.get(part['intent'], part['intent'])}: {part['evidence']}")
+                if part.get("starts_at"): lines.append(f"  시작: {korean_time(part['starts_at'])}")
+                if part.get("ends_at"): lines.append(f"  종료/해제: {korean_time(part['ends_at'])}")
+                for loc in part["locations"]: lines.append(f"  {roles.get(loc['role'], loc['role'])}: {loc['text']}")
+        lines.append("※ 후속 문자의 일부 구간 해제는 다른 구간·시설의 종료 판단이 아닙니다. 누락된 장소도 해제로 간주하지 않습니다.")
     lines += ["", f"■ 업무 확인 대상 (중복 제외 {completion['selected_unique_count']}개소)"]
     for loc in snapshot["locations"]:
         if not loc["selected"]:

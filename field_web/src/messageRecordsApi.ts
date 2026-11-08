@@ -14,6 +14,9 @@ export interface MessageRecord {
   reference_radius_km: MessageInput["reference_radius_km"];
   spatial_references?: Record<string, MessageReference>;
   review_completion?: ReviewCompletion | null; notice_draft?: NoticeDraft | null; review_reopen_reason?: string;
+  relation_epoch?: number;
+  related_messages?: Record<string,{kind:"additional"|"correction"|"release";reason:string;target_source_revision:number;target_analysis_revision:number}>;
+  relation_last_change?: {action:string;target_id:string;reason:string;at:string}|null;
 }
 export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }

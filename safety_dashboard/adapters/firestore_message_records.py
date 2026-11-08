@@ -17,6 +17,10 @@ class FirestoreMessageRecordStore:
         snapshot = self.records.document(identifier).get(timeout=5)
         return snapshot.to_dict() if snapshot.exists else None
 
+    def get_many(self, identifiers):
+        return {snap.id: snap.to_dict() for snap in self.client.get_all(
+            [self.records.document(key) for key in identifiers], timeout=5) if snap.exists}
+
     def list_page(self, before, limit):
         query = self.records.order_by("sort_key", direction=firestore.Query.DESCENDING)
         if before:

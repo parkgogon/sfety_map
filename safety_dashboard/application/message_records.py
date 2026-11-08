@@ -79,6 +79,7 @@ class AnalyzeRecord(RecordVersion):
 
 class RecordStore(Protocol):
     def get(self, identifier: str) -> dict | None: ...
+    def get_many(self, identifiers: list[str]) -> dict[str, dict]: ...
     def list_page(self, before: str | None, limit: int) -> list[dict]: ...
     def commit(self, record: dict, expected: int, event: str) -> dict: ...
     def history(self, identifier: str, before: int | None, limit: int) -> list[dict]: ...
@@ -97,6 +98,10 @@ class MemoryRecordStore:
     def get(self, identifier):
         with self.lock:
             return copy.deepcopy(self.records.get(identifier))
+
+    def get_many(self, identifiers):
+        with self.lock:
+            return copy.deepcopy({key: self.records[key] for key in identifiers if key in self.records})
 
     def list_page(self, before, limit):
         with self.lock:
@@ -196,6 +201,10 @@ class MessageRecordService:
                       "spatial_reset_reason": "source_changed" if existing and existing.get("spatial_references") else "",
                       "review_completion": None, "notice_draft": None, "notice_draft_revision": existing.get("notice_draft_revision", 0) if existing else 0,
                       "review_reset_reason": "source_changed" if existing and existing.get("review_completion") else ""}
+            record["relation_order"] = existing.get("relation_order", [existing["created_at"], existing["id"]]) if existing else [
+                dt.datetime.fromisoformat(message["issued_at"]).astimezone(dt.timezone.utc).isoformat(), now, identifier]
+            for key, default in (("related_messages", {}), ("relation_epoch", 0), ("relation_last_change", None)):
+                record[key] = copy.deepcopy(existing.get(key, default) if existing else default)
             try:
                 saved = self.store.commit(record, existing["version"] if existing else 0,
                                           "source_changed" if existing else "registered")
@@ -205,7 +214,8 @@ class MessageRecordService:
         raise RecordConflict("등록 중 다른 변경이 있었습니다. 다시 불러와 주세요.")
 
     def _save(self, record, expected, event):
-        if event in {"note_saved", "analysis_started", "reference_saved", "reference_confirmed", "facilities_selected"}:
+        if event in {"note_saved", "analysis_started", "reference_saved", "reference_confirmed", "facilities_selected",
+                     "message_linked", "message_reconfirmed", "message_unlinked"}:
             invalidate_review(record, event)
         record["updated_at"] = self.now().isoformat()
         # Creation order is stable while paging; updates do not move records between pages.

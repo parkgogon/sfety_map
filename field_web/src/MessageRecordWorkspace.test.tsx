@@ -46,6 +46,7 @@ describe("재난문자 등록·저장 작업", () => {
         messages: [{ official_id: "SN-1", message: sample().message, import_token: "server-signed-fixture", disaster_type: "화재", emergency_step: "안전안내" }] });
       if (url === base + "/import") { saved ??= { ...sample(), origin: "official" }; return Response.json({ record: saved, registration: "unchanged" }); }
       if (url.endsWith("/review")) return Response.json({ record_version: saved?.version, review_state: saved?.review_state, completion: null, completion_current: false, draft: null, draft_current: false, stale_reason: "", locations: [] });
+      if (url.endsWith("/related")) return Response.json({record_version:saved?.version,epoch:0,fingerprint:"0".repeat(64),links:[],needs_reconfirm:false});
       if (url.endsWith("/spatial")) return Response.json({ record_version: saved?.version, analysis_revision: 1, catalog_digest: "0".repeat(64), locations: [], reset_reason: "" });
       if (url.endsWith("/history")) return Response.json({ versions: [{ event: "registered", record: { ...sample(), note: "최초 기록 메모" } }], next_cursor: null });
       if (saved && url === base + "/" + saved.id + "/analyze") {

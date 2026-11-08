@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import type { MessageAnalysisResult, MessageAnalysisStatus, MessageInput } from "./messageAnalysisApi";
 import { recordRequest, type RecordStatus, type MessageRecord, type RecordPage, type OfficialPage, type RecordHistory } from "./messageRecordsApi";
 import examples from "./messageExamples.json";
+import MessageRelatedPanel, { MessageRelatedHistory } from "./MessageRelatedPanel";
 import MessageReviewPanel, { MessageReviewHistory } from "./MessageReviewPanel";
 import MessageSpatialWorkspace, { MessageSpatialHistory } from "./MessageSpatialWorkspace";
 
 const ORIGINS = { manual: "수동 입력", example: "창작 예문", official: "공식 API" };
 const AI_STATES = { not_analyzed: "미분석", running: "분석 중", completed: "분석 완료", failed: "분석 실패" };
-const EVENTS: Record<string, string> = { registered: "문자 등록", source_changed: "원문 변경", source_observed: "원문 재조회", note_saved: "검토 메모 저장", analysis_started: "분석 시작", analysis_completed: "분석 저장", analysis_failed: "분석 실패", reference_saved: "조회 기준점 변경", reference_confirmed: "조회 기준점 재확인", facilities_selected: "업무 대상 시설 선정", review_completed: "검토 완료", review_reopened: "검토 재열기", notice_updated: "안내 초안 수정" };
+const EVENTS: Record<string, string> = { registered: "문자 등록", source_changed: "원문 변경", source_observed: "원문 재조회", note_saved: "검토 메모 저장", analysis_started: "분석 시작", analysis_completed: "분석 저장", analysis_failed: "분석 실패", reference_saved: "조회 기준점 변경", reference_confirmed: "조회 기준점 재확인", facilities_selected: "업무 대상 시설 선정", review_completed: "검토 완료", review_reopened: "검토 재열기", notice_updated: "안내 초안 수정", message_linked: "후속 문자 연결", message_reconfirmed: "후속 연결 재확인", message_unlinked: "후속 연결 해제" };
 export function koreanDate() {
   const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   return ["year", "month", "day"].map(type => parts.find(p => p.type === type)!.value).join("-");
@@ -34,6 +35,7 @@ export default function MessageRecordWorkspace({ token, status, recordsStatus, r
   const [note, setNote] = useState(""); const [review, setReview] = useState<MessageRecord["review_state"]>("unreviewed");
   const [reviewBusy, setReviewBusy] = useState(false); const [spatialDirty, setSpatialDirty] = useState(false);
   const [spatialBusy, setSpatialBusy] = useState(false);
+  const [relatedBusy, setRelatedBusy] = useState(false); const [draftDirty, setDraftDirty] = useState(false);
   const [busy, setBusy] = useState(false); const [listBusy, setListBusy] = useState(false);
   const [error, setError] = useState(""); const [listError, setListError] = useState(""); const [notice, setNotice] = useState("");
   const [feed, setFeed] = useState<OfficialPage | null>(null);
@@ -98,7 +100,7 @@ export default function MessageRecordWorkspace({ token, status, recordsStatus, r
     choose(value.record); await loadList(); return value.record;
   }
   async function submit(event: FormEvent<HTMLFormElement>, analyze: boolean) {
-    event.preventDefault(); if (busy || spatialBusy || reviewBusy || selected?.review_state === "completed") return;
+    event.preventDefault(); if (busy || spatialBusy || reviewBusy || relatedBusy || selected?.review_state === "completed") return;
     if (!event.currentTarget.reportValidity()) return;
     await act(async signal => {
       const record = selected || await register(signal);
@@ -116,7 +118,7 @@ export default function MessageRecordWorkspace({ token, status, recordsStatus, r
     });
   }
   const currentResult = selected?.analysis;
-  const operationBusy = busy || spatialBusy || reviewBusy;
+  const operationBusy = busy || spatialBusy || reviewBusy || relatedBusy;
   const completed = selected?.review_state === "completed";
   const unsavedNote = !!selected && (note !== selected.note || review !== selected.review_state);
   function updateRecord(value: MessageRecord) {
@@ -218,14 +220,16 @@ export default function MessageRecordWorkspace({ token, status, recordsStatus, r
         {busy && <p role="status">조회·저장 또는 분석을 진행하고 있습니다. 분석은 최대 약 80초가 걸릴 수 있습니다.</p>}
         {selected?.analysis_error && <p className="message-notice">{selected.analysis_error}</p>}
         {selected?.analysis_state === "running" && <p className="message-notice">서버에서 분석 중이거나 완료 저장을 확인하지 못했습니다. 기록을 다시 불러와 주세요. 2분 이상 지난 작업은 다시 분석할 수 있습니다.</p>}
-        {past ? <><p className="message-notice">과거 {past.version}판을 보고 있습니다. 원문 {past.source_revision}판 · 수정할 수 없습니다.</p><blockquote>{past.message.text}</blockquote><p>{past.note}</p>{past.analysis && renderResult(past.analysis, past.review_state === "completed")}<MessageReviewHistory record={past} /><MessageSpatialHistory references={past.spatial_references} /><button className="secondary-button" onClick={() => setPast(null)}>현재 결과로 돌아가기</button></>
+        {past ? <><p className="message-notice">과거 {past.version}판을 보고 있습니다. 원문 {past.source_revision}판 · 수정할 수 없습니다.</p><blockquote>{past.message.text}</blockquote><p>{past.note}</p>{past.analysis && renderResult(past.analysis, past.review_state === "completed")}<MessageReviewHistory record={past} /><MessageRelatedHistory record={past} /><MessageSpatialHistory references={past.spatial_references} /><button className="secondary-button" onClick={() => setPast(null)}>현재 결과로 돌아가기</button></>
           : currentResult ? <><p className="message-caption">저장한 분석 {selected.analysis_revision}판 · 조회 거리 {currentResult.input.reference_radius_km}km</p>{currentResult.input.reference_radius_km !== radius && <p className="message-notice">조회 거리 입력이 저장한 분석과 다릅니다. 아래는 이전 분석 결과입니다.</p>}{renderResult(currentResult, completed)}</>
             : <div className="message-empty"><span aria-hidden="true">◎</span><h2>{selected ? "문자가 저장되었습니다" : "문자에서 검토 기록까지"}</h2><p>{selected ? "AI 분석을 실행하면 결과와 조회 과정이 이 기록에 저장됩니다." : "공식 문자를 불러오거나 공개 문자를 직접 등록해 주세요."}</p></div>}
       </div>
     </div>
-    {selected?.analysis && !past && <MessageSpatialWorkspace key={selected.id} token={token} record={selected} disabled={busy || reviewBusy || completed}
+    {selected?.analysis && !past && <MessageSpatialWorkspace key={selected.id} token={token} record={selected} disabled={busy || reviewBusy || relatedBusy || completed}
       onBusyChange={setSpatialBusy} onDirtyChange={setSpatialDirty} onRecordChanged={updateRecord} />}
-    {selected?.analysis && !past && <MessageReviewPanel key={`review-${selected.id}-${selected.analysis_revision}`} token={token} record={selected}
-      disabled={busy || spatialBusy} unsavedWork={unsavedNote || spatialDirty} onRecordChanged={updateRecord} onBusyChange={setReviewBusy} />}
+    {selected?.analysis && !past && <MessageRelatedPanel key={`related-${selected.id}`} token={token} record={selected} disabled={busy || spatialBusy || reviewBusy}
+      unsavedWork={unsavedNote || spatialDirty || draftDirty} onRecordChanged={updateRecord} onBusyChange={setRelatedBusy} />}
+    {selected?.analysis && !past && <MessageReviewPanel key={`review-${selected.id}-${selected.analysis_revision}-${selected.relation_epoch || 0}`} token={token} record={selected}
+      disabled={busy || spatialBusy || relatedBusy} onDirtyChange={setDraftDirty} unsavedWork={unsavedNote || spatialDirty} onRecordChanged={updateRecord} onBusyChange={setReviewBusy} />}
   </>;
 }

@@ -9,5 +9,6 @@ export interface MessageReviewDetail {
   record_version: number; review_state: "unreviewed" | "needs_confirmation" | "completed";
   completion: ReviewCompletion | null; completion_current: boolean; draft: NoticeDraft | null;
   draft_current: boolean; stale_reason: string;
+  related_count?: number;
   locations: Array<{key: string; text: string; selected_count: number}>;
 }

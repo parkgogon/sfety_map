@@ -1,0 +1,22 @@
+{
+  "docs/evidence/2026-11-08/message-records-stage4/check_browser.py": "4ee3e14ceadbed3e5c001b13edee2535d4fc9bebdcd2bd6dafeb10d90cfa6f03",
+  "docs/evidence/2026-11-08/message-records-stage4/fake_sdk.js": "f2d22662424aa231284673ecb636c15d935161dbb37d541b55da7c01dcfe6be9",
+  "docs/evidence/2026-11-08/message-records-stage4/start_vite.mjs": "e2b0072ba742976606eb32fb5909301b7c6479f68eb533168eecee1227b7091c",
+  "docs/evidence/2026-11-08/message-records-stage4/test_server.py": "624b36ee481190ca3a0570722a6514c75d325569eaf723cff7b2e34e45d5d2ae",
+  "field_web/src/MessageRecordWorkspace.test.tsx": "ec03fbcead8b77b42dbfa71187158aacea1e6c0bcb417a7de790e9933cc0e129",
+  "field_web/src/MessageRecordWorkspace.tsx": "1c8cf60ec87147c00f53bba3daaa8409f99a67ec3bc77e7cc748156d3902b7f8",
+  "field_web/src/MessageRelatedPanel.test.tsx": "9aa8b8a274e0e950e9a30b4c22714436e2316efbf130aa1a89d2d4eec02ddd4b",
+  "field_web/src/MessageRelatedPanel.tsx": "a0659d291773e05874828e4f39dfbea0834de76be8a3e4a61b38694d6ae7f4ee",
+  "field_web/src/MessageReviewPanel.tsx": "86fba7a8f2f07388b5e54192780b8fc54f44e92c223959de718ed05d7e8f0688",
+  "field_web/src/messageRecordsApi.ts": "b632ad3f85792cffb6734b25490d2d96d144c434f0b0d688cabc15412f6f0445",
+  "field_web/src/messageRelationsApi.ts": "b433e38c58d345122adbb6225534ceeb79c35decbaa484300172d15a27c27f9d",
+  "field_web/src/messageReviewApi.ts": "05054906148e7fd52b1bafc01b729d46b0d24dc75a8c87d1cd4db76eab40d8f1",
+  "field_web/src/styles/message_analysis.css": "3d0314e6c95e273bca400e01e00c1c0c841b6d8a1d4537d22c3a646c608f2e9e",
+  "safety_dashboard/adapters/firestore_message_records.py": "949ab4540fd0d7466627466ee4b475598d84600b793db612c529aa1003415905",
+  "safety_dashboard/api/dependencies.py": "075f1cd548f0f2af2369524a61aa051a9e4e62e1857fa0b13624ba8e92f0d8ce",
+  "safety_dashboard/api/routes/message_records.py": "67e99bf768fcee010d8d09db6dcedd8a29ca0825d0dd9e8ef3f219db3c73480e",
+  "safety_dashboard/application/message_records.py": "b3900f9eb950eec4278650389233e974c6f299e7189496b1beb7287f7f365fd0",
+  "safety_dashboard/application/message_relations.py": "75abd612f66486e2cf1508ec2b74d210d7e549e1d7d0390a82bd4cba42e8a819",
+  "safety_dashboard/application/message_review.py": "bc676a1e2b7c2ff87ced4b3e5e6dc23234c81377dcf298922f22011d82f00688",
+  "tests/test_message_relations.py": "17a30dbd6036192e36f4f4e5f97a807dd2965fb3817d5a43d726fd98b9884261"
+}

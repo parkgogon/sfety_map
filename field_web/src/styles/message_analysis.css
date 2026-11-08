@@ -101,3 +101,14 @@
 .message-notice-draft { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border); }
 .message-review-history pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; background: #f7f9fc; font: inherit; font-size: 13px; line-height: 1.7; }
 .message-review .primary-button, .message-review .secondary-button { white-space: normal; }
+
+.message-comparison-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.message-comparison-columns > div { min-width: 0; padding: 12px; border: 1px solid #dbe5e4; border-radius: 12px; }
+.message-related { overflow-wrap: anywhere; }
+.message-related blockquote { margin: 8px 0; padding: 8px 12px; border-left: 3px solid #73968a; background: #f4f8f6; white-space: pre-wrap; }
+.message-segment-list { padding-left: 20px; }
+.message-segment-list li { margin: 12px 0; }
+.message-related-preview { margin-top: 20px; }
+.message-related .message-check { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0; }
+.message-related .message-check input { width: auto; flex-shrink: 0; margin-top: 4px; }
+@media (max-width: 700px) { .message-comparison-columns { grid-template-columns: minmax(0, 1fr); } }
