@@ -294,13 +294,16 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: [운영 연결 준비](MESSAGE_REVIEW_OPERATIONS.md)의 GitHub 기존 키 이관을 위해 배포 서비스 계정을 식별한다.
+**다음 시작점 하나**: [기존 키 등록 준비](MESSAGE_REVIEW_KEY_SETUP.md)의 고정 commit 준비 스크립트를 사용자 Cloud Shell에서 실행하고 결과/만료 시각을 확인한다.
 문자 등록→AI 분석→지도 기준/시설 선정→검토 완료/초안→후속 연결/부분 해제 재검토를 로컬 검증까지 완료했다.
 [완료 계획](archive/DISASTER_MESSAGE_WORKFLOW_PLAN_20261108.md), [4단계 검증](evidence/2026-11-08/message-records-stage4/README.md)을 기준으로 확인한다.
 사용자 Cloud Shell 캡처로 `FIRESTORE_NATIVE`와 두 Secret(`OPENAI_API_KEY`, `KAKAO_REST_API_KEY`)의 `NOT_FOUND`를 확인했다.
 이는 DB 모드/Secret 부재 확인이며 runtime 저장 권한 검증은 아니다. 공식 피드 키는 아직 미확인이다.
 사용자는 휴대폰으로 작업 중이며 명령 결과는 텍스트 복사 대신 화면 캡처로 제공할 수 있다.
-다음에는 배포 계정 식별 후 두 Secret에 한정한 키 등록/고정 버전·runtime 접근을 준비한다. 키 이관/권한 변경은 아직 하지 않았다.
+새 캡처에서 `github-deployer`(GitHub Actions Deployer)와 `safety-dashboard-runtime`(K-ECO Safety API Runtime) 계정을 확인했다.
+두 Secret에 한정한 준비 스크립트와 기존 GitHub 값 등록 워크플로를 만들고 Python **419개**·compileall·bash 구문을 검증했다.
+준비 스크립트는 배포 계정에 1시간의 버전 추가 권한, runtime에 두 키의 읽기 권한만 부여한다.
+사용자의 준비 완료를 확인하기 전 등록 워크플로 라벨을 추가하지 않는다. 실제 키 이관/권한 변경·배포는 아직 하지 않았다.
 공식 피드·실제 SDK·저장 트랜잭션은 별도 실제 검수가 남아 있다.
 자동 수집/전파·현장 회신과 구분하며 main 반영/배포는 별도 사용자 요청 때 수행한다.
 

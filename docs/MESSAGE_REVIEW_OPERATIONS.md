@@ -68,8 +68,9 @@ Firestore 데이터베이스·Secret 버전·Secret IAM 조회는 `permission_de
 앞선 Actions 계정의 조회 거부와 구분한다. 두 Secret은 아직 생성되지 않았고, DB의 Native 모드만 확인한 것이다.
 runtime의 문서 읽기/쓰기·버전 이력/권한은 검증하지 않았다. 공식 피드 Secret도 이 캡처에서는 조회하지 않았다.
 
-GitHub Actions에 보관한 기존 키를 Secret Manager에 전달하는 방법을 우선 검토한다.
-이를 위해 배포용 서비스 계정의 식별과 필요한 두 Secret에 한정한 권한 준비가 필요하다.
+GitHub Actions에 보관한 기존 키는 [키 등록 준비 절차](MESSAGE_REVIEW_KEY_SETUP.md)에 따라 전달할 수 있도록 도구를 준비했다.
+추가 사용자 캡처로 배포 계정 `github-deployer`, API 실행 계정 `safety-dashboard-runtime`을 확인했다.
+두 Secret에만 적용할 준비 명령 실행/만료 시각 확인이 다음 단계다.
 키 값을 채팅으로 받거나 새 키 발급을 먼저 요구하지 않는다. 현재 키 이관/권한 변경은 실행하지 않았다.
 
 ### 소유자 계정으로 다음에 확인할 최소 명령
