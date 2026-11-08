@@ -1,0 +1,63 @@
+{
+  "service": "message-review-check-42522145075-y62i44k74q-du.a.run.app",
+  "verification_exit_code": 0,
+  "automation": {
+    "state": "live",
+    "auto_collection_enabled": true,
+    "feed_configured": true,
+    "interval_seconds": 900,
+    "last_attempt_at": "2026-11-08T20:45:00.268039+00:00",
+    "last_success_at": "2026-11-08T20:45:01.442965+00:00",
+    "start_at": "2026-11-08T13:45:00.961104+00:00",
+    "queue": {
+      "pending": 0,
+      "running": 0,
+      "done": 1,
+      "failed": 0,
+      "obsolete": 0,
+      "deferred": 0
+    },
+    "budget": {
+      "day": "2026-11-09",
+      "attempts": 0,
+      "limit": 20,
+      "remaining": 20,
+      "active": false
+    },
+    "feed_budget": {
+      "limit": 450,
+      "used": 90,
+      "remaining": 360,
+      "window_hours": 24,
+      "next_available_at": null
+    },
+    "remaining_partitions": 0,
+    "skipped_rows": 0,
+    "skipped_reasons": {},
+    "ignored_before_start": 41,
+    "coverage_gap": false
+  },
+  "operations": {
+    "kma_failure_started_at": "",
+    "last_result": "NO_CHANGE",
+    "kma_health": "LIVE",
+    "kma_consecutive_errors": 0,
+    "last_run_at": "2026-11-08T20:50:01.572894+00:00",
+    "kma_last_success_at": "2026-11-08T20:50:01.572894+00:00",
+    "kma_failure_category": ""
+  },
+  "record_id": "manual-d12aca68e2b74015983de42ff6c6afc1",
+  "browser": {
+    "status": "passed",
+    "record_id": "manual-d12aca68e2b74015983de42ff6c6afc1",
+    "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+    "model_calls": 4,
+    "selected_count": 7,
+    "analysis_requests": 0,
+    "tile_responses": 22,
+    "rendered_map_images": 9,
+    "page_errors": 0,
+    "unexpected_requests": 0,
+    "real_messages_sent": 0
+  }
+}

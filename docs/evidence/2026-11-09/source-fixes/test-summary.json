@@ -1,0 +1,24 @@
+{
+  "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+  "deploy_run": 42520955495,
+  "python_tests": 539,
+  "react_tests": 268,
+  "facilities": 195,
+  "compile": "passed",
+  "build": "passed",
+  "automatic_test_external_http_tcp_attempts": 0,
+  "official_collection_state": "live",
+  "skipped_rows": 0,
+  "ignored_before_start_observations": 41,
+  "collection_status_run": 42521866421,
+  "browser_run": 42522145075,
+  "browser_analysis_requests": 0,
+  "new_model_calls": 0,
+  "real_test_messages_sent": 0,
+  "kma_regular_successes": [
+    "2026-11-08T20:45:00.344298+00:00",
+    "2026-11-08T20:50:01.572894+00:00",
+    "2026-11-08T20:55:01.566165+00:00"
+  ],
+  "kma_lower_level_root_cause": "unconfirmed"
+}

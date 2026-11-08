@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "runs": [
+    "2026-11-08T20:45:00.344298+00:00",
+    "2026-11-08T20:50:01.572894+00:00",
+    "2026-11-08T20:55:01.566165+00:00"
+  ],
+  "last_observation": {
+    "observed_at": "2026-11-08T20:55:26.548920+00:00",
+    "http_status": 200,
+    "health": {
+      "status": "ok",
+      "checked_at": "2026-11-08T20:55:26.936689+00:00",
+      "worker": {
+        "status": "ok",
+        "last_run_at": "2026-11-08T20:55:01.566165+00:00",
+        "age_seconds": 25,
+        "max_age_seconds": 600
+      },
+      "automation": {
+        "mode": "live"
+      },
+      "kma": {
+        "status": "live"
+      },
+      "reason": "ready"
+    },
+    "consecutive_live": 3
+  }
+}

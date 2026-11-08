@@ -1,27 +1,41 @@
 # 프로젝트 현재 상태와 인수인계
 
-마지막 운영 확인: 2026-11-08 22:52 KST. 간소화 1·2단계는 사용자 승인으로 **제한 운영 배포 완료**다.
-운영 앱 소스는 `a63fec51a1ec8a17bd2c2e228a2a0cc12c1be707`이다.
-[PR #2](https://github.com/parkgogon/sfety_map/pull/2)를 병합하고 예약 상태 처리 보완을 추가했다.
-[배포 42485619427](https://github.com/parkgogon/sfety_map/actions/runs/42485619427)은 API·문자 worker/예약·KMA worker/예약·웹·외부 감시 모두 성공했다.
-[운영 브라우저/예약 분석 검수 42486131095](https://github.com/parkgogon/sfety_map/actions/runs/42486131095)도 성공했다.
-첫 정규 공식 수집은 실행됐고 현재 **partial(건너뜀 2건, 마지막 전체 정상 완료 없음)** 상태다. 전체 수집 완료를 주장하지 않는다. [배포 증빙](evidence/2026-11-08/message-pilot-release/README.md).
+마지막 운영 확인: 2026-11-09 05:55 KST. 현재 앱 소스는 `5f58be1d12a8ac57c0ec365e4eeb86b392fc348c`이다.
+[PR #3](https://github.com/parkgogon/sfety_map/pull/3)의 수집 오판정/health 보완과 날짜 검증 경계 추가 수정을
+[배포 42520955495](https://github.com/parkgogon/sfety_map/actions/runs/42520955495)에서 API·문자 worker/예약·KMA worker/예약·웹·외부 감시까지 반영했다.
+문자 05:45 KST 정규 수집은 **LIVE/건너뜀 0/남은 진행 0**, 정상 완료 시각이 저장됐다.
+[상태 검수](https://github.com/parkgogon/sfety_map/actions/runs/42521866421)와
+[기존 창작 기록 화면 검수](https://github.com/parkgogon/sfety_map/actions/runs/42522145075)를 통과했다.
+기상은 **05:45·05:50·05:55 KST 정규 조회 3회 연속 LIVE/health 200**으로 회복을 확인했다. [최신 수정 증빙](evidence/2026-11-09/source-fixes/README.md).
 
 새 작업자는 [AGENTS.md](../AGENTS.md)와 이 문서를 읽고 실제 Git·코드·테스트를 대조한다.
-작업공간은 `/workspace/sfety_map-pilot-release-20261108`, 브랜치는 `release/message-pilot-20261108`이다.
-`/workspace/sfety_map`, `/workspace/sfety_map-simplify`, 이전 배포 작업공간은 보존했다.
-검수 도구/문서/증빙만의 후속 commit에는 `[skip ci]`를 써서 운영 앱 재배포를 일으키지 않는다.
+작업공간 `/workspace/sfety_map-source-release-20261109`, 브랜치 `release/source-fixes-20261109`다.
+이전 작업공간은 보존했다. 검수 도구/문서/증빙 후속 commit은 `[skip ci]`로 앱 재배포를 막는다.
 
-## 진행 중인 오류 수정 — 2026-11-09 KST
+## 이번 오류 수정과 검수
 
-사용자가 남은 두 오류의 다음 단계 진행을 요청했다. 작업공간 `/workspace/sfety_map-source-fixes`,
-브랜치 `fix/message-feed-and-kma`, [PR #3](https://github.com/parkgogon/sfety_map/pull/3).
-운영 시작 전의 미등록/수신지역 불명 항목이 partial을 만들던 원인을 재현했고 cutoff 순서를 고쳤다.
-기존 ID 정정/시작 이후 모호함/필드 해석 실패는 계속 검증한다. Python 538개·React 268개/빌드 통과.
-KMA는 기존 인스턴스 80회 연속 실패, 임시 서버는 각 3회 정상이라 key/parser/7초 지연보다 실행 경로 차이를 확인했다.
-기존 실행 환경은 미지정이며 gen1이라고 단정하지 않는다. KMA worker만 gen2로 고정하는 운영 비교를 준비한다.
-최소 0·최대 1/기존 자원을 유지하고 NAT/상주 자원은 추가하지 않는다. health는 KMA 실패를 ready로 반환하지 않도록 보완했다.
-[진단/수정 증빙](evidence/2026-11-09/source-fixes/README.md). 아직 운영 반영 전이며 다음은 최종 CI 후 정규 수집/KMA 연속 주기의 실운영 검증이다.
+- 운영 시작 전 미등록/수신지역 불명 항목을 현재 수집 실패로 집계하던 순서를 수정했다.
+  시작 전 자료는 조회 날짜가 맞을 때만 먼저 제외한다. 기존 저장 ID의 정정·시작 이후 불명확 수신지역·미상/잘못된 시각/필드·날짜 밖 응답은 계속 검증한다.
+  건너뜀 사유와 시작 전 제외는 중복 관측을 포함한 횟수로 구분한다. 원문/저장 기록/분석 대기열/한도 집계를 초기화하지 않았다.
+- 실제 05:45 KST 수집은 시작 전 제외 41회 관측(유일 문자 건수 아님), 건너뜀 0, 조회 집계 90/450이었다.
+  시작 시각은 11월 8일 22:45:00 KST 그대로며 현재까지 수집 시작 이후의 공식 기록은 조회 페이지에 0건이었다.
+  기존 창작 예문의 저장된 분석 4응답/선정 7개소를 재사용해 1440/390px 확정·복사·복구·재열기/재확정과 실제 지도 검수 통과.
+  새 분석 요청/실제 시험 발송/수동 dispatch 0. 화면 오류/예상 밖 요청 0, 타일 22응답/표시 9개.
+- 운영 health는 KMA ERROR/미상/STALE 때 최근 worker 실행이 있어도 `kma_unavailable`/503으로 표시한다.
+  worker 신선도는 별도다. 실제 배포 후 KMA ERROR 시 503과 회복 후 200을 관측했다.
+- KMA worker만 gen2로 명시했다. 같은 이미지/runtime/키의 임시 서버에서 HTTP와 전체 관제 snapshot(195개소/LIVE)을 확인했다.
+  최초 gen2 리비전에서도 실패했으므로 gen2 자체가 저수준 원인/해결이라고 단정하지 않는다.
+  최신 `5f58be1` 배포 후 정규 실행에서 회복했고, 연속 관측으로 일시 성공과 구분한다. 장기 재발 여부는 관찰 대상이다.
+  최소 0·최대 1/기존 CPU·512Mi를 유지했고 NAT/상주 자원은 추가하지 않았다.
+- 현재 서비스/100%: API `safety-dashboard-api-00091-wjr`, 문자 `safety-message-worker-00003-sj2`,
+  KMA `safety-alert-worker-00079-twg`(gen2). 세 고정 키 버전 1/기존 예약 3개/기상 정책·알림 기준은 유지한다.
+- Python 최종 CI **539개**·React **268개**, 컴파일/시설 CSV 195개/빌드 통과. 자동 검사 외부 HTTP/TCP 0.
+  1차 `1169791` 배포는 마지막 날짜 경계 보완 push로 외부 감시 단계에서 취소됐고, 최종 `5f58be1` 배포는 전 단계 성공했다.
+- 진단은 공식 12회(실패 포함 공통 조회 한도 집계), KMA 직접 12회+관제 snapshot 1회였다.
+  키/원문/공식 ID는 내보내지 않고 임시 서비스를 삭제했다. 정확한 고유 출구/제공자 차단 원인은 미확정이다.
+- 재발 시 쓸 새 worker 전환·읽기 전용 사전 점검안은 **로컬 전용** `fix/kma-worker-replacement`/`b0876d3`에 보존했다.
+  이 초안은 별도 Python 543개를 통과했으나 배포/원격 push/예약 전환은 하지 않았다. 운영은 기존 `safety-alert-worker`다.
+  현재 경로 회복이 확인돼 추가 전환은 보류했다. 기본 환경 비교/관제 경로 진단은 `fix/message-feed-and-kma`/`9fb10ee`의 수동 진단 이력이다.
 
 ## 현재 운영과 사용자 확정 결정
 
@@ -51,25 +65,12 @@ KMA는 기존 인스턴스 80회 연속 실패, 임시 서버는 각 3회 정상
 - 실제 전파/시설담당자 연락·현장 회신은 문자 기능 범위 밖이다. 검토 완료는 재난 종료·시설 안전·현장 확인·발송 실적이 아니다.
   창작 예문과 공식 수집 실적을 구분하며 대표점 반경은 위험 반경이 아니다.
 
-## 최신 배포 검수
+## 이전 운영/시연 이력
 
-- 최종 CI: Python **528개**·React **268개**, compileall·CSV 195개·웹 빌드/배포 설정 통과.
-  자동 검사 외부 HTTP/TCP 시도 0. PC/390/360px 가짜 제공자 기반 동선/오류/상한 검증은 [로컬 증빙](evidence/2026-11-08/message-feed-500-limit/README.md)에 있다.
-- 공식 API 사전 검수는 첫 요청 연결 실패 후 한 차례 재실행에서 5회 읽기로 통과했다. 날짜/지역/페이지/ID 겹침/첫 페이지/전일 조회를 대조했다.
-  두 시도 시작 합계 6회, 원문/공식 ID/키 내보내기·DB 쓰기·모델/발송 0. 임시 서비스를 삭제했다.
-- API `safety-dashboard-api-00089-795`, 문자 worker `safety-message-worker-00001-xzd`,
-  기존 KMA worker `safety-alert-worker-00077-8dp` 모두 위 소스/100%다. [설정/예약 증빙](evidence/2026-11-08/message-pilot-release/pilot-metadata.json).
-- 창작 기록 `manual-d12aca68e2b74015983de42ff6c6afc1`, 출처 `운영 배포 검수 · 창작 예문`만 시험 대기열에 넣었다.
-  **정규 예약 분석 1회**로 완료, 저장 모델 응답 4회·선정 7개소, 브라우저 분석 요청 0.
-  새 한 화면 검토/확정·복사·새로고침 복구·재열기/재확정과 실제 Kakao SDK/타일을 통과했다.
-  1440/390px 가로 넘침·화면 오류/예상 밖 요청 0, 타일 35응답/표시 9개를 확인하고 캡처를 직접 검토했다.
-  이 창작 건을 실제 재난/현장/성과 실적으로 세지 않는다.
-- 22:30 KST 배포 전 KMA error, 22:40 KST 배포 후 정규 실행에서 LIVE·연속 오류 0·NO_CHANGE/health 200을 확인했다.
-  **22:45·22:50 KST 정규 실행에서는 KMA_ROUTE 오류가 재발했다.** 따라서 KMA 연결 문제가 해결됐다고 표시하지 않는다. 마지막 정상 자료/기존 오류 처리는 유지한다. 이전 15:40 검수와 [PR #1 운영 기록](evidence/2026-11-08/production-message-release/README.md)은 역사적 증빙이다.
-- 관리자 비밀번호는 비공개 임시 검수 서비스 안에서만 사용하고 서비스는 삭제했다. 키/비밀번호를 작업공간·Git·artifact에 가져오지 않았다.
-  실제 Telegram/SMS 시험 발송·수동 dispatch는 0이다. 운영 시스템이 정규 감시로 보내는 업무 알림과 구분한다.
-- 실기기 터치/핀치, 장기 제공 지연/부하·정확도/운영 효과는 별도다. 공개 명세/약관을 대조했고 출처/원문은 변경하지 않고 AI 해석을 분리했다.
-  공개 안내에 확정 보관 일수/지연 SLA는 없어 보장하지 않는다. [사용 안내](MESSAGE_REVIEW_QUICK_GUIDE.md) · [운영/복구](MESSAGE_AUTOMATION.md).
+[11월 8일 최초 간소화 배포](evidence/2026-11-08/message-pilot-release/README.md)와
+[PR #1 운영 기록](evidence/2026-11-08/production-message-release/README.md)은 당시의 증빙이다.
+현재 운영 상태/수정은 위와 [11월 9일 증빙](evidence/2026-11-09/source-fixes/README.md)을 따른다.
+실기기 터치/핀치, 장기 지연/부하·정확도/효과 검수는 별도다. 창작 예문은 실제 재난/현장/성과로 세지 않는다.
 
 ## 1. 프로젝트와 현재 구성
 
@@ -166,7 +167,5 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 [계획](MESSAGE_REVIEW_SIMPLIFICATION_PLAN.md)을 처음부터 다시 시작하지 않는다.
 수집 정상 시각/분석 대기·실패·상한, 사용자가 고친 위치/시설/안내와 보류 이유를 먼저 본다.
 같은 장소 표기만으로 사건을 합치지 않고, 일부 해제/유지와 오래된 초안 차단을 보존하는 한 화면 변경 검토가 수용 조건이다.
-먼저 [제한 운영 증빙](evidence/2026-11-08/message-pilot-release/README.md)의 **건너뜀 2건 원인과 기존 KMA_ROUTE 간헐 실패를 분리 진단**한다.
-문자 수집 22:45 KST/2회 요청·진행 잔여 0이지만 skipped_rows=2라 partial이며 last_success_at은 null이다.
-운영 범위는 실행 관측 완료이며 전체 제공 자료 확보/정확도 검증은 아니다. 원문/키를 내보내지 않는 집계 진단부터 시작하고
-기상 기준 상태 초기화/수동 dispatch/시험 발송으로 확인하지 않는다. 후속 제안 UI를 먼저 늘리기보다 관측 이슈와 실제 검토 불편을 우선한다.
+KMA 연결이 재발하면 이전 실행의 원인/현재 revision/원래 예외를 먼저 대조한다. 최초 gen2 시도도 실패했으므로 무조건 재기동으로 해결됐다고 가정하지 않는다.
+로컬 보류 전환안은 별도 검토용이며 기본 운영 서비스로 오인하지 않는다. 기상 기준 초기화/수동 dispatch/실제 시험 발송으로 검수하지 않는다.

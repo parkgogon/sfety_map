@@ -1,0 +1,16 @@
+{
+  "safety-dashboard-api": {
+    "revision": "safety-dashboard-api-00090-c6h",
+    "network": {}
+  },
+  "safety-alert-worker": {
+    "revision": "safety-alert-worker-00078-gbd",
+    "network": {
+      "run.googleapis.com/execution-environment": "gen2"
+    }
+  },
+  "safety-message-worker": {
+    "revision": "safety-message-worker-00002-2zp",
+    "network": {}
+  }
+}
