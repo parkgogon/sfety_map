@@ -106,8 +106,10 @@ gcloud secrets describe KAKAO_REST_API_KEY --project=keco-safety-map --format='v
 켜진 기능의 버전이 없거나 `latest`/잘못된 값이면 배포 준비를 중단한다.
 AI를 켜면 평가 모델/low를 설정하고 저장은 `firestore`로 명시한다. 기본값에서 유료 서비스 키를 연결하지 않는다.
 사용자가 GitHub Variables 화면에서 AI 활성화 `true`, 두 버전 `1`을 등록한 캡처를 제공했다.
-일반 PR CI에 GCP 접속 없이 실제 변수를 읽어 참조를 생성하는 검사를 추가했다.
-화면에서 생략된 전체 변수 이름도 이 검사 출력으로 대조한다. Cloud Run에는 아직 적용하지 않았다.
+일반 PR CI [42441415634](https://github.com/parkgogon/sfety_map/actions/runs/42441415634)에서 실제 변수로
+`OPENAI_API_KEY:1`, `KAKAO_REST_API_KEY:1` 참조와 평가 모델/low/Firestore 설정 생성을 확인했다.
+화면에서 생략된 전체 변수 이름도 실제 실행으로 대조했다. 이 검사는 GCP 접속/키 값 읽기 없이 수행했다.
+[배포 전 점검 증빙](evidence/2026-11-08/message-release-readiness/README.md). Cloud Run에는 아직 적용하지 않았다.
 main 병합/배포는 별도 사용자 요청 때 수행한다.
 
 ## 운영 적용 전에 순서대로 확인할 것

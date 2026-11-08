@@ -1,0 +1,9 @@
+{
+  "run_id": 42441415634,
+  "job_id": 128611245161,
+  "source_commit": "ac51c06fbba846ac6eb1f0706e5ba6f6b8a8d918",
+  "message_review_secret_bindings": "OPENAI_API_KEY=OPENAI_API_KEY:1,KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:1",
+  "message_review_env_vars": "MESSAGE_REVIEW_STORE=firestore,OPENAI_MODEL=gpt-5.4-mini-2026-03-17,OPENAI_REASONING_EFFORT=low",
+  "secret_values_read": false,
+  "gcp_modified": false
+}

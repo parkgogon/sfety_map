@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-11-08T03:11:44.357710+00:00",
+  "checks": [
+    {
+      "path": "/api/v1/health",
+      "http_status": 200,
+      "status": "ok",
+      "reason": null
+    },
+    {
+      "path": "/api/v1/health/operations",
+      "http_status": 200,
+      "status": "ok",
+      "reason": "ready",
+      "worker": {
+        "status": "ok",
+        "age_seconds": 102
+      },
+      "kma": {
+        "status": "live"
+      }
+    }
+  ],
+  "read_only": true,
+  "dispatch_or_deploy_calls": 0
+}
