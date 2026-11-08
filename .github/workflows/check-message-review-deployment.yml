@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed]
+        options: [metadata, official-feed, source-diagnostics]
         default: metadata
   pull_request:
     types: [labeled]
@@ -21,7 +21,7 @@ concurrency:
 jobs:
   inspect:
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.mode != 'official-feed') ||
+      (github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata') ||
       (github.event.label.name == 'message-review-preflight' &&
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
@@ -117,6 +117,66 @@ jobs:
         if: always()
         with:
           name: safetydata-runtime-check
+          path: safetydata-runtime-check/
+          retention-days: 7
+          if-no-files-found: warn
+
+  source-diagnostics:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'source-diagnostics'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare bounded source diagnostics without exporting payloads
+        run: |
+          python3 - <<'PY'
+          import base64,os
+          from pathlib import Path
+          source=base64.b64encode(Path('scripts/diagnose_sources_runtime.py').read_bytes()).decode()
+          loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('PROBE_LOADER='+loader+'\n')
+          PY
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Diagnose from the deployed worker image and same runtime account
+        run: |
+          gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
+            --image=asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:a63fec51a1ec8a17bd2c2e228a2a0cc12c1be707 \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args="^|^-c|$PROBE_LOADER" \
+            --set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1,KMA_API_KEY=KMA_API_KEY:1 \
+            --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=180s \
+            --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+        id: invoker
+      - name: Collect classifications and counts only
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python3 scripts/invoke_safetydata_runtime.py
+      - name: Remove only this temporary diagnostic service
+        if: always()
+        run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-runtime-diagnostics
           path: safetydata-runtime-check/
           retention-days: 7
           if-no-files-found: warn
