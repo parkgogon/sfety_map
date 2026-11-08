@@ -14,6 +14,7 @@ from safety_dashboard.application.message_feed import FeedRequest, ImportOfficia
 from safety_dashboard.application.message_spatial import SaveMessageReference, SaveMessageSelection, LocationKey, Digest, SpatialValidationError
 from safety_dashboard.application.message_review import CompleteMessageReview, ReopenMessageReview, SaveMessageNotice, CopyMessageNotice, ReviewValidationError
 from safety_dashboard.application.message_relations import LinkMessage, UnlinkMessage, RelationValidationError
+from safety_dashboard.application.message_preparation import MessagePreparationService, PrepareMessageReview, ApprovePreparedReview
 from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
 
@@ -21,6 +22,7 @@ NO_STORE = {"Cache-Control": "private, no-store"}
 
 
 def build_router(services):
+    preparation = MessagePreparationService(services.message_review)
     def authorize(response: Response,
                   token: str = Header("", alias="X-Alert-Admin-Token"),
                   cookie: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME)):
@@ -71,7 +73,8 @@ def build_router(services):
 
     @router.get("/status")
     def status():
-        return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured}
+        return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured,
+                "auto_collection_enabled": False}
 
     @router.get("")
     @guarded
@@ -144,6 +147,21 @@ def build_router(services):
     @guarded
     def review(identifier: str):
         return services.message_review.detail(check_id(identifier))
+
+    @router.post("/{identifier}/prepare")
+    @guarded
+    def prepare(identifier: str, request: PrepareMessageReview):
+        return preparation.prepare(check_id(identifier), request)
+
+    @router.post("/{identifier}/approve")
+    @guarded
+    def approve(identifier: str, request: ApprovePreparedReview):
+        return preparation.approve(check_id(identifier), request)
+
+    @router.post("/{identifier}/hold")
+    @guarded
+    def hold(identifier: str, request: PrepareMessageReview):
+        return preparation.hold(check_id(identifier), request)
 
     @router.get("/{identifier}/related")
     @guarded

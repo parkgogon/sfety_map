@@ -1,9 +1,10 @@
 import type { ReviewCompletion, NoticeDraft } from "./messageReviewApi";
 import type { MessageReference } from "./messageSpatialApi";
 import type { MessageAnalysisResult, MessageInput } from "./messageAnalysisApi";
+import type { PrepareReviewInput } from "./messagePreparationApi";
 
 export interface MessageSource {
-  text: string; source: string; issued_at: string; recipient_regions: string[];
+  text: string; source: string; issued_at: string | null; recipient_regions: string[];
 }
 export interface MessageRecord {
   id: string; version: number; origin: "manual" | "example" | "official";
@@ -16,9 +17,10 @@ export interface MessageRecord {
   review_completion?: ReviewCompletion | null; notice_draft?: NoticeDraft | null; review_reopen_reason?: string;
   relation_epoch?: number;
   related_messages?: Record<string,{kind:"additional"|"correction"|"release";reason:string;target_source_revision:number;target_analysis_revision:number}>;
+  review_working_copy?: { input: PrepareReviewInput; source_revision:number; analysis_revision:number; saved_at_version:number };
   relation_last_change?: {action:string;target_id:string;reason:string;at:string}|null;
 }
-export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean }
+export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean; auto_collection_enabled?: boolean }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }
 export interface OfficialPage {
   status: "LIVE" | "NOT_CONFIGURED"; detail: string;

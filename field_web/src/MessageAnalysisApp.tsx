@@ -5,9 +5,11 @@ import { INTENT_LABELS, ROLE_LABELS, messageRequest, type MessageAnalysisResult,
 import examples from "./messageExamples.json";
 import "./styles/message_analysis.css";
 import MessageRecordWorkspace from "./MessageRecordWorkspace";
+import MessageInbox from "./MessageInbox";
 import { recordRequest, type RecordStatus } from "./messageRecordsApi";
 
-function koreanTime(value: string): string {
+function koreanTime(value: string | null): string {
+  if (!value) return "시각 미상";
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
@@ -64,6 +66,7 @@ export function MessageAnalysisOutput({ result, reviewCompleted = false }: { res
 }
 
 export default function MessageAnalysisApp() {
+  const advanced = new URLSearchParams(window.location.search).get("view") === "advanced";
   const auth = useAdminSession();
   const [recordsStatus, setRecordsStatus] = useState<RecordStatus | null>(null);
   const [recordsError, setRecordsError] = useState("");
@@ -137,11 +140,15 @@ export default function MessageAnalysisApp() {
           {auth.authError && <p role="alert">{auth.authError}</p>}
         </form>
       </section> : <>
-        <section className="message-intro"><span className="message-tag">시범 기능</span><h2>문자의 맥락을 읽고,<br />확인할 장소를 좁힙니다.</h2>
+        {(advanced || !recordsStatus?.storage_configured) && <section className="message-intro"><span className="message-tag">시범 기능</span><h2>문자의 맥락을 읽고,<br />확인할 장소를 좁힙니다.</h2>
           <p>발생·예방·통제를 구분하고, 필요한 경우 장소와 주변 시설을 조회합니다.</p>
           <p className="message-caption">AI 결과는 검토용 참고자료이며 공식 특보 위험등급과 별개입니다.</p>
-        </section>
-        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={(value, completed) => <MessageAnalysisOutput result={value} reviewCompleted={completed} />} /> : <>
+        </section>}
+        {recordsStatus?.storage_configured && error && <p role="alert" className="message-error">{error}</p>}
+        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? advanced ? <>
+          <a className="secondary-button" href={`/control/messages${window.location.search.replace(/[?&]view=advanced/, "").replace(/^&/, "?")}`}>간단 검토로 돌아가기</a>
+          <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={(value, completed) => <MessageAnalysisOutput result={value} reviewCompleted={completed} />} />
+        </> : <MessageInbox token={auth.adminToken} status={status} recordsStatus={recordsStatus} /> : <>
         {recordsError && <p className="message-error" role="alert">{recordsError}</p>}
         {recordsStatus && !recordsStatus.storage_configured && <p className="message-notice">검토 기록 저장소가 연결되지 않았습니다. 아래 결과는 저장되지 않으며 새로고침하면 초기화됩니다.</p>}
         <div className="message-workspace">

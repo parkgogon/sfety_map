@@ -13,10 +13,12 @@ export function koreanDate() {
   const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   return ["year", "month", "day"].map(type => parts.find(p => p.type === type)!.value).join("-");
 }
-function issuedTime(value: string) {
+function issuedTime(value: string | null) {
+  if (!value) return "발행 시각 미상";
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
-function localInput(value: string) {
+function localInput(value: string | null) {
+  if (!value) return "";
   const date = new Date(new Date(value).getTime() + 9 * 3600_000);
   return date.toISOString().slice(0, 16);
 }

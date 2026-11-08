@@ -26,6 +26,7 @@ def ensure_record_editable(record):
 
 
 def invalidate_review(record, reason):
+    record.pop("review_preparation", None)
     if record.get("review_completion") or record.get("notice_draft"):
         record.update(review_completion=None, notice_draft=None, review_reset_reason=reason)
         if record["review_state"] == "completed":
@@ -43,14 +44,14 @@ class RecordStorageUnavailable(RuntimeError):
 class MessageSource(StrictModel):
     text: str = Field(min_length=10, max_length=2000)
     source: str = Field(min_length=1, max_length=80)
-    issued_at: AwareDatetime
+    issued_at: AwareDatetime | None = None
     recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
 
     def canonical(self):
         if any(not value.strip() or len(value) > 120 for value in self.recipient_regions):
             raise ValueError("수신지역은 항목당 1~120자로 입력해 주세요.")
         value = self.model_dump(mode="json")
-        value["issued_at"] = self.issued_at.astimezone(KST).isoformat()
+        value["issued_at"] = self.issued_at.astimezone(KST).isoformat() if self.issued_at else None
         value["recipient_regions"] = list(dict.fromkeys(r.strip() for r in self.recipient_regions))
         return value
 
@@ -202,7 +203,7 @@ class MessageRecordService:
                       "review_completion": None, "notice_draft": None, "notice_draft_revision": existing.get("notice_draft_revision", 0) if existing else 0,
                       "review_reset_reason": "source_changed" if existing and existing.get("review_completion") else ""}
             record["relation_order"] = existing.get("relation_order", [existing["created_at"], existing["id"]]) if existing else [
-                dt.datetime.fromisoformat(message["issued_at"]).astimezone(dt.timezone.utc).isoformat(), now, identifier]
+                dt.datetime.fromisoformat(message["issued_at"] or now).astimezone(dt.timezone.utc).isoformat(), now, identifier]
             for key, default in (("related_messages", {}), ("relation_epoch", 0), ("relation_last_change", None)):
                 record[key] = copy.deepcopy(existing.get(key, default) if existing else default)
             try:
