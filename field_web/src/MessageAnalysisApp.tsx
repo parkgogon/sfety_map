@@ -4,6 +4,8 @@ import { navigateWithMode } from "./router";
 import { INTENT_LABELS, ROLE_LABELS, messageRequest, type MessageAnalysisResult, type MessageAnalysisStatus, type MessageInput } from "./messageAnalysisApi";
 import examples from "./messageExamples.json";
 import "./styles/message_analysis.css";
+import MessageRecordWorkspace from "./MessageRecordWorkspace";
+import { recordRequest, type RecordStatus } from "./messageRecordsApi";
 
 function koreanTime(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -14,7 +16,8 @@ export function MessageAnalysisOutput({ result }: { result: MessageAnalysisResul
   return <section className="message-result" aria-label="문자 분석 결과">
     <div className="message-result-heading"><h2>검토 초안</h2><span className="message-tag">담당자 검토 전</span></div>
     <p className="message-summary">{analysis.summary}</p>
-    <p className="message-caption">{result.input.input_kind === "example" ? "창작 예문" : "수동 입력"} · {result.input.source} · 발행 {koreanTime(result.input.issued_at)} (한국 시간)</p>
+    <p className="message-caption">{{ example: "창작 예문", manual: "수동 입력", official: "공식 API" }[result.input.input_kind]} · {result.input.source} · 발행 {koreanTime(result.input.issued_at)} (한국 시간)</p>
+    {!!result.input.recipient_regions?.length && <p className="message-caption">문자 수신지역: {result.input.recipient_regions.join(", ")}</p>}
     <p className="message-notice">이 문자 발행 시점의 내용입니다. 현재 상황과 후속 해제·정정은 별도로 확인해 주세요.</p>
     {analysis.parts.map((part, index) => <article className="message-part" key={index}>
       <span className="message-tag">{INTENT_LABELS[part.intent]}</span>
@@ -62,6 +65,8 @@ export function MessageAnalysisOutput({ result }: { result: MessageAnalysisResul
 
 export default function MessageAnalysisApp() {
   const auth = useAdminSession();
+  const [recordsStatus, setRecordsStatus] = useState<RecordStatus | null>(null);
+  const [recordsError, setRecordsError] = useState("");
   const [status, setStatus] = useState<MessageAnalysisStatus | null>(null);
   const [text, setText] = useState("");
   const [source, setSource] = useState("");
@@ -74,13 +79,18 @@ export default function MessageAnalysisApp() {
   const pending = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    setStatus(null); setResult(null); setError(""); setBusy(false);
+    setRecordsStatus(null); setRecordsError(""); setStatus(null); setResult(null); setError(""); setBusy(false);
     if (!auth.adminToken) return;
     const controller = new AbortController();
     void messageRequest<MessageAnalysisStatus>(auth.adminToken, controller.signal).then(value => {
       if (!controller.signal.aborted) setStatus(value);
     }).catch(error => {
       if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "연결 상태를 확인하지 못했습니다.");
+    });
+    void recordRequest<RecordStatus>(auth.adminToken, controller.signal, "/status").then(value => {
+      if (!controller.signal.aborted) setRecordsStatus(value);
+    }).catch(() => {
+      if (!controller.signal.aborted) setRecordsError("검토 기록 저장 연결을 확인하지 못했습니다. 아래 분석 결과는 화면에서만 확인할 수 있습니다.");
     });
     return () => { controller.abort(); pending.current?.abort(); };
   }, [auth.adminToken]);
@@ -131,6 +141,9 @@ export default function MessageAnalysisApp() {
           <p>발생·예방·통제를 구분하고, 필요한 경우 장소와 주변 시설을 조회합니다.</p>
           <p className="message-caption">AI 결과는 검토용 참고자료이며 공식 특보 위험등급과 별개입니다.</p>
         </section>
+        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={value => <MessageAnalysisOutput result={value} />} /> : <>
+        {recordsError && <p className="message-error" role="alert">{recordsError}</p>}
+        {recordsStatus && !recordsStatus.storage_configured && <p className="message-notice">검토 기록 저장소가 연결되지 않았습니다. 아래 결과는 저장되지 않으며 새로고침하면 초기화됩니다.</p>}
         <div className="message-workspace">
           <section className="message-card message-input"><h2>분석할 문자</h2>
             <div className="message-examples"><p>창작 예문으로 살펴보기</p><div>{examples.map(example => <button type="button" className="secondary-button" key={example.id} disabled={busy} onClick={() => chooseExample(example.id)}>{example.label}</button>)}</div></div>
@@ -159,6 +172,7 @@ export default function MessageAnalysisApp() {
             </div>}
           </div>
         </div>
+        </>}
       </>}
     </main>
   </div>;

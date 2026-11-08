@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "transport": "real local frontend + API; memory test store; external providers replaced",
+  "new_openai_kakao_calls": 0,
+  "actual_messages_sent": 0,
+  "checks": [
+    "real local API: registration, analysis persistence, note/state and reload restored; 7 captured reference links",
+    "1440/390/360px: no horizontal overflow",
+    "history: old source version remains inspectable",
+    "signed fixture feed: import/reimport one ID creates one record and no inference"
+  ],
+  "page_errors": [],
+  "unexpected_requests": []
+}

@@ -1,0 +1,242 @@
+"""관리자 재난문자 원본·분석 기록. 기상/발송 상태와 독립된 저장 경계."""
+from __future__ import annotations
+
+import copy
+import datetime as dt
+import hashlib
+import json
+import threading
+import uuid
+from collections.abc import Callable
+from typing import Annotated, Literal, Protocol
+
+from pydantic import AwareDatetime, Field
+
+from safety_dashboard.application.context_info import KST
+from safety_dashboard.application.message_analysis import AnalysisBusy, MessageAnalysisInput, StrictModel
+
+
+class RecordConflict(ValueError):
+    pass
+
+
+class RecordNotFound(KeyError):
+    pass
+
+
+class RecordStorageUnavailable(RuntimeError):
+    pass
+
+
+class MessageSource(StrictModel):
+    text: str = Field(min_length=10, max_length=2000)
+    source: str = Field(min_length=1, max_length=80)
+    issued_at: AwareDatetime
+    recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
+
+    def canonical(self):
+        if any(not value.strip() or len(value) > 120 for value in self.recipient_regions):
+            raise ValueError("수신지역은 항목당 1~120자로 입력해 주세요.")
+        value = self.model_dump(mode="json")
+        value["issued_at"] = self.issued_at.astimezone(KST).isoformat()
+        value["recipient_regions"] = list(dict.fromkeys(r.strip() for r in self.recipient_regions))
+        return value
+
+
+class RegisterMessage(MessageSource):
+    registration_key: uuid.UUID
+    input_kind: Literal["manual", "example"] = "manual"
+    reference_radius_km: Literal[1, 3, 5, 10] = 3
+
+    def canonical(self):
+        return MessageSource(**{key: getattr(self, key) for key in MessageSource.model_fields}).canonical()
+
+
+class RecordVersion(StrictModel):
+    expected_version: int = Field(ge=1)
+
+
+class SaveRecordNote(RecordVersion):
+    review_state: Literal["unreviewed", "needs_confirmation"]
+    note: str = Field(default="", max_length=1000)
+
+
+class AnalyzeRecord(RecordVersion):
+    reference_radius_km: Literal[1, 3, 5, 10] = 3
+
+
+class RecordStore(Protocol):
+    def get(self, identifier: str) -> dict | None: ...
+    def list_page(self, before: str | None, limit: int) -> list[dict]: ...
+    def commit(self, record: dict, expected: int, event: str) -> dict: ...
+    def history(self, identifier: str, before: int | None, limit: int) -> list[dict]: ...
+
+
+def content_hash(value: dict) -> str:
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+class MemoryRecordStore:
+    """명시적인 로컬/테스트용. 운영 Firestore 실패 시 대체하지 않는다."""
+    def __init__(self):
+        self.records, self.versions = {}, {}
+        self.lock = threading.RLock()
+
+    def get(self, identifier):
+        with self.lock:
+            return copy.deepcopy(self.records.get(identifier))
+
+    def list_page(self, before, limit):
+        with self.lock:
+            rows = sorted(self.records.values(), key=lambda r: r["sort_key"], reverse=True)
+            return copy.deepcopy([r for r in rows if not before or r["sort_key"] < before][:limit])
+
+    def commit(self, record, expected, event):
+        with self.lock:
+            current = self.records.get(record["id"])
+            if (current["version"] if current else 0) != expected:
+                raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 진행해 주세요.")
+            saved = copy.deepcopy(record)
+            saved["version"] = expected + 1
+            self.records[saved["id"]] = saved
+            self.versions.setdefault(saved["id"], []).append({"event": event, "record": copy.deepcopy(saved)})
+            return copy.deepcopy(saved)
+
+    def history(self, identifier, before, limit):
+        with self.lock:
+            return copy.deepcopy([v for v in reversed(self.versions.get(identifier, []))
+                                  if before is None or v["record"]["version"] < before][:limit])
+
+
+class MessageRecordService:
+    def __init__(self, store_factory: Callable[[], RecordStore] | None, analysis, *,
+                 storage_mode="disabled", now=lambda: dt.datetime.now(KST), facility_digest=lambda: ""):
+        self.store_factory, self.analysis = store_factory, analysis
+        self.storage_mode, self.now, self.facility_digest = storage_mode, now, facility_digest
+        self._store = None
+        self._store_lock = threading.Lock()
+
+    @property
+    def store(self):
+        if not self.store_factory:
+            raise RecordStorageUnavailable("검토 기록 저장소가 설정되지 않았습니다.")
+        with self._store_lock:
+            if self._store is None:
+                self._store = self.store_factory()
+        return self._store
+
+    def availability(self):
+        return {"storage_configured": self.store_factory is not None, "storage_mode": self.storage_mode}
+
+    def get(self, identifier):
+        record = self.store.get(identifier)
+        if record is None:
+            raise RecordNotFound(identifier)
+        return record
+
+    def list_page(self, before=None, limit=20):
+        rows = self.store.list_page(before, limit + 1)
+        return {"records": [self.summary(r) for r in rows[:limit]],
+                "next_cursor": rows[limit - 1]["sort_key"] if len(rows) > limit else None}
+
+    @staticmethod
+    def summary(record):
+        return {key: record[key] for key in ("id", "version", "origin", "message", "created_at", "updated_at",
+                                            "source_revision", "analysis_state", "review_state", "note")}
+
+    def register_manual(self, request: RegisterMessage):
+        return self._register("manual-" + request.registration_key.hex, request.input_kind, request.canonical(),
+                              request.reference_radius_km)
+
+    def register_official(self, message: dict, official_id: str, fetched_at: str):
+        # Only verified server-signed feed content enters this path.
+        return self._register("official-" + hashlib.sha256(official_id.encode()).hexdigest(), "official", message, 3,
+                              official_id=official_id, fetched_at=fetched_at)
+
+    def _register(self, identifier, origin, message, radius, *, official_id=None, fetched_at=None):
+        digest = content_hash(message)
+        for _ in range(3):
+            existing = self.store.get(identifier)
+            if existing and existing["content_hash"] == digest:
+                # Observing identical content later must also prevent a stale feed token
+                # from rolling the source back to an older, different snapshot.
+                if fetched_at and fetched_at > (existing.get("official_fetched_at") or ""):
+                    expected = existing["version"]
+                    existing["official_fetched_at"] = fetched_at
+                    try:
+                        existing = self._save(existing, expected, "source_observed")
+                    except RecordConflict:
+                        continue
+                return {"record": existing, "registration": "unchanged"}
+            if existing and origin != "official":
+                raise RecordConflict("같은 등록 요청의 내용이 다릅니다. 새 문자로 등록해 주세요.")
+            if existing and fetched_at and fetched_at < (existing.get("official_fetched_at") or ""):
+                raise RecordConflict("더 오래된 조회 결과입니다. 공식 문자 목록을 새로 불러와 주세요.")
+            now = self.now().isoformat()
+            record = {"id": identifier, "origin": origin, "official_id": official_id, "message": message,
+                      "content_hash": digest, "official_fetched_at": fetched_at, "source_revision": existing["source_revision"] + 1 if existing else 1,
+                      "version": 0, "created_at": existing["created_at"] if existing else now, "updated_at": now,
+                      "sort_key": existing["sort_key"] if existing else f"{now}|{identifier}", "reference_radius_km": radius,
+                      "analysis_state": "not_analyzed", "analysis": None, "analysis_revision": existing["analysis_revision"] if existing else 0,
+                      "analysis_source_revision": None, "analysis_error": "", "analysis_operation": None,
+                      "analysis_started_at": None, "review_state": "needs_confirmation" if existing else "unreviewed",
+                      "note": existing["note"] if existing else ""}
+            try:
+                saved = self.store.commit(record, existing["version"] if existing else 0,
+                                          "source_changed" if existing else "registered")
+                return {"record": saved, "registration": "updated" if existing else "created"}
+            except RecordConflict:
+                continue
+        raise RecordConflict("등록 중 다른 변경이 있었습니다. 다시 불러와 주세요.")
+
+    def _save(self, record, expected, event):
+        record["updated_at"] = self.now().isoformat()
+        # Creation order is stable while paging; updates do not move records between pages.
+        return self.store.commit(record, expected, event)
+
+    def save_note(self, identifier, request: SaveRecordNote):
+        record = self.get(identifier)
+        if record["version"] != request.expected_version:
+            raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 저장해 주세요.")
+        record.update(review_state=request.review_state, note=request.note)
+        return self._save(record, request.expected_version, "note_saved")
+
+    def analyze(self, identifier, request: AnalyzeRecord):
+        record = self.get(identifier)
+        if record["version"] != request.expected_version:
+            raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 분석해 주세요.")
+        if record["analysis_state"] == "running" and record["analysis_started_at"]:
+            age = (self.now() - dt.datetime.fromisoformat(record["analysis_started_at"])).total_seconds()
+            if age < 120:
+                raise AnalysisBusy("이미 분석 중입니다. 잠시 후 기록을 다시 불러와 주세요.")
+        operation = uuid.uuid4().hex
+        record.update(analysis_state="running", analysis_operation=operation,
+                      analysis_started_at=self.now().isoformat(), reference_radius_km=request.reference_radius_km,
+                      analysis_error="")
+        started = self._save(record, request.expected_version, "analysis_started")
+        try:
+            digest = self.facility_digest()
+            result = self.analysis.analyze(MessageAnalysisInput(**started["message"],
+                reference_radius_km=request.reference_radius_km, input_kind=started["origin"]))
+        except Exception:
+            self._finish_analysis(identifier, operation, None, "", "분석을 완료하지 못했습니다. 마지막 저장 결과는 유지됩니다.")
+            raise
+        return self._finish_analysis(identifier, operation, result, digest, "")
+
+    def _finish_analysis(self, identifier, operation, result, digest, error):
+        for _ in range(3):
+            record = self.get(identifier)
+            if record["analysis_operation"] != operation:
+                raise RecordConflict("분석 도중 원문 또는 실행이 변경됐습니다. 최신 기록을 확인해 주세요.")
+            expected = record["version"]
+            record.update(analysis_state="failed" if error else "completed", analysis_error=error,
+                          analysis_operation=None, analysis_started_at=None)
+            if result is not None:
+                record.update(analysis=result, analysis_revision=record["analysis_revision"] + 1,
+                              analysis_source_revision=record["source_revision"], facility_digest=digest,
+                              review_state="needs_confirmation" if record["analysis_revision"] else record["review_state"])
+            try:
+                return self._save(record, expected, "analysis_failed" if error else "analysis_completed")
+            except RecordConflict:
+                continue
+        raise RecordConflict("분석 결과 저장 중 변경이 있었습니다. 기록을 다시 불러와 주세요.")

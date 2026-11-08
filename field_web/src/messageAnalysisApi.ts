@@ -3,7 +3,8 @@ export interface MessageInput {
   source: string;
   issued_at: string;
   reference_radius_km: 1 | 3 | 5 | 10;
-  input_kind: "example" | "manual";
+  recipient_regions?: string[];
+  input_kind: "example" | "manual" | "official";
 }
 
 export const INTENT_LABELS = {

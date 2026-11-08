@@ -22,6 +22,13 @@ from safety_dashboard.adapters.openai_messages import OpenAIResponsesClient
 from safety_dashboard.adapters.kakao_places import KakaoPlaceSearch
 from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 
+import hashlib
+import os
+from safety_dashboard.application.message_records import MessageRecordService, MemoryRecordStore
+from safety_dashboard.application.message_feed import OfficialFeedService
+from safety_dashboard.adapters.disaster_messages import SafetyDataDisasterMessageProvider
+from safety_dashboard.adapters.firestore_message_records import FirestoreMessageRecordStore
+
 from dataclasses import dataclass
 from collections.abc import Callable
 
@@ -39,6 +46,8 @@ class ApiServices:
     operational_readiness: Callable[[], OperationalReadinessService]
     nearby_reports: NearbyReportGenerator
     message_analysis: MessageAnalysisService
+    message_records: MessageRecordService
+    message_feed: OfficialFeedService
 
 
 def build_services(
@@ -50,6 +59,8 @@ def build_services(
     operational_readiness_service: OperationalReadinessService | None = None,
     nearby_report_generator: NearbyReportGenerator | None = None,
     message_analysis_service: MessageAnalysisService | None = None,
+    message_record_service: MessageRecordService | None = None,
+    message_feed_service: OfficialFeedService | None = None,
 ) -> ApiServices:
     settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
@@ -121,6 +132,26 @@ def build_services(
             readiness = OperationalReadinessService(store.notification_status)
         return readiness
 
+    analysis = message_analysis_service or MessageAnalysisService(
+        OpenAIResponsesClient.from_environment(), KakaoPlaceSearch.from_environment(),
+        CsvFacilityRepository(settings.facility_path).list_monitored,
+    )
+    store_mode = settings.message_review_store
+    store_factory = None
+    if store_mode == "memory" and not os.getenv("K_SERVICE"):
+        store_factory = MemoryRecordStore
+    elif store_mode == "firestore" and alert_settings.project_id:
+        store_factory = lambda: FirestoreMessageRecordStore(alert_settings.project_id)
+    else:
+        store_mode = "disabled"
+    records = message_record_service or MessageRecordService(
+        store_factory, analysis, storage_mode=store_mode,
+        facility_digest=lambda: hashlib.sha256(settings.facility_path.read_bytes()).hexdigest(),
+    )
+    feed = message_feed_service or OfficialFeedService(
+        SafetyDataDisasterMessageProvider(settings.safety_data_api_key), admin_access.settings.password,
+    )
+
     return ApiServices(
         settings=settings,
         alert_settings=alert_settings,
@@ -132,8 +163,7 @@ def build_services(
         notification_admin=notification_admin,
         operational_readiness=operational_readiness,
         nearby_reports=nearby_report_generator or NearbyReportGenerator(capture, ROOT / "fonts/NotoSansKR.ttf"),
-        message_analysis=message_analysis_service or MessageAnalysisService(
-            OpenAIResponsesClient.from_environment(), KakaoPlaceSearch.from_environment(),
-            CsvFacilityRepository(settings.facility_path).list_monitored,
-        ),
+        message_analysis=analysis,
+        message_records=records,
+        message_feed=feed,
     )

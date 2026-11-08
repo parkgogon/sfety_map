@@ -1,0 +1,18 @@
+{
+  "safety_dashboard/application/message_records.py": "e6203130d22f379d129dfc28afd4748979973744cd9b0ee3d95cf74e17a05a54",
+  "safety_dashboard/application/message_feed.py": "50ce1b9c2b371e216b593a4c809c088e123ccca105da6c9c759a5e0375d32b7e",
+  "safety_dashboard/application/message_analysis.py": "6f6fa1c79b346775e812de4f177e24d367b45cbe81ee9f08a09410a5709e8ba7",
+  "safety_dashboard/adapters/firestore_message_records.py": "9dcffdb7546ba1419aaadd750c491c94be56fe177777093d00b1884cc35c05a0",
+  "safety_dashboard/adapters/disaster_messages.py": "985403d7ef5685d7fda39ac300e3564ef9c57e6bc2cf86e88eacc27c8a0adb48",
+  "safety_dashboard/api/routes/message_records.py": "d0aae91695a9924c209baa28f1151568bda10b29f545baa39f39b9fe09c84e4d",
+  "safety_dashboard/api/dependencies.py": "fbee030d1f3f5ac1bf80926ffef787648eaeff8a0fb2228bcdfedb0ef8668f42",
+  "safety_dashboard/api/settings.py": "d39f921df81cbba3319099c6ce518bc2f8d7d85853e3b584fc68f43e20353010",
+  "safety_dashboard/api/app.py": "5c109483fcf751377513d7909f52ec7a1e932ebe59ea83f7c11eb08601009073",
+  "field_web/src/MessageRecordWorkspace.tsx": "2f7580f0b57499fc503e043d10e77fc1a3de1e59b590407359324632c7593133",
+  "field_web/src/MessageAnalysisApp.tsx": "3e02d66286a26e3d0b355d6b9c103eb10f9178727a4dabac7a31e0dedc0ad342",
+  "field_web/src/messageRecordsApi.ts": "3bcff34ee7a70a6e7527c6c3d9715ed36b205a9a41b82245440bd6a3a0828aec",
+  "field_web/src/messageAnalysisApi.ts": "4cd5816651a8f8a47db41b1e860befebc11af0f9c8a0c17bdd2845a91323b4e9",
+  "field_web/src/styles/message_analysis.css": "fa79563915ad9e7f264f996611a67a1556565d5e2836a7ee6c5c4bdf945b4ffc",
+  "tests/test_message_records.py": "bccfdd20db77e80316bca9b4a842fc89d019299206365f8e058485d87587194c",
+  "field_web/src/MessageRecordWorkspace.test.tsx": "9fc00833c3ed80532314f630e6a19de9cb360a7eaed14db6be1c01648e8430dd"
+}

@@ -40,6 +40,29 @@ class SafetyDataDisasterMessageProvider:
         self.api_url = str(api_url or DEFAULT_API_URL).strip()
         self.timeout = timeout
 
+    @property
+    def configured(self):
+        return bool(self.api_key and self.api_key != "YOUR_SAFETY_DATA_API_KEY")
+
+    def fetch_page(self, region: str, date: dt.date, page: int, size: int) -> dict:
+        """관리자 목록용. 시설별 최대 5건/재난종류 필터와 분리한다."""
+        if not self.configured:
+            raise DisasterMessageDataError("공식 문자 조회 미설정")
+        try:
+            response = requests.get(self.api_url, params={
+                "serviceKey": self.api_key, "pageNo": page, "numOfRows": size,
+                "returnType": "json", "crtDt": date.strftime("%Y%m%d"), "rgnNm": region,
+            }, timeout=self.timeout)
+            response.raise_for_status()
+            payload = response.json()
+            messages = parse_disaster_response(payload)
+            rows = _find_message_rows(payload) or []
+            total = _find_total_count(payload)
+            return {"messages": messages, "skipped": max(0, len(rows) - len(messages)),
+                    "has_more": page * size < total if total is not None else len(rows) >= size}
+        except (requests.RequestException, ValueError, TypeError):
+            raise DisasterMessageDataError("공식 재난문자 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.") from None
+
     def fetch_recent(
         self,
         region: FacilityRegion,
@@ -227,3 +250,23 @@ def _split_regions(value: str) -> tuple[str, ...]:
         for item in re.split(r"[,;|]", value)
         if item.strip()
     ) or ("-",)
+
+
+def _find_total_count(value: object) -> int | None:
+    if isinstance(value, dict):
+        for key in ("totalCount", "totalCnt", "total_count"):
+            if key in value:
+                try:
+                    return max(0, int(value[key]))
+                except (ValueError, TypeError):
+                    pass
+        for item in value.values():
+            found = _find_total_count(item)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = _find_total_count(item)
+            if found is not None:
+                return found
+    return None

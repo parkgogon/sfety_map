@@ -9,7 +9,7 @@ import json
 import re
 import threading
 import time
-from typing import Literal, Protocol
+from typing import Annotated, Literal, Protocol
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError
 
@@ -91,7 +91,8 @@ class MessageAnalysisInput(StrictModel):
     issued_at: AwareDatetime
     source: str = Field(min_length=1, max_length=80)
     reference_radius_km: Literal[1, 3, 5, 10]
-    input_kind: Literal["example", "manual"]
+    recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
+    input_kind: Literal["example", "manual", "official"]
 
 
 class LocationMention(StrictModel):
@@ -167,7 +168,10 @@ search_name='성서초등학교', place_kind='school'로 검색한다. 학교 �
 서버는 원문 이름과 종류가 맞지 않는 검색 결과를 제외한다. 후보가 없으면 같은 원문 안의
 상위 고유 시설명으로 검색을 보완하거나 위치 확인 질문을 남긴다. 다른 장소로 대체하지 않는다.
 사고지와 대피 목적지처럼 서로 다른 장소를 한 번의 검색에 합치지 않는다.
-region_hint는 원문/발신처에 명시된 광역지역 또는 시·군을 그대로 인용한다. 없으면 null이다.
+region_hint는 원문/발신처 또는 recipient_regions에 명시된 광역지역/시·군을 인용한다.
+recipient_regions는 수신 대상 지역이며 발령기관이나 실제 사고 지점과 같다고 가정하지 않는다.
+본문에 사고 지역이 명시되면 그 지역을 우선하고, 여러 수신지역 중 하나를 임의로 고르지 않는다.
+지역 단서가 없으면 null이다.
 본문에 광역지역/시·군이 명시돼 있으면 이를 우선한다. '대구 와룡산'의 지역은 '대구'다.
 발신 구청의 구 이름만으로 산·하천 전체의 소재지를 그 구로 좁히지 않는다.
 읍·면·동만 있으면 어느 시·군인지 알 수 없다. 지역을 추측하지 말고 먼저 확인 질문을 남긴다.
@@ -289,8 +293,8 @@ class MessageAnalysisService:
             if (search.evidence not in request.text or search.location_text not in search.evidence
                     or search.search_name not in search.location_text):
                 raise DraftEvidenceError("location_text는 evidence 안의 단일 원문 장소여야 하고, search_name은 location_text 안의 고유 지명/시설명 부분이어야 합니다.")
-            if search.region_hint and any(token not in request.text and token not in request.source for token in search.region_hint.split()):
-                raise DraftEvidenceError("region_hint는 원문 또는 발신처에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
+            if search.region_hint and any(token not in request.text and token not in request.source and not any(token in r for r in request.recipient_regions) for token in search.region_hint.split()):
+                raise DraftEvidenceError("region_hint는 원문·발신처·수신지역에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
             query = search.search_name
             if search.region_hint and search.region_hint not in query:
                 query = f"{search.region_hint} {query}"

@@ -47,6 +47,31 @@ API·Worker는 환경변수만 읽으며 기존 Streamlit secrets fallback은 �
 React 현장 지도의 이번 범위에 포함하지 않는다.
 기상 격자 레이어는 기본으로 꺼져 있고 사용자가 선택한 경우에만 조회한다.
 
+## 관리자 재난문자 검토 기록 (기능 브랜치, 미배포)
+
+`/control/messages`에서 등록/분석/메모와 변경 이력을 관리한다. 보호된 경로는
+`/internal/v1/message-records`의 목록·등록, `/{id}`의 조회·메모 저장,
+`/{id}/analyze`, `/{id}/history`, `/feed`의 공식 피드 조회, `/import`의 검증 등록이다.
+현재 공개 현장 지도에 공식 문자 조회를 추가한 변경은 아니다.
+
+- 운영 저장: `MESSAGE_REVIEW_STORE=firestore`(기본), `GOOGLE_CLOUD_PROJECT` 또는 `GCP_PROJECT_ID`.
+  전용 컬렉션 `disaster_message_reviews/{id}`와 `versions/{version}`을 트랜잭션으로 기록한다.
+  관리자 인증 후 지연 연결하며 기존 KMA/발송 컬렉션은 사용하지 않는다.
+- 로컬: `MESSAGE_REVIEW_STORE=memory`를 명시하면 새로고침 복구를 검수할 수 있다.
+  서버 재시작 시 사라지는 임시 저장임을 화면에 표시하고 `K_SERVICE` 환경에서는 사용하지 않는다.
+  저장 오류 시 메모리로 대체하거나 성공 메시지를 내지 않는다.
+- 공식 조회: 서버의 `SAFETY_DATA_API_KEY`. 최근 7일 중 하루와 5개 소관 광역 중 하나를
+  사용자가 골라 조회한다. 페이지당 50건/최대 3페이지이며 필드 누락·추가 페이지·상한을 표시한다.
+  이 기능은 상시 감시/완전 수집기가 아니다. AI 호출이나 등록도 조회만으로 실행하지 않는다.
+- 조회 원본은 15분 유효한 서버 서명으로 검증해 등록한다. 원문 ID·내용 해시·원본 버전,
+  분석 버전·시설 자료 해시·검토 메모를 보존한다. 같은 ID의 원문 변경은 재검토로 표시한다.
+- 기존 분석 경로 `/internal/v1/message-analysis`는 저장 미설정 시 시연용으로 유지하며
+  화면에서 저장되지 않음을 알린다. AI 키는 서버 환경변수만 사용한다.
+
+이번 단계는 가짜 외부 제공자·메모리 저장소로 API/화면을 검증했다. 운영 Firestore 접근 권한,
+실제 공식 API 응답/이용 조건/보관 기간, Cloud Run 비밀값 바인딩은 운영 연결 전 확인 대상이다.
+배포 워크플로/Secret Manager/Worker/Scheduler 설정은 이 단계에서 변경하지 않았다.
+
 ## Google Cloud 최초 준비
 
 한 Google Cloud/Firebase 프로젝트에서 다음을 준비한다.
