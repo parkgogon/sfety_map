@@ -31,7 +31,7 @@ def emit(value):
     print(json.dumps({"release_check": True, **value}, ensure_ascii=False), flush=True)
 
 
-def verify():
+def verify(sink=emit):
     password = os.environ.get("ADMIN_ACCESS_PASSWORD", "")
     revision = os.environ.get("VERIFY_APP_REVISION", "")
     resume = os.environ.get("VERIFY_RECORD_ID", "")
@@ -84,7 +84,7 @@ def verify():
                 page.get_by_role("button",name="저장된 문자 분석",exact=True).wait_for()
                 identifier=parse_qs(urlsplit(page.url).query)["record_id"][0]
                 record=api("/internal/v1/message-records/"+identifier)
-            emit({"kind":"checkpoint","phase":"registered","record_id":identifier})
+            sink({"kind":"checkpoint","phase":"registered","record_id":identifier})
             phase="analysis"
             if not record.get("analysis"):
                 page.get_by_role("button",name="저장된 문자 분석",exact=True).click()
@@ -133,17 +133,37 @@ def verify():
                 raw=page.screenshot(type="jpeg",quality=70)
                 if len(raw)>170000: raw=page.screenshot(type="jpeg",quality=45)
                 assert len(raw)<180000
-                emit({"kind":"screenshot","name":name,"jpeg_base64":base64.b64encode(raw).decode()})
+                sink({"kind":"screenshot","name":name,"jpeg_base64":base64.b64encode(raw).decode()})
             assert not denied and not errors and len(analysis_requests)<=1 and tiles
-            emit({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
+            sink({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
                   "model_calls":saved["analysis"]["model_calls"],"selected_count":saved["review_completion"]["selected_unique_count"],
                   "analysis_requests":len(analysis_requests),"tile_responses":len(tiles),"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})
             context.close();browser.close()
         return 0
     except Exception as error:
-        emit({"kind":"result","status":"failed","phase":phase,"record_id":identifier,"error_type":type(error).__name__,"denied_hosts":sorted(set(denied))[:10]})
+        sink({"kind":"result","status":"failed","phase":phase,"record_id":identifier,"error_type":type(error).__name__,"denied_hosts":sorted(set(denied))[:10]})
         return 1
 
 
+def serve():
+    """Cloud Run IAM protects this temporary service; return only sanitized evidence."""
+    from http.server import BaseHTTPRequestHandler,HTTPServer
+    class Handler(BaseHTTPRequestHandler):
+        started=False
+        def log_message(self,*args):pass
+        def do_POST(self):
+            if self.path!="/verify" or Handler.started:
+                self.send_error(409);return
+            Handler.started=True
+            rows=[]
+            code=verify(rows.append)
+            raw=json.dumps({"exit_code":code,"rows":rows},ensure_ascii=False).encode()
+            self.send_response(200);self.send_header("Content-Type","application/json")
+            self.send_header("Cache-Control","private, no-store");self.send_header("Content-Length",str(len(raw)))
+            self.end_headers();self.wfile.write(raw)
+    HTTPServer(("0.0.0.0",int(os.environ.get("PORT","8080"))),Handler).serve_forever()
+
+
 if __name__ == "__main__":
-    raise SystemExit(verify())
+    if os.environ.get("VERIFY_MODE")=="service":serve()
+    else:raise SystemExit(verify())

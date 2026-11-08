@@ -79,24 +79,22 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
-      - name: Run one isolated browser check without message delivery
+      - name: Run one private browser check without message delivery
         run: |
           mkdir -p release-check
-          gcloud run jobs deploy "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 \
+          gcloud run deploy "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 \
             --image="asia-northeast3-docker.pkg.dev/keco-safety-map/$IMAGE_REPOSITORY/api:$VERIFY_REVISION" \
             --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
             --command=python --args="^|^-c|$VERIFY_LOADER" \
-            --set-env-vars="VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_RECORD_ID=$VERIFY_RECORD_ID" \
+            --set-env-vars="VERIFY_MODE=service,VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_RECORD_ID=$VERIFY_RECORD_ID" \
             --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
-            --cpu=1 --memory=2Gi --tasks=1 --parallelism=1 --max-retries=0 --task-timeout=300s --quiet
-          gcloud run jobs execute "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --wait \
-            --format='json(metadata.name,status.conditions,status.succeededCount,status.failedCount)' > release-check/execution.json
-      - name: Collect scoped verification evidence
+            --cpu=1 --memory=2Gi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=360s --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          export CHECK_URL
+          python3 scripts/invoke_message_release_check.py
+      - name: Remove only the temporary private verification service
         if: always()
-        run: python3 scripts/collect_message_release_check.py
-      - name: Remove only the temporary verification job
-        if: always()
-        run: gcloud run jobs delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet
+        run: gcloud run services delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet
       - uses: actions/upload-artifact@v4
         if: always()
         with:
