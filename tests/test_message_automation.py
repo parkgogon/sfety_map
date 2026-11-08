@@ -234,6 +234,43 @@ class CollectionTests(unittest.TestCase):
         self.collect()
         self.assertEqual(self.store.get("collection-state")["start_at"], start)
 
+    def test_unimported_prestart_unknown_recipient_does_not_poison_repeated_overlap(self):
+        old=replace(message("old",when=NOW-dt.timedelta(hours=1)),regions=("알수없는지역",))
+        self.provider.pages={(None,NOW.date(),1):([old,message()],False,0),
+                             (None,(NOW-dt.timedelta(days=1)).date(),1):([old],False,0)}
+        for _ in range(2):
+            self.assertEqual(self.collect()["state"],"ok")
+            state=self.store.get("collection-state")
+            self.assertEqual(state["cycle_skipped"],0)
+            self.assertEqual(state["cycle_ignored_before_start"],2)
+            self.assertTrue(state["last_success_at"])
+        self.assertEqual(len(self.records.list_page()["records"]),1)
+        self.assertEqual(MessageAnalysisQueue(self.store).counts()["pending"],1)
+
+    def test_current_unknown_recipient_still_blocks_complete_coverage(self):
+        self.provider.pages={(None,NOW.date(),1):([replace(message(),regions=("알수없는지역",))],False,0)}
+        self.assertEqual(self.collect()["state"],"partial")
+        state=self.store.get("collection-state")
+        self.assertEqual(state["cycle_skipped_reasons"],{"recipient_region":1})
+        self.assertFalse(state.get("last_success_at"))
+
+    def test_known_prestart_record_correction_is_not_filtered_as_unused_history(self):
+        old=message("existing",when=NOW-dt.timedelta(hours=1))
+        saved=self.records.register_official({**registration().canonical(),"issued_at":old.created_at.isoformat(),"text":old.content},old.id,NOW.isoformat())["record"]
+        corrected=replace(old,content="중앙동 도로 통제가 해제되었습니다. 통행에 참고해 주세요.")
+        self.provider.pages={(None,NOW.date(),1):([corrected],False,0)}
+        self.assertEqual(self.collect()["state"],"ok")
+        self.assertEqual(self.records.get(saved["id"])["source_revision"],2)
+        unknown=replace(corrected,regions=("알수없는지역",))
+        self.provider.pages={(None,NOW.date(),1):([unknown],False,0)}
+        self.assertEqual(self.collect()["state"],"partial")
+        self.assertEqual(self.store.get("collection-state")["cycle_skipped_reasons"],{"recipient_region":1})
+
+    def test_unparseable_provider_fields_are_never_ignored_as_prestart_history(self):
+        self.provider.pages={(None,NOW.date(),1):([],False,1)}
+        self.assertEqual(self.collect()["state"],"partial")
+        self.assertEqual(self.store.get("collection-state")["cycle_skipped_reasons"],{"source_fields":1})
+
     def test_outage_during_partial_scan_adds_every_missing_day_before_advancing_success(self):
         self.store.values["collection-state"] = {"start_at": stamp(SETTINGS.start_at), "cycle_skipped": 0,
                 "work": [{"region": None, "date": NOW.date().isoformat(), "page": 4, "offset": 0, "head_hash": "previous-cycle-head"}]}
@@ -380,6 +417,14 @@ class ProcessingTests(unittest.TestCase):
 
 
 class AutomationIntegrationTests(unittest.TestCase):
+    def test_partial_row_validation_is_distinct_from_pending_pages_and_counts_are_observations(self):
+        store=MemoryPipelineStore();store.values['collection-state']={'last_attempt_at':stamp(NOW),'work':[],
+            'cycle_skipped':2,'cycle_skipped_reasons':{'recipient_region':2},'cycle_ignored_before_start':3}
+        status=MessageAutomationStatus(SETTINGS,lambda:store,True,now=lambda:NOW).read()
+        self.assertEqual(status['state'],'partial')
+        self.assertIn('수신지역 확인 필요 2회',status['detail'])
+        self.assertEqual(status['ignored_before_start'],3)
+
     def test_status_does_not_confuse_outage_partial_or_unverified_with_live(self):
         store = MemoryPipelineStore(); status = MessageAutomationStatus(SETTINGS, lambda: store, True, now=lambda: NOW)
         self.assertEqual(status.read()["state"], "starting")

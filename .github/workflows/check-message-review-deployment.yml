@@ -148,6 +148,21 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
+      - name: Record only existing execution and network configuration
+        run: |
+          mkdir -p safetydata-runtime-check
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          result={}
+          for name in ('safety-dashboard-api','safety-alert-worker','safety-message-worker'):
+              r=subprocess.run(['gcloud','run','services','describe',name,'--project=keco-safety-map','--region=asia-northeast3','--format=json'],capture_output=True,text=True,timeout=30,check=True)
+              value=json.loads(r.stdout);revision=value['status']['latestReadyRevisionName']
+              r=subprocess.run(['gcloud','run','revisions','describe',revision,'--project=keco-safety-map','--region=asia-northeast3','--format=json'],capture_output=True,text=True,timeout=30,check=True)
+              annotations=json.loads(r.stdout).get('metadata',{}).get('annotations',{})
+              result[name]={'revision':revision,'network':{k:v for k,v in annotations.items() if k in ('run.googleapis.com/execution-environment','run.googleapis.com/vpc-access-egress','run.googleapis.com/vpc-access-connector','run.googleapis.com/network-interfaces')}}
+          Path('safetydata-runtime-check/source-runtime-metadata.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
       - name: Diagnose from the deployed worker image and same runtime account
         run: |
           gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
@@ -155,7 +170,7 @@ jobs:
             --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
             --command=python --args="^|^-c|$PROBE_LOADER" \
             --set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1,KMA_API_KEY=KMA_API_KEY:1 \
-            --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=180s \
+            --execution-environment=gen2 --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=180s \
             --no-allow-unauthenticated --quiet
           CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
           echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"

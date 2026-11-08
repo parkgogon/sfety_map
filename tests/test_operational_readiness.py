@@ -68,9 +68,16 @@ class OperationalReadinessTests(unittest.TestCase):
             "kma_health": "ERROR",
         })
         response = self.client(service).get("/api/v1/health/operations")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["kma"]["status"], "error")
-        self.assertEqual(response.json()["reason"], "ready")
+        self.assertEqual(response.json()["worker"]["status"], "ok")
+        self.assertEqual(response.json()["reason"], "kma_unavailable")
+
+    def test_unknown_and_stale_kma_never_report_ready_just_because_worker_ran(self):
+        for value in ('unknown','STALE',''):
+            response=self.client(self.service({'mode':'live','last_run_at':NOW,'kma_health':value})).get('/api/v1/health/operations')
+            self.assertEqual(response.status_code,503)
+            self.assertEqual(response.json()['reason'],'kma_unavailable')
 
     def test_missing_run_and_store_error_are_degraded_without_internal_detail(self):
         missing = self.client(self.service({})).get(

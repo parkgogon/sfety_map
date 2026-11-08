@@ -99,15 +99,18 @@ class OperationalReadinessService:
         )
         worker_fresh = age_seconds <= max_age_seconds
         mode_live = mode == self.expected_mode
+        kma_live = kma_status == "live"
         if not mode_live:
             reason = "automation_not_live"
         elif not worker_fresh:
             reason = "worker_stale"
+        elif not kma_live:
+            reason = "kma_unavailable"
         else:
             reason = "ready"
         return OperationalReadiness(
             checked_at=checked_at,
-            healthy=worker_fresh and mode_live,
+            healthy=worker_fresh and mode_live and kma_live,
             worker_status="ok" if worker_fresh else "stale",
             last_run_at=last_run_at,
             worker_age_seconds=age_seconds,
