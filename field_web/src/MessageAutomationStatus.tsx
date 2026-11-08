@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { recordRequest, type MessageAutomation } from "./messageRecordsApi";
 
-const titles:Record<MessageAutomation["state"],string>={disabled:"공식 문자 자동 수집 미연결",needs_key:"공식 문자 API 연결 필요",needs_verification:"공식 문자 연결 확인 중",starting:"첫 자동 수집 대기",live:"공식 문자 자동 수집 중",partial:"공식 문자 일부 조회 진행 중",stale:"공식 문자 수집 지연",error:"공식 문자 조회 실패",store_unavailable:"수집·분석 상태 확인 불가"};
+const titles:Record<MessageAutomation["state"],string>={disabled:"공식 문자 자동 수집 미연결",needs_key:"공식 문자 API 연결 필요",needs_verification:"공식 문자 연결 확인 중",starting:"첫 자동 수집 대기",live:"공식 문자 자동 수집 중",partial:"공식 문자 일부 조회 진행 중",stale:"공식 문자 수집 지연",error:"공식 문자 조회 실패",store_unavailable:"수집·분석 상태 확인 불가",request_limit:"문자 조회 한도로 수집 대기"};
 function time(value:string|null){return value?new Date(value).toLocaleString("ko-KR",{timeZone:"Asia/Seoul",dateStyle:"short",timeStyle:"short"}):"아직 없음";}
 
 export default function MessageAutomationStatus({token,onRefresh}:{token:string;onRefresh:(signal:AbortSignal)=>void|Promise<void>}) {
@@ -25,6 +25,8 @@ export default function MessageAutomationStatus({token,onRefresh}:{token:string;
     {value?.auto_collection_enabled&&!["needs_key","needs_verification","store_unavailable"].includes(value.state)&&<><p className="message-caption">브라우저를 닫아도 자동 처리가 이어집니다. 수집된 문자의 검토·승인은 관리자가 합니다.</p><p className="message-caption">마지막 정상 조회 {time(value.last_success_at)} · 마지막 시도 {time(value.last_attempt_at)}</p></>}
     {value?.queue&&<p className="automation-counts">분석 대기 {value.queue.pending} · 분석 중 {value.queue.running} · 분석 실패 {value.queue.failed} · 수동 확인 대기 {value.queue.deferred}</p>}
     {value?.budget.attempts!==null&&value?.budget.attempts!==undefined&&<p className="message-caption">오늘 분석 시작 {value.budget.attempts}/{value.budget.limit}건 · 수동·자동 합산, 실패 포함</p>}
+    {value?.feed_budget&&value.feed_configured&&<p className="message-caption">최근 24시간 문자 조회 {value.feed_budget.used}/{value.feed_budget.limit}회 · 조회 간격 {value.interval_seconds/60}분 · 실패 포함</p>}
+    {value?.feed_budget?.remaining===0&&<p className="message-notice">문자 조회 한도로 대기합니다. 다시 조회 가능한 시각 {time(value.feed_budget.next_available_at)} · 마지막 정상 자료와 남은 작업은 유지됩니다.</p>}
     {value?.budget.remaining===0&&<p className="message-notice">오늘 분석 한도에 도달했습니다. 대기 기록은 보존되며 다음 날 다시 처리합니다. 24시간 넘게 대기한 기록은 수동 확인이 필요합니다.</p>}
     {!!value?.queue&&value.queue.failed+value.queue.deferred>0&&<p className="message-caption">실패했거나 오래 대기한 문자는 자동 재시도하지 않습니다. 기록을 열어 확인한 뒤 직접 분석할 수 있습니다.</p>}
     {value&&!value.auto_collection_enabled&&value.feed_configured&&<p className="message-caption">공식 API 수동 조회는 상세 관리에서 사용할 수 있습니다.</p>}

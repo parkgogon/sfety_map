@@ -15,8 +15,8 @@
 - [x] 2. 공식 지속 수집·중복 방지·제한된 자동 분석·수집 상태 표시 구현/로컬 검증.
   Python 491개·React 267개, PC/390/360px. [증빙](evidence/2026-11-08/message-review-auto-stage2/README.md).
 - [ ] 2단계 실제 연결: Secret 버전 1/runtime 역할 추가와 소유자 빈 응답, 임시 Cloud Run의 실제 문자/날짜/지역/페이지 기본 검증 완료.
-  [실제 결과](evidence/2026-11-08/safetydata-registration-preflight/runtime-check.json). 계정 일일 호출 한도와 주기/범위 설정,
-  과거 날짜 경계·제공 지연·이용 조건, 정규 예약 실행·기능 배포 검증은 남음.
+  [실제 결과](evidence/2026-11-08/safetydata-registration-preflight/runtime-check.json). 일일 500회 확인 후 15분/전국 일괄/최근 24시간 450회 상한 구현·검증 완료.
+  [500회 대응](evidence/2026-11-08/message-feed-500-limit/README.md). 과거 날짜 경계·제공 지연·이용 조건, 실제 한도 저장소/정규 예약·기능 배포 검증은 남음.
 - [ ] 3. 후속 문자 제안·변경 비교와 필요한 질문만 표시.
 - [ ] 4. 휴대폰 시연·기존 기록/알림 회귀와 운영 전환 검수.
 

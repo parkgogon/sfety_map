@@ -32,4 +32,13 @@ describe("문자 수집·분석 상태",()=>{
   await render();expect(signal?.aborted).toBe(false);await act(async()=>root.unmount());expect(signal?.aborted).toBe(true);
   root=createRoot(container);const calls=vi.mocked(fetch).mock.calls.length;await act(async()=>vi.advanceTimersByTimeAsync(120000));expect(fetch).toHaveBeenCalledTimes(calls);
  });
+ it("distinguishes official request exhaustion from the separate AI analysis limit",async()=>{
+  value.state="request_limit";value.detail="문자 조회 한도로 대기 중입니다.";value.interval_seconds=900;
+  value.budget={limit:20,attempts:1,remaining:19,active:false};
+  value.feed_budget={limit:450,used:450,remaining:0,window_hours:24,next_available_at:"2026-11-09T01:00:00Z"};
+  await render();expect(container.textContent).toContain("문자 조회 한도로 수집 대기");
+  expect(container.textContent).toContain("최근 24시간 문자 조회 450/450회");expect(container.textContent).toContain("조회 간격 15분");
+  expect(container.textContent).toContain("오늘 분석 시작 1/20건");expect(container.textContent).not.toContain("오늘 분석 한도에 도달했습니다");
+  expect(container.textContent).toContain("다시 조회 가능한 시각");expect(container.textContent).toContain("남은 작업은 유지");
+ });
 });

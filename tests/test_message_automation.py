@@ -41,7 +41,7 @@ class FakeFeed:
 
     def fetch_page(self, region, day, page, size):
         self.calls.append((region, day, page, size))
-        rows, more, skipped = self.pages.get((region, day, page), ([], False, 0))
+        rows, more, skipped = self.pages.get((region, day, page), self.pages.get((None, day, page), ([], False, 0)))
         return {"messages": rows, "has_more": more, "skipped": skipped}
 
 
@@ -128,7 +128,7 @@ class PipelineTests(unittest.TestCase):
 class CollectionTests(unittest.TestCase):
     def setUp(self):
         self.store = MemoryPipelineStore(); self.records = make_service()
-        self.provider = FakeFeed({(PROVINCES[0], NOW.date(), 1): ([message()], False, 0)})
+        self.provider = FakeFeed({(None, NOW.date(), 1): ([message()], False, 0)})
         self.now = NOW
         self.settings = SETTINGS
 
@@ -150,7 +150,7 @@ class CollectionTests(unittest.TestCase):
 
     def test_more_than_three_pages_are_resumed_and_tail_checks_head_without_paid_calls(self):
         for p in range(1, 6):
-            self.provider.pages[(PROVINCES[0], NOW.date(), p)] = ([message(str(p))], p < 5, 0)
+            self.provider.pages[(None, NOW.date(), p)] = ([message(str(p))], p < 5, 0)
         self.settings = replace(SETTINGS, max_pages=3)
         for _ in range(12):
             result = self.collect()
@@ -163,11 +163,11 @@ class CollectionTests(unittest.TestCase):
     def test_changed_page_head_restarts_scan_and_keeps_partial_until_rechecked(self):
         self.settings = replace(SETTINGS, max_pages=1)
         self.store.values["collection-state"] = {"start_at": stamp(SETTINGS.start_at), "cycle_skipped": 0,
-            "work": [{"region": PROVINCES[0], "date": NOW.date().isoformat(), "page": 1, "offset": 0}]}
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message("A")], True, 0)
-        self.provider.pages[(PROVINCES[0], NOW.date(), 2)] = ([message("B")], False, 0)
+            "work": [{"region": None, "date": NOW.date().isoformat(), "page": 1, "offset": 0}]}
+        self.provider.pages[(None, NOW.date(), 1)] = ([message("A")], True, 0)
+        self.provider.pages[(None, NOW.date(), 2)] = ([message("B")], False, 0)
         self.collect(); self.collect()
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message("new"), message("A")], True, 0)
+        self.provider.pages[(None, NOW.date(), 1)] = ([message("new"), message("A")], True, 0)
         result = self.collect()
         self.assertEqual(result["state"], "partial")
         self.assertFalse(self.store.get("collection-state").get("last_success_at"))
@@ -176,14 +176,14 @@ class CollectionTests(unittest.TestCase):
 
     def test_partial_row_resume_and_shifted_page_do_not_skip_new_rows(self):
         state = {"start_at": stamp(SETTINGS.start_at), "cycle_skipped": 0,
-                 "work": [{"region": PROVINCES[0], "date": NOW.date().isoformat(), "page": 1, "offset": 2, "page_hash": "old-page"}]}
+                 "work": [{"region": None, "date": NOW.date().isoformat(), "page": 1, "offset": 2, "page_hash": "old-page"}]}
         self.store.values["collection-state"] = state
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message("new"), message("A"), message("B")], False, 0)
+        self.provider.pages[(None, NOW.date(), 1)] = ([message("new"), message("A"), message("B")], False, 0)
         self.collect()
         self.assertEqual(len(self.records.list_page()["records"]), 3)
 
     def test_scan_time_limit_persists_row_offset_and_resumes_identical_page(self):
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message("A"), message("B"), message("C")], False, 0)
+        self.provider.pages[(None, NOW.date(), 1)] = ([message("A"), message("B"), message("C")], False, 0)
         elapsed = [0]
         collector = OfficialMessageCollector(self.provider, self.records, self.store, self.settings, now=lambda: self.now, clock=lambda: elapsed[0])
         real_import = collector._import
@@ -203,30 +203,30 @@ class CollectionTests(unittest.TestCase):
         self.settings = replace(SETTINGS, start_at=NOW-dt.timedelta(days=2))
         self.collect()
         late = NOW-dt.timedelta(hours=12)
-        self.provider.pages[(PROVINCES[0], late.date(), 1)] = ([message("late", when=late)], False, 0)
+        self.provider.pages[(None, late.date(), 1)] = ([message("late", when=late)], False, 0)
         self.now += dt.timedelta(minutes=5)
         self.collect()
         saved = self.records.get(self.records.official_record_id("late"))
         self.assertEqual(saved["message"]["recipient_regions"], ["경상남도 창원시"])
-        self.assertNotIn(PROVINCES[0], saved["message"]["recipient_regions"])
+        self.assertNotIn(None, saved["message"]["recipient_regions"])
 
     def test_midnight_has_priority_and_source_correction_retires_old_task(self):
         self.collect(); first = self.records.list_page()["records"][0]
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message(text="중앙동 사거리 통제가 해제되었습니다. 통행에 참고해 주세요.")], False, 0)
+        self.provider.pages[(None, NOW.date(), 1)] = ([message(text="중앙동 사거리 통제가 해제되었습니다. 통행에 참고해 주세요.")], False, 0)
         self.now += dt.timedelta(minutes=1)
         self.collect()
         saved = self.records.get(first["id"])
         self.assertEqual(saved["source_revision"], 2)
         self.assertEqual(MessageAnalysisQueue(self.store).counts()["obsolete"], 1)
         self.assertEqual(MessageAnalysisQueue(self.store).counts()["pending"], 1)
-        self.store.values["collection-state"]["work"] = [{"region": PROVINCES[0], "date": NOW.date().isoformat(), "page": 4, "offset": 0}]
+        self.store.values["collection-state"]["work"] = [{"region": None, "date": NOW.date().isoformat(), "page": 4, "offset": 0}]
         self.now += dt.timedelta(days=1)
         self.settings = replace(SETTINGS, max_pages=1)
         self.collect()
         self.assertEqual(self.provider.calls[-1][1:3], (self.now.date(), 1))
 
     def test_initial_start_does_not_flood_old_history_and_survives_config_changes(self):
-        self.provider.pages[(PROVINCES[0], NOW.date(), 1)] = ([message("old", when=NOW-dt.timedelta(hours=1)), message()], False, 0)
+        self.provider.pages[(None, NOW.date(), 1)] = ([message("old", when=NOW-dt.timedelta(hours=1)), message()], False, 0)
         self.collect()
         self.assertEqual(len(self.records.list_page()["records"]), 1)
         start = self.store.get("collection-state")["start_at"]
@@ -236,7 +236,7 @@ class CollectionTests(unittest.TestCase):
 
     def test_outage_during_partial_scan_adds_every_missing_day_before_advancing_success(self):
         self.store.values["collection-state"] = {"start_at": stamp(SETTINGS.start_at), "cycle_skipped": 0,
-                "work": [{"region": PROVINCES[0], "date": NOW.date().isoformat(), "page": 4, "offset": 0, "head_hash": "previous-cycle-head"}]}
+                "work": [{"region": None, "date": NOW.date().isoformat(), "page": 4, "offset": 0, "head_hash": "previous-cycle-head"}]}
         self.now += dt.timedelta(days=3)
         self.settings = replace(SETTINGS, max_pages=50)
         self.assertEqual(self.collect()["state"], "ok")
@@ -250,7 +250,7 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(self.collect()["state"], "error")
         self.assertEqual(self.store.get("collection-state")["last_success_at"], success)
         self.assertNotIn("secret", str(self.store.values))
-        self.provider = FakeFeed({(PROVINCES[0], NOW.date(), 1): ([message("short", text="짧음")], False, 1)})
+        self.provider = FakeFeed({(None, NOW.date(), 1): ([message("short", text="짧음")], False, 1)})
         self.assertEqual(self.collect()["state"], "partial")
         self.assertEqual(self.store.get("collection-state")["last_success_at"], success)
         self.assertEqual(len(self.records.list_page()["records"]), 1)
@@ -389,7 +389,7 @@ class AutomationIntegrationTests(unittest.TestCase):
         self.assertEqual(status.read()["state"], "partial")
         store.values["collection-state"]["last_error"] = "collection_failed"
         self.assertEqual(status.read()["state"], "error")
-        status.now = lambda: NOW+dt.timedelta(minutes=12)
+        status.now = lambda: NOW+dt.timedelta(minutes=32)
         self.assertEqual(status.read()["state"], "stale")
         status.settings = replace(SETTINGS, contract_verified=False)
         self.assertEqual(status.read()["state"], "needs_verification")

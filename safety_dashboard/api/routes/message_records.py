@@ -17,6 +17,9 @@ from safety_dashboard.application.message_relations import LinkMessage, UnlinkMe
 from safety_dashboard.application.message_preparation import MessagePreparationService, PrepareMessageReview, ApprovePreparedReview
 from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
+from safety_dashboard.application.message_pipeline import moment, UTC
+import datetime as dt
 
 NO_STORE = {"Cache-Control": "private, no-store"}
 
@@ -52,6 +55,11 @@ def build_router(services):
             except AnalysisBusy as error:
                 raise HTTPException(429, str(error), headers={**NO_STORE, "Retry-After": "20"}) from None
             except AnalysisUnavailable as error:
+                raise HTTPException(503, str(error), headers=NO_STORE) from None
+            except FeedRequestLimit as error:
+                retry = max(1, int((moment(error.retry_at)-dt.datetime.now(UTC)).total_seconds())+1)
+                raise HTTPException(429, str(error), headers={**NO_STORE, "Retry-After": str(retry)}) from None
+            except FeedBudgetUnavailable as error:
                 raise HTTPException(503, str(error), headers=NO_STORE) from None
             except DisasterMessageDataError:
                 raise HTTPException(503, "공식 문자 조회에 실패했습니다. 이전 목록과 저장 기록은 유지됩니다.", headers=NO_STORE) from None

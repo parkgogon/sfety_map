@@ -23,10 +23,11 @@ export interface MessageRecord {
 export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean; auto_collection_enabled?: boolean }
 export interface MessageAutomation {
   auto_collection_enabled: boolean; feed_configured: boolean; interval_seconds: number;
-  state: "disabled"|"needs_key"|"needs_verification"|"starting"|"live"|"partial"|"stale"|"error"|"store_unavailable";
+  state: "disabled"|"needs_key"|"needs_verification"|"starting"|"live"|"partial"|"stale"|"error"|"store_unavailable"|"request_limit";
   detail: string; last_attempt_at: string|null; last_success_at: string|null; start_at: string|null;
   queue: Record<"pending"|"running"|"done"|"failed"|"obsolete"|"deferred",number>|null;
   budget: { limit:number; attempts:number|null; remaining:number|null; active:boolean };
+  feed_budget?: { limit:number; used:number; remaining:number; window_hours:number; next_available_at:string|null };
 }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }
 export interface OfficialPage {

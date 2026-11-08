@@ -20,6 +20,7 @@ from safety_dashboard.application.message_records import (
     RecordConflict, RecordStorageUnavailable,
 )
 from safety_dashboard.application.message_feed import OfficialFeedService, FeedRequest
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
 from safety_dashboard.domain.models import DisasterMessage
 from tests.test_message_analysis import request as analysis_request, service, call, draft, part, FakePlaces, search_args, location, PLACE
 
@@ -292,6 +293,17 @@ class MessageRecordRouteTests(unittest.TestCase):
         self.analyzer.analyze.assert_not_called()
         self.assertEqual(self.client.post("/internal/v1/collect").status_code, 404)
         self.assertEqual(self.client.post("/internal/v1/analyze-next").status_code, 404)
+
+    def test_manual_feed_reports_shared_request_limit_without_claiming_empty_success(self):
+        self.login()
+        body = {"region": "경상남도", "date": "2026-11-08"}
+        self.feed.provider.fetch_page.side_effect = FeedRequestLimit((NOW+dt.timedelta(days=2)).isoformat())
+        response = self.client.post(self.base+"/feed", json=body)
+        self.assertEqual(response.status_code, 429)
+        self.assertGreaterEqual(int(response.headers["retry-after"]), 1)
+        self.assertIn("조회 한도", response.json()["detail"])
+        self.feed.provider.fetch_page.side_effect = FeedBudgetUnavailable("문자 조회 한도를 확인하지 못했습니다.")
+        self.assertEqual(self.client.post(self.base+"/feed", json=body).status_code, 503)
 
 
 class FirestoreMessageStoreTests(unittest.TestCase):

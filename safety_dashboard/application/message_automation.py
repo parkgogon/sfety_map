@@ -4,15 +4,17 @@ from dataclasses import dataclass
 import datetime as dt
 import os
 from safety_dashboard.application.message_pipeline import AnalysisRunGate, MessageAnalysisQueue, UTC, moment
+from safety_dashboard.application.message_feed_budget import OfficialRequestBudget
 
 @dataclass(frozen=True)
 class MessageAutomationSettings:
     enabled: bool = False
     contract_verified: bool = False
     daily_limit: int = 20
-    max_pages: int = 20
+    max_pages: int = 4
     catchup_days: int = 7
-    interval_seconds: int = 300
+    interval_seconds: int = 900
+    request_limit: int = 450
     scan_seconds: int = 120
     auto_max_age_hours: int = 24
     start_at: dt.datetime | None = None
@@ -41,7 +43,14 @@ class MessageAutomationSettings:
                     raise ValueError()
             except ValueError:
                 raise ValueError('MESSAGE_COLLECTION_START_AT: 시간대가 있는 ISO 시각이 필요합니다.') from None
-        return cls(enabled=flag('MESSAGE_COLLECTION_ENABLED'), contract_verified=flag('MESSAGE_COLLECTION_CONTRACT_VERIFIED'), daily_limit=number('MESSAGE_ANALYSIS_DAILY_LIMIT', 20, 1, 100), max_pages=number('MESSAGE_COLLECTION_MAX_PAGES', 20, 1, 50), catchup_days=number('MESSAGE_COLLECTION_CATCHUP_DAYS', 7, 2, 30), start_at=start)
+        minutes = number('MESSAGE_COLLECTION_INTERVAL_MINUTES', 15, 15, 60)
+        if minutes not in (15, 30, 60):
+            raise ValueError('MESSAGE_COLLECTION_INTERVAL_MINUTES: 15, 30, 60 중 하나가 필요합니다.')
+        return cls(enabled=flag('MESSAGE_COLLECTION_ENABLED'), contract_verified=flag('MESSAGE_COLLECTION_CONTRACT_VERIFIED'),
+                   daily_limit=number('MESSAGE_ANALYSIS_DAILY_LIMIT', 20, 1, 100),
+                   max_pages=number('MESSAGE_COLLECTION_MAX_PAGES', 4, 1, 4),
+                   catchup_days=number('MESSAGE_COLLECTION_CATCHUP_DAYS', 7, 2, 30),
+                   request_limit=number('MESSAGE_FEED_REQUEST_LIMIT', 450, 1, 450), interval_seconds=minutes*60, start_at=start)
 
 class MessageAutomationStatus:
 
@@ -58,7 +67,8 @@ class MessageAutomationStatus:
         try:
             store = self.store_factory()
             state = store.get('collection-state') or {}
-            result.update(last_attempt_at=state.get('last_attempt_at'), last_success_at=state.get('last_success_at'), start_at=state.get('start_at'), queue=MessageAnalysisQueue(store).counts(), budget=AnalysisRunGate(store, settings.daily_limit, now=self.now).status(), remaining_partitions=len(state.get('work', [])), skipped_rows=state.get('cycle_skipped', 0), coverage_gap=bool(state.get('coverage_gap')))
+            result.update(last_attempt_at=state.get('last_attempt_at'), last_success_at=state.get('last_success_at'), start_at=state.get('start_at'), queue=MessageAnalysisQueue(store).counts(), budget=AnalysisRunGate(store, settings.daily_limit, now=self.now).status(), remaining_partitions=len(state.get('work', [])), skipped_rows=state.get('cycle_skipped', 0), coverage_gap=bool(state.get('coverage_gap')),
+                          feed_budget=OfficialRequestBudget(store,settings.request_limit,now=self.now).status())
         except Exception:
             result.update(state='store_unavailable', detail='수집·분석 상태를 조회하지 못했습니다. 저장된 검토 기록은 유지됩니다.')
             return result
@@ -69,6 +79,9 @@ class MessageAutomationStatus:
             return result
         if not settings.contract_verified:
             result.update(state='needs_verification', detail='공식 API 응답·조회 범위를 확인한 뒤 자동 수집을 활성화해 주세요.')
+            return result
+        if result['feed_budget']['remaining'] == 0:
+            result.update(state='request_limit', detail='문자 조회 한도로 대기 중입니다. 남은 수집 작업을 보존하고 한도가 회복되면 이어갑니다.')
             return result
         if not state.get('last_attempt_at'):
             result.update(state='starting', detail='자동 수집 첫 실행을 기다리고 있습니다.')

@@ -142,6 +142,8 @@ class AutomationDeployTests(unittest.TestCase):
         self.assertNotIn("TELEGRAM", str(calls)); self.assertNotIn("KMA_API_KEY", str(calls))
         schedules = [args for args in calls if args[:4] == ["scheduler", "jobs", "create", "http"]]
         self.assertEqual(len(schedules), 2)
+        collect = next(args for args in schedules if args[4] == "safety-message-collect")
+        self.assertIn("--schedule=*/15 * * * *", collect)
         self.assertTrue(all("--max-retry-attempts=0" in args for args in schedules))
         self.assertFalse(any("dispatch" in str(args) for args in calls))
         self.assertTrue(all("safety-alert-worker" not in str(args) for args in calls))

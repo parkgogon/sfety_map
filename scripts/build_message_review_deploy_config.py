@@ -27,12 +27,17 @@ def build_config(env):
     settings = ["MESSAGE_REVIEW_STORE=firestore", f"MESSAGE_COLLECTION_ENABLED={str(collection).lower()}",
                 f"MESSAGE_COLLECTION_CONTRACT_VERIFIED={str(verified).lower()}"]
     for name, default, lower, upper in (("MESSAGE_ANALYSIS_DAILY_LIMIT", 20, 1, 100),
-                                       ("MESSAGE_COLLECTION_MAX_PAGES", 20, 1, 50),
+                                       ("MESSAGE_COLLECTION_MAX_PAGES", 4, 1, 4),
+                                       ("MESSAGE_FEED_REQUEST_LIMIT", 450, 1, 450),
                                        ("MESSAGE_COLLECTION_CATCHUP_DAYS", 7, 2, 30)):
         value = env.get(name, str(default)).strip() or str(default)
         if not re.fullmatch(r"[0-9]+", value) or not lower <= int(value) <= upper:
             raise ValueError(f"{name}: 허용 범위의 정수가 필요합니다.")
         settings.append(f"{name}={int(value)}")
+    interval = env.get("MESSAGE_COLLECTION_INTERVAL_MINUTES", "15").strip() or "15"
+    if interval not in {"15", "30", "60"}:
+        raise ValueError("MESSAGE_COLLECTION_INTERVAL_MINUTES: 15, 30, 60 중 하나가 필요합니다.")
+    settings.append("MESSAGE_COLLECTION_INTERVAL_MINUTES="+interval)
     raw_start = env.get("MESSAGE_COLLECTION_START_AT", "").strip()
     if raw_start:
         try:

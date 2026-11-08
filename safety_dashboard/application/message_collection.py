@@ -8,9 +8,25 @@ import uuid
 from pydantic import ValidationError
 
 from safety_dashboard.application.context_info import KST
-from safety_dashboard.application.message_feed import PROVINCES
 from safety_dashboard.application.message_pipeline import MessageAnalysisQueue, PipelineLeases, UTC, moment, stamp, task_id
 from safety_dashboard.application.message_records import MessageSource, content_hash
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit
+from safety_dashboard.application.message_feed import PROVINCES
+from safety_dashboard.application.message_analysis import REGION_ALIASES
+
+
+TARGET_NAMES = PROVINCES + tuple(REGION_ALIASES[name] for name in PROVINCES)
+
+
+def recipient_scope(regions):
+    def matches(value, names):
+        return any(value == name or value.startswith(name+" ") for name in names)
+    if any(matches(r, ("전국", "대한민국")) or matches(r, TARGET_NAMES) for r in regions):
+        return True
+    names = tuple(REGION_ALIASES) + tuple(REGION_ALIASES.values())
+    if not regions or any(not matches(r, names) for r in regions):
+        return None
+    return False
 
 
 class OfficialMessageCollector:
@@ -46,8 +62,8 @@ class OfficialMessageCollector:
                 wanted = min(anchor, today) - dt.timedelta(days=1)
                 first = max(wanted, today - dt.timedelta(days=self.settings.catchup_days - 1))
                 state.update(cycle_skipped=0, coverage_gap=first > wanted,
-                             work=[{"region": region, "date": (today-dt.timedelta(days=i)).isoformat(), "page": 1, "offset": 0}
-                                   for i in range((today-first).days+1) for region in PROVINCES])
+                             work=[{"region": None, "date": (today-dt.timedelta(days=i)).isoformat(), "page": 1, "offset": 0}
+                                   for i in range((today-first).days+1)])
             else:
                 # A midnight rollover must not wait behind yesterday's remaining pages.
                 newest = dt.date.fromisoformat(max(part["date"] for part in state["work"]))
@@ -55,8 +71,8 @@ class OfficialMessageCollector:
                     wanted = newest + dt.timedelta(days=1)
                     first = max(wanted, today-dt.timedelta(days=self.settings.catchup_days-1))
                     state["coverage_gap"] = state.get("coverage_gap", False) or first > wanted
-                    state["work"] = [{"region": region, "date": (today-dt.timedelta(days=i)).isoformat(), "page": 1, "offset": 0}
-                                     for i in range((today-first).days+1) for region in PROVINCES] + state["work"]
+                    state["work"] = [{"region": None, "date": (today-dt.timedelta(days=i)).isoformat(), "page": 1, "offset": 0}
+                                     for i in range((today-first).days+1)] + state["work"]
             save()
             while state["work"] and pages < self.settings.max_pages and self.clock()-started < self.settings.scan_seconds:
                 part = state["work"][0]
@@ -81,8 +97,15 @@ class OfficialMessageCollector:
                     state["cycle_skipped"] += page.get("skipped", 0)
                 while part["offset"] < len(rows) and self.clock()-started < self.settings.scan_seconds:
                     row = rows[part["offset"]]
-                    if row.created_at.astimezone(KST).date().isoformat() != part["date"]:
+                    # crtDt is documented as a start date. Accept exact-day or range responses.
+                    row_day = row.created_at.astimezone(KST).date()
+                    scope = recipient_scope(row.regions)
+                    if not dt.date.fromisoformat(part["date"]) <= row_day <= today:
                         state["cycle_skipped"] += 1
+                    elif scope is None:
+                        state["cycle_skipped"] += 1
+                    elif not scope:
+                        pass
                     else:
                         try:
                             message = MessageSource(text=row.content, source="행정안전부 공개 재난문자 API",
@@ -111,6 +134,10 @@ class OfficialMessageCollector:
                 save()
             return {"state": "partial" if state["work"] or state["cycle_skipped"] or state["coverage_gap"] else "ok",
                     "pages": pages, "observed": imported}
+        except FeedRequestLimit as error:
+            state.update(last_error="", request_limited_at=stamp(self.now()), request_retry_at=error.retry_at)
+            save()
+            return {"state": "request_limit", "pages": pages}
         except Exception:
             # Never store URLs, provider payloads, keys or arbitrary exception messages.
             state.update(last_attempt_at=stamp(self.now()), last_error="collection_failed")

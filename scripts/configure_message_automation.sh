@@ -28,6 +28,11 @@ if [[ "${MESSAGE_COLLECTION_ENABLED:-false}" != "true" ]]; then
 fi
 
 [[ -n "$MESSAGE_REVIEW_SECRET_BINDINGS" ]]
+case "${MESSAGE_COLLECTION_INTERVAL_MINUTES:-15}" in
+  15|30) message_schedule="*/${MESSAGE_COLLECTION_INTERVAL_MINUTES:-15} * * * *" ;;
+  60) message_schedule="0 * * * *" ;;
+  *) echo '문자 조회 주기는 15, 30, 60분 중 하나여야 합니다.' >&2; exit 2 ;;
+esac
 gcloud run deploy safety-message-worker \
   --image "$WORKER_IMAGE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
   --platform managed --no-allow-unauthenticated \
@@ -45,7 +50,7 @@ gcloud run services add-iam-policy-binding safety-message-worker \
 
 for kind in collect analyze; do
   job="safety-message-$kind"
-  schedule="*/5 * * * *"
+  schedule="$message_schedule"
   route="collect"
   if [[ "$kind" == "analyze" ]]; then schedule="* * * * *"; route="analyze-next"; fi
   action=create

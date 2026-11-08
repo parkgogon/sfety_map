@@ -17,6 +17,7 @@ from safety_dashboard.application.message_analysis import AnalysisUnavailable, M
 from safety_dashboard.application.message_automation import MessageAutomationSettings, MessageAutomationStatus
 from safety_dashboard.application.message_pipeline import AnalysisRunGate, MemoryPipelineStore, MessageAnalysisQueue, UTC
 from safety_dashboard.application.message_records import MemoryRecordStore, MessageRecordService
+from safety_dashboard.application.message_feed_budget import OfficialRequestBudget
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ def build_message_runtime(facility_path, project_id, store_mode, feed_key, *, an
         facility_digest=lambda: hashlib.sha256(facility_path.read_bytes()).hexdigest(),
         on_analysis_saved=lambda record: MessageAnalysisQueue(pipeline_factory()).sync_record(record, dt.datetime.now(UTC)),
     )
-    provider = SafetyDataDisasterMessageProvider(feed_key)
+    provider = SafetyDataDisasterMessageProvider(feed_key,
+                gate_factory=lambda: OfficialRequestBudget(pipeline_factory(), settings.request_limit))
     status = MessageAutomationStatus(settings, pipeline_factory if pipeline_builder else None, provider.configured)
     return MessageRuntime(analysis, records, provider, status, pipeline_factory, settings)
