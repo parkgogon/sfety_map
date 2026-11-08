@@ -107,14 +107,15 @@ class OfficialMessageCollector:
                     row_day = row.created_at.astimezone(KST).date()
                     scope = recipient_scope(row.regions)
                     before_start = row.created_at < moment(state["start_at"])
+                    valid_date = dt.date.fromisoformat(part["date"]) <= row_day <= today
                     # The overlap intentionally returns older rows. Unknown recipients
                     # in never-imported history must not invalidate the current window.
                     # Known IDs still take the normal validation/correction path.
-                    previous = self.records.store.get(self.records.official_record_id(row.id)) if before_start and scope is not False else None
-                    if before_start and not previous:
-                        state["cycle_ignored_before_start"] += 1
-                    elif not dt.date.fromisoformat(part["date"]) <= row_day <= today:
+                    previous = self.records.store.get(self.records.official_record_id(row.id)) if valid_date and before_start and scope is not False else None
+                    if not valid_date:
                         skip("query_date")
+                    elif before_start and not previous:
+                        state["cycle_ignored_before_start"] += 1
                     elif scope is None:
                         skip("recipient_region")
                     elif not scope:

@@ -271,6 +271,15 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(self.collect()["state"],"partial")
         self.assertEqual(self.store.get("collection-state")["cycle_skipped_reasons"],{"source_fields":1})
 
+    def test_prestart_cutoff_does_not_hide_an_api_row_outside_the_requested_date_range(self):
+        old=message("outside-date",when=NOW-dt.timedelta(days=3))
+        self.provider.pages={(None,NOW.date(),1):([old],False,0)}
+        self.assertEqual(self.collect()["state"],"partial")
+        state=self.store.get("collection-state")
+        self.assertEqual(state["cycle_skipped_reasons"],{"query_date":1})
+        self.assertEqual(state["cycle_ignored_before_start"],0)
+        self.assertFalse(state.get("last_success_at"))
+
     def test_outage_during_partial_scan_adds_every_missing_day_before_advancing_success(self):
         self.store.values["collection-state"] = {"start_at": stamp(SETTINGS.start_at), "cycle_skipped": 0,
                 "work": [{"region": None, "date": NOW.date().isoformat(), "page": 4, "offset": 0, "head_hash": "previous-cycle-head"}]}
