@@ -238,7 +238,7 @@ class MessageRecordRouteTests(unittest.TestCase):
 
     def test_all_record_routes_require_admin_before_provider_or_storage_access(self):
         self.svc.store_factory = Mock(side_effect=AssertionError("unauthorized storage"))
-        for method, path, body in (("GET", "", None), ("GET", "/status", None), ("POST", "/feed", {"region": "경상남도", "date": "2026-11-08"}),
+        for method, path, body in (("GET", "", None), ("GET", "/status", None), ("GET", "/automation", None), ("POST", "/feed", {"region": "경상남도", "date": "2026-11-08"}),
                                    ("POST", "", registration().model_dump(mode="json")), ("GET", "/bad/history", None)):
             response = self.client.request(method, self.base + path, json=body)
             self.assertEqual(response.status_code, 403)
@@ -281,6 +281,17 @@ class MessageRecordRouteTests(unittest.TestCase):
         response = self.client.post(self.base + "/feed", json={"region": "경상남도", "date": "2026-11-08"})
         self.assertEqual(response.status_code, 503); self.assertNotIn("private-provider-key", response.text)
         self.assertEqual(self.client.get(self.base + "/arbitrary").status_code, 404)
+
+    def test_automation_status_is_protected_read_only_and_worker_routes_are_absent(self):
+        self.assertEqual(self.client.get(self.base + "/automation").status_code, 403)
+        self.login()
+        response = self.client.get(self.base + "/automation")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
+        self.assertFalse(response.json()["auto_collection_enabled"])
+        self.analyzer.analyze.assert_not_called()
+        self.assertEqual(self.client.post("/internal/v1/collect").status_code, 404)
+        self.assertEqual(self.client.post("/internal/v1/analyze-next").status_code, 404)
 
 
 class FirestoreMessageStoreTests(unittest.TestCase):

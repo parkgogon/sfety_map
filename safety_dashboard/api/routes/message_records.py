@@ -74,7 +74,11 @@ def build_router(services):
     @router.get("/status")
     def status():
         return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured,
-                "auto_collection_enabled": False}
+                "auto_collection_enabled": services.message_automation.settings.enabled}
+
+    @router.get("/automation")
+    def automation():
+        return services.message_automation.read()
 
     @router.get("")
     @guarded

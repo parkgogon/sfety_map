@@ -2,6 +2,8 @@
 .message-collection {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid var(--line,#dce3ea);border-radius:16px;background:#eef6f8}
 .message-collection h2 {font-size:18px;margin:7px 0}
 .message-collection p {margin:4px 0;line-height:1.6}
+.message-automation {min-width:0;overflow-wrap:anywhere}
+.automation-counts {font-size:14px;font-weight:600}
 .quick-entry-actions,.quick-review-actions,.quick-heading,.inbox-filters {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .quick-entry-actions {flex-shrink:0}
 .quick-heading {justify-content:space-between;gap:16px;margin-bottom:14px}

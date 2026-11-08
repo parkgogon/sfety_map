@@ -3,6 +3,7 @@ import { recordRequest, type MessageRecord, type RecordPage, type RecordStatus }
 import type { MessageAnalysisStatus } from "./messageAnalysisApi";
 import type { MessageReviewDetail } from "./messageReviewApi";
 import MessageQuickReview from "./MessageQuickReview";
+import MessageAutomationStatus from "./MessageAutomationStatus";
 import examples from "./messageExamples.json";
 import "./styles/message_inbox.css";
 
@@ -46,8 +47,8 @@ export default function MessageInbox({token,status,recordsStatus}:{token:string;
   const [text,setText]=useState("");const [source,setSource]=useState("");const [issued,setIssued]=useState("");const [regions,setRegions]=useState("");
   const [kind,setKind]=useState<"manual"|"example">("manual");const [exampleMode,setExampleMode]=useState(false);
   const op=useRef<AbortController|null>(null); const registration=useRef<string|null>(null); const submitting=useRef(false);
-  async function list(signal:AbortSignal,append=false) {
-    try {const page=await recordRequest<RecordPage>(token,signal,append&&cursor?`?before=${encodeURIComponent(cursor)}`:"");if(!signal.aborted){setRecords(old=>append?[...old,...page.records.filter(r=>!old.some(o=>o.id===r.id))]:page.records);setCursor(page.next_cursor);setListError("");}}
+  async function list(signal:AbortSignal,append=false,poll=false) {
+    try {const page=await recordRequest<RecordPage>(token,signal,append&&cursor?`?before=${encodeURIComponent(cursor)}`:"");if(!signal.aborted){setRecords(old=>append?[...old,...page.records.filter(r=>!old.some(o=>o.id===r.id))]:poll?[...page.records,...old.filter(r=>!page.records.some(n=>n.id===r.id))]:page.records);if(!poll)setCursor(page.next_cursor);setListError("");}}
     catch(e){if(!signal.aborted)setListError(e instanceof Error?e.message:"기록을 불러오지 못했습니다.");}
   }
   function choose(value:MessageRecord|null) {
@@ -95,8 +96,7 @@ export default function MessageInbox({token,status,recordsStatus}:{token:string;
   const category=(r:MessageRecord)=>r.review_state==="completed"?"completed":r.review_state==="needs_confirmation"||r.analysis_state==="failed"?"attention":"pending";
   const visible=records.filter(r=>filter==="all"||category(r)===filter);
   return <div className="message-inbox">
-    <section className="message-collection"><div><span className="message-tag">현재 수신 방식</span><h2>공식 문자 자동 수집 미연결</h2><p>지금은 공개 문자를 직접 붙여넣거나 창작 예문으로 검토합니다.</p>
-      {recordsStatus.feed_configured&&<p className="message-caption">공식 API 수동 조회는 상세 관리에서 사용할 수 있습니다.</p>}</div>
+    <section className="message-collection"><MessageAutomationStatus token={token} onRefresh={signal=>{if(!record&&!showForm&&!busy&&!reviewBusy&&!dirty)return list(signal,false,true);}}/>
       <div className="quick-entry-actions"><button className="primary-button" disabled={busy||reviewBusy} onClick={()=>newInput(false)}>문자 붙여넣기</button><button className="secondary-button" disabled={busy||reviewBusy} onClick={()=>newInput(true)}>예문으로 시연</button></div>
     </section>
     {status&&!status.configured&&<p className="message-error">문자 분석 연결이 설정되지 않았습니다. 기존 검토 기록은 계속 확인할 수 있습니다.</p>}
@@ -132,7 +132,8 @@ export default function MessageInbox({token,status,recordsStatus}:{token:string;
       <details><summary>원문 보기</summary><blockquote>{record.message.text}</blockquote></details>
       {record.analysis_error&&<p role="alert" className="message-error">{record.analysis_error}</p>}
       {record.analysis_state==="failed"&&record.analysis&&<p className="message-notice">마지막 저장 분석입니다. 새 분석이 실패했으므로 현재 정보를 확인해 주세요.</p>}
-      {!busy&&record.review_state!=="completed"&&(!record.analysis||record.analysis_state==="failed"||record.analysis_state==="running")&&<button className="primary-button" disabled={!status?.configured} onClick={()=>void analyzeSaved()}>{record.analysis_state==="running"?"분석 상태 확인·다시 시도":"저장한 문자로 검토안 준비"}</button>}
+      {!busy&&record.analysis_state==="running"&&<button className="secondary-button" onClick={()=>void open(record.id)}>분석 상태 새로고침</button>}
+      {!busy&&record.review_state!=="completed"&&record.analysis_state!=="running"&&(!record.analysis||record.analysis_state==="failed")&&<button className="primary-button" disabled={!status?.configured} onClick={()=>void analyzeSaved()}>저장한 문자로 검토안 준비</button>}
       <details><summary>검색 과정·변경 이력·후속 문자 관리</summary>{record.analysis&&<ol>{record.analysis.trace.map((step,i)=><li key={i}>{step.detail}</li>)}</ol>}<a href={advancedUrl(record.id)} onClick={e=>{if(reviewBusy||dirty&&!window.confirm("저장 전 수정 내용을 취소하고 상세 관리를 열까요?"))e.preventDefault();}}>상세 관리 열기</a></details>
     </section>}
     {record&&!busy&&(record.review_state==="completed"?<CompletedReview key={`${record.id}:${record.version}`} token={token} record={record} onChange={changed}/>:record.analysis&&record.analysis_state!=="running"?<MessageQuickReview key={`${record.id}:${record.version}`} token={token} record={record} onChange={changed} onHold={value=>{changed(value);choose(null);setNotice("추가 확인이 필요한 기록으로 보류했습니다.");}} onBusyChange={setReviewBusy} onDirtyChange={setDirty}/>:null)}

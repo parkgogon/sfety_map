@@ -21,6 +21,13 @@ export interface MessageRecord {
   relation_last_change?: {action:string;target_id:string;reason:string;at:string}|null;
 }
 export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean; auto_collection_enabled?: boolean }
+export interface MessageAutomation {
+  auto_collection_enabled: boolean; feed_configured: boolean; interval_seconds: number;
+  state: "disabled"|"needs_key"|"needs_verification"|"starting"|"live"|"partial"|"stale"|"error"|"store_unavailable";
+  detail: string; last_attempt_at: string|null; last_success_at: string|null; start_at: string|null;
+  queue: Record<"pending"|"running"|"done"|"failed"|"obsolete"|"deferred",number>|null;
+  budget: { limit:number; attempts:number|null; remaining:number|null; active:boolean };
+}
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }
 export interface OfficialPage {
   status: "LIVE" | "NOT_CONFIGURED"; detail: string;

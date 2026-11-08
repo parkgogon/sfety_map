@@ -1,0 +1,12 @@
+{
+  "python_tests": 491,
+  "react_tests": 267,
+  "facility_count": 195,
+  "python_compile": "passed",
+  "web_build": "passed",
+  "shell_syntax": "passed",
+  "external_http_tcp_attempts_in_automated_python_tests": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "safetydata_key_available": false
+}

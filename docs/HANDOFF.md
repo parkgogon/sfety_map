@@ -1,6 +1,6 @@
 # 프로젝트 현재 상태와 인수인계
 
-> 마지막 정리: 2026-11-08 15:40 KST — 재난문자 AI 검토 1~4단계 운영 배포·창작 예문 검수 완료.
+> 마지막 정리: 2026-11-08 KST — 운영 확인 15:40 KST, 간소화 1·2단계 코드·로컬 검증 완료/운영 미반영.
 > 운영 앱 소스: `43b40e0aee7c9f548ef4d633158c2001c2c86a8d` ([PR #1](https://github.com/parkgogon/sfety_map/pull/1) squash merge).
 > 배포: [42443589707](https://github.com/parkgogon/sfety_map/actions/runs/42443589707), API·Worker/Scheduler·웹·외부 감시 모두 성공.
 > 검수: [42455143090](https://github.com/parkgogon/sfety_map/actions/runs/42455143090) 성공. [운영 증빙](evidence/2026-11-08/production-message-release/README.md).
@@ -14,19 +14,26 @@
 
 사용자 실사용 피드백: 자동 수신/수동 등록 여부부터 불명확하고, 사람이 입력·확인·저장할 단계가 너무 많다.
 자동 수집 → AI가 추천 위치/시설·초안을 준비 → 사람이 한 화면에서 검토하는 방향으로 정리한다.
-[간소화 계획](MESSAGE_REVIEW_SIMPLIFICATION_PLAN.md)은 기준 `899e792`에서 작성했고, 사용자 실행 승인으로 **1단계 구현·로컬 검증을 완료**했다.
+[간소화 계획](MESSAGE_REVIEW_SIMPLIFICATION_PLAN.md)은 기준 `899e792`에서 작성했고, 사용자 실행 승인으로 **1·2단계 구현·로컬 검증을 완료**했다.
 새 작업공간은 `/workspace/sfety_map-simplify`, 브랜치는 `feature/message-review-simplification`이다.
 정상 건은 목록에서 열기/검토 완료의 주요 조작 2회, 안내문 복사는 필요할 때 추가하는 것이 목표다.
 추천안과 사람의 승인 기록을 분리하고 서버에서 한 번에 검증·확정해야 한다. 화면 접기만으로 해결하지 않는다.
-현재 자동 수집은 미구현/공식 키 미연결이다. 별도 지속 수집·중복 방지·분석 대기열/상한이 필요하다.
+공식 지속 수집·중복 방지·대기열·수동/자동 공통 일일 상한·상태 표시를 구현했다. 실제 공식 키/연결 검증과 운영 활성화는 남았다.
 1차 구현 `c70e145`와 후속 예외 복구 보완. [검토용 PR #2](https://github.com/parkgogon/sfety_map/pull/2). 기본은 대기함 → 추천 위치/대상·초안 → 한 번의 내부 검토 완료다.
 `prepare`는 확인 기록을 쓰지 않으며 `approve`가 현재 근거를 재검증해 한 버전에 확정한다.
 보류 입력은 미승인 작업본으로 보존하고 시설 자료 조회 실패 중에도 저장할 수 있다.
 재개/승인 시 현재 근거를 검증하며, 오래된 작업본은 명시적으로 입력을 초기화해 복구할 수 있다. 추천과 승인 결과를 분리하고 기존 상세 관리는 `view=advanced`로 유지한다.
 발행 시각 미상은 null이며 현재 시각을 대입하지 않는다. 기존 날짜가 있는 기록과 공식 입력은 유지한다.
-Python 453개(외부 HTTP/TCP 0)·React 262개·컴파일/빌드/시설 195개, 로컬 실제 API/CSV/임시 저장소와
-합성/저장 응답 재생·가짜 지도 SDK로 PC/390/360px 흐름을 확인했다. [증빙](evidence/2026-11-08/message-review-simple-stage1/README.md).
-운영 배포/실제 SDK·유료 API 추가 검수는 하지 않았다. 운영 앱은 위의 `43b40e0` 그대로다.
+1단계 [증빙](evidence/2026-11-08/message-review-simple-stage1/README.md)과 2단계 [검증·화면](evidence/2026-11-08/message-review-auto-stage2/README.md)을 구분한다.
+최신 Python 491개(외부 HTTP/TCP 0)·React 267개·컴파일/빌드/시설 195개 검증을 통과했다.
+로컬 실제 빌드/API/CSV·메모리 저장소/가짜 공식 제공자·합성 분석·가짜 지도 SDK로 PC/390/360px를 확인했다.
+브라우저를 열기 전 수집/분석 → 대기함 읽기, 추가 수신 후 읽기 갱신, 미승인 입력 보존과 한도/오류 표시를 검증했다.
+실제 SafetyData/OpenAI/Kakao 추가 호출·실제 발송·운영 배포는 0건이다. 운영 앱은 위의 `43b40e0` 그대로다.
+
+2단계는 별도 IAM 비공개 `safety-message-worker`와 문자 전용 예약 작업 두 개를 opt-in 배포하도록 준비했다.
+기존 KMA Worker/dispatch에 모델 실행을 붙이지 않는다. 수집은 기본 오늘·전일, 중단 보충은 최대 7일이며 페이지/행 진행을 저장한다.
+원문 버전별 자동 시도 표시와 공통 실행권/한국 날짜 일일 20건 상한으로 중복 분석을 막는다.
+한도 초과는 대기 보존, 24시간 넘은 대기/불확실한 중단/제공자 실패는 수동 확인으로 남긴다. 설정·복구 기준은 [운영 안내](MESSAGE_AUTOMATION.md)에 있다.
 
 ## 현재 운영 상태 — 2026-11-08 KST
 
@@ -154,10 +161,12 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 ## 5. 다음 시작점
 
-다음 시작점은 [간소화 계획](MESSAGE_REVIEW_SIMPLIFICATION_PLAN.md)의 **2단계 공식 지속 수집/분석**이다.
-1단계 간소화는 구현·로컬 검수까지 완료했으며 운영에는 미반영이다. [짧은 사용 안내](MESSAGE_REVIEW_QUICK_GUIDE.md)를 따른다.
-공식 수집은 별도 SafetyData 키/실제 응답·페이지/제공 지연·이용 조건을 확인한 뒤 활성화한다.
-수집·분석 대기열/중복/비용 상한/조회 오류 표시를 구현하고 기존 KMA 알림 실행과 분리한다.
+다음 시작점은 **SafetyData 재난문자 키 발급·제한된 실제 읽기 연결 검증**이다. 사용자는 키를 아직 발급하지 않았다고 확인했다.
+1·2단계 코드는 검증했으며 운영에는 미반영이다. 먼저 [공식 데이터 페이지](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)의 가입/로그인·활용 신청부터 한 단계씩 안내한다.
+키 값은 채팅/GitHub 파일로 받지 않는다. 기존 OpenAI/Kakao Secret 버전 1은 다시 등록하지 않는다.
+발급 후 [연결·복구 기준](MESSAGE_AUTOMATION.md)에 따라 비밀값 등록·실제 응답/페이지·제공 지연/쿼터·이용 조건을 확인한다.
+실제 계약 확인 전 `MESSAGE_COLLECTION_ENABLED`와 `MESSAGE_COLLECTION_CONTRACT_VERIFIED`는 false다.
+별도 사용자 요청 전 main 반영/운영 배포·실제 전파 시험을 하지 않는다. 3단계 후속 제안/비교는 아직 미구현이다.
 후속 문자 자동 제안/변경 검토와 운영 전환은 3·4단계다. 단계별 수용 조건은 위 계획을 따른다.
 
 - [재난문자 운영](MESSAGE_REVIEW_OPERATIONS.md), [키 설정](MESSAGE_REVIEW_KEY_SETUP.md)

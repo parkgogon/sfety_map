@@ -58,6 +58,8 @@ class SafetyDataDisasterMessageProvider:
             messages = parse_disaster_response(payload)
             rows = _find_message_rows(payload) or []
             total = _find_total_count(payload)
+            if total is not None and total > (page-1)*size and not rows:
+                raise DisasterMessageDataError("페이지의 문자 목록이 응답 건수와 맞지 않습니다.")
             return {"messages": messages, "skipped": max(0, len(rows) - len(messages)),
                     "has_more": page * size < total if total is not None else len(rows) >= size}
         except (requests.RequestException, ValueError, TypeError):
@@ -254,7 +256,7 @@ def _split_regions(value: str) -> tuple[str, ...]:
 
 def _find_total_count(value: object) -> int | None:
     if isinstance(value, dict):
-        for key in ("totalCount", "totalCnt", "total_count"):
+        for key in ("totalCount", "totalCnt", "total_count", "TOTAL_COUNT"):
             if key in value:
                 try:
                     return max(0, int(value[key]))

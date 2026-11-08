@@ -18,6 +18,7 @@ describe("간단 재난문자 검토",()=>{
   copy=vi.fn().mockResolvedValue(undefined);Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:copy}});
   vi.stubGlobal("fetch",vi.fn(async(url:string,init?:RequestInit)=>{
    const body=init?.body?JSON.parse(init.body as string):undefined;
+   if(url===base+"/automation")return Response.json({state:"disabled",auto_collection_enabled:false,feed_configured:false,detail:"직접 입력으로 검토할 수 있습니다.",queue:null,budget:{limit:20,attempts:null,remaining:null,active:false}});
    if(url===base&&init?.method==="POST"){registered=body;record={...sample(),origin:body.input_kind,message:{text:body.text,source:body.source,issued_at:body.issued_at,recipient_regions:body.recipient_regions},analysis:null,analysis_state:"not_analyzed"};return Response.json({record,registration:"created"});}
    if(url===base)return Response.json({records:[record],next_cursor:null});
    if(url.endsWith("/analyze")){analyses++;record={...record,analysis:sample().analysis,analysis_state:"completed",version:record.version+2};return Response.json(record);}
@@ -79,5 +80,18 @@ describe("간단 재난문자 검토",()=>{
   failPreview=true;await render();await open();expect(container.textContent).toContain("근거 조회 실패");
   failPreview=false;await click("수정 내용 초기화");expect(button("이 내용으로 검토 완료").disabled).toBe(false);
   expect(record.review_working_copy.input.manager_note).toBe("보류한 예전 안내");expect(approvals).toBe(0);
+ });
+ it("refreshes the queue on a timer without triggering paid analysis or replacing an open edit",async()=>{
+  await render();record={...record,analysis:{...record.analysis!,analysis:{...record.analysis!.analysis,summary:"새 공식 문자가 자동 수집되었습니다. 확인해 주세요."}}};
+  await act(async()=>vi.advanceTimersByTimeAsync(60000));expect(container.textContent).toContain("새 공식 문자가 자동 수집되었습니다");expect(analyses).toBe(0);
+  await open();await click("내용 수정");await fill("추가 안내","저장 전 수정 내용");
+  const listCalls=()=>vi.mocked(fetch).mock.calls.filter(([url])=>url===base).length;
+  const before=listCalls();record={...record,version:99};await act(async()=>vi.advanceTimersByTimeAsync(60000));
+  expect(listCalls()).toBe(before);expect(container.querySelector<HTMLTextAreaElement>('[aria-label="추가 안내"]')?.value).toBe("저장 전 수정 내용");expect(analyses).toBe(0);
+ });
+ it("checks a running automatic analysis using a read without starting another analysis",async()=>{
+  record={...record,analysis:null,analysis_state:"running"};await render();await open();
+  record={...record,analysis:sample().analysis,analysis_state:"completed",version:5};await click("분석 상태 새로고침");
+  expect(container.textContent).toContain("검토 전 · 확인할 시설");expect(analyses).toBe(0);
  });
 });

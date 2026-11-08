@@ -8,6 +8,8 @@ import datetime as dt
 import json
 import re
 import threading
+import logging
+import uuid
 import time
 from typing import Annotated, Literal, Protocol
 
@@ -217,9 +219,11 @@ TOOLS = [
 
 class MessageAnalysisService:
     def __init__(self, client: ResponsesClient, places: PlaceSearch,
-                 facilities: Callable[[], tuple[Facility, ...]], *, clock: Callable[[], float] = time.monotonic):
+                 facilities: Callable[[], tuple[Facility, ...]], *, clock: Callable[[], float] = time.monotonic,
+                 gate_factory=None):
         self.client, self.places, self.facilities = client, places, facilities
         self.clock = clock
+        self.gate_factory = gate_factory
         self._lock = threading.Lock()
         self._starts: deque[float] = deque()
 
@@ -232,15 +236,24 @@ class MessageAnalysisService:
             raise AnalysisUnavailable("서버에 OpenAI API 키가 아직 설정되지 않았습니다.")
         if not self._lock.acquire(blocking=False):
             raise AnalysisBusy("다른 문자를 분석 중입니다. 잠시 후 다시 시도해 주세요.")
+        gate, owner = None, uuid.uuid4().hex
         try:
             now = self.clock()
             while self._starts and now - self._starts[0] >= 3600:
                 self._starts.popleft()
             if self._starts and (now - self._starts[-1] < 20 or len(self._starts) >= 20):
                 raise AnalysisBusy("분석 요청 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.")
+            if self.gate_factory:
+                gate = self.gate_factory()
+                gate.acquire(owner)
             self._starts.append(now)
             return self._run(request, now)
         finally:
+            if gate:
+                try:
+                    gate.release(owner)
+                except Exception:
+                    logging.getLogger(__name__).warning("message_analysis_lease_release_failed")
             self._lock.release()
 
     def _run(self, request: MessageAnalysisInput, started: float) -> dict:
