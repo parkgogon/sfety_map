@@ -1,0 +1,10 @@
+{
+  "run_id": 42435450742,
+  "url": "https://github.com/parkgogon/sfety_map/actions/runs/42435450742",
+  "source_commit": "d8f7451b4f315bb37d3880590d3df59f46ce1b91",
+  "artifact_id": 13598814353,
+  "conclusion": "failure",
+  "reason": "metadata_read_permissions_incomplete",
+  "normal_ci_run": 42435443467,
+  "normal_ci_conclusion": "success"
+}

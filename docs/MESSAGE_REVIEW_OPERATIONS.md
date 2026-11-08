@@ -5,14 +5,14 @@
 
 ## 현재 배포 경로에서 확인한 차이
 
-- `ci-deploy.yml`의 Cloud Run `--set-secrets` 목록에 `OPENAI_API_KEY`, `KAKAO_REST_API_KEY`,
+- 점검 시작 기준 `d8f7451`의 `ci-deploy.yml` Cloud Run `--set-secrets` 목록에 `OPENAI_API_KEY`, `KAKAO_REST_API_KEY`,
   `SAFETY_DATA_API_KEY`가 없다. GitHub Actions의 같은 이름 secret은 평가용 실행에만 전달된다.
   GitHub에 등록한 키가 Cloud Run에 자동 전달되는 구성은 아니다.
 - 웹 지도는 기존 `KAKAO_MAP_APP_KEY` → `VITE_KAKAO_MAP_APP_KEY` 빌드 경로를 사용한다.
   이 JavaScript 키는 서버의 카카오 REST API 키와 다르다.
 - 운영 저장은 서버 프로젝트 ID와 기본 `MESSAGE_REVIEW_STORE=firestore`로 선택한다.
   설정 존재가 실제 데이터베이스 접근·트랜잭션 성공을 의미하지 않는다.
-- 이 단계는 기존 CI 배포 명령·운영 키·IAM·Worker/Scheduler를 변경하지 않는다.
+- PR에 선택적으로 켜는 연결 설정을 준비했다. 기본값은 AI/공식 피드 모두 꺼짐이며, 운영 키·IAM·변수·Worker/Scheduler는 변경하지 않았다.
 
 ## 읽기 전용 점검
 
@@ -45,6 +45,54 @@ python scripts/check_message_review_deployment.py \
 조회 실패는 종료 1, 프로젝트 입력 오류는 종료 2다. IAM 허용 역할 발견은 실제 권한 검증이 아니다.
 조건부/custom 역할·그룹·deny 정책 등을 평가하지 않아 `unverified`를 권한 없음으로 단정하지 않는다.
 
+## 2026-11-08 실제 메타데이터 점검 결과
+
+[실행 42435450742](https://github.com/parkgogon/sfety_map/actions/runs/42435450742),
+[원본 보고서](evidence/2026-11-08/message-review-deployment/report.json).
+Cloud Run 조회는 성공했고 `Ready=True`, 운영 소스 `616d7a2f...`를 확인했다.
+세 서버 API 키의 환경변수 연결은 모두 없다. 키의 Secret Manager 존재 여부와 구분한다.
+
+Firestore 데이터베이스·Secret 버전·Secret IAM 조회는 `permission_denied`, 프로젝트 IAM도 조회하지 못했다.
+현재 점검 계정으로는 Native 모드/키 존재/권한을 확정할 수 없다. 이를 키/DB가 없다는 판단으로 바꾸지 않는다.
+워크플로는 **부분 미확인을 종료 1로 보고해 실패 상태**다. 앱 회귀 테스트 실패가 아니며
+같은 소스의 일반 CI `42435443467`은 성공했다. 같은 권한으로 재시도할 이유는 없다.
+
+공식 [긴급재난문자 상세 페이지](https://www.safetydata.go.kr/disaster-data/view?dataSn=228)는 HTTP 200으로 읽었다.
+공통 이용안내에서 API 이용신청과 공공기관 제공 자료의 공공누리 제3유형 안내를 확인했다.
+이는 해당 키의 이용 승인·AI 분석/보관/재제공 조건까지 확인했다는 뜻이 아니다. 신청 계정에서 별도 확인한다.
+
+### 소유자 계정으로 다음에 확인할 최소 명령
+
+GCP Cloud Shell의 프로젝트 권한이 있는 계정에서 다음을 실행한다. Secret **값은 출력하지 않는다**.
+현재 Actions 점검 계정의 IAM을 임의로 넓히는 대신 소유자의 기존 권한으로 확인할 수 있다.
+
+```bash
+gcloud firestore databases describe --project=keco-safety-map --database='(default)' --format='value(type)'
+gcloud secrets describe OPENAI_API_KEY --project=keco-safety-map --format='value(name)'
+gcloud secrets describe KAKAO_REST_API_KEY --project=keco-safety-map --format='value(name)'
+```
+
+키가 이미 있으면 승인할 버전과 runtime 접근을 확인한다. 없다면 기존에 준비한 키를 Secret Manager에 등록할 단계다.
+위 명령은 키 등록/권한 부여/배포를 실행하지 않는다. 공식 피드는 별도 키/이용신청 이후 연결할 수 있다.
+
+## 준비한 배포 설정 (실행 전)
+
+[설정 생성기](../scripts/build_message_review_deploy_config.py)는 비밀값을 읽거나 GCP에 접속하지 않고
+기존 API 배포의 secret 목록에 추가할 참조만 만든다. 이미지 빌드 전에 설정을 검사한다.
+기존 KMA/관리자/알림 참조는 유지하고 API 작업에만 적용한다. Worker/웹에는 서버 키를 전달하지 않는다.
+
+| GitHub Repository variable | 기본값 | 켤 때 설정 |
+| --- | --- | --- |
+| `MESSAGE_REVIEW_AI_ENABLED` | `false` | 키/권한 검증 후 `true` |
+| `MESSAGE_REVIEW_OPENAI_VERSION` | 비어 있음 | OpenAI Secret Manager의 승인한 숫자 버전 |
+| `MESSAGE_REVIEW_KAKAO_VERSION` | 비어 있음 | 카카오 REST Secret Manager의 승인한 숫자 버전 |
+| `MESSAGE_REVIEW_FEED_ENABLED` | `false` | 공식 키·응답·이용 조건 확인 후 `true` |
+| `MESSAGE_REVIEW_FEED_VERSION` | 비어 있음 | 공식 피드 Secret Manager의 승인한 숫자 버전 |
+
+켜진 기능의 버전이 없거나 `latest`/잘못된 값이면 배포 준비를 중단한다.
+AI를 켜면 평가 모델/low를 설정하고 저장은 `firestore`로 명시한다. 기본값에서 유료 서비스 키를 연결하지 않는다.
+이 변수들을 실제 GitHub에 등록하거나 운영에 적용하지 않았다. main 병합/배포 요청과 검토가 필요하다.
+
 ## 운영 적용 전에 순서대로 확인할 것
 
 | 대상 | 필요한 설정/검증 | 통과 근거 |
@@ -63,10 +111,10 @@ python scripts/check_message_review_deployment.py \
 
 1. 점검 결과로 Secret Manager의 존재/버전·runtime 권한과 누락 연결을 확정한다.
    GitHub secret의 값을 채팅·로그로 가져오지 않는다. 기존 키를 새로 발급할 필요가 있는지부터 단정하지 않는다.
-2. 사용자 승인 후 Secret Manager에 필요한 값/버전을 등록하고 runtime에 최소 접근을 부여한다.
+2. Secret Manager에 필요한 값/버전 등록과 runtime 최소 접근은 실제 운영 연결 요청 때 진행한다.
    배포에 사용할 secret 이름/고정 버전, 모델 `gpt-5.4-mini-2026-03-17`·reasoning `low`,
    `MESSAGE_REVIEW_STORE=firestore`를 검토 가능한 변경으로 준비한다.
-3. `ci-deploy.yml`의 `--set-secrets` 목록에도 해당 연결을 반영해야 이후 배포에서 사라지지 않는다.
+3. PR에 준비한 선택적 `--set-secrets` 연결과 승인한 버전 변수를 사용해야 이후 배포에도 연결이 유지된다.
    기존 KMA/관리자/알림 secret을 누락하지 않는다. 키를 웹 번들에 넣지 않는다.
 4. main 병합/배포는 별도 사용자 요청 때 실행한다. 현재 API 리비전/환경과 Hosting 소스,
    복구할 이전 리비전을 기록한 뒤 진행한다. Worker/Scheduler 시험 실행은 하지 않는다.
