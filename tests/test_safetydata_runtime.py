@@ -30,10 +30,11 @@ class RuntimeProbeTests(unittest.TestCase):
             return globals()["page"](*(message(f"private-id-{page}-{i}") for i in range(2)))
         result = probe("private-key", fetch=fetch, today=DAY)
         self.assertEqual(result["status"], "passed")
-        self.assertEqual(result["api_calls"], 4)
+        self.assertEqual(result["api_calls"], 5)
         self.assertTrue(all(result["checks"].values()))
         self.assertEqual(calls[2][2], "대구광역시")
         self.assertTrue(all(call[4] == 2 for call in calls))
+        self.assertEqual(calls[-1][1], DAY-dt.timedelta(days=1))
         for secret in ("private-key", "private-message", "private-id", "달서구"):
             self.assertNotIn(secret, json.dumps(result))
 
@@ -75,10 +76,19 @@ class RuntimeProbeTests(unittest.TestCase):
             self.assertEqual(probe("key", fetch=fetch, today=DAY)["status"], "needs_contract_review")
 
     def test_head_change_is_explicit_and_does_not_restart_a_paid_or_unbounded_loop(self):
-        fetch = Mock(side_effect=[page(message("first")), page(message("second")), page(message("first")), page(message("changed"))])
+        fetch = Mock(side_effect=[page(message("first")), page(message("second")), page(message("first")), page(message("changed")), page(message("prior"))])
         result = probe("key", fetch=fetch, today=DAY)
         self.assertFalse(result["checks"]["head_stable"])
-        self.assertEqual(fetch.call_count, 4)
+        self.assertEqual(fetch.call_count, 5)
+
+    def test_prior_day_range_accepts_start_date_semantics_but_rejects_older_rows(self):
+        for invalid in (False, True):
+            def fetch(key, day, **kwargs):
+                actual = DAY-dt.timedelta(days=2) if invalid and day < DAY else DAY
+                return page(*(message(f'{kwargs["page"]}-{i}', day=actual) for i in range(2)))
+            result = probe("key", fetch=fetch, today=DAY)
+            self.assertEqual(result["checks"]["prior_date_range_matches"], not invalid)
+            self.assertLessEqual(result["api_calls"], 6)
 
     def test_missing_runtime_key_and_provider_errors_never_export_secret_or_payload(self):
         fetch = Mock(side_effect=RuntimeError("private-key"))

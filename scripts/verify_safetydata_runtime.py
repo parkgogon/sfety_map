@@ -86,6 +86,13 @@ def probe(key, *, fetch=read_api, today=None):
             report["checks"]["region_filter_matches"] = False
         head = request(day)
         report["checks"]["head_stable"] = [identifier(r) for r in head] == [identifier(r) for r in baseline]
+        # crtDt is a start date. Exercise the previous-day overlap used by collection.
+        # If the baseline already came from an earlier day, it exercised this path.
+        prior = request(today-dt.timedelta(days=1)) if day == today else baseline
+        prior_start = today-dt.timedelta(days=1) if day == today else day
+        observed = [issued_date(r) for r in prior]
+        report["checks"]["prior_date_range_matches"] = all(d is not None and prior_start <= d <= today for d in observed)
+        report["prior_date_sample_rows"] = len(prior)
         report["status"] = "passed" if all(report["checks"].values()) else "needs_contract_review"
     except CheckFailed as error:
         report.update(status="blocked", reason=str(error))

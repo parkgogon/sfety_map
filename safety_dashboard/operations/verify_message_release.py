@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import base64
+import datetime as dt
 import json
 import os
 import re
+import time
+import uuid
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 
@@ -30,7 +33,10 @@ def allowed_request(url, method):
         if path.startswith("/internal/"):
             if path in ("/internal/v1/admin/session", "/internal/v1/message-analysis/status", "/internal/v1/notifications/status"): return method == "GET"
             if path == "/internal/v1/admin/access": return method == "POST"
-            return bool(re.fullmatch(r"/internal/v1/message-records(?:/(?:status|manual-[a-f0-9]{32})(?:/(?:analyze|spatial|reference|facilities|selection|related|review|complete|notice-copy))?)?", path)) and method in ("GET", "POST")
+            if path in ("/internal/v1/message-records/status", "/internal/v1/message-records/automation"):
+                return method == "GET"
+            if path == "/internal/v1/message-records": return method in ("GET", "POST")
+            return bool(re.fullmatch(r"/internal/v1/message-records/manual-[a-f0-9]{32}(?:/(?:spatial|reference|facilities|selection|related|review|notice-copy|prepare|approve|hold|reopen))?", path)) and method in ("GET", "POST")
         return method == "GET"
     return method == "GET" and bool(re.fullmatch(r"(?:[a-z0-9-]+\.)*(?:kakao\.com|kakaocdn\.net|daumcdn\.net|kakao\.net)", parsed.hostname or ""))
 
@@ -39,10 +45,24 @@ def emit(value):
     print(json.dumps({"release_check": True, **value}, ensure_ascii=False), flush=True)
 
 
+def enqueue_verification_example(record, store, now):
+    """Only the explicitly tagged synthetic record may enter the production queue."""
+    from safety_dashboard.application.message_pipeline import MessageAnalysisQueue
+    if record.get("origin") != "example" or record.get("message", {}).get("source") != SOURCE:
+        raise ValueError("verification_example_required")
+    return MessageAnalysisQueue(store).enqueue(record, now)
+
+
+def automation_summary(value):
+    # Do not export raw records, model output, source text or arbitrary status fields.
+    return {key: value[key] for key in ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "coverage_gap") if key in value}
+
+
 def verify(sink=emit):
     password = os.environ.get("ADMIN_ACCESS_PASSWORD", "")
     revision = os.environ.get("VERIFY_APP_REVISION", "")
     resume = os.environ.get("VERIFY_RECORD_ID", "")
+    read_only = os.environ.get("VERIFY_READ_ONLY") == "true"
     if not password or not re.fullmatch(r"[a-f0-9]{40}", revision) or resume and not re.fullmatch(r"manual-[a-f0-9]{32}", resume):
         raise ValueError("verification_configuration")
     from playwright.sync_api import sync_playwright
@@ -64,97 +84,132 @@ def verify(sink=emit):
                 if urlsplit(r.request.url).path.endswith("/analyze"): analysis_requests.append(1)
                 r.continue_()
             context.route("**/*",route)
-            def api(path):
-                return page.evaluate("""async path => {
+            def api(path, body=None):
+                return page.evaluate("""async ({path,body}) => {
                     const response = await fetch(path, {redirect:'error', signal:AbortSignal.timeout(20000),
-                        headers:{'X-Alert-Admin-Token':sessionStorage.getItem('keco_admin_token') || ''}});
-                    if (response.status !== 200) throw new Error('protected_read');
+                        method:body===null?'GET':'POST', body:body===null?undefined:JSON.stringify(body),
+                        headers:{'Content-Type':'application/json','X-Alert-Admin-Token':sessionStorage.getItem('keco_admin_token') || ''}});
+                    if (!response.ok) throw new Error('protected_request');
                     return response.json();
-                }""", path)
+                }""", {"path":path,"body":body})
             page.goto(BASE+"/control/messages"+("?record_id="+resume if resume else ""),wait_until="networkidle",timeout=60000)
             phase="login"
             page.get_by_label("관리자 비밀번호",exact=True).fill(password)
             page.get_by_role("button",name="로그인",exact=True).click()
-            page.get_by_role("heading",name="등록한 재난문자",exact=True).wait_for()
+            page.get_by_role("heading",name="검토 대기함",exact=True).wait_for() if not resume else page.locator('.quick-situation').wait_for()
             assert api("/internal/v1/message-records/status")["storage_mode"]=="firestore"
             status=api("/internal/v1/message-analysis/status")
             assert status["configured"] and status["place_search_configured"]
+            automation=api("/internal/v1/message-records/automation")
+            sink({"kind":"automation","status":automation_summary(automation)})
+            assert automation["auto_collection_enabled"] and automation["feed_configured"]
+            assert automation["interval_seconds"]==900 and automation["budget"]["limit"]==20 and automation["feed_budget"]["limit"]==450
+            assert automation["state"] in ("starting","live","partial")
             operation=api("/internal/v1/notifications/status")
             sink({"kind":"operations","status":{key:value for key,value in operation.items() if key in ("kma_health","kma_failure_category","kma_consecutive_errors","last_result","last_run_at","kma_last_success_at","kma_failure_started_at") and isinstance(value,(str,int))}})
             asset = page.locator('script[type="module"][src]').first.get_attribute("src")
             assert asset and asset.startswith("/assets/")
             assert revision in page.evaluate("path=>fetch(path,{redirect:'error'}).then(r=>r.text())",asset)
+            if read_only:
+                assert automation["state"] == "live" and automation["last_success_at"]
+                assert automation["feed_budget"]["used"] > 0
+                records=api("/internal/v1/message-records")["records"]
+                sink({"kind":"result","status":"passed","source_revision":revision,
+                      "official_records_in_page":sum(r["origin"]=="official" for r in records),
+                      "analyzed_official_records_in_page":sum(r["origin"]=="official" and r["analysis_state"]=="completed" for r in records),
+                      "analysis_requests":0,"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})
+                assert not denied and not errors
+                context.close();browser.close()
+                return 0
             phase="register"
             if resume:
                 identifier=resume
                 record=api("/internal/v1/message-records/"+identifier)
                 assert record["origin"]=="example" and record["message"]["source"]==SOURCE
             else:
-                page.get_by_role("button",name="사고 발생",exact=True).click()
-                page.get_by_label("발신처·출처",exact=True).fill(SOURCE)
-                page.get_by_label("문자 수신지역",exact=True).fill("대구광역시 달서구")
-                page.get_by_role("button",name="문자 등록",exact=True).click()
-                page.get_by_role("button",name="저장된 문자 분석",exact=True).wait_for()
-                identifier=parse_qs(urlsplit(page.url).query)["record_id"][0]
-                record=api("/internal/v1/message-records/"+identifier)
+                # Register only; the browser must not request analysis. The next regular
+                # Scheduler execution processes this one clearly labelled example.
+                record=api("/internal/v1/message-records",{
+                    "registration_key":str(uuid.uuid4()), "input_kind":"example", "source":SOURCE,
+                    "issued_at":"2026-11-08T10:10:00+09:00", "recipient_regions":["대구광역시 달서구"],
+                    "reference_radius_km":3,
+                    "text":"[창작 예문 · 달서구] 오늘 10시 대구 성서산업단지 인근 공장에서 화재 발생. 주변 주민은 연기 유입에 주의하고 창문을 닫아 주세요."})["record"]
+                identifier=record["id"]
             sink({"kind":"checkpoint","phase":"registered","record_id":identifier})
-            phase="analysis"
+            phase="scheduled_analysis"
             if not record.get("analysis"):
-                page.get_by_role("button",name="저장된 문자 분석",exact=True).click()
-            spatial=page.get_by_role("region",name="지도 확인과 업무 대상 시설 선정",exact=True)
-            review=page.get_by_role("region",name="검토 결과와 안내 초안",exact=True)
-            spatial.wait_for(timeout=120000)
-            record=api("/internal/v1/message-records/"+identifier)
+                from safety_dashboard.adapters.firestore_message_pipeline import FirestoreMessagePipelineStore
+                store=FirestoreMessagePipelineStore("keco-safety-map")
+                enqueue_verification_example(record,store,dt.datetime.now(dt.timezone.utc))
+                deadline=time.monotonic()+170
+                while time.monotonic()<deadline:
+                    record=api("/internal/v1/message-records/"+identifier)
+                    if record["analysis_state"] in ("completed","failed"):break
+                    page.wait_for_timeout(5000)
+                from safety_dashboard.application.message_pipeline import task_id
+                task=store.get(task_id(record)) or {}
+                if task.get("state") != "done":
+                    page.wait_for_timeout(1000)
+                    task=store.get(task_id(record)) or {}
+                sink({"kind":"pipeline","status":{"state":task.get("state"),"attempts":task.get("attempts"),"detail":task.get("detail"),"browser_analysis_requests":len(analysis_requests)}})
+                assert task.get("state")=="done" and task.get("attempts")==1
             assert record["analysis_state"]=="completed" and 0 < record["analysis"]["model_calls"] <= 6
             assert record["origin"]=="example"
-            if record["review_state"] != "completed":
+            page.goto(BASE+"/control/messages?record_id="+identifier,wait_until="networkidle")
+            review=page.get_by_role("region",name="한 화면 검토",exact=True)
+            if record["review_state"]!="completed":
+                review.wait_for()
+                review.get_by_label("안내 초안 미리보기",exact=True).wait_for()
                 phase="reference"
-                spatial.get_by_role("button",name=re.compile("후보 선택$")).first.click()
-                spatial.get_by_label("기준점 확인 근거",exact=True).fill("창작 배포 검수: 산업단지 대표점을 참고 기준으로 사용")
-                spatial.get_by_role("checkbox",name="이 위치와 거리를 참고 조회 기준으로 확인했습니다.",exact=True).check()
-                spatial.get_by_role("button",name="이 기준점으로 조회",exact=True).click()
-                spatial.locator('.message-selection-list input[type="checkbox"]').first.wait_for()
-                page.wait_for_function("typeof kakao !== 'undefined' && typeof kakao.maps.Map === 'function'")
-                phase="selection"
-                spatial.locator('.message-selection-list input[type="checkbox"]').first.check()
-                spatial.get_by_label("시설 선정 사유",exact=True).fill("운영 배포 검수용 창작 기록이며 실제 점검 대상 지정이 아님")
-                spatial.get_by_role("button",name="선정 시설 저장",exact=True).click()
-                spatial.get_by_text("업무 대상 시설 선정을 저장했습니다.",exact=True).wait_for()
+                # The actual Korean label is kept exact to catch a mismatched UI.
+                ack=review.get_by_role("checkbox",name="이 위치와 거리를 참고 조회 기준으로 사용합니다.",exact=True)
+                if ack.count(): ack.check()
                 phase="complete"
-                review.get_by_label("검토 완료 사유",exact=True).fill("운영 배포 검수용 창작 시나리오의 저장/조회/초안을 확인함")
-                review.get_by_label("확인 질문 보완 메모",exact=True).fill("실제 사고·현장 확인이 아님. 대표점 주변 참고 조회와 업무 흐름만 검수함.")
-                for field in review.locator('textarea[aria-label$="미선정 사유"]').all(): field.fill("창작 배포 검수 범위 밖으로 별도 확인하지 않음")
-                review.get_by_role("button",name="검토 완료하고 초안 만들기",exact=True).click()
-            review.get_by_label("저장한 안내 초안",exact=True).wait_for()
+                primary=review.get_by_role("button",name="이 내용으로 검토 완료",exact=True)
+                from playwright.sync_api import expect
+                expect(primary).to_be_enabled(timeout=30000)
+                primary.click()
+            page.get_by_label("저장한 안내 초안",exact=True).wait_for()
             phase="restore"
             page.reload(wait_until="networkidle")
-            review.get_by_label("저장한 안내 초안",exact=True).wait_for()
+            page.get_by_label("저장한 안내 초안",exact=True).wait_for()
             saved=api("/internal/v1/message-records/"+identifier)
             assert saved["review_state"]=="completed" and saved["review_completion"]["selected_unique_count"]>=1
             assert SOURCE in saved["notice_draft"]["text"] and "창작 예문" in saved["notice_draft"]["text"]
             assert api("/internal/v1/message-records/"+identifier+"/review")["draft_current"]
             phase="clipboard"
-            review.get_by_role("button",name="현재 초안 복사",exact=True).click()
-            review.get_by_text("초안을 클립보드에 복사했습니다. 실제 발송·수신 기록은 아닙니다.",exact=True).wait_for()
+            page.get_by_role("button",name="안내문 복사",exact=True).click()
+            page.get_by_text("안내문을 복사했습니다. 기존 보고·전달에 사용할 수 있습니다.",exact=True).wait_for()
             assert page.evaluate("navigator.clipboard.readText()") == saved["notice_draft"]["text"]
+            phase="saved_map"
+            # Re-open only the tagged example to inspect the new proposal/map after
+            # restoring its saved result; leave it completed at the end.
+            page.get_by_role("button",name="내용 보완·다시 검토",exact=True).click()
+            review.get_by_label("안내 초안 미리보기",exact=True).wait_for()
             phase="screenshots"
             page.wait_for_function("typeof kakao !== 'undefined' && typeof kakao.maps.Map === 'function'")
             for name,width,height in (("desktop",1440,1050),("mobile",390,844)):
                 page.set_viewport_size({"width":width,"height":height})
-                page.evaluate("scrollTo(0,document.querySelector('.message-spatial').getBoundingClientRect().top+scrollY-80)")
+                page.evaluate("scrollTo(0,document.querySelector('.quick-review').getBoundingClientRect().top+scrollY-80)")
                 page.wait_for_timeout(400)
                 assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
                 raw=page.screenshot(type="jpeg",quality=70)
                 if len(raw)>170000: raw=page.screenshot(type="jpeg",quality=45)
                 assert len(raw)<180000
                 sink({"kind":"screenshot","name":name,"jpeg_base64":base64.b64encode(raw).decode()})
-            map_images=page.locator('.message-spatial img').evaluate_all("""images=>images.filter(img=>{
+            map_images=page.locator('.quick-review img').evaluate_all("""images=>images.filter(img=>{
                 const u=new URL(img.currentSrc || img.src,location.href);
                 return img.complete && img.naturalWidth>=128 &&
                     ((u.hostname==='mts.kakaocdn.net' && u.pathname.startsWith('/api/v1/tile/')) ||
                      (/^map[0-9]*\\.daumcdn\\.net$/.test(u.hostname) && ['2d','sky','hybrid'].some(kind=>u.pathname.startsWith('/map_'+kind))));
             }).length""")
-            assert not denied and not errors and len(analysis_requests)<=1 and map_images
+            assert not denied and not errors and not analysis_requests and map_images
+            from playwright.sync_api import expect
+            primary=review.get_by_role("button",name="이 내용으로 검토 완료",exact=True)
+            expect(primary).to_be_enabled(timeout=30000)
+            primary.click()
+            page.get_by_label("저장한 안내 초안",exact=True).wait_for()
+            sink({"kind":"automation","status":automation_summary(api("/internal/v1/message-records/automation"))})
             sink({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
                   "model_calls":saved["analysis"]["model_calls"],"selected_count":saved["review_completion"]["selected_unique_count"],
                   "analysis_requests":len(analysis_requests),"tile_responses":len(tiles),"rendered_map_images":map_images,"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})
