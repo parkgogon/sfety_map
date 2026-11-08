@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import re
+from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 
 BASE = "https://keco-safety-map.web.app"
@@ -20,7 +21,7 @@ def allowed_request(url, method):
         path = parsed.path
         if path.startswith("/api/"): return False
         if path.startswith("/internal/"):
-            if path in ("/internal/v1/admin/session", "/internal/v1/message-analysis/status"): return method == "GET"
+            if path in ("/internal/v1/admin/session", "/internal/v1/message-analysis/status", "/internal/v1/notifications/status"): return method == "GET"
             if path == "/internal/v1/admin/access": return method == "POST"
             return bool(re.fullmatch(r"/internal/v1/message-records(?:/(?:status|manual-[a-f0-9]{32})(?:/(?:analyze|spatial|reference|facilities|selection|related|review|complete|notice-copy))?)?", path)) and method in ("GET", "POST")
         return method == "GET"
@@ -40,9 +41,12 @@ def verify(sink=emit):
     from playwright.sync_api import sync_playwright
     phase, identifier = "open", None
     denied, errors, analysis_requests, tiles = [], [], [], []
+    map_images=0
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(executable_path="/usr/bin/chromium",headless=True,args=["--no-sandbox","--disable-dev-shm-usage"])
+            fontconfig=Path('/tmp/message-release-fontconfig.conf')
+            fontconfig.write_text('<fontconfig><include ignore_missing="yes">/etc/fonts/fonts.conf</include><dir>/app/fonts</dir><cachedir>/tmp/message-release-fontcache</cachedir></fontconfig>')
+            browser = p.chromium.launch(executable_path="/usr/bin/chromium",headless=True,args=["--no-sandbox","--disable-dev-shm-usage"],env={**os.environ,"FONTCONFIG_FILE":str(fontconfig)})
             context = browser.new_context(viewport={"width":1440,"height":1050},permissions=["clipboard-read","clipboard-write"])
             page = context.new_page(); page.set_default_timeout(30000)
             page.on("pageerror", lambda _: errors.append("page_error"))
@@ -68,6 +72,8 @@ def verify(sink=emit):
             assert api("/internal/v1/message-records/status")["storage_mode"]=="firestore"
             status=api("/internal/v1/message-analysis/status")
             assert status["configured"] and status["place_search_configured"]
+            operation=api("/internal/v1/notifications/status")
+            sink({"kind":"operations","status":{key:value for key,value in operation.items() if key in ("kma_health","kma_failure_category","kma_consecutive_errors","last_result","last_run_at","kma_last_success_at","kma_failure_started_at") and isinstance(value,(str,int))}})
             asset = page.locator('script[type="module"][src]').first.get_attribute("src")
             assert asset and asset.startswith("/assets/")
             assert revision in page.evaluate("path=>fetch(path,{redirect:'error'}).then(r=>r.text())",asset)
@@ -129,19 +135,24 @@ def verify(sink=emit):
             for name,width,height in (("desktop",1440,1050),("mobile",390,844)):
                 page.set_viewport_size({"width":width,"height":height})
                 page.evaluate("scrollTo(0,document.querySelector('.message-spatial').getBoundingClientRect().top+scrollY-80)")
+                page.wait_for_timeout(400)
                 assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
                 raw=page.screenshot(type="jpeg",quality=70)
                 if len(raw)>170000: raw=page.screenshot(type="jpeg",quality=45)
                 assert len(raw)<180000
                 sink({"kind":"screenshot","name":name,"jpeg_base64":base64.b64encode(raw).decode()})
-            assert not denied and not errors and len(analysis_requests)<=1 and tiles
+            map_images=page.locator('.message-spatial img').evaluate_all("""images=>images.filter(img=>{
+                const u=new URL(img.currentSrc || img.src,location.href);
+                return img.complete && img.naturalWidth>=128 && /(?:^|\\.)daumcdn\\.net$/.test(u.hostname);
+            }).length""")
+            assert not denied and not errors and len(analysis_requests)<=1 and map_images
             sink({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
                   "model_calls":saved["analysis"]["model_calls"],"selected_count":saved["review_completion"]["selected_unique_count"],
-                  "analysis_requests":len(analysis_requests),"tile_responses":len(tiles),"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})
+                  "analysis_requests":len(analysis_requests),"tile_responses":len(tiles),"rendered_map_images":map_images,"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})
             context.close();browser.close()
         return 0
     except Exception as error:
-        sink({"kind":"result","status":"failed","phase":phase,"record_id":identifier,"error_type":type(error).__name__,"denied_hosts":sorted(set(denied))[:10]})
+        sink({"kind":"result","status":"failed","phase":phase,"record_id":identifier,"error_type":type(error).__name__,"denied_hosts":sorted(set(denied))[:10],"analysis_requests":len(analysis_requests),"tile_responses":len(tiles),"rendered_map_images":map_images,"page_errors":len(errors),"unexpected_requests":len(denied)})
         return 1
 
 
