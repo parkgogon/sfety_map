@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "transport": "actual local built React/API/CSV 195/memory store; synthetic or saved analysis fixtures; fake map SDK/no real tiles",
+  "clear_record_main_clicks": 2,
+  "clear_record_commit_versions": 1,
+  "checks": [
+    "clear record: open + approve; one version commit, no reason typing or intermediate saves; server-checked clipboard and reload",
+    "reopen, edit, hold and resume preserves unapproved notes without an extra model request",
+    "industrial-complex example: explicit representative-point acknowledgment; default nearby facilities; no typed location/selection reasons",
+    "prevention: no unnecessary point/facility selection; explicit no-action approval",
+    "paste-only input: publication time remains unknown; no fabricated timestamp"
+  ],
+  "page_errors": [],
+  "unexpected_requests": [],
+  "fixture_analysis_requests": 3,
+  "new_external_openai_kakao_calls": 0,
+  "real_messages_sent": 0
+}

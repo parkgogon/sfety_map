@@ -20,6 +20,7 @@ from safety_dashboard.application.message_records import (
     RecordConflict, RecordStorageUnavailable,
 )
 from safety_dashboard.application.message_feed import OfficialFeedService, FeedRequest
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
 from safety_dashboard.domain.models import DisasterMessage
 from tests.test_message_analysis import request as analysis_request, service, call, draft, part, FakePlaces, search_args, location, PLACE
 
@@ -238,7 +239,7 @@ class MessageRecordRouteTests(unittest.TestCase):
 
     def test_all_record_routes_require_admin_before_provider_or_storage_access(self):
         self.svc.store_factory = Mock(side_effect=AssertionError("unauthorized storage"))
-        for method, path, body in (("GET", "", None), ("GET", "/status", None), ("POST", "/feed", {"region": "경상남도", "date": "2026-11-08"}),
+        for method, path, body in (("GET", "", None), ("GET", "/status", None), ("GET", "/automation", None), ("POST", "/feed", {"region": "경상남도", "date": "2026-11-08"}),
                                    ("POST", "", registration().model_dump(mode="json")), ("GET", "/bad/history", None)):
             response = self.client.request(method, self.base + path, json=body)
             self.assertEqual(response.status_code, 403)
@@ -281,6 +282,28 @@ class MessageRecordRouteTests(unittest.TestCase):
         response = self.client.post(self.base + "/feed", json={"region": "경상남도", "date": "2026-11-08"})
         self.assertEqual(response.status_code, 503); self.assertNotIn("private-provider-key", response.text)
         self.assertEqual(self.client.get(self.base + "/arbitrary").status_code, 404)
+
+    def test_automation_status_is_protected_read_only_and_worker_routes_are_absent(self):
+        self.assertEqual(self.client.get(self.base + "/automation").status_code, 403)
+        self.login()
+        response = self.client.get(self.base + "/automation")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
+        self.assertFalse(response.json()["auto_collection_enabled"])
+        self.analyzer.analyze.assert_not_called()
+        self.assertEqual(self.client.post("/internal/v1/collect").status_code, 404)
+        self.assertEqual(self.client.post("/internal/v1/analyze-next").status_code, 404)
+
+    def test_manual_feed_reports_shared_request_limit_without_claiming_empty_success(self):
+        self.login()
+        body = {"region": "경상남도", "date": "2026-11-08"}
+        self.feed.provider.fetch_page.side_effect = FeedRequestLimit((NOW+dt.timedelta(days=2)).isoformat())
+        response = self.client.post(self.base+"/feed", json=body)
+        self.assertEqual(response.status_code, 429)
+        self.assertGreaterEqual(int(response.headers["retry-after"]), 1)
+        self.assertIn("조회 한도", response.json()["detail"])
+        self.feed.provider.fetch_page.side_effect = FeedBudgetUnavailable("문자 조회 한도를 확인하지 못했습니다.")
+        self.assertEqual(self.client.post(self.base+"/feed", json=body).status_code, 503)
 
 
 class FirestoreMessageStoreTests(unittest.TestCase):

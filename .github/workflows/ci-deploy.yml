@@ -1,5 +1,9 @@
 name: Test and deploy field map
 
+# User-authorized limited pilot (2026-11-08). Explicit repository variables override
+# these versioned defaults; false disables collection and pauses its two jobs.
+# Runtime/application defaults remain disabled outside this deployment workflow.
+
 on:
   pull_request:
   push:
@@ -28,11 +32,19 @@ jobs:
           python -m compileall -q safety_dashboard scripts tests
       - name: Check message review deployment variables
         env:
-          MESSAGE_REVIEW_AI_ENABLED: ${{ vars.MESSAGE_REVIEW_AI_ENABLED || 'false' }}
-          MESSAGE_REVIEW_FEED_ENABLED: ${{ vars.MESSAGE_REVIEW_FEED_ENABLED || 'false' }}
-          MESSAGE_REVIEW_OPENAI_VERSION: ${{ vars.MESSAGE_REVIEW_OPENAI_VERSION }}
-          MESSAGE_REVIEW_KAKAO_VERSION: ${{ vars.MESSAGE_REVIEW_KAKAO_VERSION }}
-          MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION }}
+          MESSAGE_REVIEW_AI_ENABLED: ${{ vars.MESSAGE_REVIEW_AI_ENABLED || 'true' }}
+          MESSAGE_REVIEW_FEED_ENABLED: ${{ vars.MESSAGE_REVIEW_FEED_ENABLED || 'true' }}
+          MESSAGE_REVIEW_OPENAI_VERSION: ${{ vars.MESSAGE_REVIEW_OPENAI_VERSION || '1' }}
+          MESSAGE_REVIEW_KAKAO_VERSION: ${{ vars.MESSAGE_REVIEW_KAKAO_VERSION || '1' }}
+          MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION || '1' }}
+          MESSAGE_COLLECTION_ENABLED: ${{ vars.MESSAGE_COLLECTION_ENABLED || 'true' }}
+          MESSAGE_COLLECTION_CONTRACT_VERIFIED: ${{ vars.MESSAGE_COLLECTION_CONTRACT_VERIFIED || 'true' }}
+          MESSAGE_ANALYSIS_DAILY_LIMIT: ${{ vars.MESSAGE_ANALYSIS_DAILY_LIMIT || '20' }}
+          MESSAGE_COLLECTION_MAX_PAGES: ${{ vars.MESSAGE_COLLECTION_MAX_PAGES || '4' }}
+          MESSAGE_FEED_REQUEST_LIMIT: ${{ vars.MESSAGE_FEED_REQUEST_LIMIT || '450' }}
+          MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '15' }}
+          MESSAGE_COLLECTION_CATCHUP_DAYS: ${{ vars.MESSAGE_COLLECTION_CATCHUP_DAYS || '7' }}
+          MESSAGE_COLLECTION_START_AT: ${{ vars.MESSAGE_COLLECTION_START_AT }}
         run: python scripts/build_message_review_deploy_config.py
       - uses: actions/setup-node@v4
         with:
@@ -67,11 +79,19 @@ jobs:
       ALERT_EXCLUDED_WARNING_TYPES: ${{ vars.ALERT_EXCLUDED_WARNING_TYPES || '열대야' }}
       TELEGRAM_ADMIN_SECRET_NAME: ${{ vars.TELEGRAM_ADMIN_SECRET_NAME || 'TELEGRAM_CHAT_ID' }}
       DASHBOARD_BASE_URL: ${{ vars.DASHBOARD_BASE_URL || 'https://keco-safety-map.web.app' }}
-      MESSAGE_REVIEW_AI_ENABLED: ${{ vars.MESSAGE_REVIEW_AI_ENABLED || 'false' }}
-      MESSAGE_REVIEW_FEED_ENABLED: ${{ vars.MESSAGE_REVIEW_FEED_ENABLED || 'false' }}
-      MESSAGE_REVIEW_OPENAI_VERSION: ${{ vars.MESSAGE_REVIEW_OPENAI_VERSION }}
-      MESSAGE_REVIEW_KAKAO_VERSION: ${{ vars.MESSAGE_REVIEW_KAKAO_VERSION }}
-      MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION }}
+      MESSAGE_REVIEW_AI_ENABLED: ${{ vars.MESSAGE_REVIEW_AI_ENABLED || 'true' }}
+      MESSAGE_REVIEW_FEED_ENABLED: ${{ vars.MESSAGE_REVIEW_FEED_ENABLED || 'true' }}
+      MESSAGE_REVIEW_OPENAI_VERSION: ${{ vars.MESSAGE_REVIEW_OPENAI_VERSION || '1' }}
+      MESSAGE_REVIEW_KAKAO_VERSION: ${{ vars.MESSAGE_REVIEW_KAKAO_VERSION || '1' }}
+      MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION || '1' }}
+      MESSAGE_COLLECTION_ENABLED: ${{ vars.MESSAGE_COLLECTION_ENABLED || 'true' }}
+      MESSAGE_COLLECTION_CONTRACT_VERIFIED: ${{ vars.MESSAGE_COLLECTION_CONTRACT_VERIFIED || 'true' }}
+      MESSAGE_ANALYSIS_DAILY_LIMIT: ${{ vars.MESSAGE_ANALYSIS_DAILY_LIMIT || '20' }}
+      MESSAGE_COLLECTION_MAX_PAGES: ${{ vars.MESSAGE_COLLECTION_MAX_PAGES || '4' }}
+      MESSAGE_FEED_REQUEST_LIMIT: ${{ vars.MESSAGE_FEED_REQUEST_LIMIT || '450' }}
+      MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '15' }}
+      MESSAGE_COLLECTION_CATCHUP_DAYS: ${{ vars.MESSAGE_COLLECTION_CATCHUP_DAYS || '7' }}
+      MESSAGE_COLLECTION_START_AT: ${{ vars.MESSAGE_COLLECTION_START_AT }}
     steps:
       - uses: actions/checkout@v4
       - name: Prepare opt-in message review bindings
@@ -117,6 +137,8 @@ jobs:
             --set-env-vars "MONITORING_CACHE_SECONDS=300,MONITORING_REFRESH_COOLDOWN_SECONDS=60,MONITORING_SNAPSHOT_FRESH_SECONDS=900,ADMIN_SESSION_SECONDS=28800,ADMIN_LOGIN_FAILURE_LIMIT=5,ADMIN_LOGIN_FAILURE_WINDOW_SECONDS=300,CCTV_ENABLED=false,TZ=Asia/Seoul,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,APP_REVISION=$GITHUB_SHA,ALERT_AUTOMATION_MODE=$ALERT_AUTOMATION_MODE,ALERT_USER_DELIVERY_MODE=$ALERT_USER_DELIVERY_MODE,ALERT_DAILY_CAP=100,ALERT_CAP_WARNING=80,ALERT_MONTHLY_CAP=500,ALERT_MONTHLY_CAP_WARNING=400,DASHBOARD_BASE_URL=$DASHBOARD_BASE_URL,NEARBY_MAP_CAPTURE_ENABLED=true,NEARBY_MAP_TIMEOUT_SECONDS=20,$MESSAGE_REVIEW_ENV_VARS" \
             --set-secrets "$SECRET_BINDINGS" \
             --quiet
+      - name: Configure separate opt-in message collection and analysis
+        run: bash scripts/configure_message_automation.sh
       - name: Deploy private automatic alert worker
         if: env.ALERT_AUTOMATION_ENABLED == 'true'
         run: |-

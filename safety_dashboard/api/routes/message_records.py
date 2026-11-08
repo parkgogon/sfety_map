@@ -14,13 +14,18 @@ from safety_dashboard.application.message_feed import FeedRequest, ImportOfficia
 from safety_dashboard.application.message_spatial import SaveMessageReference, SaveMessageSelection, LocationKey, Digest, SpatialValidationError
 from safety_dashboard.application.message_review import CompleteMessageReview, ReopenMessageReview, SaveMessageNotice, CopyMessageNotice, ReviewValidationError
 from safety_dashboard.application.message_relations import LinkMessage, UnlinkMessage, RelationValidationError
+from safety_dashboard.application.message_preparation import MessagePreparationService, PrepareMessageReview, ApprovePreparedReview
 from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
+from safety_dashboard.application.message_pipeline import moment, UTC
+import datetime as dt
 
 NO_STORE = {"Cache-Control": "private, no-store"}
 
 
 def build_router(services):
+    preparation = MessagePreparationService(services.message_review)
     def authorize(response: Response,
                   token: str = Header("", alias="X-Alert-Admin-Token"),
                   cookie: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME)):
@@ -51,6 +56,11 @@ def build_router(services):
                 raise HTTPException(429, str(error), headers={**NO_STORE, "Retry-After": "20"}) from None
             except AnalysisUnavailable as error:
                 raise HTTPException(503, str(error), headers=NO_STORE) from None
+            except FeedRequestLimit as error:
+                retry = max(1, int((moment(error.retry_at)-dt.datetime.now(UTC)).total_seconds())+1)
+                raise HTTPException(429, str(error), headers={**NO_STORE, "Retry-After": str(retry)}) from None
+            except FeedBudgetUnavailable as error:
+                raise HTTPException(503, str(error), headers=NO_STORE) from None
             except DisasterMessageDataError:
                 raise HTTPException(503, "공식 문자 조회에 실패했습니다. 이전 목록과 저장 기록은 유지됩니다.", headers=NO_STORE) from None
             except (SpatialValidationError, ReviewValidationError, RelationValidationError) as error:
@@ -71,7 +81,12 @@ def build_router(services):
 
     @router.get("/status")
     def status():
-        return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured}
+        return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured,
+                "auto_collection_enabled": services.message_automation.settings.enabled}
+
+    @router.get("/automation")
+    def automation():
+        return services.message_automation.read()
 
     @router.get("")
     @guarded
@@ -144,6 +159,21 @@ def build_router(services):
     @guarded
     def review(identifier: str):
         return services.message_review.detail(check_id(identifier))
+
+    @router.post("/{identifier}/prepare")
+    @guarded
+    def prepare(identifier: str, request: PrepareMessageReview):
+        return preparation.prepare(check_id(identifier), request)
+
+    @router.post("/{identifier}/approve")
+    @guarded
+    def approve(identifier: str, request: ApprovePreparedReview):
+        return preparation.approve(check_id(identifier), request)
+
+    @router.post("/{identifier}/hold")
+    @guarded
+    def hold(identifier: str, request: PrepareMessageReview):
+        return preparation.hold(check_id(identifier), request)
 
     @router.get("/{identifier}/related")
     @guarded

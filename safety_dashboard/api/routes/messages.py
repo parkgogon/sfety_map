@@ -13,7 +13,7 @@ def build_router(services: ApiServices) -> APIRouter:
     router = APIRouter(prefix="/internal/v1/message-analysis")
 
     def authorize(header: str, cookie: str):
-        # Do not initialize notification/Firestore services for this read-only workspace.
+        # Authorize before storage access. Paid analysis later reserves a shared budget.
         # Also reject tokens signed with the development fallback when admin is unconfigured.
         if services.admin_access.settings.password:
             for token in (header, cookie):

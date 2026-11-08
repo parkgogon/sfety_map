@@ -1,7 +1,7 @@
 export interface MessageInput {
   text: string;
   source: string;
-  issued_at: string;
+  issued_at: string | null;
   reference_radius_km: 1 | 3 | 5 | 10;
   recipient_regions?: string[];
   input_kind: "example" | "manual" | "official";

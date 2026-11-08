@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import os
 import re
 from pathlib import Path
@@ -21,7 +22,33 @@ def build_config(env):
         return value
 
     bindings = []
-    settings = ["MESSAGE_REVIEW_STORE=firestore"]
+    collection = enabled("MESSAGE_COLLECTION_ENABLED")
+    verified = enabled("MESSAGE_COLLECTION_CONTRACT_VERIFIED")
+    settings = ["MESSAGE_REVIEW_STORE=firestore", f"MESSAGE_COLLECTION_ENABLED={str(collection).lower()}",
+                f"MESSAGE_COLLECTION_CONTRACT_VERIFIED={str(verified).lower()}"]
+    for name, default, lower, upper in (("MESSAGE_ANALYSIS_DAILY_LIMIT", 20, 1, 100),
+                                       ("MESSAGE_COLLECTION_MAX_PAGES", 4, 1, 4),
+                                       ("MESSAGE_FEED_REQUEST_LIMIT", 450, 1, 450),
+                                       ("MESSAGE_COLLECTION_CATCHUP_DAYS", 7, 2, 30)):
+        value = env.get(name, str(default)).strip() or str(default)
+        if not re.fullmatch(r"[0-9]+", value) or not lower <= int(value) <= upper:
+            raise ValueError(f"{name}: 허용 범위의 정수가 필요합니다.")
+        settings.append(f"{name}={int(value)}")
+    interval = env.get("MESSAGE_COLLECTION_INTERVAL_MINUTES", "15").strip() or "15"
+    if interval not in {"15", "30", "60"}:
+        raise ValueError("MESSAGE_COLLECTION_INTERVAL_MINUTES: 15, 30, 60 중 하나가 필요합니다.")
+    settings.append("MESSAGE_COLLECTION_INTERVAL_MINUTES="+interval)
+    raw_start = env.get("MESSAGE_COLLECTION_START_AT", "").strip()
+    if raw_start:
+        try:
+            start = dt.datetime.fromisoformat(raw_start)
+            if start.tzinfo is None:
+                raise ValueError()
+        except ValueError:
+            raise ValueError("MESSAGE_COLLECTION_START_AT: 시간대가 있는 ISO 시각이 필요합니다.") from None
+        settings.append("MESSAGE_COLLECTION_START_AT=" + start.isoformat())
+    if collection and not (verified and enabled("MESSAGE_REVIEW_AI_ENABLED") and enabled("MESSAGE_REVIEW_FEED_ENABLED")):
+        raise ValueError("MESSAGE_COLLECTION_ENABLED: API 계약 확인과 AI·공식 피드 연결이 모두 필요합니다.")
     if enabled("MESSAGE_REVIEW_AI_ENABLED"):
         bindings += ["OPENAI_API_KEY=OPENAI_API_KEY:" + version("MESSAGE_REVIEW_OPENAI_VERSION"),
                      "KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:" + version("MESSAGE_REVIEW_KAKAO_VERSION")]

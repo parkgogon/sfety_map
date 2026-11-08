@@ -1,0 +1,17 @@
+{
+  "provider_limit_per_day": 500,
+  "provider_limit_source": "user_confirmed",
+  "app_request_limit_rolling_24h": 450,
+  "collection_interval_minutes": 15,
+  "collection_max_pages_per_run": 4,
+  "python_tests": 523,
+  "react_tests": 268,
+  "facility_count": 195,
+  "python_compile": "passed",
+  "web_build": "passed",
+  "shell_syntax": "passed",
+  "external_http_tcp_attempts_in_automated_tests": 0,
+  "new_real_provider_or_model_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false
+}

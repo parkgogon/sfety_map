@@ -28,7 +28,7 @@ describe("재난문자 등록·저장 작업", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     window.sessionStorage.setItem("keco_admin_token", "signed-test-token");
-    window.history.replaceState({}, "", "/control/messages");
+    window.history.replaceState({}, "", "/control/messages?view=advanced");
     saved = null; analysisCalls = 0; posted = null; listFailure = false; analysisFailure = false; noteConflict = false; feedFailure = false;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
       const body = init?.body ? JSON.parse(init.body as string) : undefined;
@@ -103,14 +103,14 @@ describe("재난문자 등록·저장 작업", () => {
 
   it("retains the previous saved analysis when reanalysis fails", async () => {
     saved = { ...sample(), analysis_state: "completed", analysis_revision: 1, analysis: analysis(sample()) };
-    window.history.replaceState({}, "", `?record_id=${saved.id}`);
+    window.history.replaceState({}, "", `?view=advanced&record_id=${saved.id}`);
     await render(); analysisFailure = true; await click("저장된 문자 분석");
     expect(container.textContent).toContain("분석 연결 실패");
     expect(container.textContent).toContain("저장된 화재 검토 결과"); expect(container.textContent).toContain("이전 분석 결과를 유지합니다");
   });
 
   it("does not claim save success on conflicting edits", async () => {
-    saved = sample(); window.history.replaceState({}, "", `?record_id=${saved.id}`);
+    saved = sample(); window.history.replaceState({}, "", `?view=advanced&record_id=${saved.id}`);
     await render(); await fill("확인할 사항", "교차로 위치 확인"); noteConflict = true; await click("검토 메모 저장");
     expect(saved.note).toBe(""); expect(container.textContent).toContain("기록이 변경됐습니다");
     expect(container.textContent).not.toContain("검토 메모를 저장했습니다");
@@ -132,7 +132,7 @@ describe("재난문자 등록·저장 작업", () => {
   });
 
   it("marks history as read-only and keeps the original when starting another record", async () => {
-    saved = sample(); window.history.replaceState({}, "", `?record_id=${saved.id}`); await render();
+    saved = sample(); window.history.replaceState({}, "", `?view=advanced&record_id=${saved.id}`); await render();
     await click("변경 이력 보기"); await click("1판 · 문자 등록");
     expect(container.textContent).toContain("과거 1판"); expect(container.textContent).toContain("최초 기록 메모");
     await click("새 문자 등록"); expect(container.querySelector<HTMLTextAreaElement>("textarea")!.readOnly).toBe(false);

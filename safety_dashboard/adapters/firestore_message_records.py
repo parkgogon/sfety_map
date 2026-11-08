@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from google.cloud import firestore
 
-from safety_dashboard.application.message_records import RecordConflict, RecordStorageUnavailable
+from safety_dashboard.application.message_records import RecordConflict, RecordStorageUnavailable, preserve_observation, newer_observation
 
 
 class FirestoreMessageRecordStore:
@@ -38,11 +38,27 @@ class FirestoreMessageRecordStore:
             current = snapshot.to_dict() if snapshot.exists else None
             if (current["version"] if current else 0) != expected:
                 raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 진행해 주세요.")
-            transaction.set(ref, value)
-            transaction.set(ref.collection("versions").document(f"{expected + 1:010d}"), {"event": event, "record": value})
-            return value
+            saved = preserve_observation(value, current)
+            transaction.set(ref, saved)
+            transaction.set(ref.collection("versions").document(f"{expected + 1:010d}"), {"event": event, "record": saved})
+            return saved
 
         return self.transaction_runner(write)(self.client.transaction())
+
+    def observe_official(self, identifier, digest, fetched_at):
+        ref = self.records.document(identifier)
+
+        def observe(transaction):
+            snapshot = ref.get(transaction=transaction, timeout=5)
+            current = snapshot.to_dict() if snapshot.exists else None
+            if not current or current["content_hash"] != digest:
+                return None
+            if newer_observation(fetched_at, current.get("official_fetched_at")):
+                current["official_fetched_at"] = fetched_at
+                transaction.set(ref, current)
+            return current
+
+        return self.transaction_runner(observe)(self.client.transaction())
 
     def history(self, identifier, before, limit):
         query = self.records.document(identifier).collection("versions").order_by("record.version", direction=firestore.Query.DESCENDING)

@@ -1,0 +1,22 @@
+{
+  "base_commit": "b3193de1b97bb8e6ffd92698b8add491804da85e",
+  "files": {
+    ".env.example": "fb8ce4a7796bb6cd2851c358bffaeaeb7c0a12f705fec0b149980165434dde20",
+    ".github/workflows/ci-deploy.yml": "7817fd8f6180cb1a441a808c77b14f570ba0d59f613591e39eda5e58bb884a77",
+    "field_web/src/MessageAutomationStatus.test.tsx": "92c2f40c9691c7724a3f26a032271009873a8ee44d98b378e835facdce077633",
+    "field_web/src/MessageAutomationStatus.tsx": "1832d5592dc7175acc941b88de949194e7d286c9110148cf51bf083983acd385",
+    "field_web/src/messageRecordsApi.ts": "219ea34a30008269c29ba9e89e0edee8f39a2eb38a96728359eaec53174d685b",
+    "safety_dashboard/adapters/disaster_messages.py": "80c254b672a3eadb6e7393191ebaed7ac1f4b28d033dd2ee865b4771140701c0",
+    "safety_dashboard/api/routes/message_records.py": "7885bd5a9034c4cf8ed33f8c97e106651012e33df4b4428c63c0a48f3ba3ad85",
+    "safety_dashboard/application/message_automation.py": "aebf547b2074506b8bfb4866866a9e93c35f71a29f931d72072dfa5c00fee5f6",
+    "safety_dashboard/application/message_collection.py": "67d316c87ee2beacf4a69d4185d9c5f9bd89d6d0c9ea4117e6e76f27bd782b13",
+    "safety_dashboard/application/message_feed_budget.py": "38348512b921b2552b1105c3dab59293443b18d2e77699640b0bf3c67d552f65",
+    "safety_dashboard/application/message_runtime.py": "5e857578774cf23f951aa38f5aafcaa3a17c0530d993652b804e73c08b0d7127",
+    "scripts/build_message_review_deploy_config.py": "ee3d9680349212dd560ca6942773974d4b504a6eabe3e2ef1d4dcd5bb3a4c7f7",
+    "scripts/configure_message_automation.sh": "e5497e51be15b23c973f727a37f484d3aa0ec4d7137bf83059eb4ef30cb45295",
+    "tests/test_message_automation.py": "bacab877ac35a27481153648beb6df7f4cfd431e09ec7b47822d3ded03bd98d6",
+    "tests/test_message_feed_budget.py": "35c64b499efcd4adfe720d347c5d4df6b7f53d07d36b74f5b9cfde1d4b8c49f0",
+    "tests/test_message_pipeline_adapters.py": "4c099fb68895f33daf91d9787bbbd659dfe079c63910935be3cf71e82b47f04f",
+    "tests/test_message_records.py": "dbf618dbc727dc267a76256efa4ecf0db0e4099c9e4b7a701a10aa02722b7c50"
+  }
+}

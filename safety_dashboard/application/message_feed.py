@@ -36,8 +36,8 @@ class OfficialFeedService:
             raise ValueError("오늘을 포함한 최근 7일 중 하루를 선택해 주세요.")
         if not self.provider.configured:
             return {"status": "NOT_CONFIGURED", "messages": [], "detail": "공식 재난문자 조회가 설정되지 않았습니다."}
-        page = self.provider.fetch_page(request.region, request.date, request.page, 50)
         fetched = self.now().isoformat()
+        page = self.provider.fetch_page(request.region, request.date, request.page, 50)
         messages = []
         for row in page["messages"]:
             if row.created_at.astimezone(KST).date() != request.date:

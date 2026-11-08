@@ -6,7 +6,7 @@ const KINDS = { additional: "추가 안내", correction: "정정", release: "해
 const INTENTS: Record<string,string> = {event:"발생",prevention:"예방",advisory:"안내",scheduled_restriction:"예정 통제",active_restriction:"통제 유지",release:"해제",correction:"정정",unknown:"판단 보류"};
 const ROLES: Record<string,string> = {incident_site:"발생 장소",restricted_area:"통제 장소",evacuation_destination:"대피 목적지",evacuation_area:"대피 대상 지역",reference:"참고 장소"};
 const ORIGINS = {example:"창작 예문",manual:"수동 입력",official:"공식 API"};
-function time(value: string) { return new Date(value).toLocaleString("ko-KR", {timeZone:"Asia/Seoul"}) + " (한국 시간)"; }
+function time(value: string | null) { return value ? new Date(value).toLocaleString("ko-KR", {timeZone:"Asia/Seoul"}) + " (한국 시간)" : "발행 시각 미상"; }
 function Parts({parts}: {parts: MessageSegment[]}) {
   return <ul className="message-segment-list">{parts.map(p => <li key={p.index}><strong>{INTENTS[p.intent] || p.intent}</strong><blockquote>{p.evidence}</blockquote>
     {p.starts_at && <p>시작: {time(p.starts_at)}</p>}{p.ends_at && <p>종료·해제: {time(p.ends_at)}</p>}

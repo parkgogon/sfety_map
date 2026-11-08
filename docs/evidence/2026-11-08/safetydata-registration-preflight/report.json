@@ -1,0 +1,76 @@
+{
+  "checked_at": "2026-11-08T11:38:50.152219+00:00",
+  "project": "keco-safety-map",
+  "audit_complete": false,
+  "service": {
+    "metadata_status": "observed",
+    "ready": true,
+    "source_revision": "43b40e0aee7c9f548ef4d633158c2001c2c86a8d"
+  },
+  "configuration": {
+    "message_store_firestore": true,
+    "model_matches_evaluated": true,
+    "reasoning_low": true,
+    "admin_auth_configured": true,
+    "project_configured": true
+  },
+  "firestore": {
+    "metadata_status": "permission_denied",
+    "native": null,
+    "iam_hint": "unverified",
+    "runtime_read_write": "not_tested"
+  },
+  "secrets": [
+    {
+      "environment_key": "OPENAI_API_KEY",
+      "binding": "secret_reference",
+      "required_for": "manual_ai_review",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    },
+    {
+      "environment_key": "KAKAO_REST_API_KEY",
+      "binding": "secret_reference",
+      "required_for": "manual_ai_review",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    },
+    {
+      "environment_key": "SAFETY_DATA_API_KEY",
+      "binding": "missing",
+      "required_for": "official_feed",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    }
+  ],
+  "findings": [
+    "firestore_metadata_permission_denied",
+    "project_iam_metadata_unavailable",
+    "OPENAI_API_KEY_version_unverified",
+    "OPENAI_API_KEY_iam_unverified",
+    "KAKAO_REST_API_KEY_version_unverified",
+    "KAKAO_REST_API_KEY_iam_unverified",
+    "SAFETY_DATA_API_KEY_binding_missing",
+    "SAFETY_DATA_API_KEY_version_unverified",
+    "SAFETY_DATA_API_KEY_iam_unverified"
+  ],
+  "unverified": [
+    "runtime_secret_access",
+    "firestore_transaction_and_history",
+    "official_api_response_and_terms",
+    "real_kakao_sdk_on_message_screen",
+    "mobile_device"
+  ],
+  "boundaries": {
+    "secret_payloads_read": 0,
+    "firestore_documents_read_or_written": 0,
+    "model_place_feed_calls": 0,
+    "deployments_or_messages_sent": 0
+  }
+}

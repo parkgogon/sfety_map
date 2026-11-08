@@ -11,7 +11,11 @@ from scripts.build_message_review_deploy_config import build_config, main
 
 class MessageDeployConfigTests(unittest.TestCase):
     def test_default_does_not_enable_paid_provider_or_official_feed_bindings(self):
-        self.assertEqual(build_config({}),{'MESSAGE_REVIEW_SECRET_BINDINGS':'','MESSAGE_REVIEW_ENV_VARS':'MESSAGE_REVIEW_STORE=firestore'})
+        config=build_config({})
+        self.assertEqual(config['MESSAGE_REVIEW_SECRET_BINDINGS'],'')
+        self.assertIn('MESSAGE_REVIEW_STORE=firestore',config['MESSAGE_REVIEW_ENV_VARS'])
+        self.assertIn('MESSAGE_COLLECTION_ENABLED=false',config['MESSAGE_REVIEW_ENV_VARS'])
+        self.assertIn('MESSAGE_ANALYSIS_DAILY_LIMIT=20',config['MESSAGE_REVIEW_ENV_VARS'])
 
     def test_enabled_ai_requires_both_fixed_versions_and_evaluated_model(self):
         config=build_config({'MESSAGE_REVIEW_AI_ENABLED':'true','MESSAGE_REVIEW_OPENAI_VERSION':'2','MESSAGE_REVIEW_KAKAO_VERSION':'7'})

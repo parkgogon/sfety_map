@@ -8,7 +8,9 @@ import tempfile
 import unittest
 from unittest.mock import Mock,patch
 
-from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify,is_map_tile
+from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify,is_map_tile,enqueue_verification_example,SOURCE
+from safety_dashboard.application.message_pipeline import MemoryPipelineStore
+from tests.test_message_records import make_service,registration,NOW
 from scripts import capture_release_baseline,collect_message_release_check,invoke_message_release_check
 
 
@@ -36,17 +38,30 @@ class ReleaseVerificationTests(unittest.TestCase):
 
     def test_browser_only_allows_own_review_workflow_and_public_kakao_gets(self):
         for path,method in [('/control/messages','GET'),('/assets/file.js','GET'),('/internal/v1/admin/access','POST'),
-            ('/internal/v1/message-records','POST'),('/internal/v1/message-records/manual-'+'a'*32+'/analyze','POST')]:
+            ('/internal/v1/message-records','POST'),('/internal/v1/message-records/manual-'+'a'*32+'/prepare','POST'),
+            ('/internal/v1/message-records/manual-'+'a'*32+'/approve','POST'),('/internal/v1/message-records/automation','GET')]:
             self.assertTrue(allowed_request('https://keco-safety-map.web.app'+path,method))
         self.assertTrue(allowed_request('https://map0.daumcdn.net/map_2d_hd/tiles.png','GET'))
         for url,method in [('https://keco-safety-map.web.app/internal/v1/dispatch','POST'),
             ('https://keco-safety-map.web.app/api/v1/monitoring/refresh','POST'),
             ('https://keco-safety-map.web.app/internal/v1/message-records/feed','POST'),
+            ('https://keco-safety-map.web.app/internal/v1/message-records/manual-'+'a'*32+'/analyze','POST'),
+            ('https://keco-safety-map.web.app/internal/v1/message-records/automation','POST'),
             ('https://evil.example/internal/v1/admin/access','POST'),
             ('https://dapi.kakao.com/api','POST'),('https://evil.kakao.com.evil.example/a','GET'),
             ('http://keco-safety-map.web.app/control/messages','GET'),('https://user:password@keco-safety-map.web.app/a','GET'),
             ('https://keco-safety-map.web.app:wrong/a','GET')]:
             self.assertFalse(allowed_request(url,method))
+
+    def test_verification_can_only_enqueue_its_own_explicit_example_and_is_idempotent(self):
+        record=make_service().register_manual(registration())["record"]
+        store=MemoryPipelineStore()
+        with self.assertRaises(ValueError):enqueue_verification_example(record,store,NOW)
+        record["origin"]="example";record["message"]["source"]=SOURCE
+        self.assertTrue(enqueue_verification_example(record,store,NOW))
+        self.assertFalse(enqueue_verification_example(record,store,NOW))
+        record["origin"]="official"
+        with self.assertRaises(ValueError):enqueue_verification_example(record,store,NOW)
 
     def test_missing_configuration_fails_before_browser_launch_without_printing_secret(self):
         with patch.dict(os.environ,{'ADMIN_ACCESS_PASSWORD':'private-password','VERIFY_APP_REVISION':'invalid'},clear=True),contextlib.redirect_stdout(io.StringIO()) as output:

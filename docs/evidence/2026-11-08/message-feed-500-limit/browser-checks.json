@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "transport": "actual local built React/API/CSV195/memory stores; fake official provider/synthetic analyzer/fake map SDK; no real API contract or Scheduler/IAM evidence",
+  "checks": [
+    "Collector and processor prepared a synthetic official record before browser launch; no browser request initiated analysis",
+    "60-second read-only polling displays another collected/analyzed record with no browser analysis request",
+    "Status polling leaves an open unapproved edit intact",
+    "Automatically prepared record completes using the existing one-screen approval",
+    "Shared feed request budget rejects the next fetch before fake provider access, preserves cursor/records, and remains distinct from AI allowance",
+    "Actual local rolling request-budget exhaustion and status-read failure remain explicit; prior records retained; no mobile horizontal overflow"
+  ],
+  "page_errors": [],
+  "unexpected_requests": [],
+  "browser_paid_analysis_requests": 0,
+  "fixture_analysis_calls": 2,
+  "fake_feed_requests": 4,
+  "request_limit": 450,
+  "interval_minutes": 15,
+  "new_external_openai_kakao_safetydata_calls": 0,
+  "real_messages_sent": 0,
+  "widths": [
+    1440,
+    390,
+    360
+  ]
+}

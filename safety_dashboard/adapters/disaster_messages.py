@@ -19,6 +19,7 @@ from safety_dashboard.domain.models import (
     DisasterMessageFeed,
     FacilityRegion,
 )
+from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
 
 
 DEFAULT_API_URL = "https://www.safetydata.go.kr/V2/api/DSSP-IF-00247"
@@ -35,29 +36,46 @@ class SafetyDataDisasterMessageProvider:
         api_key: str,
         api_url: str = DEFAULT_API_URL,
         timeout: float = 7,
+        gate_factory=None,
     ) -> None:
         self.api_key = str(api_key or "").strip()
         self.api_url = str(api_url or DEFAULT_API_URL).strip()
         self.timeout = timeout
+        self.gate_factory = gate_factory
+
+    def _reserve(self):
+        if self.gate_factory:
+            try:
+                self.gate_factory().reserve()
+            except (FeedRequestLimit, FeedBudgetUnavailable):
+                raise
+            except Exception:
+                raise FeedBudgetUnavailable("문자 조회 한도를 확인하지 못해 외부 조회를 시작하지 않았습니다.") from None
 
     @property
     def configured(self):
         return bool(self.api_key and self.api_key != "YOUR_SAFETY_DATA_API_KEY")
 
-    def fetch_page(self, region: str, date: dt.date, page: int, size: int) -> dict:
+    def fetch_page(self, region: str | None, date: dt.date, page: int, size: int) -> dict:
         """관리자 목록용. 시설별 최대 5건/재난종류 필터와 분리한다."""
         if not self.configured:
             raise DisasterMessageDataError("공식 문자 조회 미설정")
+        self._reserve()
+        params = {"serviceKey": self.api_key, "pageNo": page, "numOfRows": size,
+                  "returnType": "json", "crtDt": date.strftime("%Y%m%d")}
+        if region:
+            params["rgnNm"] = region
         try:
-            response = requests.get(self.api_url, params={
-                "serviceKey": self.api_key, "pageNo": page, "numOfRows": size,
-                "returnType": "json", "crtDt": date.strftime("%Y%m%d"), "rgnNm": region,
-            }, timeout=self.timeout)
+            response = requests.get(self.api_url, params=params, timeout=self.timeout, allow_redirects=False)
             response.raise_for_status()
+            if isinstance(response.status_code, int) and not 200 <= response.status_code < 300:
+                raise DisasterMessageDataError("공식 API가 정상 응답을 반환하지 않았습니다.")
             payload = response.json()
             messages = parse_disaster_response(payload)
             rows = _find_message_rows(payload) or []
             total = _find_total_count(payload)
+            if total is not None and total > (page-1)*size and not rows:
+                raise DisasterMessageDataError("페이지의 문자 목록이 응답 건수와 맞지 않습니다.")
             return {"messages": messages, "skipped": max(0, len(rows) - len(messages)),
                     "has_more": page * size < total if total is not None else len(rows) >= size}
         except (requests.RequestException, ValueError, TypeError):
@@ -77,6 +95,7 @@ class SafetyDataDisasterMessageProvider:
                 detail="재난문자 API 키가 설정되지 않았습니다.",
             )
         try:
+            self._reserve()
             response = requests.get(
                 self.api_url,
                 params={
@@ -90,8 +109,11 @@ class SafetyDataDisasterMessageProvider:
                     "rgnNm": region.query_name,
                 },
                 timeout=self.timeout,
+                allow_redirects=False,
             )
             response.raise_for_status()
+            if isinstance(response.status_code, int) and not 200 <= response.status_code < 300:
+                raise DisasterMessageDataError("공식 API가 정상 응답을 반환하지 않았습니다.")
             messages = parse_disaster_response(response.json())
             selected = select_relevant_disaster_messages(
                 messages,
@@ -99,7 +121,7 @@ class SafetyDataDisasterMessageProvider:
                 since,
                 limit=5,
             )
-        except (requests.RequestException, ValueError, TypeError) as exc:
+        except (requests.RequestException, ValueError, TypeError, FeedRequestLimit, FeedBudgetUnavailable) as exc:
             return DisasterMessageFeed(
                 status=ContextStatus.ERROR,
                 messages=(),
@@ -254,7 +276,7 @@ def _split_regions(value: str) -> tuple[str, ...]:
 
 def _find_total_count(value: object) -> int | None:
     if isinstance(value, dict):
-        for key in ("totalCount", "totalCnt", "total_count"):
+        for key in ("totalCount", "totalCnt", "total_count", "TOTAL_COUNT"):
             if key in value:
                 try:
                     return max(0, int(value[key]))

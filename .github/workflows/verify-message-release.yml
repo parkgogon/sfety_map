@@ -5,7 +5,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [baseline, verify, collect]
+        options: [baseline, verify, status, collect]
         default: baseline
       revision:
         description: Deployed main image SHA for verification
@@ -49,7 +49,7 @@ jobs:
           retention-days: 14
 
   verify:
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'verify' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'verify' || inputs.mode == 'status') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
@@ -58,6 +58,7 @@ jobs:
     env:
       VERIFY_REVISION: ${{ inputs.revision }}
       VERIFY_RECORD_ID: ${{ inputs.record_id }}
+      VERIFY_READ_ONLY: ${{ inputs.mode == 'status' && 'true' || 'false' }}
       CHECK_JOB: message-review-check-${{ github.run_id }}
       IMAGE_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY || 'safety-dashboard' }}
     steps:
@@ -86,7 +87,7 @@ jobs:
             --image="asia-northeast3-docker.pkg.dev/keco-safety-map/$IMAGE_REPOSITORY/api:$VERIFY_REVISION" \
             --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
             --command=python --args="^|^-c|$VERIFY_LOADER" \
-            --set-env-vars="VERIFY_MODE=service,VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_RECORD_ID=$VERIFY_RECORD_ID" \
+            --set-env-vars="VERIFY_MODE=service,VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_RECORD_ID=$VERIFY_RECORD_ID,VERIFY_READ_ONLY=$VERIFY_READ_ONLY" \
             --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
             --cpu=1 --memory=2Gi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=360s --no-allow-unauthenticated --quiet
           CHECK_URL=$(gcloud run services describe "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
@@ -102,6 +103,9 @@ jobs:
         env:
           CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
         run: python3 scripts/invoke_message_release_check.py
+      - name: Check bounded pilot configuration and regular schedules without invoking jobs
+        if: always()
+        run: python3 scripts/capture_message_pilot.py --revision "$VERIFY_REVISION"
       - name: Remove only the temporary private verification service
         if: always()
         run: gcloud run services delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet

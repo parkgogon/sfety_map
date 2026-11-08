@@ -27,7 +27,7 @@ class ExcludedLocation(StrictModel):
 class CompleteMessageReview(RecordVersion):
     outcome: Literal["facilities_selected", "no_action"]
     reason: str = Field(min_length=1, max_length=1000)
-    follow_up_note: str = Field(default="", max_length=1000)
+    follow_up_note: str = Field(default="", max_length=2000)
     excluded_locations: list[ExcludedLocation] = Field(default_factory=list, max_length=100)
 
 
@@ -62,6 +62,12 @@ class MessageReviewService:
         if set(refs) - set(eligible):
             raise RecordConflict("분석 장소와 저장한 기준이 다릅니다. 검토 기준을 다시 확인해 주세요.")
         digest, facilities = self.catalog() if refs else (None, ())
+        preparation = record.get("review_preparation")
+        if preparation and preparation.get("catalog_digest"):
+            if not refs:
+                digest, facilities = self.catalog()
+            if digest != preparation["catalog_digest"]:
+                raise RecordConflict("시설 자료가 바뀌었습니다. 추천안을 다시 확인해 주세요.")
         by_id = {f.id: f for f in facilities}
         contexts = []
         for key, location in eligible.items():
@@ -121,6 +127,11 @@ class MessageReviewService:
 
     def complete(self, identifier, request: CompleteMessageReview):
         record = self.records.get(identifier)
+        self.complete_record(record, request)
+        return self.records._save(record, request.expected_version, "review_completed")
+
+    def complete_record(self, record, request: CompleteMessageReview, *, brief=False, manager_note=""):
+        """Validate and mutate an in-memory record; caller owns the one CAS commit."""
         if record["version"] != request.expected_version:
             raise RecordConflict("기록이 변경됐습니다. 최신 기록을 다시 불러와 주세요.")
         ensure_record_editable(record)
@@ -147,8 +158,8 @@ class MessageReviewService:
             "selected_unique_count": len(selected_ids), "snapshot": snapshot}
         record["review_state"] = "completed"
         record["review_reset_reason"] = ""
-        self._set_draft(record, "")
-        return self.records._save(record, request.expected_version, "review_completed")
+        self._set_draft(record, manager_note, brief=brief)
+        return record
 
     def reopen(self, identifier, request: ReopenMessageReview):
         record = self.records.get(identifier)
@@ -184,15 +195,51 @@ class MessageReviewService:
         draft = record["notice_draft"]
         return {"text": draft["text"], "draft_revision": draft["revision"], "record_version": record["version"]}
 
-    def _set_draft(self, record, manager_note):
+    def _set_draft(self, record, manager_note, *, brief=None):
         revision = record.get("notice_draft_revision", 0) + 1
-        text = render_notice(record["review_completion"], manager_note, revision)
+        if brief is None:
+            brief = (record.get("notice_draft") or {}).get("format") == "brief-v1"
+        text = (render_brief_notice(record["review_completion"]["snapshot"], manager_note,
+                                  completed_at=record["review_completion"]["completed_at"],
+                                  excluded_locations=record["review_completion"]["excluded_locations"])
+                if brief else render_notice(record["review_completion"], manager_note, revision))
         if len(text) > 40000:
             raise ReviewValidationError("초안 분량이 한도를 넘었습니다. 선정 범위와 안내 내용을 검토해 주세요.")
         record["notice_draft_revision"] = revision
         record["notice_draft"] = {"revision": revision, "template_version": TEMPLATE_VERSION,
+            "format": "brief-v1" if brief else "full-v1",
             "basis_hash": record["review_completion"]["basis_hash"], "manager_note": manager_note,
             "text": text, "updated_at": self.records.now().isoformat()}
+
+
+def render_brief_notice(snapshot, manager_note="", *, completed_at=None, excluded_locations=None):
+    """The same grounded content is visible before approval and in the saved draft."""
+    message, analysis = snapshot["message"], snapshot["analysis"]
+    origins = {"example": "창작 예문 · 실제 재난/업무 실적 아님", "manual": "수동 입력", "official": "공식 API"}
+    lines = ["상황 안내 초안", origins[snapshot["origin"]],
+             f"출처: {message['source']} · 발행: {korean_time(message['issued_at'])}",
+             f"문자 수신지역: {', '.join(message['recipient_regions']) or '미상'}",
+             "", analysis["summary"], "", "■ 원문", message["text"], "", "■ 확인 대상"]
+    selected = {f["id"] for loc in snapshot["locations"] for f in loc["selected"]}
+    lines.append(f"중복 제외 {len(selected)}개소 · 업무 검토 대상")
+    for loc in snapshot["locations"]:
+        if not loc["selected"] and (excluded_locations or {}).get(loc["key"]):
+            lines.append(f"미선정 장소: {loc['text']} · {excluded_locations[loc['key']]}")
+        if loc.get("reference"):
+            ref = loc["reference"]
+            lines.append(f"{loc['text']}: {ref['point']['label']} 기준 {ref['radius_km']}km 참고 조회")
+        for f in loc["selected"]:
+            lines.append(f"- {f['name']} [{f['id']}] · 직선 {f['distance_m']/1000:.2f}km")
+            if not f["within_radius"]:lines.append(f"  반경 밖 추가: {f.get('reason', '')}")
+    if analysis.get("questions"):
+        lines += ["", "■ 확인할 사항", *[f"- {q}" for q in analysis["questions"]]]
+    if snapshot.get("related_context", {}).get("links"):
+        lines += ["", "후속 문자와 비교한 내용은 변경 검토 기록을 함께 확인해 주세요. 일부 해제를 전체 종료로 해석하지 않습니다."]
+    if snapshot.get("record_note"):lines += ["", "검토 메모: "+snapshot["record_note"]]
+    if manager_note:lines += ["", "■ 추가 안내", manager_note]
+    lines += ["", "내부 검토: "+korean_time(completed_at) if completed_at else "담당자 검토 전 미리보기",
+              "※ 참고 거리는 피해 범위가 아니며, 내부 검토는 현장 확인·시설 안전·실제 발송을 뜻하지 않습니다."]
+    return "\n".join(lines)
 
 
 def render_notice(completion, manager_note, revision):
