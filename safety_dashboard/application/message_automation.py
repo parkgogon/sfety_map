@@ -68,6 +68,7 @@ class MessageAutomationStatus:
             store = self.store_factory()
             state = store.get('collection-state') or {}
             result.update(last_attempt_at=state.get('last_attempt_at'), last_success_at=state.get('last_success_at'), start_at=state.get('start_at'), queue=MessageAnalysisQueue(store).counts(), budget=AnalysisRunGate(store, settings.daily_limit, now=self.now).status(), remaining_partitions=len(state.get('work', [])), skipped_rows=state.get('cycle_skipped', 0), coverage_gap=bool(state.get('coverage_gap')),
+                          skipped_reasons=state.get('cycle_skipped_reasons', {}), ignored_before_start=state.get('cycle_ignored_before_start', 0),
                           feed_budget=OfficialRequestBudget(store,settings.request_limit,now=self.now).status())
         except Exception:
             result.update(state='store_unavailable', detail='수집·분석 상태를 조회하지 못했습니다. 저장된 검토 기록은 유지됩니다.')
@@ -91,7 +92,14 @@ class MessageAutomationStatus:
         elif state.get('last_error'):
             result.update(state='error', detail='공식 문자 조회를 완료하지 못했습니다. 이전 기록과 대기 작업은 유지됩니다.')
         elif state.get('work') or state.get('cycle_skipped') or state.get('coverage_gap'):
-            result.update(state='partial', detail='일부 기간·페이지를 추가 확인 중입니다. 현재 목록이 전체 수집 결과는 아닙니다.')
+            if state.get('work') or state.get('coverage_gap'):
+                detail='일부 기간·페이지를 추가 확인 중입니다. 현재 목록이 전체 수집 결과는 아닙니다.'
+            else:
+                labels={'recipient_region':'수신지역 확인 필요','source_fields':'원문 필드 확인 필요','query_date':'발행 날짜 확인 필요','source_validation':'원문 형식 확인 필요'}
+                reasons=state.get('cycle_skipped_reasons',{})
+                counts=' · '.join(f'{label} {reasons[key]}회' for key,label in labels.items() if reasons.get(key))
+                detail='조회는 끝났지만 일부 문자 항목을 확인하지 못했습니다.'+(' '+counts if counts else '')+' 같은 항목의 겹침 조회도 포함한 횟수이며, 이전 기록은 유지됩니다.'
+            result.update(state='partial', detail=detail)
         elif not state.get('last_success_at'):
             result.update(state='starting', detail='첫 정상 조회 완료를 기다리고 있습니다.')
         else:

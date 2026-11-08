@@ -1,0 +1,96 @@
+{
+  "status": "passed",
+  "probe_origin": "cloud_run_runtime",
+  "feed_calls": 3,
+  "kma_calls": 3,
+  "model_calls": 0,
+  "messages_sent": 0,
+  "source_records_written": 0,
+  "collection_state": {
+    "start_at": "2026-11-08T13:45:00.961104+00:00",
+    "last_attempt_at": "2026-11-08T20:00:04.170935+00:00",
+    "last_success_at": null,
+    "cycle_skipped": 2,
+    "coverage_gap": false,
+    "last_error": ""
+  },
+  "remaining_partitions": 0,
+  "kma_state": {
+    "last_run_at": "2026-11-08T20:10:02.284973+00:00",
+    "kma_failure_category": "KMA_ROUTE",
+    "kma_last_success_at": "2026-11-08T13:40:00.366829+00:00",
+    "kma_health": "ERROR",
+    "kma_failure_summary": "일반 외부통신은 정상이나 KMA 특보 API 연결만 실패함",
+    "kma_failure_evidence": "kma_home 실패 · weather_site 정상 · internet 정상",
+    "kma_consecutive_errors": 78
+  },
+  "feed_pages": [
+    {
+      "query_date": "2026-11-08",
+      "error": {
+        "exception_types": [
+          "ConnectTimeout",
+          "MaxRetryError",
+          "ConnectTimeoutError",
+          "TimeoutError"
+        ],
+        "errno": []
+      }
+    },
+    {
+      "query_date": "2026-11-07",
+      "error": {
+        "exception_types": [
+          "ConnectTimeout",
+          "MaxRetryError",
+          "ConnectTimeoutError",
+          "TimeoutError"
+        ],
+        "errno": []
+      }
+    },
+    {
+      "query_date": "2026-11-09",
+      "error": {
+        "exception_types": [
+          "ConnectTimeout",
+          "MaxRetryError",
+          "ConnectTimeoutError",
+          "TimeoutError"
+        ],
+        "errno": []
+      }
+    }
+  ],
+  "kma_requests": [
+    {
+      "read_timeout_seconds": 7,
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 160
+    },
+    {
+      "read_timeout_seconds": 20,
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 254
+    },
+    {
+      "read_timeout_seconds": 7,
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 146
+    }
+  ],
+  "kma_dns": {
+    "families": [
+      "AF_INET"
+    ],
+    "addresses": [
+      "203.247.91.39"
+    ]
+  }
+}

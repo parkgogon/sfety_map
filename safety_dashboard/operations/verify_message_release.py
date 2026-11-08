@@ -55,7 +55,7 @@ def enqueue_verification_example(record, store, now):
 
 def automation_summary(value):
     # Do not export raw records, model output, source text or arbitrary status fields.
-    return {key: value[key] for key in ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "coverage_gap") if key in value}
+    return {key: value[key] for key in ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "skipped_reasons", "ignored_before_start", "coverage_gap") if key in value}
 
 
 def collection_observed(value):

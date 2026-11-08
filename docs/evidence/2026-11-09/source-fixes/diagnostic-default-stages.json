@@ -1,0 +1,201 @@
+{
+  "status": "passed",
+  "probe_origin": "cloud_run_runtime",
+  "feed_calls": 3,
+  "kma_calls": 3,
+  "model_calls": 0,
+  "messages_sent": 0,
+  "source_records_written": 0,
+  "collection_state": {
+    "start_at": "2026-11-08T13:45:00.961104+00:00",
+    "last_attempt_at": "2026-11-08T20:15:04.085536+00:00",
+    "last_success_at": null,
+    "cycle_skipped": 2,
+    "coverage_gap": false,
+    "last_error": ""
+  },
+  "remaining_partitions": 0,
+  "kma_state": {
+    "last_run_at": "2026-11-08T20:15:01.675185+00:00",
+    "kma_last_success_at": "2026-11-08T13:40:00.366829+00:00",
+    "kma_failure_summary": "일반 외부통신은 정상이나 KMA 특보 API 연결만 실패함",
+    "kma_failure_evidence": "kma_home 실패 · weather_site 정상 · internet 정상",
+    "kma_consecutive_errors": 79,
+    "kma_health": "ERROR",
+    "kma_failure_category": "KMA_ROUTE"
+  },
+  "feed_pages": [
+    {
+      "query_date": "2026-11-08",
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 66
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 20
+        }
+      ],
+      "rows": 10,
+      "parsed": 10,
+      "parser_skipped": 0,
+      "total_count": 10,
+      "reasons": {
+        "eligible": 7,
+        "unrecognized_recipient": 1,
+        "skipped_before_start": 1,
+        "outside_target": 2
+      },
+      "skipped_shapes": [
+        {
+          "reason": "unrecognized_recipient",
+          "issued_date": "2026-11-08",
+          "before_start": true,
+          "text_length": 102,
+          "recipient_count": 1,
+          "known_province_prefixes": [],
+          "recipient_shape": {
+            "empty_or_dash": false,
+            "underscore": false,
+            "brackets": false,
+            "newline": false,
+            "known_province_anywhere": false
+          }
+        }
+      ]
+    },
+    {
+      "query_date": "2026-11-07",
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 5
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 20
+        }
+      ],
+      "rows": 31,
+      "parsed": 31,
+      "parser_skipped": 0,
+      "total_count": 31,
+      "reasons": {
+        "eligible": 26,
+        "outside_target": 4,
+        "unrecognized_recipient": 1,
+        "skipped_before_start": 1
+      },
+      "skipped_shapes": [
+        {
+          "reason": "unrecognized_recipient",
+          "issued_date": "2026-11-08",
+          "before_start": true,
+          "text_length": 102,
+          "recipient_count": 1,
+          "known_province_prefixes": [],
+          "recipient_shape": {
+            "empty_or_dash": false,
+            "underscore": false,
+            "brackets": false,
+            "newline": false,
+            "known_province_anywhere": false
+          }
+        }
+      ]
+    },
+    {
+      "query_date": "2026-11-09",
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 5
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 21
+        }
+      ],
+      "rows": 0,
+      "parsed": 0,
+      "parser_skipped": 0,
+      "total_count": 0,
+      "reasons": {},
+      "skipped_shapes": []
+    }
+  ],
+  "kma_requests": [
+    {
+      "read_timeout_seconds": 7,
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 49
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 38
+        }
+      ],
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 202
+    },
+    {
+      "read_timeout_seconds": 20,
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 57
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 7
+        }
+      ],
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 433
+    },
+    {
+      "read_timeout_seconds": 7,
+      "stages": [
+        {
+          "stage": "tcp",
+          "success": true,
+          "elapsed_ms": 45
+        },
+        {
+          "stage": "tls",
+          "success": true,
+          "elapsed_ms": 8
+        }
+      ],
+      "http_status": 200,
+      "valid_warning_format": true,
+      "redirect": false,
+      "elapsed_ms": 428
+    }
+  ],
+  "kma_dns": {
+    "families": [
+      "AF_INET"
+    ],
+    "addresses": [
+      "203.247.91.39"
+    ]
+  }
+}

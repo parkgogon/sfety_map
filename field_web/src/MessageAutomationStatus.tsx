@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { recordRequest, type MessageAutomation } from "./messageRecordsApi";
 
-const titles:Record<MessageAutomation["state"],string>={disabled:"공식 문자 자동 수집 미연결",needs_key:"공식 문자 API 연결 필요",needs_verification:"공식 문자 연결 확인 중",starting:"첫 자동 수집 대기",live:"공식 문자 자동 수집 중",partial:"공식 문자 일부 조회 진행 중",stale:"공식 문자 수집 지연",error:"공식 문자 조회 실패",store_unavailable:"수집·분석 상태 확인 불가",request_limit:"문자 조회 한도로 수집 대기"};
+const titles:Record<MessageAutomation["state"],string>={disabled:"공식 문자 자동 수집 미연결",needs_key:"공식 문자 API 연결 필요",needs_verification:"공식 문자 연결 확인 중",starting:"첫 자동 수집 대기",live:"공식 문자 자동 수집 중",partial:"공식 문자 일부 확인 필요",stale:"공식 문자 수집 지연",error:"공식 문자 조회 실패",store_unavailable:"수집·분석 상태 확인 불가",request_limit:"문자 조회 한도로 수집 대기"};
 function time(value:string|null){return value?new Date(value).toLocaleString("ko-KR",{timeZone:"Asia/Seoul",dateStyle:"short",timeStyle:"short"}):"아직 없음";}
 
 export default function MessageAutomationStatus({token,onRefresh}:{token:string;onRefresh:(signal:AbortSignal)=>void|Promise<void>}) {

@@ -1,0 +1,14 @@
+{
+  "safety-dashboard-api": {
+    "revision": "safety-dashboard-api-00089-795",
+    "network": {}
+  },
+  "safety-alert-worker": {
+    "revision": "safety-alert-worker-00077-8dp",
+    "network": {}
+  },
+  "safety-message-worker": {
+    "revision": "safety-message-worker-00001-xzd",
+    "network": {}
+  }
+}
