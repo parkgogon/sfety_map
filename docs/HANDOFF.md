@@ -294,7 +294,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: [배포 전 점검](evidence/2026-11-08/message-release-readiness/README.md)을 근거로 PR #1 main 병합/운영 배포의 명시적 승인을 받는다.
+**다음 시작점 하나**: 사용자 승인에 따라 복구 기준을 기록하고 PR #1을 main에 반영·배포한 뒤 일회성 창작 브라우저 검수를 실행한다.
 문자 등록→AI 분석→지도 기준/시설 선정→검토 완료/초안→후속 연결/부분 해제 재검토를 로컬 검증까지 완료했다.
 [완료 계획](archive/DISASTER_MESSAGE_WORKFLOW_PLAN_20261108.md), [4단계 검증](evidence/2026-11-08/message-records-stage4/README.md)을 기준으로 확인한다.
 사용자 Cloud Shell 캡처로 `FIRESTORE_NATIVE`와 두 Secret(`OPENAI_API_KEY`, `KAKAO_REST_API_KEY`)의 `NOT_FOUND`를 확인했다.
@@ -315,7 +315,10 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 Python 419개·React 255개/빌드/시설 검증도 통과했다. 이 검사에서 GCP 접속/키 값 읽기는 하지 않았다.
 2026-11-08 03:11 UTC 공개 health/operations 모두 HTTP 200, worker 최근 102초·KMA live를 읽기 전용으로 확인했다.
 정확한 이름은 `MESSAGE_REVIEW_AI_ENABLED=true`, `MESSAGE_REVIEW_OPENAI_VERSION=1`, `MESSAGE_REVIEW_KAKAO_VERSION=1`이다.
-Cloud Run 참조 적용·운영 배포는 아직 하지 않았다. 키 등록 승인을 main 병합/배포 승인으로 확대하지 않는다.
+사용자가 main 반영/운영 배포와 후속 검수 제안에 “응 진행해줘”라고 명시적으로 승인했다.
+복구 기준 기록과 관리자 비밀번호가 GCP 작업 안에만 머무는 일회성 브라우저 검수를 준비했다.
+검수는 창작 예문 1건·실제 SDK/저장·제한된 AI·복사/복구를 대상으로 하며 발송/dispatch/Worker 시험은 하지 않는다.
+Cloud Run Job은 재시도 0·5분 상한·검수 후 삭제한다. 실제 운영 배포는 아직 시작 전이다.
 공식 피드·실제 SDK·저장 트랜잭션은 별도 실제 검수가 남아 있다.
 자동 수집/전파·현장 회신과 구분하며 main 반영/배포는 별도 사용자 요청 때 수행한다.
 
