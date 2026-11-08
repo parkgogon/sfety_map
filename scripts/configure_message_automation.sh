@@ -18,10 +18,20 @@ job_exists() {
   exit 1
 }
 
+set_job_running() {
+  local message_job_state
+  message_job_state="$(gcloud scheduler jobs describe "$1" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --format='value(state)')"
+  case "$message_job_state" in
+    ENABLED) if [[ "$2" == "false" ]]; then gcloud scheduler jobs pause "$1" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --quiet; fi ;;
+    PAUSED) if [[ "$2" == "true" ]]; then gcloud scheduler jobs resume "$1" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --quiet; fi ;;
+    *) echo '문자 예약 작업의 실행 상태를 확인하지 못했습니다.' >&2; exit 1 ;;
+  esac
+}
+
 if [[ "${MESSAGE_COLLECTION_ENABLED:-false}" != "true" ]]; then
   for job in safety-message-collect safety-message-analyze; do
     if job_exists "$job"; then
-      gcloud scheduler jobs pause "$job" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --quiet
+      set_job_running "$job" false
     fi
   done
   exit 0
@@ -61,5 +71,5 @@ for kind in collect analyze; do
     --oidc-service-account-email="$MESSAGE_SCHEDULER_ACCOUNT" --oidc-token-audience="$MESSAGE_WORKER_URL" \
     --attempt-deadline=180s --max-retry-attempts=0 --quiet
   # Updating a paused job preserves its paused state.
-  gcloud scheduler jobs resume "$job" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --quiet
+  set_job_running "$job" true
 done

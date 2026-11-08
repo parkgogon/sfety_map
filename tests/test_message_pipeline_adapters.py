@@ -103,18 +103,21 @@ class AutomationDeployTests(unittest.TestCase):
         for name, value in (("MESSAGE_ANALYSIS_DAILY_LIMIT", "1000"), ("MESSAGE_COLLECTION_START_AT", "2026-11-08"), ("MESSAGE_COLLECTION_CATCHUP_DAYS", "1")):
             with self.assertRaises(ValueError): build_config({**env, name: value})
 
-    def run_configure(self, enabled, missing=False, denied=False):
+    def run_configure(self, enabled, missing=False, denied=False, state="ENABLED"):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory); log = folder/"calls.jsonl"
             fake = folder/"gcloud"
             fake.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\na=sys.argv[1:]\nwith open(os.environ['MESSAGE_TEST_LOG'],'a') as f:f.write(json.dumps(a)+'\\n')\n"
                 "if a[:3]==['scheduler','jobs','describe']:\n"
                 " if os.environ.get('MESSAGE_TEST_DENIED')=='true':print('PERMISSION_DENIED',file=sys.stderr);sys.exit(1)\n"
-                " if os.environ.get('MESSAGE_TEST_MISSING')=='true':print('NOT_FOUND',file=sys.stderr);sys.exit(1)\n"
+                " if os.environ.get('MESSAGE_TEST_MISSING')=='true' and not Path(os.environ['MESSAGE_TEST_LOG']+'.'+a[3]).exists():print('NOT_FOUND',file=sys.stderr);sys.exit(1)\n"
+                " print('ENABLED' if Path(os.environ['MESSAGE_TEST_LOG']+'.'+a[3]).exists() else os.environ['MESSAGE_TEST_STATE'])\n"
+                "if a[:3]==['scheduler','jobs','create']:Path(os.environ['MESSAGE_TEST_LOG']+'.'+a[4]).touch()\n"
                 "if a[:3]==['run','services','describe']:print('https://fake-message-worker.invalid')\n")
             fake.chmod(0o700)
             env = {**os.environ, "PATH": str(folder)+os.pathsep+os.environ["PATH"], "MESSAGE_TEST_LOG": str(log),
                    "MESSAGE_TEST_DENIED": str(denied).lower(), "MESSAGE_TEST_MISSING": str(missing).lower(),
+                   "MESSAGE_TEST_STATE":state,
                    "MESSAGE_COLLECTION_ENABLED": str(enabled).lower(), "GCP_PROJECT_ID": "fake-project", "GCP_REGION": "fake-region",
                    "WORKER_IMAGE": "fake-image", "GITHUB_SHA": "fake-revision", "MESSAGE_REVIEW_ENV_VARS": "MESSAGE_COLLECTION_ENABLED=true",
                    "MESSAGE_REVIEW_SECRET_BINDINGS": "OPENAI_API_KEY=OPENAI_API_KEY:1,KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:1,SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1"}
@@ -133,6 +136,19 @@ class AutomationDeployTests(unittest.TestCase):
         result, _ = self.run_configure(False, denied=True)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_redeployment_only_transitions_paused_or_enabled_jobs_when_required(self):
+        result,calls=self.run_configure(True)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertFalse(any(args[:3]==["scheduler","jobs","resume"] for args in calls))
+        result,calls=self.run_configure(True,state="PAUSED")
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(sum(args[:3]==["scheduler","jobs","resume"] for args in calls),2)
+        result,calls=self.run_configure(False,state="PAUSED")
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertFalse(any(args[:3]==["scheduler","jobs","pause"] for args in calls))
+        result,_=self.run_configure(True,state="UPDATE_FAILED")
+        self.assertNotEqual(result.returncode,0)
+
     def test_enabled_deployment_is_private_and_does_not_bind_notification_credentials(self):
         result, calls = self.run_configure(True, missing=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -145,5 +161,6 @@ class AutomationDeployTests(unittest.TestCase):
         collect = next(args for args in schedules if args[4] == "safety-message-collect")
         self.assertIn("--schedule=*/15 * * * *", collect)
         self.assertTrue(all("--max-retry-attempts=0" in args for args in schedules))
+        self.assertFalse(any(args[:3]==["scheduler","jobs","resume"] for args in calls))
         self.assertFalse(any("dispatch" in str(args) for args in calls))
         self.assertTrue(all("safety-alert-worker" not in str(args) for args in calls))
