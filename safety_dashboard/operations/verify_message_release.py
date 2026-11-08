@@ -58,6 +58,15 @@ def automation_summary(value):
     return {key: value[key] for key in ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "coverage_gap") if key in value}
 
 
+def collection_observed(value):
+    """A partial result is valid evidence of execution, never complete coverage."""
+    if not value.get("last_attempt_at") or not value.get("feed_budget", {}).get("used"):
+        return False
+    if value.get("state") == "live":
+        return bool(value.get("last_success_at"))
+    return value.get("state") == "partial" and bool(value.get("remaining_partitions") or value.get("skipped_rows") or value.get("coverage_gap"))
+
+
 def verify(sink=emit):
     password = os.environ.get("ADMIN_ACCESS_PASSWORD", "")
     revision = os.environ.get("VERIFY_APP_REVISION", "")
@@ -111,10 +120,10 @@ def verify(sink=emit):
             assert asset and asset.startswith("/assets/")
             assert revision in page.evaluate("path=>fetch(path,{redirect:'error'}).then(r=>r.text())",asset)
             if read_only:
-                assert automation["state"] == "live" and automation["last_success_at"]
-                assert automation["feed_budget"]["used"] > 0
+                assert collection_observed(automation)
                 records=api("/internal/v1/message-records")["records"]
                 sink({"kind":"result","status":"passed","source_revision":revision,
+                      "collection_complete":automation["state"]=="live",
                       "official_records_in_page":sum(r["origin"]=="official" for r in records),
                       "analyzed_official_records_in_page":sum(r["origin"]=="official" and r["analysis_state"]=="completed" for r in records),
                       "analysis_requests":0,"page_errors":len(errors),"unexpected_requests":len(denied),"real_messages_sent":0})

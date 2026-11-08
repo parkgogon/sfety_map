@@ -8,13 +8,23 @@ import tempfile
 import unittest
 from unittest.mock import Mock,patch
 
-from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify,is_map_tile,enqueue_verification_example,SOURCE
+from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify,is_map_tile,enqueue_verification_example,SOURCE,collection_observed
 from safety_dashboard.application.message_pipeline import MemoryPipelineStore
 from tests.test_message_records import make_service,registration,NOW
 from scripts import capture_release_baseline,collect_message_release_check,invoke_message_release_check
 
 
 class ReleaseVerificationTests(unittest.TestCase):
+    def test_collection_observation_distinguishes_honest_partial_from_complete_and_failure(self):
+        value={"state":"partial","last_attempt_at":"now","last_success_at":None,"feed_budget":{"used":2},"skipped_rows":2}
+        self.assertTrue(collection_observed(value))
+        self.assertFalse(collection_observed({**value,"state":"live"}))
+        self.assertTrue(collection_observed({**value,"state":"live","last_success_at":"now"}))
+        for state in ("starting","error","store_unavailable","stale","request_limit"):
+            self.assertFalse(collection_observed({**value,"state":state}))
+        self.assertFalse(collection_observed({**value,"skipped_rows":0}))
+        self.assertFalse(collection_observed({**value,"feed_budget":{"used":0}}))
+
     def test_real_current_and_legacy_tile_urls_are_distinguished_from_sdk_controls(self):
         self.assertTrue(is_map_tile('https://mts.kakaocdn.net/api/v1/tile/PNGSD02/v26/latest/12/1/2.png'))
         self.assertTrue(is_map_tile('https://map2.daumcdn.net/map_2d_hd/tile.png'))

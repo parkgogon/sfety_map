@@ -34,7 +34,7 @@ def main():
             raw=base64.b64decode(data.get("jpeg_base64",""),validate=True)
             if raw.startswith(b'\xff\xd8') and len(raw)<180000:(out/(data["name"]+".jpg")).write_bytes(raw)
         if data.get("kind")=="result":
-            result["browser"]={k:data[k] for k in ("status","phase","record_id","source_revision","model_calls","selected_count","analysis_requests","tile_responses","rendered_map_images","page_errors","unexpected_requests","real_messages_sent","error_type","denied_hosts","official_records_in_page","analyzed_official_records_in_page") if k in data}
+            result["browser"]={k:data[k] for k in ("status","phase","record_id","source_revision","model_calls","selected_count","analysis_requests","tile_responses","rendered_map_images","page_errors","unexpected_requests","real_messages_sent","error_type","denied_hosts","official_records_in_page","analyzed_official_records_in_page","collection_complete") if k in data}
     (out/"verification.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n")
     print("비공개 검수 결과를 저장했습니다. 비밀값은 포함하지 않습니다.")
     return 0 if result.get("browser",{}).get("status")=="passed" and payload["exit_code"]==0 else 1
