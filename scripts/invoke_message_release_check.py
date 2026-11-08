@@ -24,7 +24,7 @@ def main():
     result={"service":parsed.hostname,"verification_exit_code":payload["exit_code"]}
     for data in payload.get("rows",[]):
         if data.get("kind") in ("automation", "pipeline"):
-            allowed = ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "coverage_gap") if data["kind"] == "automation" else ("state", "attempts", "detail", "browser_analysis_requests")
+            allowed = ("state", "auto_collection_enabled", "feed_configured", "interval_seconds", "last_attempt_at", "last_success_at", "start_at", "queue", "budget", "feed_budget", "remaining_partitions", "skipped_rows", "skipped_reasons", "ignored_before_start", "coverage_gap") if data["kind"] == "automation" else ("state", "attempts", "detail", "browser_analysis_requests")
             result[data["kind"]]={key:value for key,value in data.get("status",{}).items() if key in allowed}
         if data.get("kind")=="operations":
             result["operations"]={key:value for key,value in data.get("status",{}).items() if key in ("kma_health","kma_failure_category","kma_consecutive_errors","last_result","last_run_at","kma_last_success_at","kma_failure_started_at") and isinstance(value,(str,int))}

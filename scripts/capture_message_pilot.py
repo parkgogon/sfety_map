@@ -19,6 +19,7 @@ def service_summary(value):
     return {'ready_revision':value.get('status',{}).get('latestReadyRevisionName'),
             'traffic':value.get('status',{}).get('traffic',[]), 'image':container.get('image'),
             'runtime_account':spec.get('serviceAccountName'),
+            'execution_environment':template.get('metadata',{}).get('annotations',{}).get('run.googleapis.com/execution-environment'),
             'settings':{e['name']:e['value'] for e in container.get('env',[]) if e.get('name') in SAFE_ENV and 'value' in e},
             'message_secret_versions':{e['name']:e['valueFrom']['secretKeyRef']['key'] for e in container.get('env',[])
                                       if e.get('name') in {'OPENAI_API_KEY','KAKAO_REST_API_KEY','SAFETY_DATA_API_KEY'} and e.get('valueFrom',{}).get('secretKeyRef')}}
@@ -61,6 +62,7 @@ def main():
         job=result['jobs'][name]
         assert job['state']=='ENABLED' and job['schedule']==cron and job['uri'].endswith('/internal/v1/'+route)
         assert job['oidc_account']=='safety-alert-scheduler@'+PROJECT+'.iam.gserviceaccount.com'
+    assert result['services']['safety-alert-worker']['execution_environment']=='gen2'
     assert not result['message_worker_public']
     print('Private worker, fixed versions, bounded pilot settings and three schedules verified. No jobs invoked.')
 

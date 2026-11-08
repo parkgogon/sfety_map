@@ -12,6 +12,17 @@
 `/workspace/sfety_map`, `/workspace/sfety_map-simplify`, 이전 배포 작업공간은 보존했다.
 검수 도구/문서/증빙만의 후속 commit에는 `[skip ci]`를 써서 운영 앱 재배포를 일으키지 않는다.
 
+## 진행 중인 오류 수정 — 2026-11-09 KST
+
+사용자가 남은 두 오류의 다음 단계 진행을 요청했다. 작업공간 `/workspace/sfety_map-source-fixes`,
+브랜치 `fix/message-feed-and-kma`, [PR #3](https://github.com/parkgogon/sfety_map/pull/3).
+운영 시작 전의 미등록/수신지역 불명 항목이 partial을 만들던 원인을 재현했고 cutoff 순서를 고쳤다.
+기존 ID 정정/시작 이후 모호함/필드 해석 실패는 계속 검증한다. Python 538개·React 268개/빌드 통과.
+KMA는 기존 인스턴스 80회 연속 실패, 임시 서버는 각 3회 정상이라 key/parser/7초 지연보다 실행 경로 차이를 확인했다.
+기존 실행 환경은 미지정이며 gen1이라고 단정하지 않는다. KMA worker만 gen2로 고정하는 운영 비교를 준비한다.
+최소 0·최대 1/기존 자원을 유지하고 NAT/상주 자원은 추가하지 않는다. health는 KMA 실패를 ready로 반환하지 않도록 보완했다.
+[진단/수정 증빙](evidence/2026-11-09/source-fixes/README.md). 아직 운영 반영 전이며 다음은 최종 CI 후 정규 수집/KMA 연속 주기의 실운영 검증이다.
+
 ## 현재 운영과 사용자 확정 결정
 
 사용자는 개선에 끝이 없으므로 1·2단계를 먼저 제한 운영하고 실제 검토 불편을 바탕으로 다음 기능을 고치기로 했다.

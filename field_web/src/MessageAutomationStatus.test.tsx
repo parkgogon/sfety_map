@@ -22,7 +22,7 @@ describe("문자 수집·분석 상태",()=>{
   expect(refresh).not.toHaveBeenCalled();await act(async()=>vi.advanceTimersByTimeAsync(60000));expect(refresh).toHaveBeenCalledTimes(1);
  });
  it("does not label a failed or partial refresh as successful collection",async()=>{
-  value.state="partial";value.detail="일부 페이지 확인 중";await render();expect(container.textContent).toContain("일부 조회 진행 중");
+  value.state="partial";value.detail="일부 페이지 확인 중";await render();expect(container.textContent).toContain("일부 확인 필요");
   fail=true;await act(async()=>vi.advanceTimersByTimeAsync(60000));expect(container.textContent).toContain("수집·분석 상태 확인 불가");expect(container.textContent).toContain("수집 성공 여부를 판단할 수 없습니다");expect(container.textContent).not.toContain("자동 수집 중");expect(refresh).not.toHaveBeenCalled();
   fail=false;value.state="stale";await act(async()=>vi.advanceTimersByTimeAsync(60000));expect(container.textContent).toContain("공식 문자 수집 지연");
  });

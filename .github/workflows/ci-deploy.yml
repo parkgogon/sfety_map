@@ -151,6 +151,7 @@ jobs:
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --platform managed \
+            --execution-environment gen2 \
             --no-allow-unauthenticated \
             --service-account safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com \
             --port 8080 \
