@@ -8,11 +8,16 @@ import tempfile
 import unittest
 from unittest.mock import Mock,patch
 
-from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify
+from safety_dashboard.operations.verify_message_release import allowed_request,emit,verify,is_map_tile
 from scripts import capture_release_baseline,collect_message_release_check,invoke_message_release_check
 
 
 class ReleaseVerificationTests(unittest.TestCase):
+    def test_real_current_and_legacy_tile_urls_are_distinguished_from_sdk_controls(self):
+        self.assertTrue(is_map_tile('https://mts.kakaocdn.net/api/v1/tile/PNGSD02/v26/latest/12/1/2.png'))
+        self.assertTrue(is_map_tile('https://map2.daumcdn.net/map_2d_hd/tile.png'))
+        self.assertFalse(is_map_tile('https://t1.kakaocdn.net/mapjsapi/images/bg_tile.png'))
+        self.assertFalse(is_map_tile('https://evil.example/api/v1/tile/tile.png'))
     def test_private_verifier_rejects_other_hosts_before_getting_identity(self):
         with patch.dict(os.environ,{'CHECK_URL':'https://evil.example'},clear=True):
             with self.assertRaises(ValueError):invoke_message_release_check.main()

@@ -12,6 +12,13 @@ BASE = "https://keco-safety-map.web.app"
 SOURCE = "운영 배포 검수 · 창작 예문"
 
 
+def is_map_tile(url):
+    parsed=urlsplit(url)
+    return parsed.scheme=="https" and bool(
+        parsed.hostname=="mts.kakaocdn.net" and parsed.path.startswith("/api/v1/tile/")
+        or re.fullmatch(r"map[0-9]*\.daumcdn\.net",parsed.hostname or "") and re.match(r"/map_(?:2d|sky|hybrid)",parsed.path))
+
+
 def allowed_request(url, method):
     try:
         parsed = urlsplit(url)
@@ -50,7 +57,7 @@ def verify(sink=emit):
             context = browser.new_context(viewport={"width":1440,"height":1050},permissions=["clipboard-read","clipboard-write"])
             page = context.new_page(); page.set_default_timeout(30000)
             page.on("pageerror", lambda _: errors.append("page_error"))
-            page.on("response", lambda r: tiles.append(1) if r.status == 200 and re.search(r"/map_(?:2d|sky|hybrid)",urlsplit(r.url).path) else None)
+            page.on("response", lambda r: tiles.append(1) if r.status == 200 and is_map_tile(r.url) else None)
             def route(r):
                 if not allowed_request(r.request.url,r.request.method):
                     denied.append(urlsplit(r.request.url).hostname);r.abort();return
@@ -143,7 +150,9 @@ def verify(sink=emit):
                 sink({"kind":"screenshot","name":name,"jpeg_base64":base64.b64encode(raw).decode()})
             map_images=page.locator('.message-spatial img').evaluate_all("""images=>images.filter(img=>{
                 const u=new URL(img.currentSrc || img.src,location.href);
-                return img.complete && img.naturalWidth>=128 && /(?:^|\\.)daumcdn\\.net$/.test(u.hostname);
+                return img.complete && img.naturalWidth>=128 &&
+                    ((u.hostname==='mts.kakaocdn.net' && u.pathname.startsWith('/api/v1/tile/')) ||
+                     (/^map[0-9]*\\.daumcdn\\.net$/.test(u.hostname) && /^\/map_(2d|sky|hybrid)/.test(u.pathname)));
             }).length""")
             assert not denied and not errors and len(analysis_requests)<=1 and map_images
             sink({"kind":"result","status":"passed","record_id":identifier,"source_revision":revision,
