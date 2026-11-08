@@ -61,6 +61,17 @@ Firestore 데이터베이스·Secret 버전·Secret IAM 조회는 `permission_de
 공통 이용안내에서 API 이용신청과 공공기관 제공 자료의 공공누리 제3유형 안내를 확인했다.
 이는 해당 키의 이용 승인·AI 분석/보관/재제공 조건까지 확인했다는 뜻이 아니다. 신청 계정에서 별도 확인한다.
 
+### 사용자 Cloud Shell 캡처로 추가 확인
+
+2026-11-08 사용자가 제공한 소유자 계정의 Cloud Shell 화면에서 기본 DB는 `FIRESTORE_NATIVE`,
+`OPENAI_API_KEY`와 `KAKAO_REST_API_KEY`의 Secret 조회는 각각 `NOT_FOUND`임을 확인했다.
+앞선 Actions 계정의 조회 거부와 구분한다. 두 Secret은 아직 생성되지 않았고, DB의 Native 모드만 확인한 것이다.
+runtime의 문서 읽기/쓰기·버전 이력/권한은 검증하지 않았다. 공식 피드 Secret도 이 캡처에서는 조회하지 않았다.
+
+GitHub Actions에 보관한 기존 키를 Secret Manager에 전달하는 방법을 우선 검토한다.
+이를 위해 배포용 서비스 계정의 식별과 필요한 두 Secret에 한정한 권한 준비가 필요하다.
+키 값을 채팅으로 받거나 새 키 발급을 먼저 요구하지 않는다. 현재 키 이관/권한 변경은 실행하지 않았다.
+
 ### 소유자 계정으로 다음에 확인할 최소 명령
 
 GCP Cloud Shell의 프로젝트 권한이 있는 계정에서 다음을 실행한다. Secret **값은 출력하지 않는다**.
