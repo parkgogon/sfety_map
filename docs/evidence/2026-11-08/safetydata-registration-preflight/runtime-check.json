@@ -1,0 +1,48 @@
+{
+  "status": "passed",
+  "probe_origin": "cloud_run_runtime",
+  "secret_version": "1",
+  "api_calls": 4,
+  "checks": {
+    "date_filter_matches": true,
+    "requested_page_size_matches": true,
+    "second_page_has_rows": true,
+    "page_ids_disjoint": true,
+    "second_page_date_matches": true,
+    "region_filter_matches": true,
+    "head_stable": true
+  },
+  "requests": [
+    {
+      "date": "2026-11-08",
+      "region": null,
+      "page": 1,
+      "rows": 2,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-08",
+      "region": null,
+      "page": 2,
+      "rows": 2,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-08",
+      "region": "부산광역시",
+      "page": 1,
+      "rows": 1,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-08",
+      "region": null,
+      "page": 1,
+      "rows": 2,
+      "api_result": "sample_received"
+    }
+  ],
+  "records_written": 0,
+  "model_calls": 0,
+  "messages_sent": 0
+}

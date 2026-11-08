@@ -26,10 +26,11 @@
 발행 시각 미상은 null이며 현재 시각을 대입하지 않는다. 기존 날짜가 있는 기록과 공식 입력은 유지한다.
 1단계 [증빙](evidence/2026-11-08/message-review-simple-stage1/README.md)과 2단계 [검증·화면](evidence/2026-11-08/message-review-auto-stage2/README.md)을 구분한다.
 2단계 Python 491개·React 267개·컴파일/빌드/시설 195개 검증을 통과했다.
-이후 소유자용 연결 점검 도구 8개 검사를 추가한 최신 Python 499개도 통과했다(실제 외부 HTTP/TCP 0).
+이후 소유자/서버 연결 점검 검사를 추가한 최신 Python 509개도 통과했다(자동 검사의 실제 외부 HTTP/TCP 0).
 로컬 실제 빌드/API/CSV·메모리 저장소/가짜 공식 제공자·합성 분석·가짜 지도 SDK로 PC/390/360px를 확인했다.
 브라우저를 열기 전 수집/분석 → 대기함 읽기, 추가 수신 후 읽기 갱신, 미승인 입력 보존과 한도/오류 표시를 검증했다.
-실제 SafetyData/OpenAI/Kakao 추가 호출·실제 발송·운영 배포는 0건이다. 운영 앱은 위의 `43b40e0` 그대로다.
+로컬 검수의 실제 SafetyData/OpenAI/Kakao 호출은 0건이다. 이후 별도 연결 검수에서 SafetyData를 소유자 1회·임시 서버 4회 조회했다.
+AI/장소 추가 호출·실제 발송·운영 앱 배포는 0건이다. 운영 앱은 위의 `43b40e0` 그대로다.
 
 2단계는 별도 IAM 비공개 `safety-message-worker`와 문자 전용 예약 작업 두 개를 opt-in 배포하도록 준비했다.
 기존 KMA Worker/dispatch에 모델 실행을 붙이지 않는다. 수집은 기본 오늘·전일, 중단 보충은 최대 7일이며 페이지/행 진행을 저장한다.
@@ -162,7 +163,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 ## 5. 다음 시작점
 
-다음 시작점은 **IAM 비공개 임시 점검으로 Cloud Run 실제 키 사용과 문자/지역/페이지 응답 확인**이다.
+다음 시작점은 **본인 SafetyData 일일 호출 한도와 조회 주기/범위를 맞춘 활성화 설정 확정**이다.
 사용자 캡처에서 기존 긴급재난문자 이용신청의 `승인` 상태를 확인했고, 기존 인증키도 찾았다.
 사용자는 GCP `keco-safety-map`에 `SAFETY_DATA_API_KEY`를 만들었다고 확인했다. 재신청/재발급/재등록을 반복하지 않는다.
 키 값은 채팅/GitHub 파일로 받지 않는다. 기존 OpenAI/Kakao Secret 버전 1도 다시 등록하지 않는다.
@@ -173,10 +174,13 @@ API ready·운영 이미지 `43b40e0`·SafetyData 환경변수 참조 미연결�
 사용자가 소유자용 도구 `467234b --grant-runtime`을 실행했다. [키 값 없는 실행 결과](evidence/2026-11-08/safetydata-registration-preflight/owner-check.json)에서
 ENABLED 버전 **1**, runtime 읽기 역할 추가, API 1회 응답을 확인했다. 오늘 대구 조건은 `valid_empty_response`/0건이었다.
 이 결과는 Cloud Shell에서의 응답이며 실제 문자 필드·날짜/지역/페이지·Cloud Run 통신 확인은 아직 아니다. 권한 추가를 반복하지 않는다.
-추가 점검은 기존 읽기 전용 워크플로의 명시적 `mode=official-feed`로 실행한다. 고정 운영 worker 이미지/동일 runtime 계정과 이 Secret 버전 1만 쓰는
-새 임시 비공개 서비스를 생성하고, 최대 6회 읽기 후 삭제한다. 운영 API/기존 Worker/예약 실행/DB/AI/발송 경로는 바꾸지 않는다.
-최근 전국 3일을 찾고 빈 목록만 있으면 날짜/지역 없는 대조 1회도 확인한다. 실제 원문/ID·키 값은 결과에 담지 않는다.
-빈 응답이나 날짜/지역/페이지 불일치를 정상 상시 수집으로 판정하지 않는다. 제공 지연/쿼터·이용 조건은 [연결 기준](MESSAGE_AUTOMATION.md)에 따라 추가 확인한다.
+추가 [실제 서버 점검 42478871279](https://github.com/parkgogon/sfety_map/actions/runs/42478871279)은 성공했다.
+고정 기존 worker 이미지·동일 runtime 계정·Secret 버전 1로 임시 IAM 비공개 서비스에서 4회 조회했다.
+오늘 전국 첫/둘째 페이지 각 2건·부산 1건과 첫 페이지 재대조를 확인했고 날짜/지역·요청 페이지 크기·ID 비중복·첫 페이지 안정 검사가 통과했다.
+임시 서비스 삭제 단계도 성공했다. 원문/ID·키는 내보내지 않았다. [값 없는 결과](evidence/2026-11-08/safetydata-registration-preflight/runtime-check.json).
+운영 API/기존 Worker/예약 실행/DB/AI/발송 경로를 바꾸지 않았으며, 실제 운영 상시 수집은 아직 아니다.
+기본 5분/5지역/오늘·전일 조회는 첫 페이지만 하루 2,880회다(추가 페이지/대조/수동 조회 별도). 사용자 계정의 실제 일일 한도를 비동기 질문으로 확인 중이다.
+한도 숫자를 받기 전 설정을 활성화하지 않는다. 제공 지연·과거 날짜/자정 경계·실제 계정 쿼터·이용 조건은 [연결 기준](MESSAGE_AUTOMATION.md)에 따라 추가 확인한다.
 실제 계약 확인 전 `MESSAGE_COLLECTION_ENABLED`와 `MESSAGE_COLLECTION_CONTRACT_VERIFIED`는 false다.
 별도 사용자 요청 전 main 반영/운영 배포·실제 전파 시험을 하지 않는다. 3단계 후속 제안/비교는 아직 미구현이다.
 후속 문자 자동 제안/변경 검토와 운영 전환은 3·4단계다. 단계별 수용 조건은 위 계획을 따른다.
