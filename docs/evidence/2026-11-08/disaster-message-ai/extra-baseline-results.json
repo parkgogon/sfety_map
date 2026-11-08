@@ -1,0 +1,96 @@
+{
+  "report_version": 1,
+  "evaluated_at": "2026-11-08T06:49:09.242773+09:00",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "status": "pass",
+  "cases": [
+    {
+      "id": "partial_release",
+      "label": "일부만 해제",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "released_segment": true,
+        "still_restricted_segment": true
+      },
+      "result": {
+        "input": {
+          "text": "[훈련시] 가람교 하부도로 통제는 15시 해제되었습니다. 푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+          "issued_at": "2026-11-07T15:00:00+09:00",
+          "source": "창작 예문 · 가상 지명",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "가람교 하부도로는 15시에 해제되었고, 푸른교 하부도로는 침수로 계속 통제 중이라는 내용입니다.",
+          "parts": [
+            {
+              "intent": "release",
+              "description": "가람교 하부도로 통제 해제",
+              "evidence": "가람교 하부도로 통제는 15시 해제되었습니다.",
+              "time_text": "15시",
+              "starts_at": "2026-11-07T15:00:00+09:00",
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "가람교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "가람교 하부도로 통제는 15시 해제되었습니다.",
+                  "candidate_ids": []
+                }
+              ]
+            },
+            {
+              "intent": "active_restriction",
+              "description": "푸른교 하부도로 침수로 인한 계속 통제",
+              "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "푸른교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": []
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "search_places",
+            "detail": "장소 검색 미설정 · 위치 확인 필요",
+            "status": "unavailable"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 2,
+        "elapsed_ms": 2956
+      },
+      "usage": {
+        "requests": 2,
+        "usage_reports": 2,
+        "input_tokens": 2894,
+        "cached_input_tokens": 0,
+        "output_tokens": 353,
+        "total_tokens": 3247
+      },
+      "elapsed_ms": 2956
+    }
+  ],
+  "human_review_required": true,
+  "place_search_mode": "disabled"
+}

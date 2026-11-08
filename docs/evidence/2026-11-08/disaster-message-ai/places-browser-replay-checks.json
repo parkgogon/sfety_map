@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "transport": "captured real API results replayed through fake local transport",
+  "new_upstream_calls": 0,
+  "widths": [
+    1440,
+    390,
+    360
+  ],
+  "cases": [
+    "prevention",
+    "event",
+    "scheduled",
+    "partial_release",
+    "ambiguous",
+    "destination"
+  ],
+  "page_errors": [],
+  "unexpected_api_requests": []
+}

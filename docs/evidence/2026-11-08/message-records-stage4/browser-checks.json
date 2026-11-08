@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "transport": "real local React/API/CSV/memory store; scripted bridge messages/analysis, fake map SDK, no real tiles",
+  "fixture_analysis_requests": 3,
+  "copy_basis_checks": 2,
+  "new_openai_kakao_calls": 0,
+  "actual_messages_sent": 0,
+  "checks": [
+    "1440/390/360px: original/follow-up comparison has no horizontal overflow; release/continuing control stay separate",
+    "manual relationship invalidates old completion/notice; source analysis and independent target record unchanged",
+    "linked follow-up requires segment review note; new draft includes both verbatim originals and partial release caution, server-checked clipboard",
+    "relationship/completion/notice survive reload without new analysis",
+    "target reanalysis dynamically blocks previous copy despite unchanged parent version; explicit reconfirmation and new completion restore current draft",
+    "unlink preserves both records and historical link reasons/analysis revisions, no resurrection of old completion"
+  ],
+  "page_errors": [],
+  "unexpected_requests": []
+}

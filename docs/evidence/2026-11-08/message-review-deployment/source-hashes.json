@@ -1,0 +1,8 @@
+{
+  ".github/workflows/check-message-review-deployment.yml": "038c622ff8df1b2f4bdd28507a6e2754924954f40dc80fd708153c7fbfa8f56e",
+  ".github/workflows/ci-deploy.yml": "0c999f1f49f331e7310b7e55a9e4af927cbc5d65bdb9f02e9f4260918e1255f9",
+  "scripts/check_message_review_deployment.py": "0a2830a2921931f1b45438eb0282fd2dc0fa62dab4ec6570355b72a91e31a160",
+  "scripts/build_message_review_deploy_config.py": "5b01cb211f618cd5b44265c6dcd35cb45c3e6dc691d10fa0b1d7ddca50cdaa00",
+  "tests/test_message_deployment_check.py": "105884b76e1b6296161ff84cf5f1e9f19f5ee5beaec35c416ba60b8353bf26ee",
+  "tests/test_message_deploy_config.py": "400bc0bd62eb19bd59da6ba0b5b289a7ffecad9ba214c31ab58f3578f6cc6c3f"
+}

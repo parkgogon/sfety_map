@@ -1,0 +1,64 @@
+name: Copy message API keys to Secret Manager
+run-name: Message API key copy · ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Copy only keys approved for registration
+        type: choice
+        default: both
+        options: [both, openai, kakao]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: message-api-key-copy
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (contains(fromJSON('["message-keys-copy", "message-openai-key-copy", "message-kakao-key-copy"]'), github.event.label.name) &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Add selected key versions using stdin only
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KEY_TARGET: ${{ inputs.target || (github.event.label.name == 'message-openai-key-copy' && 'openai') || (github.event.label.name == 'message-kakao-key-copy' && 'kakao') || 'both' }}
+        run: python scripts/copy_message_api_keys.py --execute --target "$KEY_TARGET" --output-dir message-key-copy
+      - name: Publish version numbers only
+        if: always()
+        run: |
+          if [[ -f message-key-copy/summary.md ]]; then
+            cat message-key-copy/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-api-key-copy-result
+          path: message-key-copy/
+          retention-days: 7
+          if-no-files-found: warn

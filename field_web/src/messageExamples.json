@@ -1,0 +1,8 @@
+[
+  {"id":"prevention","label":"예방 안내","source":"창작 예문 · 대구시","issued_at":"2026-11-07T09:00:00+09:00","text":"[대구시] 건조한 날씨가 이어지고 있습니다. 산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 주세요.","expected_intents":["prevention"],"expected_roles":[],"expected_start":null},
+  {"id":"event","label":"사고 발생","source":"창작 예문 · 달서구","issued_at":"2026-11-07T10:10:00+09:00","text":"[달서구] 오늘 10시 대구 성서산업단지 인근 공장에서 화재 발생. 주변 주민은 연기 유입에 주의하고 창문을 닫아 주세요.","expected_intents":["event"],"expected_roles":["incident_site"],"expected_start":"2026-11-07T10:00:00+09:00"},
+  {"id":"scheduled","label":"내일 통제","source":"창작 예문 · 영천시","issued_at":"2026-11-07T17:00:00+09:00","text":"[영천시] 내일 09시부터 12시까지 영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정입니다. 이용에 참고해 주세요.","expected_intents":["scheduled_restriction"],"expected_roles":["restricted_area"],"expected_start":"2026-11-08T09:00:00+09:00"},
+  {"id":"partial_release","label":"일부만 해제","source":"창작 예문 · 가상 지명","issued_at":"2026-11-07T15:00:00+09:00","text":"[훈련시] 가람교 하부도로 통제는 15시 해제되었습니다. 푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.","expected_intents":["release","active_restriction"],"expected_roles":["restricted_area"],"expected_start":null},
+  {"id":"ambiguous","label":"위치 모호","source":"창작 예문 · 발신 지역 미상","issued_at":"2026-11-07T14:00:00+09:00","text":"중앙동 사거리 인근에서 차량 사고로 도로를 통제하고 있습니다. 주변 차량은 우회해 주세요.","expected_intents":["active_restriction"],"expected_roles":["restricted_area"],"expected_start":null},
+  {"id":"destination","label":"사고지와 대피소","source":"창작 예문 · 달서구","issued_at":"2026-11-07T11:20:00+09:00","text":"[달서구] 대구 와룡산에서 산불 발생. 인근 주민은 성서초등학교 운동장으로 대피해 주세요.","expected_intents":["event"],"expected_roles":["incident_site","evacuation_destination"],"expected_start":null}
+]

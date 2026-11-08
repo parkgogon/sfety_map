@@ -23,6 +23,7 @@ export interface KakaoClusterer {
 }
 
 export interface KakaoMapInstance {
+  relayout?(): void;
   addControl(control: object, position: unknown): void;
   removeControl?(control: object): void;
   setBounds(

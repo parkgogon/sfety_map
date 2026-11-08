@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import io
 from pathlib import Path
 
 from safety_dashboard.domain.models import Facility, GeoPoint
@@ -24,6 +26,20 @@ class CsvFacilityRepository:
                 rows = tuple(reader)
         except OSError as exc:
             raise FacilityDataError(f"시설 파일을 읽을 수 없습니다: {self.path}") from exc
+        return self._parse(fieldnames, rows)
+
+    def snapshot(self) -> tuple[str, tuple[Facility, ...]]:
+        """같은 바이트에서 자료 해시와 시설 목록을 얻는다."""
+        try:
+            raw = self.path.read_bytes()
+            reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig"), newline=""))
+            fields, rows = set(reader.fieldnames or ()), tuple(reader)
+        except (OSError, UnicodeError) as exc:
+            raise FacilityDataError("시설 자료를 읽을 수 없습니다.") from exc
+        return hashlib.sha256(raw).hexdigest(), self._parse(fields, rows)
+
+    @staticmethod
+    def _parse(fieldnames, rows) -> tuple[Facility, ...]:
         required = {
             "name", "address", "latitude", "longitude", "시설코드", "시설구분"
         }

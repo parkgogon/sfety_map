@@ -1,0 +1,17 @@
+{
+  "project": "keco-safety-map",
+  "checked_at": "2026-11-08T02:46:35.698242+00:00",
+  "executed": true,
+  "results": [
+    {
+      "secret": "OPENAI_API_KEY",
+      "status": "version_created",
+      "version": "1"
+    },
+    {
+      "secret": "KAKAO_REST_API_KEY",
+      "status": "version_created",
+      "version": "1"
+    }
+  ]
+}

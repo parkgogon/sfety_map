@@ -1,0 +1,5 @@
+{
+  "scripts/copy_message_api_keys.py": "aa4f553e99d70b0b8b7ed3a5835e87ee38ca6466429dd65a7db4db4718db3541",
+  "scripts/prepare_message_key_secrets.sh": "3d73ba2de62e78a8a054a7bf1dcc1bd6e3f44a5b8a9792872fa2db1aac806d49",
+  ".github/workflows/copy-message-api-keys.yml": "f55dbddb322e1cc6a3a1a11cd4999cad4b246d96ac86e6d4b6789a5ff2b04b66"
+}

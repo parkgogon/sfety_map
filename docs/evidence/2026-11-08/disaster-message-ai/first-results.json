@@ -1,0 +1,489 @@
+{
+  "report_version": 1,
+  "evaluated_at": "2026-11-08T06:37:07.675960+09:00",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "status": "needs_review",
+  "cases": [
+    {
+      "id": "prevention",
+      "label": "예방 안내",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "no_incident_or_unnecessary_lookup": true
+      },
+      "result": {
+        "input": {
+          "text": "[대구시] 건조한 날씨가 이어지고 있습니다. 산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 주세요.",
+          "issued_at": "2026-11-07T09:00:00+09:00",
+          "source": "창작 예문 · 대구시",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "건조한 날씨가 이어지고 있어 산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 달라는 예방 안내이다.",
+          "parts": [
+            {
+              "intent": "prevention",
+              "description": "건조한 날씨가 이어지는 가운데 산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 달라는 안내",
+              "evidence": "건조한 날씨가 이어지고 있습니다. 산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 주세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "산림 인접 지역",
+                  "role": "reference",
+                  "evidence": "산림 인접 지역에서 쓰레기 소각을 삼가고 산불 예방에 협조해 주세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "특정 사고 장소나 통제 구간이 없는 예방 안내로 보입니다. 추가로 특정 지역 확인이 필요한가요?"
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "submit_analysis",
+            "detail": "형식 또는 근거 검증 실패 · 수정 요청",
+            "status": "invalid"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 2,
+        "elapsed_ms": 4608
+      },
+      "usage": {
+        "requests": 2,
+        "usage_reports": 2,
+        "input_tokens": 2799,
+        "cached_input_tokens": 0,
+        "output_tokens": 466,
+        "total_tokens": 3265
+      },
+      "elapsed_ms": 4608
+    },
+    {
+      "id": "event",
+      "label": "사고 발생",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "publication_relative_start": true
+      },
+      "result": {
+        "input": {
+          "text": "[달서구] 오늘 10시 대구 성서산업단지 인근 공장에서 화재 발생. 주변 주민은 연기 유입에 주의하고 창문을 닫아 주세요.",
+          "issued_at": "2026-11-07T10:10:00+09:00",
+          "source": "창작 예문 · 달서구",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "오늘 10시 대구 성서산업단지 인근 공장에서 화재가 발생했다는 안내이며, 주변 주민에게 연기 유입에 주의하고 창문을 닫도록 안내한다.",
+          "parts": [
+            {
+              "intent": "event",
+              "description": "대구 성서산업단지 인근 공장에서 화재가 발생했다.",
+              "evidence": "오늘 10시 대구 성서산업단지 인근 공장에서 화재 발생.",
+              "time_text": "오늘 10시",
+              "starts_at": "2026-11-07T10:00:00+09:00",
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "대구 성서산업단지 인근 공장",
+                  "role": "incident_site",
+                  "evidence": "대구 성서산업단지 인근 공장에서 화재 발생",
+                  "candidate_ids": []
+                }
+              ]
+            },
+            {
+              "intent": "advisory",
+              "description": "주변 주민에게 연기 유입에 주의하고 창문을 닫도록 안내한다.",
+              "evidence": "주변 주민은 연기 유입에 주의하고 창문을 닫아 주세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "주변 주민",
+                  "role": "reference",
+                  "evidence": "주변 주민은 연기 유입에 주의하고 창문을 닫아 주세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "'대구 성서산업단지 인근 공장'의 정확한 위치가 특정되지 않아 후보 확인이 필요합니다."
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "search_places",
+            "detail": "형식 또는 근거 검증 실패 · 수정 요청",
+            "status": "invalid"
+          },
+          {
+            "tool": "search_places",
+            "detail": "장소 검색 미설정 · 위치 확인 필요",
+            "status": "unavailable"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 3,
+        "elapsed_ms": 4721
+      },
+      "usage": {
+        "requests": 3,
+        "usage_reports": 3,
+        "input_tokens": 4088,
+        "cached_input_tokens": 1152,
+        "output_tokens": 452,
+        "total_tokens": 4540
+      },
+      "elapsed_ms": 4721
+    },
+    {
+      "id": "scheduled",
+      "label": "내일 통제",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "publication_relative_start": true,
+        "not_current_restriction": true,
+        "scheduled_end": true
+      },
+      "result": {
+        "input": {
+          "text": "[영천시] 내일 09시부터 12시까지 영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정입니다. 이용에 참고해 주세요.",
+          "issued_at": "2026-11-07T17:00:00+09:00",
+          "source": "창작 예문 · 영천시",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "내일 09시부터 12시까지 영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정이라는 안내입니다. 사고나 현재 통제가 아니라 예정된 통제이며, 대피 안내는 포함되어 있지 않습니다.",
+          "parts": [
+            {
+              "intent": "scheduled_restriction",
+              "description": "영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정",
+              "evidence": "내일 09시부터 12시까지 영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정입니다.",
+              "time_text": "내일 09시부터 12시까지",
+              "starts_at": "2026-11-08T09:00:00+09:00",
+              "ends_at": "2026-11-08T12:00:00+09:00",
+              "locations": [
+                {
+                  "text": "영천 금호강 둔치 주차장 진입로",
+                  "role": "restricted_area",
+                  "evidence": "영천 금호강 둔치 주차장 진입로를 행사 준비로 통제할 예정입니다.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "'영천 금호강 둔치 주차장 진입로'의 정확한 범위가 특정 진입로 1곳인지, 여러 진입로 구간인지 확인이 필요합니다."
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 1,
+        "elapsed_ms": 2263
+      },
+      "usage": {
+        "requests": 1,
+        "usage_reports": 1,
+        "input_tokens": 1265,
+        "cached_input_tokens": 0,
+        "output_tokens": 305,
+        "total_tokens": 1570
+      },
+      "elapsed_ms": 2263
+    },
+    {
+      "id": "partial_release",
+      "label": "일부만 해제",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "released_segment": true,
+        "still_restricted_segment": true
+      },
+      "result": {
+        "input": {
+          "text": "[훈련시] 가람교 하부도로 통제는 15시 해제되었습니다. 푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+          "issued_at": "2026-11-07T15:00:00+09:00",
+          "source": "창작 예문 · 가상 지명",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "훈련시 문구이며, 가람교 하부도로의 통제는 15시 해제되었고 푸른교 하부도로는 침수로 계속 통제 중이라는 안내입니다.",
+          "parts": [
+            {
+              "intent": "release",
+              "description": "가람교 하부도로 통제 해제 안내",
+              "evidence": "가람교 하부도로 통제는 15시 해제되었습니다.",
+              "time_text": "15시",
+              "starts_at": null,
+              "ends_at": "2026-11-07T15:00:00+09:00",
+              "locations": [
+                {
+                  "text": "가람교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "가람교 하부도로 통제는 15시 해제되었습니다.",
+                  "candidate_ids": []
+                }
+              ]
+            },
+            {
+              "intent": "active_restriction",
+              "description": "푸른교 하부도로 침수로 인한 계속 통제 안내",
+              "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "푸른교 하부도로",
+                  "role": "restricted_area",
+                  "evidence": "푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "가람교 하부도로와 푸른교 하부도로의 실제 위치를 확인할 수 있는 자료가 필요합니다."
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "search_places",
+            "detail": "장소 검색 미설정 · 위치 확인 필요",
+            "status": "unavailable"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 2,
+        "elapsed_ms": 3372
+      },
+      "usage": {
+        "requests": 2,
+        "usage_reports": 2,
+        "input_tokens": 2632,
+        "cached_input_tokens": 0,
+        "output_tokens": 392,
+        "total_tokens": 3024
+      },
+      "elapsed_ms": 3372
+    },
+    {
+      "id": "ambiguous",
+      "label": "위치 모호",
+      "status": "needs_review",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": false,
+        "review_required": true,
+        "asks_for_location_confirmation": true
+      },
+      "result": {
+        "input": {
+          "text": "중앙동 사거리 인근에서 차량 사고로 도로를 통제하고 있습니다. 주변 차량은 우회해 주세요.",
+          "issued_at": "2026-11-07T14:00:00+09:00",
+          "source": "창작 예문 · 발신 지역 미상",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "중앙동 사거리 인근에서 차량 사고로 도로를 통제 중이며, 주변 차량에 우회를 안내하는 문자입니다.",
+          "parts": [
+            {
+              "intent": "active_restriction",
+              "description": "중앙동 사거리 인근에서 차량 사고로 도로를 통제하고 있음",
+              "evidence": "중앙동 사거리 인근에서 차량 사고로 도로를 통제하고 있습니다.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "중앙동 사거리 인근",
+                  "role": "incident_site",
+                  "evidence": "중앙동 사거리 인근에서 차량 사고로 도로를 통제하고 있습니다.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "'중앙동 사거리'가 어느 지역의 장소인지 추가 확인이 필요합니다."
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "search_places",
+            "detail": "장소 검색 미설정 · 위치 확인 필요",
+            "status": "unavailable"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 2,
+        "elapsed_ms": 2785
+      },
+      "usage": {
+        "requests": 2,
+        "usage_reports": 2,
+        "input_tokens": 2569,
+        "cached_input_tokens": 0,
+        "output_tokens": 225,
+        "total_tokens": 2794
+      },
+      "elapsed_ms": 2785
+    },
+    {
+      "id": "destination",
+      "label": "사고지와 대피소",
+      "status": "pass",
+      "checks": {
+        "expected_intents": true,
+        "expected_location_roles": true,
+        "review_required": true,
+        "incident_site": true,
+        "destination_role": true,
+        "destination_not_incident": true
+      },
+      "result": {
+        "input": {
+          "text": "[달서구] 대구 와룡산에서 산불 발생. 인근 주민은 성서초등학교 운동장으로 대피해 주세요.",
+          "issued_at": "2026-11-07T11:20:00+09:00",
+          "source": "창작 예문 · 달서구",
+          "reference_radius_km": 3,
+          "input_kind": "example"
+        },
+        "analysis": {
+          "summary": "대구 달서구 와룡산에서 산불이 발생했고, 인근 주민에게 성서초등학교 운동장으로 대피하라고 안내한 문자다. 대피 안내로 보이며, 해제나 정정 내용은 없다.",
+          "parts": [
+            {
+              "intent": "event",
+              "description": "대구 와룡산에서 산불 발생",
+              "evidence": "대구 와룡산에서 산불 발생",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "대구 와룡산",
+                  "role": "incident_site",
+                  "evidence": "대구 와룡산에서 산불 발생",
+                  "candidate_ids": []
+                }
+              ]
+            },
+            {
+              "intent": "advisory",
+              "description": "인근 주민은 성서초등학교 운동장으로 대피 안내",
+              "evidence": "인근 주민은 성서초등학교 운동장으로 대피해 주세요.",
+              "time_text": "",
+              "starts_at": null,
+              "ends_at": null,
+              "locations": [
+                {
+                  "text": "성서초등학교 운동장",
+                  "role": "evacuation_destination",
+                  "evidence": "인근 주민은 성서초등학교 운동장으로 대피해 주세요.",
+                  "candidate_ids": []
+                }
+              ]
+            }
+          ],
+          "questions": [
+            "와룡산과 성서초등학교 운동장의 정확한 위치 후보를 확인할 수 있습니까?"
+          ]
+        },
+        "review_required": true,
+        "candidates": [],
+        "nearby": [],
+        "trace": [
+          {
+            "tool": "search_places",
+            "detail": "장소 검색 미설정 · 위치 확인 필요",
+            "status": "unavailable"
+          },
+          {
+            "tool": "submit_analysis",
+            "detail": "원문 인용과 장소 후보 ID 검증 완료",
+            "status": "ok"
+          }
+        ],
+        "model": "gpt-5.4-mini-2026-03-17",
+        "model_calls": 2,
+        "elapsed_ms": 3087
+      },
+      "usage": {
+        "requests": 2,
+        "usage_reports": 2,
+        "input_tokens": 2598,
+        "cached_input_tokens": 0,
+        "output_tokens": 350,
+        "total_tokens": 2948
+      },
+      "elapsed_ms": 3087
+    }
+  ],
+  "human_review_required": true,
+  "place_search_mode": "disabled"
+}

@@ -26,6 +26,12 @@ from safety_dashboard.api.routes import context as context_routes
 from safety_dashboard.api.routes import notifications as notifications_routes
 from safety_dashboard.api.routes import reports as reports_routes
 from safety_dashboard.api.routes import policy as policy_routes
+from safety_dashboard.api.routes import messages as message_routes
+from safety_dashboard.api.routes import message_records as record_routes
+from safety_dashboard.application.message_records import MessageRecordService
+from safety_dashboard.application.message_feed import OfficialFeedService
+from safety_dashboard.application.message_spatial import MessageSpatialService
+from safety_dashboard.application.message_analysis import MessageAnalysisService
 
 LOGGER = logging.getLogger("safety_dashboard.api")
 
@@ -46,6 +52,10 @@ def create_app(
     admin_access_service: AdminAccessVerifier | None = None,
     operational_readiness_service: OperationalReadinessService | None = None,
     nearby_report_generator: NearbyReportGenerator | None = None,
+    message_analysis_service: MessageAnalysisService | None = None,
+    message_record_service: MessageRecordService | None = None,
+    message_feed_service: OfficialFeedService | None = None,
+    message_spatial_service: MessageSpatialService | None = None,
 ) -> FastAPI:
     services = build_services(
         service,
@@ -55,6 +65,10 @@ def create_app(
         admin_access_service,
         operational_readiness_service,
         nearby_report_generator,
+        message_analysis_service,
+        message_record_service,
+        message_feed_service,
+        message_spatial_service,
     )
     application = FastAPI(
         title="K-ECO Safety Monitoring API",
@@ -71,6 +85,8 @@ def create_app(
     application.include_router(notifications_routes.build_router(services))
     application.include_router(reports_routes.build_router(services))
     application.include_router(policy_routes.build_router(services))
+    application.include_router(message_routes.build_router(services))
+    application.include_router(record_routes.build_router(services))
 
     @application.exception_handler(Exception)
     async def unhandled_error(_, error: Exception) -> JSONResponse:

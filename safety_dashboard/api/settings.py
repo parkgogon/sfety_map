@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 @dataclass(frozen=True)
 class ApiSettings:
     kma_api_key: str
+    safety_data_api_key: str = ""
+    message_review_store: str = "firestore"
     cctv_enabled: bool = True
     its_cctv_api_key: str = ""
     its_cctv_api_url: str = "https://openapi.its.go.kr:9443/cctvInfo"
@@ -54,6 +56,8 @@ class ApiSettings:
 
         return cls(
             kma_api_key=env_text("KMA_API_KEY"),
+            safety_data_api_key=env_text("SAFETY_DATA_API_KEY"),
+            message_review_store=env_text("MESSAGE_REVIEW_STORE") or "firestore",
             cctv_enabled=enabled("CCTV_ENABLED", True),
             its_cctv_api_key=env_text("ITS_CCTV_API_KEY"),
             its_cctv_api_url=(env_text("ITS_CCTV_API_URL") or cls.its_cctv_api_url),

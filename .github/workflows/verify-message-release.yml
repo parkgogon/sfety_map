@@ -1,0 +1,105 @@
+name: Verify message release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [baseline, verify]
+        default: baseline
+      revision:
+        description: Deployed main image SHA for verification
+        type: string
+      record_id:
+        description: Resume only a previously registered verification example
+        type: string
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.mode == 'baseline') ||
+      (github.event.label.name == 'message-release-baseline' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: python3 scripts/capture_release_baseline.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: message-release-baseline
+          path: release-check/
+          retention-days: 14
+
+  verify:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'verify' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERIFY_REVISION: ${{ inputs.revision }}
+      VERIFY_RECORD_ID: ${{ inputs.record_id }}
+      CHECK_JOB: message-review-check-${{ github.run_id }}
+      IMAGE_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY || 'safety-dashboard' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate verification target
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch(r"[a-f0-9]{40}",os.environ["VERIFY_REVISION"]); assert not os.environ["VERIFY_RECORD_ID"] or re.fullmatch(r"manual-[a-f0-9]{32}",os.environ["VERIFY_RECORD_ID"])'
+          python3 - <<'PY'
+          import base64,os
+          from pathlib import Path
+          source=base64.b64encode(Path('safety_dashboard/operations/verify_message_release.py').read_bytes()).decode()
+          loader="import base64;exec(base64.b64decode("+repr(source)+"))"
+          with open(os.environ['GITHUB_ENV'],'a') as stream:stream.write('VERIFY_LOADER='+loader+'\n')
+          PY
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Run one isolated browser check without message delivery
+        run: |
+          mkdir -p release-check
+          gcloud run jobs deploy "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 \
+            --image="asia-northeast3-docker.pkg.dev/keco-safety-map/$IMAGE_REPOSITORY/api:$VERIFY_REVISION" \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args="^|^-c|$VERIFY_LOADER" \
+            --set-env-vars="VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_RECORD_ID=$VERIFY_RECORD_ID" \
+            --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
+            --cpu=1 --memory=2Gi --tasks=1 --parallelism=1 --max-retries=0 --task-timeout=300s --quiet
+          gcloud run jobs execute "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --wait \
+            --format='json(metadata.name,status.conditions,status.succeededCount,status.failedCount)' > release-check/execution.json
+      - name: Collect scoped verification evidence
+        if: always()
+        run: |
+          if [[ -s release-check/execution.json ]]; then
+            python3 scripts/collect_message_release_check.py
+          fi
+      - name: Remove only the temporary verification job
+        if: always()
+        run: gcloud run jobs delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-release-verification
+          path: release-check/
+          retention-days: 14
