@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "revision": "43b40e0aee7c9f548ef4d633158c2001c2c86a8d",
+  "public_login_route": true,
+  "unauthenticated_protected_routes": "403 no-store",
+  "widths": [
+    1440,
+    390,
+    360
+  ],
+  "page_errors": [],
+  "unexpected_requests": []
+}

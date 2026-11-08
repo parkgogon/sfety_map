@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-11-08T15:24:34.518855+09:00",
+  "status": {
+    "health": "LIVE",
+    "fetched_at": "2026-11-08T15:24:34.521941+09:00",
+    "detail": "",
+    "zone_health": "LIVE",
+    "zone_detail": "KMA 공식 특보구역 최신본"
+  },
+  "summary": {
+    "active_warning_count": 1,
+    "affected_facility_count": 5,
+    "high_risk_count": 0,
+    "unassessed_count": 0,
+    "highest_warning_level": "ADVISORY"
+  }
+}

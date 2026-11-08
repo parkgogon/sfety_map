@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-08T06:33:52.083356+00:00",
+  "previous_revision": "safety-alert-worker-00075-58q",
+  "revision": "safety-alert-worker-net-refresh-20261108063331",
+  "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:43b40e0aee7c9f548ef4d633158c2001c2c86a8d",
+  "same_runtime_spec": true,
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "safety-alert-worker-net-refresh-20261108063331"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "service": "message-review-check-42454723413-y62i44k74q-du.a.run.app",
+  "verification_exit_code": 1,
+  "record_id": "manual-44013dfc139140e882c5c9af012ddd5b",
+  "browser": {
+    "status": "failed",
+    "phase": "screenshots",
+    "record_id": "manual-44013dfc139140e882c5c9af012ddd5b",
+    "error_type": "AssertionError",
+    "denied_hosts": []
+  }
+}

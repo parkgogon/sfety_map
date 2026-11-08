@@ -1,0 +1,27 @@
+{
+  "service": "message-review-check-42455143090-y62i44k74q-du.a.run.app",
+  "verification_exit_code": 0,
+  "operations": {
+    "kma_consecutive_errors": 34,
+    "kma_failure_category": "KMA_ROUTE",
+    "last_run_at": "2026-11-08T06:30:01.644812+00:00",
+    "kma_failure_started_at": "2026-11-08T03:45:01.117430+00:00",
+    "kma_health": "ERROR",
+    "kma_last_success_at": "2026-11-08T03:40:02.211731+00:00",
+    "last_result": "KMA_ERROR"
+  },
+  "record_id": "manual-44013dfc139140e882c5c9af012ddd5b",
+  "browser": {
+    "status": "passed",
+    "record_id": "manual-44013dfc139140e882c5c9af012ddd5b",
+    "source_revision": "43b40e0aee7c9f548ef4d633158c2001c2c86a8d",
+    "model_calls": 3,
+    "selected_count": 1,
+    "analysis_requests": 0,
+    "tile_responses": 24,
+    "rendered_map_images": 9,
+    "page_errors": 0,
+    "unexpected_requests": 0,
+    "real_messages_sent": 0
+  }
+}

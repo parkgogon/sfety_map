@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-11-08T06:40:37.433242+00:00",
+  "http_status": 200,
+  "operations": {
+    "status": "ok",
+    "checked_at": "2026-11-08T06:40:37.236645+00:00",
+    "worker": {
+      "status": "ok",
+      "last_run_at": "2026-11-08T06:40:02.247489+00:00",
+      "age_seconds": 34,
+      "max_age_seconds": 600
+    },
+    "automation": {
+      "mode": "live"
+    },
+    "kma": {
+      "status": "live"
+    },
+    "reason": "ready"
+  }
+}

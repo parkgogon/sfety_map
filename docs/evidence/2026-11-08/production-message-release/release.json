@@ -1,0 +1,11 @@
+{
+  "app_revision": "43b40e0aee7c9f548ef4d633158c2001c2c86a8d",
+  "deployed_run": 42443589707,
+  "verification_run": 42455143090,
+  "verification_tool_revision": "1c515816bba64cabc27077b9231fb832bf34c405",
+  "worker_refresh_run": 42455222467,
+  "worker_refresh_tool_revision": "e654d128ac98087c24a52069d5d0af0be1030b98",
+  "python_tests": 429,
+  "react_tests_deploy": 255,
+  "test_external_http_tcp_attempts": 0
+}

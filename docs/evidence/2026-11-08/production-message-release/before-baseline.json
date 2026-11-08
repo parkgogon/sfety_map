@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-11-08T03:36:55.986825+00:00",
+  "services": {
+    "safety-dashboard-api": {
+      "revision": "safety-dashboard-api-kma-refresh-20261025101443",
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-dashboard-api-kma-refresh-20261025101443"
+        }
+      ],
+      "images": []
+    },
+    "safety-alert-worker": {
+      "revision": "safety-alert-worker-00074-47k",
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-alert-worker-00074-47k"
+        }
+      ],
+      "images": []
+    }
+  },
+  "hosting": {
+    "release": "sites/keco-safety-map/releases/1792901166231000",
+    "version": "sites/keco-safety-map/versions/a2308843f66b8f4a",
+    "release_time": "2026-10-25T04:06:06.231Z"
+  }
+}

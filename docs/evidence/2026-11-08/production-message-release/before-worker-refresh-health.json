@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-11-08T06:20:18.030370+00:00",
+  "results": {
+    "/api/v1/health": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "api_version": "v1"
+      }
+    },
+    "/api/v1/health/operations": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "checked_at": "2026-11-08T06:20:19.590014+00:00",
+        "worker": {
+          "status": "ok",
+          "last_run_at": "2026-11-08T06:20:01.608142+00:00",
+          "age_seconds": 17,
+          "max_age_seconds": 600
+        },
+        "automation": {
+          "mode": "live"
+        },
+        "kma": {
+          "status": "error"
+        },
+        "reason": "ready"
+      }
+    }
+  }
+}
