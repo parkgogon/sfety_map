@@ -20,6 +20,18 @@ class RecordConflict(ValueError):
     pass
 
 
+def ensure_record_editable(record):
+    if record["review_state"] == "completed":
+        raise RecordConflict("완료한 검토입니다. 사유를 적어 다시 연 뒤 수정해 주세요.")
+
+
+def invalidate_review(record, reason):
+    if record.get("review_completion") or record.get("notice_draft"):
+        record.update(review_completion=None, notice_draft=None, review_reset_reason=reason)
+        if record["review_state"] == "completed":
+            record["review_state"] = "needs_confirmation"
+
+
 class RecordNotFound(KeyError):
     pass
 
@@ -181,7 +193,9 @@ class MessageRecordService:
                       "analysis_source_revision": None, "analysis_error": "", "analysis_operation": None,
                       "analysis_started_at": None, "review_state": "needs_confirmation" if existing else "unreviewed",
                       "note": existing["note"] if existing else "", "spatial_references": {},
-                      "spatial_reset_reason": "source_changed" if existing and existing.get("spatial_references") else ""}
+                      "spatial_reset_reason": "source_changed" if existing and existing.get("spatial_references") else "",
+                      "review_completion": None, "notice_draft": None, "notice_draft_revision": existing.get("notice_draft_revision", 0) if existing else 0,
+                      "review_reset_reason": "source_changed" if existing and existing.get("review_completion") else ""}
             try:
                 saved = self.store.commit(record, existing["version"] if existing else 0,
                                           "source_changed" if existing else "registered")
@@ -191,12 +205,15 @@ class MessageRecordService:
         raise RecordConflict("등록 중 다른 변경이 있었습니다. 다시 불러와 주세요.")
 
     def _save(self, record, expected, event):
+        if event in {"note_saved", "analysis_started", "reference_saved", "reference_confirmed", "facilities_selected"}:
+            invalidate_review(record, event)
         record["updated_at"] = self.now().isoformat()
         # Creation order is stable while paging; updates do not move records between pages.
         return self.store.commit(record, expected, event)
 
     def save_note(self, identifier, request: SaveRecordNote):
         record = self.get(identifier)
+        ensure_record_editable(record)
         if record["version"] != request.expected_version:
             raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 저장해 주세요.")
         record.update(review_state=request.review_state, note=request.note)
@@ -204,6 +221,7 @@ class MessageRecordService:
 
     def analyze(self, identifier, request: AnalyzeRecord):
         record = self.get(identifier)
+        ensure_record_editable(record)
         if record["version"] != request.expected_version:
             raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 분석해 주세요.")
         if record["analysis_state"] == "running" and record["analysis_started_at"]:

@@ -25,7 +25,7 @@ const contexts: SpatialLocation[] = [
 describe('지도 확인과 시설 선정',()=>{
   let root:Root;let container:HTMLDivElement;let saved:MessageRecord;
   let refs:Record<string,MessageReference>;let requests:Array<{path:string;body:any}>;let failSave:boolean;let catalogCurrent:boolean;
-  function Harness(){const [record,setRecord]=useState(saved);const [busy,setBusy]=useState(false);return <><span data-parent-busy>{String(busy)}</span><MessageSpatialWorkspace token='fixture' record={record} disabled={false} onRecordChanged={setRecord} onBusyChange={setBusy}/></>;}
+  function Harness(){const [record,setRecord]=useState(saved);const [busy,setBusy]=useState(false);const [dirty,setDirty]=useState(false);return <><span data-dirty>{String(dirty)}</span><span data-parent-busy>{String(busy)}</span><MessageSpatialWorkspace token='fixture' record={record} disabled={false} onRecordChanged={setRecord} onBusyChange={setBusy} onDirtyChange={setDirty}/></>;}
   beforeEach(()=>{
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);saved=structuredClone(recordBase);refs={};requests=[];failSave=false;catalogCurrent=true;
     vi.stubGlobal('fetch',vi.fn(async(url:string,init?:RequestInit)=>{
@@ -112,6 +112,12 @@ describe('지도 확인과 시설 선정',()=>{
     const old=structuredClone(refs);await act(async()=>root.render(<MessageSpatialHistory references={old}/>));
     expect(container.textContent).toContain('과거 기록입니다');expect(container.textContent).toContain('시험 시설 0');expect(container.textContent).toContain('이전 선정 사유');
     expect(container.querySelectorAll('input,textarea,button')).toHaveLength(0);
+  });
+
+  it('reports unsaved selections until they are persisted',async()=>{
+    await start();expect(container.querySelector('[data-dirty]')!.textContent).toBe('false');
+    await act(async()=>labeled('시험 시설 0 업무 대상 선택').click());expect(container.querySelector('[data-dirty]')!.textContent).toBe('true');
+    await fill('시설 선정 사유','확인 필요');await click('선정 시설 저장');expect(container.querySelector('[data-dirty]')!.textContent).toBe('false');
   });
 
 });

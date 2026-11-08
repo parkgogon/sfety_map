@@ -27,6 +27,7 @@ import os
 from safety_dashboard.application.message_records import MessageRecordService, MemoryRecordStore
 from safety_dashboard.application.message_feed import OfficialFeedService
 from safety_dashboard.application.message_spatial import MessageSpatialService
+from safety_dashboard.application.message_review import MessageReviewService
 from safety_dashboard.adapters.disaster_messages import SafetyDataDisasterMessageProvider
 from safety_dashboard.adapters.firestore_message_records import FirestoreMessageRecordStore
 
@@ -50,6 +51,7 @@ class ApiServices:
     message_records: MessageRecordService
     message_feed: OfficialFeedService
     message_spatial: MessageSpatialService
+    message_review: MessageReviewService
 
 
 def build_services(
@@ -170,4 +172,5 @@ def build_services(
         message_records=records,
         message_feed=feed,
         message_spatial=message_spatial_service or MessageSpatialService(records, CsvFacilityRepository(settings.facility_path).snapshot),
+        message_review=MessageReviewService(records, message_spatial_service.catalog if message_spatial_service else CsvFacilityRepository(settings.facility_path).snapshot),
     )

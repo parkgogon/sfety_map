@@ -12,6 +12,7 @@ from safety_dashboard.application.message_records import (
 )
 from safety_dashboard.application.message_feed import FeedRequest, ImportOfficial
 from safety_dashboard.application.message_spatial import SaveMessageReference, SaveMessageSelection, LocationKey, Digest, SpatialValidationError
+from safety_dashboard.application.message_review import CompleteMessageReview, ReopenMessageReview, SaveMessageNotice, CopyMessageNotice, ReviewValidationError
 from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
 
@@ -51,7 +52,7 @@ def build_router(services):
                 raise HTTPException(503, str(error), headers=NO_STORE) from None
             except DisasterMessageDataError:
                 raise HTTPException(503, "공식 문자 조회에 실패했습니다. 이전 목록과 저장 기록은 유지됩니다.", headers=NO_STORE) from None
-            except SpatialValidationError as error:
+            except (SpatialValidationError, ReviewValidationError) as error:
                 raise HTTPException(422, str(error), headers=NO_STORE) from None
             except FacilityDataError:
                 raise HTTPException(503, "시설 자료를 읽지 못했습니다. 이전 기록을 보존합니다.", headers=NO_STORE) from None
@@ -137,5 +138,30 @@ def build_router(services):
     @guarded
     def selection(identifier: str, request: SaveMessageSelection):
         return services.message_spatial.save_selection(check_id(identifier), request)
+
+    @router.get("/{identifier}/review")
+    @guarded
+    def review(identifier: str):
+        return services.message_review.detail(check_id(identifier))
+
+    @router.post("/{identifier}/complete")
+    @guarded
+    def complete(identifier: str, request: CompleteMessageReview):
+        return services.message_review.complete(check_id(identifier), request)
+
+    @router.post("/{identifier}/reopen")
+    @guarded
+    def reopen(identifier: str, request: ReopenMessageReview):
+        return services.message_review.reopen(check_id(identifier), request)
+
+    @router.post("/{identifier}/notice")
+    @guarded
+    def notice(identifier: str, request: SaveMessageNotice):
+        return services.message_review.save_draft(check_id(identifier), request)
+
+    @router.post("/{identifier}/notice-copy")
+    @guarded
+    def notice_copy(identifier: str, request: CopyMessageNotice):
+        return services.message_review.copy_draft(check_id(identifier), request)
 
     return router

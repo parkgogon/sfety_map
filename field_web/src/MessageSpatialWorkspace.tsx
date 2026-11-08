@@ -7,7 +7,7 @@ import type { SpatialDetail, SpatialFacility, SpatialPage, SpatialProps, Message
 type DraftPoint = { mode: "candidate" | "manual"; candidate_id?: string; latitude: number; longitude: number;
   label: string; manual_source: "map" | "coordinate" };
 
-export default function MessageSpatialWorkspace({ token, record, disabled, onRecordChanged, onBusyChange }: SpatialProps) {
+export default function MessageSpatialWorkspace({ token, record, disabled, onRecordChanged, onBusyChange, onDirtyChange }: SpatialProps) {
   const [detail, setDetail] = useState<SpatialDetail | null>(null);
   const [restoredContext, setRestoredContext] = useState("");
   const [key, setKey] = useState(""); const [reload, setReload] = useState(0);
@@ -70,6 +70,12 @@ export default function MessageSpatialWorkspace({ token, record, disabled, onRec
   function changePoint(value: DraftPoint) { setPoint(value); setConfirmed(false); setPicking(false); }
   const changed = !!ref && (!point || point.latitude !== ref.point.latitude || point.longitude !== ref.point.longitude
     || radius !== ref.radius_km || (point.mode === "candidate" ? point.candidate_id : null) !== ref.point.candidate_id);
+  const dirty = !!detail && restoredContext === `${detail.record_version}:${key}` && (
+    changed || (!ref && !!point) || (!!point && confirmation !== (ref?.confirmation_note || ""))
+    || selectionNote !== (ref?.selection_note || "")
+    || JSON.stringify(Object.entries(selected).sort()) !== JSON.stringify((ref?.selected || []).map(f => [f.id, f.reason || ""]).sort()));
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => () => { onDirtyChange?.(false); }, [onDirtyChange]);
   const locked = disabled || busy || loading || !detail || detail.record_version !== record.version || restoredContext !== `${detail.record_version}:${key}`;
   const selectable = !!ref && !!location?.catalog_current && !!page?.catalog_current && !changed && !locked && !pageLoading;
   const selectedRows = Object.keys(selected).map(id => known[id]).filter((f): f is SpatialFacility => !!f);

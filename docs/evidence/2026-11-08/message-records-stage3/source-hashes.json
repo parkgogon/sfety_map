@@ -1,0 +1,19 @@
+{
+  "field_web/src/MessageAnalysisApp.tsx": "ba00d6e44537fdbf250b062225e7797cfc3540f004410cce792aa4c08f1e5f8a",
+  "field_web/src/MessageRecordWorkspace.test.tsx": "2e44a4f2c691369103c2181a3a9c8fd847b5545fe38d8bad3540cc6de769dc64",
+  "field_web/src/MessageRecordWorkspace.tsx": "5e1417669934e6a2d04f9e933f029bda2f58b48fbafe3fe229552f25147423c1",
+  "field_web/src/MessageReviewPanel.test.tsx": "9ad06d864ff9e58fb0eb93d6db3a3cb33b939f472da1eb0c106e29868f44dd2b",
+  "field_web/src/MessageReviewPanel.tsx": "6f87f58133ba03e372ed0d176747dbb5be15ea5796aca8e87c5119685b252ffc",
+  "field_web/src/MessageSpatialWorkspace.test.tsx": "b908d5579531de9b7015338951d98572fd06b535df112562f8c87a0c51ab7448",
+  "field_web/src/MessageSpatialWorkspace.tsx": "3900921f547cb8da60275fb64193e7f67928415d83d1c6b2bde275db97c7b7d2",
+  "field_web/src/messageRecordsApi.ts": "303b2d717684e84a6f0e060c12d924cb4b80a01a48079414a1cddf637fa345dc",
+  "field_web/src/messageReviewApi.ts": "cb9a7d21afd4b2830c4b3390ce3808a7d1a331d48ba49dbc8135133c3bed5c7e",
+  "field_web/src/messageSpatialApi.ts": "75753233195166c3b9d18356b01dc6c6c7cba4348ff13fda9e3c13f391260c76",
+  "field_web/src/styles/message_analysis.css": "87bcc54b37a6618dc4714da126eaf9e6461915ce436a5f6749ac2bcba28680a7",
+  "safety_dashboard/api/dependencies.py": "1c6c0b32326376937402831bcb9421d931cdcd10b3012611733d5e73c40cf558",
+  "safety_dashboard/api/routes/message_records.py": "00e8d7c6bf17cb31fb33df7bff06a2b562fa382f5c671d827ff55b292b85c4c6",
+  "safety_dashboard/application/message_records.py": "31489d3b64ecdf5159c6cc9409a83006183a49a62914220992a67477824744bc",
+  "safety_dashboard/application/message_review.py": "3bccb7d9630b1008ba33bc5451e2c25b16d6adefba58301813fd20ec39af18ac",
+  "safety_dashboard/application/message_spatial.py": "835d5ebb258de102ad9defa6d5bafab10df84888a71627d268ff00c169766b44",
+  "tests/test_message_review.py": "cb85cd606070969e3c8f637f4d8c8048199de666672fcba1e01fd2fdfa2c8a95"
+}

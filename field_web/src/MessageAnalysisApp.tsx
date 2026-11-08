@@ -11,10 +11,10 @@ function koreanTime(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-export function MessageAnalysisOutput({ result }: { result: MessageAnalysisResult }) {
+export function MessageAnalysisOutput({ result, reviewCompleted = false }: { result: MessageAnalysisResult; reviewCompleted?: boolean }) {
   const { analysis } = result;
   return <section className="message-result" aria-label="문자 분석 결과">
-    <div className="message-result-heading"><h2>검토 초안</h2><span className="message-tag">담당자 검토 전</span></div>
+    <div className="message-result-heading"><h2>검토 초안</h2><span className="message-tag">{reviewCompleted ? "검토에 사용한 AI 초안" : "담당자 검토 전"}</span></div>
     <p className="message-summary">{analysis.summary}</p>
     <p className="message-caption">{{ example: "창작 예문", manual: "수동 입력", official: "공식 API" }[result.input.input_kind]} · {result.input.source} · 발행 {koreanTime(result.input.issued_at)} (한국 시간)</p>
     {!!result.input.recipient_regions?.length && <p className="message-caption">문자 수신지역: {result.input.recipient_regions.join(", ")}</p>}
@@ -141,7 +141,7 @@ export default function MessageAnalysisApp() {
           <p>발생·예방·통제를 구분하고, 필요한 경우 장소와 주변 시설을 조회합니다.</p>
           <p className="message-caption">AI 결과는 검토용 참고자료이며 공식 특보 위험등급과 별개입니다.</p>
         </section>
-        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={value => <MessageAnalysisOutput result={value} />} /> : <>
+        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={(value, completed) => <MessageAnalysisOutput result={value} reviewCompleted={completed} />} /> : <>
         {recordsError && <p className="message-error" role="alert">{recordsError}</p>}
         {recordsStatus && !recordsStatus.storage_configured && <p className="message-notice">검토 기록 저장소가 연결되지 않았습니다. 아래 결과는 저장되지 않으며 새로고침하면 초기화됩니다.</p>}
         <div className="message-workspace">

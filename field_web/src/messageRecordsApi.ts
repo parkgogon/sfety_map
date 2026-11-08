@@ -1,3 +1,4 @@
+import type { ReviewCompletion, NoticeDraft } from "./messageReviewApi";
 import type { MessageReference } from "./messageSpatialApi";
 import type { MessageAnalysisResult, MessageInput } from "./messageAnalysisApi";
 
@@ -8,10 +9,11 @@ export interface MessageRecord {
   id: string; version: number; origin: "manual" | "example" | "official";
   message: MessageSource; created_at: string; updated_at: string; source_revision: number;
   analysis_state: "not_analyzed" | "running" | "completed" | "failed";
-  review_state: "unreviewed" | "needs_confirmation"; note: string;
+  review_state: "unreviewed" | "needs_confirmation" | "completed"; note: string;
   analysis?: MessageAnalysisResult | null; analysis_revision: number; analysis_error: string;
   reference_radius_km: MessageInput["reference_radius_km"];
   spatial_references?: Record<string, MessageReference>;
+  review_completion?: ReviewCompletion | null; notice_draft?: NoticeDraft | null; review_reopen_reason?: string;
 }
 export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }

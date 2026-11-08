@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from pydantic import Field
 from safety_dashboard.application.message_analysis import StrictModel
-from safety_dashboard.application.message_records import RecordConflict, RecordVersion
+from safety_dashboard.application.message_records import RecordConflict, RecordVersion, ensure_record_editable
 from safety_dashboard.application.nearby_report import NearbyReport, distance_meters
 from safety_dashboard.domain.models import GeoPoint
 
@@ -101,6 +101,7 @@ class MessageSpatialService:
     def save_reference(self, identifier, request: SaveMessageReference):
         record = self.records.get(identifier)
         self._ready(record, request.expected_version)
+        ensure_record_editable(record)
         location = self._location(record, request.location_key)
         point = request.point
         if point.mode == "candidate":
@@ -168,6 +169,7 @@ class MessageSpatialService:
     def save_selection(self, identifier, request: SaveMessageSelection):
         record = self.records.get(identifier)
         self._ready(record, request.expected_version)
+        ensure_record_editable(record)
         ref = self._reference(record, request.location_key)
         if ref["revision"] != request.reference_revision:
             raise RecordConflict("조회 기준점이 바뀌었습니다. 시설을 다시 선택해 주세요.")

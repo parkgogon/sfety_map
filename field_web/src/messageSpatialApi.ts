@@ -29,5 +29,5 @@ export interface SpatialPage {
 }
 export interface SpatialProps {
   token: string; record: MessageRecord; disabled: boolean;
-  onRecordChanged: (record: MessageRecord) => void; onBusyChange: (busy: boolean) => void;
+  onRecordChanged: (record: MessageRecord) => void; onBusyChange: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void;
 }

@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "transport": "real local React/API/CSV/memory store; captured analysis replay; fake map SDK, no real tiles",
+  "fixture_analysis_requests": 2,
+  "copy_basis_checks": 1,
+  "new_openai_kakao_calls": 0,
+  "actual_messages_sent": 0,
+  "checks": [
+    "registration→analysis→reference→selection→completion→additional note→server-checked clipboard; immutable labels and unresolved context included",
+    "completed review/draft and read-only state survive reload with no extra model call",
+    "1440/390/360px: no overflow",
+    "reopen requires reason and invalidates current draft; past completion/draft readable without current-copy controls",
+    "prevention no-action completion with reason does not require a facility/reference lookup"
+  ],
+  "page_errors": [],
+  "unexpected_requests": []
+}
