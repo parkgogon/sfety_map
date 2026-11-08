@@ -74,4 +74,10 @@ describe("간단 재난문자 검토",()=>{
   await render();await open();await click("이 내용으로 검토 완료");stale=true;
   await click("← 검토 대기함");await open();expect(container.textContent).toContain("시설 자료 변경");expect(button("안내문 복사").disabled).toBe(true);
  });
+ it("can reset a broken held preview while keeping the server working copy intact",async()=>{
+  record.review_working_copy={input:{expected_version:2,choices:[],manager_note:"보류한 예전 안내"},source_revision:1,analysis_revision:1,saved_at_version:3};
+  failPreview=true;await render();await open();expect(container.textContent).toContain("근거 조회 실패");
+  failPreview=false;await click("수정 내용 초기화");expect(button("이 내용으로 검토 완료").disabled).toBe(false);
+  expect(record.review_working_copy.input.manager_note).toBe("보류한 예전 안내");expect(approvals).toBe(0);
+ });
 });

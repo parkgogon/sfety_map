@@ -237,9 +237,16 @@ class MessagePreparationService:
 
     def hold(self, identifier, request: PrepareMessageReview):
         record = self.records.get(identifier)
-        prepared, _, _ = self._build(record, request)
+        MessageSpatialService._ready(record, request.expected_version)
+        ensure_record_editable(record)
+        keys = {loc["key"] for loc in message_locations(record) if loc["eligible"]}
+        requested_keys = [choice.location_key for choice in request.choices]
+        if len(requested_keys) != len(set(requested_keys)) or set(requested_keys)-keys:
+            raise ReviewValidationError("현재 장소에 대한 작업본만 보류할 수 있습니다.")
+        if sum(len(choice.facilities or []) for choice in request.choices)>300:
+            raise ReviewValidationError("보류할 시설 선택을 장소별 합계 300개 이하로 줄여 주세요.")
         record["review_working_copy"] = {"input": request.model_dump(), "source_revision": record["source_revision"],
             "analysis_revision": record["analysis_revision"], "saved_at_version": request.expected_version+1,
-            "proposal_hash": prepared["proposal_hash"]}
+            "input_hash": content_hash(request.model_dump())}
         record["review_state"] = "needs_confirmation"
         return self.records._save(record, request.expected_version, "note_saved")

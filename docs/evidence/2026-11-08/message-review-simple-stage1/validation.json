@@ -1,11 +1,13 @@
 {
-  "implementation_commit": "c70e145555747b7c12f8788f0726037d48f34262",
-  "python_tests": 451,
-  "react_tests": 261,
+  "python_tests": 453,
+  "react_tests": 262,
   "external_http_tcp_test_attempts": 0,
   "csv_facilities": 195,
   "compileall": "passed",
   "web_build": "passed",
   "new_external_openai_kakao_calls": 0,
-  "production_deployed": false
+  "production_deployed": false,
+  "implementation_base_commit": "c70e145555747b7c12f8788f0726037d48f34262",
+  "source_reference": "source-sha256.json",
+  "pull_request": "https://github.com/parkgogon/sfety_map/pull/2"
 }

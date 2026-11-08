@@ -188,6 +188,22 @@ class PreparationTests(unittest.TestCase):
         req=self.request(choices=[{'location_key':'0:0','reference_acknowledged':True,'facilities':[{'facility_id':'new'}]}])
         self.assertEqual(self.approve(req)['spatial_references']['0:0']['selected'][0]['id'],'new')
 
+    def test_catalog_failure_does_not_prevent_saving_an_unapproved_working_copy(self):
+        self.catalog.side_effect=RuntimeError('catalog unavailable')
+        before=self.current()
+        saved=self.service.hold(self.record['id'],self.request(manager_note='정보 확인 후 이어가기'))
+        self.assertEqual(saved['version'],before['version']+1)
+        self.assertEqual(saved['review_working_copy']['input']['manager_note'],'정보 확인 후 이어가기')
+        self.assertFalse(saved['spatial_references']);self.assertIsNone(saved['review_completion'])
+        self.catalog.assert_not_called()
+
+    def test_long_manager_note_is_preserved_without_a_hidden_completion_limit(self):
+        note='추가확인'*500
+        saved=self.approve(self.request(manager_note=note))
+        self.assertEqual(saved['notice_draft']['manager_note'],note)
+        self.assertEqual(saved['review_completion']['follow_up_note'],note)
+        self.assertIn(note,saved['notice_draft']['text'])
+
 
 class PreparationApiTests(unittest.TestCase):
     def setUp(self):

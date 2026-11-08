@@ -59,7 +59,10 @@ export default function MessageQuickReview({ token, record, onChange, onHold, on
       <button className="secondary-button" disabled={working} onClick={() => setEditing(v => !v)}>{editing ? "수정 닫기" : "내용 수정"}</button></div>
     <div className="quick-review-actions"><button className="primary-button" disabled={working || !current || !view?.ready} onClick={()=>void act(true)}>{working ? "저장 중…" : view?.outcome==="no_action" ? "추가 조치 없이 검토 완료" : "이 내용으로 검토 완료"}</button>
       <button className="secondary-button" disabled={working} onClick={()=>void act(false)}>보류</button></div>
-    {error && <div role="alert" className="message-error">{error} <button className="secondary-button" onClick={() => setRetry(n => n+1)}>추천안 다시 불러오기</button></div>}
+    {error && <div role="alert" className="message-error">{error} <button className="secondary-button" onClick={() => setRetry(n => n+1)}>추천안 다시 불러오기</button>
+      {dirty&&<button className="secondary-button" disabled={working} onClick={()=>setInput({expected_version:record.version,choices:[],manager_note:""})}>수정 내용 초기화</button>}
+      {dirty&&<p>현재 입력을 비우고 새 추천안을 준비합니다. 서버에 보류한 작업본은 새로 저장하기 전까지 유지됩니다.</p>}
+    </div>}
     {!current && !error && <p role="status">{view ? "수정한 내용으로 지도와 초안을 갱신하고 있습니다…" : "위치·시설·안내 초안을 준비하고 있습니다…"}</p>}
     {view && <>
       {!!view.issues.length && <aside className="quick-attention"><h3>이 부분만 확인해 주세요</h3><ul>{view.issues.map(i => <li key={i}>{i}</li>)}</ul>

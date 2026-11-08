@@ -27,7 +27,7 @@ class ExcludedLocation(StrictModel):
 class CompleteMessageReview(RecordVersion):
     outcome: Literal["facilities_selected", "no_action"]
     reason: str = Field(min_length=1, max_length=1000)
-    follow_up_note: str = Field(default="", max_length=1000)
+    follow_up_note: str = Field(default="", max_length=2000)
     excluded_locations: list[ExcludedLocation] = Field(default_factory=list, max_length=100)
 
 
