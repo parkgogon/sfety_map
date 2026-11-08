@@ -180,7 +180,8 @@ class MessageRecordService:
                       "analysis_state": "not_analyzed", "analysis": None, "analysis_revision": existing["analysis_revision"] if existing else 0,
                       "analysis_source_revision": None, "analysis_error": "", "analysis_operation": None,
                       "analysis_started_at": None, "review_state": "needs_confirmation" if existing else "unreviewed",
-                      "note": existing["note"] if existing else ""}
+                      "note": existing["note"] if existing else "", "spatial_references": {},
+                      "spatial_reset_reason": "source_changed" if existing and existing.get("spatial_references") else ""}
             try:
                 saved = self.store.commit(record, existing["version"] if existing else 0,
                                           "source_changed" if existing else "registered")
@@ -232,6 +233,8 @@ class MessageRecordService:
             record.update(analysis_state="failed" if error else "completed", analysis_error=error,
                           analysis_operation=None, analysis_started_at=None)
             if result is not None:
+                if record.get("spatial_references"):
+                    record.update(spatial_references={}, spatial_reset_reason="analysis_changed")
                 record.update(analysis=result, analysis_revision=record["analysis_revision"] + 1,
                               analysis_source_revision=record["source_revision"], facility_digest=digest,
                               review_state="needs_confirmation" if record["analysis_revision"] else record["review_state"])

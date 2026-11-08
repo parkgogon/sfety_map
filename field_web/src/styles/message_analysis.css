@@ -70,3 +70,29 @@
 .message-official > summary { font-weight: 700; }
 @media (max-width: 950px) { .message-record-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 540px) { .message-record-list { grid-template-columns: 1fr; } }
+.message-spatial { margin-top: 24px; }
+.message-spatial-workspace { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.message-spatial-workspace > div { min-width: 0; }
+.message-spatial-map { height: 440px; width: 100%; border: 1px solid var(--color-border); border-radius: 12px; background: #eef4f7; overflow: hidden; }
+.message-spatial-map.is-picking { cursor: crosshair; outline: 3px solid #d6ad42; }
+.message-spatial-marker { display: block; border: 1px solid #216982; padding: 5px 8px; background: white; color: #17455c; border-radius: 7px; font-size: 12px; font-weight: 600; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.message-spatial-marker.is-selected, .message-spatial-marker.is-reference { color: white; background: #176b87; }
+.message-spatial-marker.is-draft { background: #ffedb8; border-color: #ad7a16; color: #624600; }
+.message-candidate-list, .message-selected-list, .message-selection-list { list-style: none; padding: 0; }
+.message-candidate-list li { padding: 8px 0; display: grid; gap: 5px; }
+.message-candidate-list small, .message-selection-list small { display: block; font-size: 12px; font-weight: 400; color: var(--color-text-secondary); }
+.message-spatial-controls button { white-space: normal; }
+.message-spatial .message-spatial-check { flex-direction: row; align-items: flex-start; gap: 10px; line-height: 1.6; }
+.message-spatial-check input[type=checkbox] { width: 18px; height: 18px; flex: 0 0 18px; margin: 3px 0 0; }
+.message-spatial-selection { margin-top: 24px; border-top: 1px solid var(--color-border); padding-top: 16px; }
+.message-spatial-query { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 16px; }
+.message-spatial-query form { display: flex; align-items: flex-start; gap: 8px; }
+.message-spatial-query form label { flex: 1; }
+.message-spatial-query form button { margin-top: 24px; flex-shrink: 0; }
+.message-selection-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.message-selection-list li, .message-selected-list li { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; min-width: 0; overflow-wrap: anywhere; }
+.message-selection-list label { margin: 0; }
+.message-selected-list li { margin-bottom: 12px; }
+.message-selected-list button { margin: 6px 0 6px 12px; }
+@media (max-width: 950px) { .message-spatial-workspace { grid-template-columns: 1fr; } }
+@media (max-width: 540px) { .message-spatial-map { height: 340px; } .message-spatial-query, .message-selection-list { grid-template-columns: 1fr; } }

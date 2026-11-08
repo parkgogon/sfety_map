@@ -1,0 +1,20 @@
+{
+  "field_web/src/MessageRecordWorkspace.test.tsx": "16ae8cab81e184826117d8c2e994c5fba77676463c219540b1c76af3e6727393",
+  "field_web/src/MessageRecordWorkspace.tsx": "f88ce9f7d799ad5b101b320453315da61e37ebe141b3ebfc56f0a52c79301762",
+  "field_web/src/MessageReferenceMap.test.tsx": "cfacb4c776a80e440cd04a517191b9cfaaf7cfe8ef3f7e8aacf95d8fcaf56a3c",
+  "field_web/src/MessageReferenceMap.tsx": "885b4fcdac5e7554c867d1cf5310d406bd173dc72712324781fa19be0530f191",
+  "field_web/src/MessageSpatialWorkspace.test.tsx": "e890d420343e59755a72391562a68fd1972a52b8bbfe4139bd914fc99f2a01b2",
+  "field_web/src/MessageSpatialWorkspace.tsx": "07d408fa270f85134ddbb3508af1da8a7e38d671461b26884432b314a1adb79e",
+  "field_web/src/kakaoTypes.ts": "2d014c341ea2828a1afb10708b6a3d24a8c97e6847c25f5d1ef3035b0e0e1ae2",
+  "field_web/src/locationReference.ts": "c66711bf038c613db09fb8ed6cd79dc12bce7c11a691a70115ce62bc3602e52d",
+  "field_web/src/messageRecordsApi.ts": "1c37ce5ec24f80b2469bd946a293ef29ea73620e2e67ac0678255edc549c11db",
+  "field_web/src/messageSpatialApi.ts": "8356e9e4bb130a0d1d8024c88dba4555543a2699c703449f7c167c40af3e49c5",
+  "field_web/src/styles/message_analysis.css": "e0760f0fe5d5fff0643979b3ee4ba589905c53a55508137e8931a45444ef4129",
+  "safety_dashboard/adapters/facility_csv.py": "d889ea9f23b2a90ff5e07cabbe4f40f8fe450358086cdb00acb9300847701d5d",
+  "safety_dashboard/api/app.py": "75c0b97fea4f4decd0610a24188fe04fb615be1d81e51fc6d2791210a2f9d253",
+  "safety_dashboard/api/dependencies.py": "f3759dde8c918c791e4571051a0cc79370884528b7acd8cfb0a4d918290d9224",
+  "safety_dashboard/api/routes/message_records.py": "59122445636eaf276aeef872d7647c8e319056d2add9854514fa05b7cf5135f1",
+  "safety_dashboard/application/message_records.py": "dfa15e51d9cb151887dd432d7b9634001d87c87e5ed5ebb207c03242b47922f8",
+  "safety_dashboard/application/message_spatial.py": "1ea523235223da198379031d199d8ae22a06cfe3568f403a7b13d31020be3cc5",
+  "tests/test_message_spatial.py": "de997c5808b567e7ca0dab35c3a7387e4a3d172b36207a0204ae30b457014b5c"
+}

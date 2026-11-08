@@ -6,10 +6,13 @@ from fastapi import APIRouter, Cookie, Header, HTTPException, Query, Response, D
 
 from safety_dashboard.admin.session import AdminSessionManager
 from safety_dashboard.adapters.disaster_messages import DisasterMessageDataError
+from safety_dashboard.adapters.facility_csv import FacilityDataError
 from safety_dashboard.application.message_records import (
     RegisterMessage, AnalyzeRecord, SaveRecordNote, RecordConflict, RecordNotFound,
 )
 from safety_dashboard.application.message_feed import FeedRequest, ImportOfficial
+from safety_dashboard.application.message_spatial import SaveMessageReference, SaveMessageSelection, LocationKey, Digest, SpatialValidationError
+from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
 
 NO_STORE = {"Cache-Control": "private, no-store"}
@@ -48,6 +51,10 @@ def build_router(services):
                 raise HTTPException(503, str(error), headers=NO_STORE) from None
             except DisasterMessageDataError:
                 raise HTTPException(503, "공식 문자 조회에 실패했습니다. 이전 목록과 저장 기록은 유지됩니다.", headers=NO_STORE) from None
+            except SpatialValidationError as error:
+                raise HTTPException(422, str(error), headers=NO_STORE) from None
+            except FacilityDataError:
+                raise HTTPException(503, "시설 자료를 읽지 못했습니다. 이전 기록을 보존합니다.", headers=NO_STORE) from None
             except ValueError:
                 # Domain validation errors only; provider errors are kept generic below.
                 raise HTTPException(422, "입력 값 또는 공식 문자 확인 정보를 확인해 주세요.", headers=NO_STORE) from None
@@ -106,5 +113,29 @@ def build_router(services):
     @guarded
     def analyze(identifier: str, request: AnalyzeRecord):
         return services.message_records.analyze(check_id(identifier), request)
+
+    @router.get("/{identifier}/spatial")
+    @guarded
+    def spatial(identifier: str):
+        return services.message_spatial.detail(check_id(identifier))
+
+    @router.post("/{identifier}/reference")
+    @guarded
+    def reference(identifier: str, request: SaveMessageReference):
+        return services.message_spatial.save_reference(check_id(identifier), request)
+
+    @router.get("/{identifier}/facilities")
+    @guarded
+    def facilities(identifier: str, location_key: LocationKey, expected_version: int = Query(ge=1),
+                   offset: int = Query(0, ge=0, le=10000), limit: int = Query(20, ge=1, le=50),
+                   scope: Literal["nearby", "all"] = "nearby", query: str = Query("", max_length=120),
+                   catalog_digest: Digest | None = None):
+        return services.message_spatial.facilities_page(check_id(identifier), location_key, expected_version,
+                   offset=offset, limit=limit, scope=scope, query=query, catalog_digest=catalog_digest)
+
+    @router.post("/{identifier}/selection")
+    @guarded
+    def selection(identifier: str, request: SaveMessageSelection):
+        return services.message_spatial.save_selection(check_id(identifier), request)
 
     return router

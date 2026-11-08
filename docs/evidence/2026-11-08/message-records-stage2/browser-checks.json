@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "transport": "real local React/API/CSV/memory store; captured analysis replay; fake map SDK, no real tiles",
+  "fixture_analysis_requests": 2,
+  "new_openai_kakao_calls": 0,
+  "actual_messages_sent": 0,
+  "checks": [
+    "candidate reference + CSV 7 facilities, default unselected, selection/reason restored after reload",
+    "radius change 3→1km: CSV recalculation, old selection invalidated, no additional model request",
+    "explicit map pick + outside-radius facility reason persisted; no model call for geometry/selection",
+    "1440/390/360px: no overflow, map fixture resizes",
+    "prior reference and selected facilities are readable in immutable history",
+    "evacuation destination cannot be selected as incident reference; no prior record geometry/selection leaked"
+  ],
+  "page_errors": [],
+  "unexpected_requests": []
+}

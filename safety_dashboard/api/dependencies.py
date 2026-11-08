@@ -26,6 +26,7 @@ import hashlib
 import os
 from safety_dashboard.application.message_records import MessageRecordService, MemoryRecordStore
 from safety_dashboard.application.message_feed import OfficialFeedService
+from safety_dashboard.application.message_spatial import MessageSpatialService
 from safety_dashboard.adapters.disaster_messages import SafetyDataDisasterMessageProvider
 from safety_dashboard.adapters.firestore_message_records import FirestoreMessageRecordStore
 
@@ -48,6 +49,7 @@ class ApiServices:
     message_analysis: MessageAnalysisService
     message_records: MessageRecordService
     message_feed: OfficialFeedService
+    message_spatial: MessageSpatialService
 
 
 def build_services(
@@ -61,6 +63,7 @@ def build_services(
     message_analysis_service: MessageAnalysisService | None = None,
     message_record_service: MessageRecordService | None = None,
     message_feed_service: OfficialFeedService | None = None,
+    message_spatial_service: MessageSpatialService | None = None,
 ) -> ApiServices:
     settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
@@ -166,4 +169,5 @@ def build_services(
         message_analysis=analysis,
         message_records=records,
         message_feed=feed,
+        message_spatial=message_spatial_service or MessageSpatialService(records, CsvFacilityRepository(settings.facility_path).snapshot),
     )

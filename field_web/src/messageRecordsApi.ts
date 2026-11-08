@@ -1,3 +1,4 @@
+import type { MessageReference } from "./messageSpatialApi";
 import type { MessageAnalysisResult, MessageInput } from "./messageAnalysisApi";
 
 export interface MessageSource {
@@ -10,6 +11,7 @@ export interface MessageRecord {
   review_state: "unreviewed" | "needs_confirmation"; note: string;
   analysis?: MessageAnalysisResult | null; analysis_revision: number; analysis_error: string;
   reference_radius_km: MessageInput["reference_radius_km"];
+  spatial_references?: Record<string, MessageReference>;
 }
 export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }

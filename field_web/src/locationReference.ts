@@ -44,8 +44,8 @@ export function nearbyFacilities(facilities: Facility[], point: MapCoordinate) {
     .sort((a, b) => a.meters - b.meters || a.facility.id.localeCompare(b.facility.id));
 }
 
-export function referenceBounds(point: MapCoordinate): MapCoordinate[] {
-  const latitudeDelta = 5000 / EARTH_RADIUS_METERS * 180 / Math.PI;
+export function referenceBounds(point: MapCoordinate, radiusMeters = 5000): MapCoordinate[] {
+  const latitudeDelta = radiusMeters / EARTH_RADIUS_METERS * 180 / Math.PI;
   const longitudeDelta = latitudeDelta / Math.max(0.01, Math.cos(point.latitude * Math.PI / 180));
   return [
     { latitude: Math.max(-90, point.latitude - latitudeDelta), longitude: Math.max(-180, point.longitude - longitudeDelta) },
