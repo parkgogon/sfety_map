@@ -26,6 +26,14 @@ jobs:
         run: |
           python -m safety_dashboard.api.validate_data
           python -m compileall -q safety_dashboard scripts tests
+      - name: Check message review deployment variables
+        env:
+          MESSAGE_REVIEW_AI_ENABLED: ${{ vars.MESSAGE_REVIEW_AI_ENABLED || 'false' }}
+          MESSAGE_REVIEW_FEED_ENABLED: ${{ vars.MESSAGE_REVIEW_FEED_ENABLED || 'false' }}
+          MESSAGE_REVIEW_OPENAI_VERSION: ${{ vars.MESSAGE_REVIEW_OPENAI_VERSION }}
+          MESSAGE_REVIEW_KAKAO_VERSION: ${{ vars.MESSAGE_REVIEW_KAKAO_VERSION }}
+          MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION }}
+        run: python scripts/build_message_review_deploy_config.py
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

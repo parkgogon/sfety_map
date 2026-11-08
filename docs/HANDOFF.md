@@ -294,7 +294,7 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 지도 UI·기상 혼합형·지도 포함 보고서의 구현/최종 리뷰·main 병합·운영 배포와 직접 검수를 마쳤다.
 
-**다음 시작점 하나**: [운영 준비](MESSAGE_REVIEW_OPERATIONS.md)의 세 GitHub 배포 변수를 사용자 설정 화면에서 등록하도록 안내한다.
+**다음 시작점 하나**: [운영 준비](MESSAGE_REVIEW_OPERATIONS.md)의 실제 배포 변수 CI 확인을 마치고 PR main 병합/운영 배포의 명시적 승인을 받는다.
 문자 등록→AI 분석→지도 기준/시설 선정→검토 완료/초안→후속 연결/부분 해제 재검토를 로컬 검증까지 완료했다.
 [완료 계획](archive/DISASTER_MESSAGE_WORKFLOW_PLAN_20261108.md), [4단계 검증](evidence/2026-11-08/message-records-stage4/README.md)을 기준으로 확인한다.
 사용자 Cloud Shell 캡처로 `FIRESTORE_NATIVE`와 두 Secret(`OPENAI_API_KEY`, `KAKAO_REST_API_KEY`)의 `NOT_FOUND`를 확인했다.
@@ -310,7 +310,8 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 [키 값 없는 원본 증빙](evidence/2026-11-08/message-key-copy/README.md). 실행 소스 `024e02d`의 등록 코드는 검증한 `072f416`과 같다.
 키 값/해시를 채팅·로컬 환경·artifact로 가져오지 않았으며 원본 GitHub 키는 유지했다. 재등록/재발급은 필요하지 않다.
 성공 후 트리거 라벨을 제거했다. `[skip ci]` head의 라벨 이벤트는 실행을 만들지 않으므로 중복 실행 전에 run 생성 여부를 확인한다.
-현재 GitHub 변수 API는 연동 권한에서 403이다. 실제 변수 설정은 사용자 화면으로 안내하며 아직 변경하지 않았다.
+현재 GitHub 변수 API는 연동 권한에서 403이다. 사용자가 변수 화면에서 세 값을 등록한 캡처를 제공했다.
+일반 PR CI에서 실제 변수값으로 키 참조를 생성하는 읽기 전용 검사를 추가했다. GCP 접속/키 값 읽기는 하지 않는다.
 정확한 이름은 `MESSAGE_REVIEW_AI_ENABLED=true`, `MESSAGE_REVIEW_OPENAI_VERSION=1`, `MESSAGE_REVIEW_KAKAO_VERSION=1`이다.
 Cloud Run 참조 적용·운영 배포는 아직 하지 않았다. 키 등록 승인을 main 병합/배포 승인으로 확대하지 않는다.
 공식 피드·실제 SDK·저장 트랜잭션은 별도 실제 검수가 남아 있다.
