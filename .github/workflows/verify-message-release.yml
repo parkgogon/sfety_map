@@ -90,8 +90,18 @@ jobs:
             --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
             --cpu=1 --memory=2Gi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=360s --no-allow-unauthenticated --quiet
           CHECK_URL=$(gcloud run services describe "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
-          export CHECK_URL
-          python3 scripts/invoke_message_release_check.py
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        id: invoker
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+      - name: Collect private verification response
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python3 scripts/invoke_message_release_check.py
       - name: Remove only the temporary private verification service
         if: always()
         run: gcloud run services delete "$CHECK_JOB" --project=keco-safety-map --region=asia-northeast3 --quiet

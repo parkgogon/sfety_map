@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import urllib.request
 from urllib.parse import urlsplit
 
@@ -18,7 +17,7 @@ def main():
     parsed=urlsplit(url)
     if parsed.scheme!="https" or not re.fullmatch(r"message-review-check-[0-9]+-(?:[a-z0-9-]+\.a|531222653541\.asia-northeast3)\.run\.app",parsed.hostname or "") or parsed.path or parsed.username or parsed.password or parsed.port not in (None,443):
         raise ValueError("verification_url")
-    token=subprocess.run(["gcloud","auth","print-identity-token","--audiences="+url,"--quiet"],capture_output=True,text=True,timeout=30,check=True).stdout.strip()
+    token=os.environ["CHECK_ID_TOKEN"]
     request=urllib.request.Request(url+"/verify",data=b"",method="POST",headers={"Authorization":"Bearer "+token})
     with urllib.request.build_opener(NoRedirect).open(request,timeout=330) as response:payload=json.load(response)
     out=Path("release-check");out.mkdir(exist_ok=True)

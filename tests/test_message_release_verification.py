@@ -14,15 +14,14 @@ from scripts import capture_release_baseline,collect_message_release_check,invok
 
 class ReleaseVerificationTests(unittest.TestCase):
     def test_private_verifier_rejects_other_hosts_before_getting_identity(self):
-        with patch.dict(os.environ,{'CHECK_URL':'https://evil.example'}),patch('scripts.invoke_message_release_check.subprocess.run') as run:
+        with patch.dict(os.environ,{'CHECK_URL':'https://evil.example'},clear=True):
             with self.assertRaises(ValueError):invoke_message_release_check.main()
-            run.assert_not_called()
 
     def test_private_verifier_saves_safe_fields_without_identity_token(self):
         payload={'exit_code':1,'rows':[{'kind':'result','status':'failed','phase':'login','token':'private-token'}]}
         response=Mock();response.__enter__=Mock(return_value=io.StringIO(json.dumps(payload)));response.__exit__=Mock(return_value=False)
         opener=Mock();opener.open.return_value=response
-        with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'CHECK_URL':'https://message-review-check-123-abc-du.a.run.app'}),patch('scripts.invoke_message_release_check.subprocess.run',return_value=Mock(stdout='private-token')),patch('scripts.invoke_message_release_check.urllib.request.build_opener',return_value=opener),contextlib.redirect_stdout(io.StringIO()):
+        with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'CHECK_URL':'https://message-review-check-123-abc-du.a.run.app','CHECK_ID_TOKEN':'private-token'}),patch('scripts.invoke_message_release_check.urllib.request.build_opener',return_value=opener),contextlib.redirect_stdout(io.StringIO()):
             old=os.getcwd()
             try:
                 os.chdir(directory);self.assertEqual(invoke_message_release_check.main(),1)
