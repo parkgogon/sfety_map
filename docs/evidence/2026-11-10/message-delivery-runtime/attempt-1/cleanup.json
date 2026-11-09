@@ -1,0 +1,7 @@
+{
+  "temporary_service_deleted": true,
+  "temporary_image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/delivery-preflight:42712462654",
+  "image_status": "retained_permission_denied",
+  "denied_permission": "artifactregistry.tags.delete",
+  "source": "workflow_step_logs"
+}

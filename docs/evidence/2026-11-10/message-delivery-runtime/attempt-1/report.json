@@ -1,0 +1,13 @@
+{
+  "status": "blocked",
+  "checked_at": "2026-11-09T22:31:37.048722+00:00",
+  "production_documents_written": 0,
+  "production_control_changed": false,
+  "messages_sent": 0,
+  "feed_model_place_calls": 0,
+  "secret_values_exported": false,
+  "phase": "resolve_existing_secrets",
+  "candidate_revision": "55008daa0a35167a1bf25fc86d21175b0c95efea",
+  "error_type": "ValueError",
+  "reason": "group_chat_required"
+}

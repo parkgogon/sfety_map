@@ -197,12 +197,14 @@ Python 공통 실행기는 테스트 수집 전부터 실제 HTTP·TCP를 차단
 
 ## 5. 다음 시작점
 
-**다음은 운영 전환 직전 연결·고정 버전·저장/제어 검수다.** [Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)의 1~4단계·수집 보완·AI 보완을 반복하지 않는다.
+**다음은 사용자 요청에 따른 운영 설정/PR 반영과 꺼진 상태의 배포 후 검수다.** [Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)의 1~4단계·수집 보완·AI 보완·런타임 연결 검수를 반복하지 않는다.
 [수집 보완/진단](evidence/2026-11-10/message-collection-fix/README.md)은 완료했고, [AI 판단/도구 근거 보완](evidence/2026-11-10/message-ai-judgment-fix/README.md)도 실제 같은 6예문/서버 기준에서 최종 6/6 통과했다.
-다음은 기존 봇/직원방·관리자방의 고정 숫자 버전, 현재 API/worker와 같은 연결, 실제 Firestore 새 전파 경로와 시작·정지 경계/직원 공개 지도 링크를 검수해 [전환 설정](MESSAGE_DELIVERY_ROLLOUT.md)을 완성하는 것이다.
-기존 점검용 계정의 Secret 버전/IAM·Firestore 메타데이터 조회는 권한 부족이었다. 런타임의 수집 상태 읽기는 성공했다. 키 누락으로 단정하거나 재발급·광범위 IAM 변경을 하지 않는다. 비밀값은 채팅/Git/로그에 남기지 않는다.
+[실제 런타임 검수](evidence/2026-11-10/message-delivery-runtime/README.md)는 통과했다. 봇/직원방/관리자 수신처 고정 버전은 **1/2/1**, 관리자 Secret은 `TELEGRAM_CHAT_ID`다. 직원방은 단체방/봇 게시 권한 확인, 관리자 수신처는 기존 개인 대화 조회 성공이며 실제 수신 증명이 아니다.
+동일 런타임 계정으로 실제 Firestore의 격리된 합성 fixture·현재 어댑터·가짜 발송으로 저장/이력/시작·중지 경계를 검수했다. 운영 제어 읽기 4회/쓰기 0, 시험 문서 33개와 임시 서비스는 삭제했다. 점검 이미지 두 태그는 저장소 삭제 권한 부족으로 남아 있다. 키 재발급/광범위 IAM 변경을 하지 않는다.
+위 증빙의 `proposed-repository-variables.json`·`proposed-generated-config.json`에 비밀값 없는 전환 설정을 준비했으며 아직 미적용이다. [전환 절차](MESSAGE_DELIVERY_ROLLOUT.md)에 따라 설정과 PR 반영 후 새 API/worker revision·고정 버전·꺼진 제어·공개 링크를 확인한다. 이후 별도 전체 시작이 필요하다.
 초기 운영값은 20건·하루 $1/월 $20이며 실제 처리량/일반 정확도/지연 보장값이 아니다. 실제 시험 발송/기상 dispatch/기준 초기화/운영 기록 삭제를 하지 않는다.
 main 반영·운영 배포는 별도 사용자 요청 후 진행하며 새 배포에서도 별도의 전체 시작이 필요하다. 수집 ERROR의 실제 운영 회복과 장기 안정성은 배포 후 정규 실행에서 확인해야 한다.
+최종 연결 검수 코드 `0e49d50`의 CI Python **706개**·React **279개**/빌드/컴파일/CSV/배포 변수 검사 통과, 자동 외부 HTTP/TCP 0, 모든 운영 배포 job 제외다.
 
 ## 2026-11-10 KST 운영 전 점검 결과
 
