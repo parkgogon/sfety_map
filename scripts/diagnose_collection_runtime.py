@@ -58,6 +58,7 @@ def partition_summary(part):
 
 def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
     report = {"status": "passed", "probe_origin": "isolated_collection_replay", "source_revision": SOURCE_REVISION,
+              "execution_environment": os.getenv('COLLECTION_PROBE_EXECUTION') if os.getenv('COLLECTION_PROBE_EXECUTION') in {'gen1','gen2'} else 'not_recorded',
               "feed_calls": 0, "max_feed_calls": 2, "model_calls": 0, "messages_sent": 0,
               "production_documents_written": 0, "production_write_access": "not_tested",
               "exceptions": [], "phase": "read_pipeline_metadata"}
