@@ -46,7 +46,6 @@
 네트워크를 차단해 이전 원본/각 시도에 같은 현재 검사를 적용한다. 마지막 통과 실행의 실제 도구 인자를 현재 에이전트에 다시 입력하고, 저장된 지도 후보·시설 CSV로 동일한 최종 분석이 나오는지 검사했다. 추가 모델·장소·피드 호출 0이며 새로운 모델 의미 판단 실험은 아니다.
 `comparison.json`에 2→4→4→4→6 및 실제 경로 재현 결과를 보존했다. 최종 통과 뒤 추가한 record_only/unknown 피드백도 이 재현에서 같은 6개 최종 분석을 유지했다.
 
-최종 평가 코드의 [CI](https://github.com/parkgogon/sfety_map/actions/runs/42708596065): Python 697개·React 279개/43파일·빌드·시설 CSV 195개·컴파일/배포 변수 검사 통과, 외부 HTTP/TCP 0, 모든 배포 job 제외.
-후속 피드백 일치 검사와 최종 증빙 commit의 CI는 PR checks에서 확인한다.
+최종 평가 코드의 [CI](https://github.com/parkgogon/sfety_map/actions/runs/42708596065)와 후속 피드백 일치 검사·증빙을 포함한 [최종 CI](https://github.com/parkgogon/sfety_map/actions/runs/42709985783)(`0317a1e`): Python 697개·React 279개/43파일·빌드·시설 CSV 195개·컴파일/배포 변수 검사 통과, 외부 HTTP/TCP 0, 모든 배포 job 제외.
 
 다음은 기존 봇/직원방·관리자방 고정 숫자 버전과 실제 런타임 연결/저장 검수·운영 전환 설정이다. [전환 문서](../../../MESSAGE_DELIVERY_ROLLOUT.md)를 따른다. 키 재발급이나 실제 시험 발송으로 검수하지 않는다.
