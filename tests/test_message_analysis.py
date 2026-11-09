@@ -140,6 +140,8 @@ class MessageAgentTests(unittest.TestCase):
             with self.subTest(example=example["id"]):
                 req = request(example["id"])
                 rows = [part(req.text, intent) for intent in example["expected_intents"]]
+                if example['id']=='partial_release':
+                    rows[0].update(time_text='15시',ends_at='2026-11-07T15:00:00+09:00')
                 result = service([call("submit_analysis", draft(rows))]).analyze(req)
                 self.assertEqual([row["intent"] for row in result["analysis"]["parts"]], example["expected_intents"])
 
@@ -154,7 +156,7 @@ class MessageAgentTests(unittest.TestCase):
 
     def test_partial_release_retains_two_independent_segments(self):
         req = request("partial_release")
-        rows = [part("가람교 하부도로 통제는 15시 해제되었습니다.", "release"),
+        rows = [part("가람교 하부도로 통제는 15시 해제되었습니다.", "release",time_text='15시',ends_at='2026-11-07T15:00:00+09:00'),
                 part("푸른교 하부도로는 침수로 계속 통제 중", "active_restriction")]
         result = service([call("submit_analysis", draft(rows))]).analyze(req)
         self.assertEqual(len(result["analysis"]["parts"]), 2)

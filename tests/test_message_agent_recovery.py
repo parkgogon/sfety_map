@@ -9,6 +9,51 @@ from tests.test_message_notification import assessment
 
 
 class MessageAgentRecoveryTests(unittest.TestCase):
+    def test_explicit_release_clock_is_preserved_even_when_city_is_unknown(self):
+        req=request('partial_release')
+        released=part('가람교 하부도로 통제는 15시 해제되었습니다.','release',time_text='')
+        active=part('푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.','active_restriction')
+        a=assessment(req.text,need='uncertain',relevance='unknown')
+        body=draft([released,active],['푸른교의 시·군은 어디인가요?'])
+        fixed={**body,'parts':[{**released,'time_text':'15시','ends_at':'2026-11-07T15:00:00+09:00'},active]}
+        agent=service([call('submit_analysis',{**body,'notification_assessment':a}),call('submit_analysis',{**fixed,'notification_assessment':a})])
+        result=agent.analyze(req)
+        self.assertIn('ends_at',agent.client.inputs[1][-1]['output'])
+        self.assertEqual(result['analysis']['parts'][0]['ends_at'],'2026-11-07T15:00:00+09:00')
+
+    def test_ambiguous_release_date_is_not_forced_to_the_issue_date(self):
+        text='대구의 도로 통제는 지난달 15시 해제되었습니다. 당시 상황을 참고하세요.'
+        body={**draft([part(text,'release',time_text='15시')],['정확한 해제 날짜가 언제인가요?']),
+              'notification_assessment':assessment(text,need='uncertain',relevance='unknown')}
+        result=service([call('submit_analysis',body)]).analyze(request(text=text))
+        self.assertIsNone(result['analysis']['parts'][0]['ends_at'])
+
+    def test_issuer_district_is_not_used_to_narrow_a_body_city(self):
+        req=request('destination')
+        wrong=search_args('대구 달서구','incident_site','대구 달서구',search_name='와룡산',place_kind='mountain')
+        wrong['evidence']=req.text
+        correct={**wrong,'location_text':'대구 와룡산','region_hint':'대구'}
+        places=FakePlaces([{**PLACE,'name':'와룡산','address':'대구 서구','category_name':'여행 > 산'}])
+        body={**draft([part(req.text,locations=[location('대구 와룡산',candidate_ids=['P1']),location('성서초등학교 운동장','evacuation_destination')])]),
+              'notification_assessment':assessment(req.text,refs=['P1'])}
+        agent=service([call('search_places',wrong),call('search_places',correct),call('find_nearby_facilities',{'candidate_id':'P1'}),call('submit_analysis',body)],places=places)
+        result=agent.analyze(req)
+        self.assertIn('location_text',agent.client.inputs[1][-1]['output'])
+        self.assertIn('region_hint',agent.client.inputs[1][-1]['output'])
+        self.assertEqual(places.queries,['대구 와룡산'])
+        self.assertTrue(result['candidates'][0]['scope_matches_source'])
+
+    def test_a_district_explicit_in_the_body_still_blocks_an_outside_candidate(self):
+        text='[대구시] 대구 달서구 가람교 도로를 통제합니다. 다른 도로로 우회하세요.'
+        args=search_args('가람교','restricted_area','대구 달서구',place_kind='bridge');args['evidence']=text
+        places=FakePlaces([{**PLACE,'name':'가람교','address':'대구 서구','category_name':'교통,수송 > 도로시설 > 교량,다리'}])
+        body={**draft([part(text,'active_restriction',[location('가람교','restricted_area',['P1'])])],['통제 지점을 확인해야 합니다.']),
+              'notification_assessment':assessment(text,need='uncertain',relevance='unknown')}
+        agent=service([call('search_places',args),call('find_nearby_facilities',{'candidate_id':'P1'}),call('submit_analysis',body)],places=places)
+        result=agent.analyze(request(text=text))
+        self.assertFalse(result['candidates'][0]['scope_matches_source'])
+        self.assertEqual(result['nearby'],[])
+        self.assertEqual(result['trace'][1]['status'],'needs_confirmation')
     def test_unknown_region_notify_is_corrected_without_guessing_a_city(self):
         req=request('ambiguous',recipient_regions=['대구광역시','부산광역시'])
         body=draft([part(req.text,'active_restriction',[location('중앙동 사거리 인근','restricted_area')])],['어느 시·군의 중앙동인가요?'])

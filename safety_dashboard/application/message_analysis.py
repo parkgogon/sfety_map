@@ -184,6 +184,7 @@ INSTRUCTIONS = """공공기관 재난문자의 뜻과 소관시설 업무 관련
 - 오늘/내일은 issued_at의 한국 날짜 기준이다. 원문 시간 표현이 있고 명확할 때만 ISO8601 +09:00으로 해석한다.
 - issued_at=null이면 해석 시각도 null로 두고 원문의 시간 표현만 보존한다. 시간 판단이 필요하면 질문한다.
 - release의 starts_at은 null, 명시된 해제 시각은 ends_at이다. 예정 통제를 현재 통제로 바꾸지 않는다.
+- example/훈련 입력도 원문에 명시된 시각과 구간별 상태를 생략하지 않는다. 실제 전파·실적과는 별개다.
 - 현재 시각으로 이 문자 이후의 해제·정정을 추측하지 않는다.
 
 필요한 도구를 선택한다.
@@ -393,12 +394,21 @@ class MessageAnalysisService:
             return result, f"시설 명칭/주소 대조 · {result['total_count']}개소 · {result['status']}"
         if name == "search_places":
             search = SearchPlaces.model_validate(args)
+            issues = []
             if search.evidence not in request.text:
-                raise DraftEvidenceError("search_places.evidence가 원문 인용과 다릅니다. 값 안에 원문에 없는 앞뒤 따옴표를 덧붙이지 말고 원문 부분 문자열을 그대로 복사하세요.")
+                issues.append("search_places.evidence가 원문 인용과 다릅니다. 값 안에 원문에 없는 앞뒤 따옴표를 덧붙이지 말고 원문 부분 문자열을 그대로 복사하세요.")
             if (search.location_text not in search.evidence or search.search_name not in search.location_text):
-                raise DraftEvidenceError("location_text는 evidence 안의 단일 원문 장소여야 하고, search_name은 location_text 안의 고유 지명/시설명 부분이어야 합니다.")
+                issues.append("location_text는 evidence 안의 단일 원문 장소여야 하고, search_name은 location_text 안의 고유 지명/시설명 부분이어야 합니다.")
             if search.region_hint and any(token not in request.text and token not in request.source and not any(token in r for r in request.recipient_regions) for token in search.region_hint.split()):
-                raise DraftEvidenceError("region_hint는 원문·발신처·수신지역에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
+                issues.append("region_hint는 원문·발신처·수신지역에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
+            body = re.sub(r"^\s*\[[^\]\r\n]{1,80}\]\s*", "", request.text)
+            tokens = (search.region_hint or '').split()
+            if len(tokens) > 1 and source_region_matches(tokens[0], body):
+                issuer_only = [t for t in tokens[1:] if t.endswith(('시','군','구')) and t not in body]
+                if issuer_only:
+                    issues.append(f"region_hint가 본문에 없는 발신기관/수신 구역으로 좁혀졌습니다. 본문이 명시한 상위 지역 {tokens[0]}를 우선하세요. 발신 구청의 구역을 산·도로의 실제 소재지로 가정하지 마세요.")
+            if issues:
+                raise DraftEvidenceError(' '.join(issues))
             query = search.search_name
             if search.region_hint and search.region_hint not in query:
                 query = f"{search.region_hint} {query}"
@@ -448,6 +458,10 @@ class MessageAnalysisService:
         for part in draft.parts:
             if part.intent == "release" and part.starts_at is not None:
                 raise DraftEvidenceError("해제 시각은 ends_at에 기록하고 release의 starts_at은 null로 남겨야 합니다.")
+            if (part.intent == 'release' and request.issued_at is not None and part.ends_at is None
+                    and re.search(r'(?<![0-9])(?:1[3-9]|2[0-3])시(?:\s*[0-5]?\d분)?\s*해제(?:되었|됐| 완료)', part.evidence)
+                    and not re.search(r'어제|그제|지난|전일|전날|전월|내일|모레|\d+\s*[년월일]|\d+[./-]\d+', part.evidence)):
+                raise DraftEvidenceError('원문에 명확한 당일 해제 시각이 있습니다. 발행일의 한국 날짜와 원문 시각을 해석해 ends_at에 +09:00으로 기록하세요. example 입력이라는 이유로 명시된 해제 시각을 생략하지 마세요.')
             if (part.intent in {"active_restriction", "scheduled_restriction"} and part.locations
                     and not any(location.role == "restricted_area" for location in part.locations)):
                 raise DraftEvidenceError("통제 상황의 장소에는 restricted_area 역할을 남겨야 합니다. 발생 장소와 겹치면 역할을 각각 보존하세요.")
