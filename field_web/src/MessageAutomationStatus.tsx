@@ -26,7 +26,8 @@ export default function MessageAutomationStatus({token,onRefresh,automaticDelive
     {value?.queue&&<p className="automation-counts">분석 대기 {value.queue.pending} · 분석 중 {value.queue.running} · 분석 실패 {value.queue.failed} · 수동 확인 대기 {value.queue.deferred}</p>}
     {value?.budget.attempts!==null&&value?.budget.attempts!==undefined&&<p className="message-caption">오늘 분석 시작 {value.budget.attempts}/{value.budget.limit}건 · 수동·자동 합산, 실패 포함</p>}
     {value?.feed_budget&&value.feed_configured&&<p className="message-caption">최근 24시간 문자 조회 {value.feed_budget.used}/{value.feed_budget.limit}회 · 조회 간격 {value.interval_seconds/60}분 · 실패 포함</p>}
-    {value?.latest_first_enabled&&<p className="message-caption">최신 첫 페이지 정상 확인 {time(value.last_latest_success_at??null)} · 과거 보충 완료 {time(value.last_backfill_success_at??null)}</p>}
+    {value?.recent_scan_enabled&&<><p className="message-caption">오늘 자료 끝까지 순회 {time(value.last_current_scan_success_at??null)} · 과거 보충 완료 {time(value.last_backfill_success_at??null)}</p>
+      <p className="message-caption">다음 당일 순회 간격 {Math.round((value.current_scan_interval_seconds??300)/60)}분 · 페이지 수와 조회 한도에 따라 조절합니다. 순회 중 새로 공개된 문자는 다음 순회에서 확인할 수 있습니다.</p></>}
     {value?.spend_budget?.enabled&&value.spend_budget.daily&&value.spend_budget.monthly&&<>
       <p className="message-caption">문자 AI 오늘 ${value.spend_budget.daily.settled_usd.toFixed(3)} / ${value.spend_budget.daily.limit_usd.toFixed(2)} · 이번 달 ${value.spend_budget.monthly.settled_usd.toFixed(3)} / ${value.spend_budget.monthly.limit_usd.toFixed(2)}</p>
       <p className="message-caption">미정산 예약: 오늘 ${value.spend_budget.daily.reserved_usd.toFixed(3)} · 이번 달 ${value.spend_budget.monthly.reserved_usd.toFixed(3)} · 수동·자동 합산, 이 앱의 문자 분석 기준</p>

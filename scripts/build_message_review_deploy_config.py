@@ -45,6 +45,8 @@ def build_config(env):
         value = env.get(name, str(default)).strip() or str(default)
         if not re.fullmatch(r"[0-9]+", value) or not lower <= int(value) <= upper:
             raise ValueError(f"{name}: 허용 범위의 정수가 필요합니다.")
+        if fast and name in {'MESSAGE_COLLECTION_MAX_PAGES', 'MESSAGE_FEED_REQUEST_LIMIT'} and int(value) < 2:
+            raise ValueError('MESSAGE_COLLECTION_FAST_ENABLED: 당일·과거 순회를 위해 페이지와 조회 한도가 각각 2 이상 필요합니다.')
         settings.append(f"{name}={int(value)}")
     interval = env.get("MESSAGE_COLLECTION_INTERVAL_MINUTES", "5" if fast else "15").strip() or ("5" if fast else "15")
     if interval not in ({"5"} if fast else {"15", "30", "60"}):

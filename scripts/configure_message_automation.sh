@@ -55,6 +55,7 @@ esac
 gcloud run deploy safety-message-worker \
   --image "$WORKER_IMAGE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
   --platform managed --no-allow-unauthenticated \
+  --execution-environment gen2 \
   --service-account "safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
   --port 8080 --cpu 1 --memory 512Mi --concurrency 2 --timeout 180 \
   --min-instances 0 --max-instances 1 \

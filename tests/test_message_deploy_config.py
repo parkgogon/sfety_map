@@ -34,6 +34,8 @@ class MessageDeployConfigTests(unittest.TestCase):
         self.assertEqual(settings.monthly_budget_cents,3000)
         self.assertIn('MESSAGE_COLLECTION_INTERVAL_MINUTES=5',config)
         for invalid in ({'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_COLLECTION_INTERVAL_MINUTES':'15'},
+                        {'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_COLLECTION_MAX_PAGES':'01'},
+                        {'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_FEED_REQUEST_LIMIT':'1'},
                         {'MESSAGE_COLLECTION_INTERVAL_MINUTES':'5'},
                         {'MESSAGE_AI_DAILY_BUDGET_CENTS':'1.5'},
                         {'MESSAGE_AI_DAILY_BUDGET_CENTS':'0'},

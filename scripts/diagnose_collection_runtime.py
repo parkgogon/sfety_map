@@ -59,9 +59,13 @@ def partition_summary(part):
 def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
     report = {"status": "passed", "probe_origin": "isolated_collection_replay", "source_revision": SOURCE_REVISION,
               "execution_environment": os.getenv('COLLECTION_PROBE_EXECUTION') if os.getenv('COLLECTION_PROBE_EXECUTION') in {'gen1','gen2'} else 'not_recorded',
-              "feed_calls": 0, "max_feed_calls": 2, "model_calls": 0, "messages_sent": 0,
+              "feed_calls": 0, "max_feed_calls": 2, "feed_calls_are_upper_bound": True, "model_calls": 0, "messages_sent": 0,
               "production_documents_written": 0, "production_write_access": "not_tested",
               "exceptions": [], "phase": "read_pipeline_metadata"}
+    candidate = os.getenv('COLLECTION_PROBE_CANDIDATE') == 'true'
+    report['candidate_strategy'] = 'recent_window_v2' if candidate else None
+    revision = os.getenv('COLLECTION_CANDIDATE_REVISION', '')
+    report['candidate_revision'] = revision if candidate and re.fullmatch(r'[a-f0-9]{40}', revision) else None
     try:
         store = store if store is not None else FirestoreMessagePipelineStore("keco-safety-map")
         state = store.get("collection-state") or {}
@@ -79,16 +83,16 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
         records_store = MemoryRecordStore()
         records = MessageRecordService(lambda: records_store, None, storage_mode="memory")
         source = provider if provider is not None else SafetyDataDisasterMessageProvider(os.getenv("SAFETY_DATA_API_KEY", ""),
-            gate_factory=lambda: OfficialRequestBudget(memory, 450))
+            gate_factory=lambda: OfficialRequestBudget(memory, 450, **({'latest_reserve':289} if candidate else {})))
 
         class BoundedFeed:
             configured = source.configured
 
-            def fetch_page(self, *args):
+            def fetch_page(self, *args, **kwargs):
                 if report["feed_calls"] >= 2:
                     raise RuntimeError("probe_call_cap")
                 report["feed_calls"] += 1
-                return source.fetch_page(*args)
+                return source.fetch_page(*args, **kwargs)
 
         def trace(frame, event, arg):
             filename = frame.f_code.co_filename.rsplit("/", 1)[-1]
@@ -102,7 +106,11 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
 
         report["phase"] = "bounded_memory_replay"
         settings = MessageAutomationSettings(enabled=True, contract_verified=True, max_pages=2, scan_seconds=40)
-        collector = OfficialMessageCollector(BoundedFeed(), records, memory, settings,
+        collector_class = OfficialMessageCollector
+        if candidate:
+            from safety_dashboard.application.message_collection_latest import RecentWindowMessageCollector
+            collector_class = RecentWindowMessageCollector
+        collector = collector_class(BoundedFeed(), records, memory, settings,
             **({"now": now} if now else {}))
         previous = sys.gettrace()
         try:
@@ -112,6 +120,8 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
             sys.settrace(previous)
         after = memory.get("collection-state") or {}
         report["partitions_after"] = [partition_summary(p) for p in after.get("work", [])[:12]]
+        if after.get('current_work'):
+            report['current_partition_after'] = partition_summary(after['current_work'])
         report["memory_records"] = len(records_store.records)
         if report['feed_calls'] < 2 and any(e['type']=='ConnectTimeout' for e in report['exceptions']) and state.get('work'):
             part=state['work'][0]

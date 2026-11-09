@@ -4,7 +4,7 @@ import io
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import requests
 
 import yaml
@@ -55,6 +55,16 @@ class CollectionReplayTests(unittest.TestCase):
         self.assertEqual(report['transport_comparison']['status'],'passed')
         compare.assert_called_once()
         self.assertNotIn('private-key',json.dumps(report))
+
+    def test_candidate_replay_supplies_current_and_history_priorities_without_writes(self):
+        feed=Mock(configured=True)
+        feed.fetch_page.return_value={'messages':[],'has_more':False,'skipped':0}
+        before=copy.deepcopy(self.store.values)
+        with patch.dict('os.environ',{'COLLECTION_PROBE_CANDIDATE':'true','COLLECTION_CANDIDATE_REVISION':'a'*40}):
+            report=diagnose(store=self.store,provider=feed,now=lambda:NOW)
+        self.assertEqual(report['replay_result']['state'],'partial')
+        self.assertEqual({c.kwargs['priority'] for c in feed.fetch_page.call_args_list},{'latest','background'})
+        self.assertEqual(self.store.values,before)
 
     def test_workflow_only_binds_feed_key_and_deletes_own_private_service(self):
         config=yaml.safe_load((Path(__file__).resolve().parents[1]/'.github/workflows/check-message-review-deployment.yml').read_text())

@@ -6,7 +6,7 @@ from safety_dashboard.application.context_info import KST
 from safety_dashboard.application.message_automation import MessageAutomationSettings, MessageAutomationStatus
 from safety_dashboard.application.message_collection_latest import LatestFirstMessageCollector
 from safety_dashboard.application.message_collection import OfficialMessageCollector
-from safety_dashboard.application.message_feed_budget import OfficialRequestBudget, FeedRequestLimit
+from safety_dashboard.application.message_feed_budget import OfficialRequestBudget, FeedRequestLimit, recent_request_reserve
 from safety_dashboard.application.message_pipeline import MemoryPipelineStore, stamp
 from safety_dashboard.domain.models import DisasterMessage
 from tests.test_message_records import make_service
@@ -96,22 +96,23 @@ class LatestCollectionTests(unittest.TestCase):
         self.assertEqual(self.feed.calls[-1],(dt.date(2026,11,10),1,"latest"))
         self.assertTrue(any(p["date"]=="2026-11-09" for p in self.store.get("collection-state")["work"]))
 
-    def test_unchanged_full_head_does_not_rescan_tail_each_five_minutes(self):
+    def test_unchanged_head_still_rescans_tail_at_adaptive_interval(self):
         row=self.row()
         self.feed.result=lambda day,page:{"messages":[row] if day==NOW.date() and page==1 else [],"has_more":day==NOW.date() and page==1,"skipped":0}
-        for _ in range(3):self.collect()  # page 2 and page-1 verification finish within one run
+        self.collect()
         tail_calls=sum(page==2 for _,page,_ in self.feed.calls)
         self.clock[0]+=dt.timedelta(minutes=5);self.collect()
         self.assertEqual(sum(page==2 for _,page,_ in self.feed.calls),tail_calls)
         self.assertEqual(tail_calls,1)
+        self.clock[0]+=dt.timedelta(minutes=5);self.collect()
+        self.assertEqual(sum(page==2 for day,page,_ in self.feed.calls if day==NOW.date()),2)
 
     def test_changed_page_one_after_tail_walk_restarts_and_repairs_source_correction(self):
         original=self.row(content="대구 달서구의 도로를 통제합니다. 다른 도로로 우회하세요.")
         revised=self.row(content="대구 달서구의 통제 구간을 정정합니다. 다른 도로로 우회하세요.")
-        self.settings=replace(self.settings,max_pages=1)
         self.feed.result=lambda day,page:{"messages":[original] if day==NOW.date() and page==1 else [],"has_more":day==NOW.date() and page==1,"skipped":0}
         self.collect()
-        self.clock[0]+=dt.timedelta(minutes=5)
+        self.clock[0]+=dt.timedelta(minutes=10)
         self.feed.result=lambda day,page:{"messages":[revised] if day==NOW.date() and page==1 else [],"has_more":day==NOW.date() and page==1,"skipped":0}
         self.collect()
         record=self.records.get(self.records.official_record_id(original.id))
@@ -156,9 +157,10 @@ class LatestCollectionTests(unittest.TestCase):
         self.collect()
         status=MessageAutomationStatus(self.settings,lambda:self.store,True,now=lambda:NOW).read()
         self.assertEqual(status["state"],"partial")
-        self.assertEqual(status["last_latest_success_at"],stamp(NOW))
+        self.assertEqual(status["last_current_scan_success_at"],stamp(NOW))
+        self.assertIsNone(status["last_latest_success_at"])
         self.assertIsNone(status["last_success_at"])
-        self.assertIn("최신 첫 페이지",status["detail"])
+        self.assertIn("마지막 페이지",status["detail"])
 
     def test_legacy_skip_counter_is_rechecked_before_migration_marks_complete(self):
         self.store.values['collection-state']={'start_at':stamp(NOW-dt.timedelta(minutes=1)),
@@ -179,7 +181,7 @@ class LatestCollectionTests(unittest.TestCase):
         self.assertNotIn('latest_part',self.store.get('collection-state'))
         self.assertEqual(self.store.get('collection-state')['start_at'],stamp(NOW-dt.timedelta(hours=1)))
 
-    def test_page_walk_restarts_when_head_changes_during_verification(self):
+    def test_next_full_walk_observes_changed_head_without_extra_verification(self):
         row=self.row();changed=self.row('SN-newer')
         reads=[0]
         def result(day,page):
@@ -189,7 +191,85 @@ class LatestCollectionTests(unittest.TestCase):
             return {'messages':[],'has_more':False,'skipped':0}
         self.feed.result=result
         self.collect()
-        for _ in range(3):self.collect()
-        self.assertGreaterEqual(reads[0],3)
+        self.clock[0]+=dt.timedelta(minutes=10);self.collect()
+        self.assertEqual(reads[0],2)
         self.assertEqual(len(self.records.list_page()['records']),2)
         self.assertEqual(sum(page==2 for day,page,_ in self.feed.calls if day==NOW.date()),2)
+
+    def test_new_and_corrected_tail_rows_are_found_when_head_and_total_count_stay_same(self):
+        head=self.row('head');old=self.row('old-tail');new=self.row('new-tail')
+        tail=[old]
+        self.feed.result=lambda day,page:{'messages':([head] if page==1 else tail) if day==NOW.date() else [],
+            'has_more':day==NOW.date() and page==1,'skipped':0}
+        self.collect()
+        tail[:]=[new]
+        self.clock[0]+=dt.timedelta(minutes=10);self.collect()
+        self.assertIsNotNone(self.records.store.get(self.records.official_record_id('new-tail')))
+        tail[:]=[self.row('new-tail',content='대구 달서구의 통제 범위를 정정합니다. 계속 우회해 주세요.')]
+        self.clock[0]+=dt.timedelta(minutes=10);self.collect()
+        self.assertEqual(self.records.get(self.records.official_record_id('new-tail'))['source_revision'],2)
+
+    def test_unchanged_head_can_gain_a_third_page_and_unordered_issued_times(self):
+        rows=[self.row('head',created_at=NOW-dt.timedelta(seconds=30)),self.row('tail'),self.row('late')]
+        length=[2]
+        self.feed.result=lambda day,page:{'messages':[rows[page-1]] if day==NOW.date() and page<=length[0] else [],
+            'has_more':day==NOW.date() and page<length[0],'skipped':0}
+        self.collect();length[0]=3
+        self.clock[0]+=dt.timedelta(minutes=10);self.collect()
+        self.assertEqual(len(self.records.list_page()['records']),3)
+        self.assertEqual(self.store.get('collection-state')['current_scan_interval_seconds'],900)
+
+    def test_two_page_day_uses_312_reads_in_24h_by_scanning_every_ten_minutes(self):
+        self.clock[0]=NOW.replace(hour=0,minute=0)
+        self.settings=replace(self.settings,start_at=self.clock[0])
+        self.feed.result=lambda day,page:{'messages':[],'has_more':day==NOW.date() and page==1,'skipped':0}
+        for _ in range(288):
+            self.collect();self.clock[0]+=dt.timedelta(minutes=5)
+        self.assertEqual(len(self.feed.calls),312)
+        self.assertEqual(sum(p=='latest' for _,_,p in self.feed.calls),288)
+        self.assertEqual(self.store.get('collection-state')['current_scan_interval_seconds'],600)
+
+    def test_current_failure_is_not_cleared_by_a_clean_history_read(self):
+        def result(day,page):
+            if day==NOW.date():raise TimeoutError('private-key')
+            return {'messages':[],'has_more':False,'skipped':0}
+        self.feed.result=result
+        self.assertEqual(self.collect()['state'],'error')
+        self.assertEqual(self.collect()['state'],'error')
+        state=self.store.get('collection-state')
+        self.assertEqual(state['last_error_stage'],'fetch_page')
+        self.assertNotIn('private-key',str(state))
+
+    def test_partial_row_resume_rechecks_changed_page_without_losing_new_rows(self):
+        elapsed=[0];head=self.row('A');tail=self.row('B')
+        self.feed.result=lambda day,page:{'messages':[head,tail] if day==NOW.date() else [],'has_more':False,'skipped':0}
+        collector=LatestFirstMessageCollector(self.feed,self.records,self.store,self.settings,now=lambda:self.clock[0],clock=lambda:elapsed[0])
+        observe=collector._observe_row
+        def limited(*args):
+            result=observe(*args);elapsed[0]=self.settings.scan_seconds;return result
+        collector._observe_row=limited
+        self.assertEqual(collector.run()['state'],'partial')
+        self.assertEqual(self.store.get('collection-state')['current_work']['offset'],1)
+        new=self.row('C');self.feed.result=lambda day,page:{'messages':[new,head,tail] if day==NOW.date() else [],'has_more':False,'skipped':0}
+        self.clock[0]+=dt.timedelta(minutes=5);self.collect()
+        self.assertEqual(len(self.records.list_page()['records']),3)
+
+    def test_return_to_legacy_preserves_unfinished_full_walk(self):
+        self.store.values['collection-state']={'start_at':stamp(NOW-dt.timedelta(hours=1)),
+            'strategy':'recent_window_v2','work':[],
+            'current_work':{'region':None,'date':NOW.date().isoformat(),'page':2,'offset':0}}
+        settings=replace(self.settings,latest_first_enabled=False,interval_seconds=900)
+        self.assertEqual(OfficialMessageCollector(self.feed,self.records,self.store,settings,now=lambda:NOW).run()['state'],'ok')
+        self.assertEqual(self.feed.calls[0][:2],(NOW.date(),2))
+        self.assertNotIn('current_work',self.store.get('collection-state'))
+
+    def test_small_shared_quota_still_leaves_history_capacity_and_adapts_day_scan(self):
+        self.clock[0]=NOW.replace(hour=0,minute=0)
+        self.settings=replace(self.settings,request_limit=50,start_at=self.clock[0])
+        self.budget=OfficialRequestBudget(self.store,50,latest_reserve=recent_request_reserve(50),now=lambda:self.clock[0])
+        self.feed.budget=self.budget
+        for _ in range(288):
+            self.collect();self.clock[0]+=dt.timedelta(minutes=5)
+        self.assertLessEqual(len(self.feed.calls),50)
+        self.assertTrue(any(p=='background' for _,_,p in self.feed.calls))
+        self.assertEqual(self.store.get('collection-state')['current_scan_interval_seconds'],2700)

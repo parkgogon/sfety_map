@@ -57,8 +57,8 @@ class OfficialMessageCollector:
                 state["start_at"] = stamp(start)
             state.update(last_attempt_at=stamp(now), last_error="")
             today = now.astimezone(KST).date()
-            if state.get("strategy") == "latest_first_v1":
-                unfinished = state.pop("latest_part", None)
+            if state.get("strategy") in {"latest_first_v1", "recent_window_v2"}:
+                unfinished = state.pop("current_work", None) or state.pop("latest_part", None)
                 if unfinished:
                     state.setdefault("work", []).insert(0, unfinished)
                 state["strategy"] = "legacy_v1"
@@ -125,8 +125,10 @@ class OfficialMessageCollector:
                     state["work"].append({"region": part["region"], "date": part["date"], "page": part["page"]+1,
                                           "offset": 0, "head_hash": part["head_hash"]})
                 elif part["page"] > 1:
-                    state["work"].append({"region": part["region"], "date": part["date"], "page": 1,
-                                          "offset": 0, "verify_head": True, "head_hash": part["head_hash"]})
+                    followup = {"region": part["region"], "date": part["date"], "page": 1, "offset": 0}
+                    if part.get("head_hash"):
+                        followup.update(verify_head=True, head_hash=part["head_hash"])
+                    state["work"].append(followup)
                 if not state["work"] and not state["cycle_skipped"] and not state["coverage_gap"]:
                     state["last_success_at"] = stamp(self.now())
                 save()

@@ -8,7 +8,7 @@ import threading
 from fastapi import FastAPI, HTTPException
 
 from safety_dashboard.application.message_collection import OfficialMessageCollector
-from safety_dashboard.application.message_collection_latest import LatestFirstMessageCollector
+from safety_dashboard.application.message_collection_latest import RecentWindowMessageCollector
 from safety_dashboard.application.message_processing import MessageQueueProcessor
 from safety_dashboard.application.message_runtime import build_message_runtime
 
@@ -41,7 +41,7 @@ def create_app(runtime=None):
         try:
             store = current.pipeline_factory()
             if kind == "collect":
-                collector = LatestFirstMessageCollector if current.settings.latest_first_enabled else OfficialMessageCollector
+                collector = RecentWindowMessageCollector if current.settings.latest_first_enabled else OfficialMessageCollector
                 return collector(current.provider, current.records, store, current.settings).run()
             preparation = current.notification_preparation if prepare else None
             recovery = preparation.run() if preparation else None

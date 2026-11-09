@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate]
         default: metadata
   pull_request:
     types: [labeled]
@@ -122,7 +122,7 @@ jobs:
           if-no-files-found: warn
 
   collection-diagnostics:
-    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'collection-diagnostics' || inputs.mode == 'collection-diagnostics-gen2')
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'collection-diagnostics' || inputs.mode == 'collection-diagnostics-gen2' || inputs.mode == 'collection-candidate')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -130,7 +130,8 @@ jobs:
       id-token: write
     env:
       CHECK_SERVICE: message-feed-check-${{ github.run_id }}
-      COLLECTION_PROBE_EXECUTION: ${{ inputs.mode == 'collection-diagnostics-gen2' && 'gen2' || 'gen1' }}
+      COLLECTION_PROBE_EXECUTION: ${{ inputs.mode != 'collection-diagnostics' && 'gen2' || 'gen1' }}
+      COLLECTION_PROBE_CANDIDATE: ${{ inputs.mode == 'collection-candidate' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -140,8 +141,14 @@ jobs:
           python3 - <<'PY'
           import base64,os
           from pathlib import Path
+          loader="import base64,types,sys;"
+          if os.environ['COLLECTION_PROBE_CANDIDATE']=='true':
+              for name in ('safety_dashboard.application.message_feed_budget','safety_dashboard.adapters.disaster_messages','safety_dashboard.application.message_collection','safety_dashboard.application.message_collection_latest'):
+                  path=name.replace('.','/')+'.py'
+                  source=base64.b64encode(Path(path).read_bytes()).decode()
+                  loader+="m=types.ModuleType("+repr(name)+");m.__file__="+repr('/app/'+path)+";sys.modules[m.__name__]=m;exec(base64.b64decode("+repr(source)+"),m.__dict__);"
           source=base64.b64encode(Path('scripts/diagnose_collection_runtime.py').read_bytes()).decode()
-          loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
+          loader+="exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('PROBE_LOADER='+loader+'\n')
           PY
       - uses: google-github-actions/auth@v3
@@ -165,7 +172,7 @@ jobs:
             --command=python --args="^|^-c|$PROBE_LOADER" \
             --set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1 \
             --execution-environment="$COLLECTION_PROBE_EXECUTION" \
-            --set-env-vars="COLLECTION_PROBE_EXECUTION=$COLLECTION_PROBE_EXECUTION" \
+            --set-env-vars="COLLECTION_PROBE_EXECUTION=$COLLECTION_PROBE_EXECUTION,COLLECTION_PROBE_CANDIDATE=$COLLECTION_PROBE_CANDIDATE,COLLECTION_CANDIDATE_REVISION=$GITHUB_SHA" \
             --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=120s \
             --no-allow-unauthenticated --quiet
           CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')

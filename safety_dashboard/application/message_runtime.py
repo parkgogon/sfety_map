@@ -17,7 +17,7 @@ from safety_dashboard.application.message_analysis import AnalysisUnavailable, M
 from safety_dashboard.application.message_automation import MessageAutomationSettings, MessageAutomationStatus
 from safety_dashboard.application.message_pipeline import AnalysisRunGate, MemoryPipelineStore, MessageAnalysisQueue, UTC
 from safety_dashboard.application.message_records import MemoryRecordStore, MessageRecordService
-from safety_dashboard.application.message_feed_budget import OfficialRequestBudget
+from safety_dashboard.application.message_feed_budget import OfficialRequestBudget, recent_request_reserve
 from safety_dashboard.application.message_spend_budget import MessageSpendBudget, SpendBudgetLimit
 from safety_dashboard.application.message_notification_jobs import MessageNotificationPreparation, MemoryNotificationStore
 from safety_dashboard.adapters.firestore_message_notifications import FirestoreMessageNotificationStore
@@ -73,7 +73,7 @@ def build_message_runtime(facility_path, project_id, store_mode, feed_key, *, an
         on_analysis_saved=lambda record: MessageAnalysisQueue(pipeline_factory()).sync_record(record, dt.datetime.now(UTC)),
     )
     provider = SafetyDataDisasterMessageProvider(feed_key,
-                gate_factory=lambda: OfficialRequestBudget(pipeline_factory(), settings.request_limit, latest_reserve=289 if settings.latest_first_enabled else 0))
+                gate_factory=lambda: OfficialRequestBudget(pipeline_factory(), settings.request_limit, latest_reserve=recent_request_reserve(settings.request_limit) if settings.latest_first_enabled else 0))
     status = MessageAutomationStatus(settings, pipeline_factory if pipeline_builder else None, provider.configured)
     notification_store, notification_lock = None, threading.Lock()
     def notification_store_factory():

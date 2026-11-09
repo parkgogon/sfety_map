@@ -6,7 +6,7 @@
 ## 11월 10일 사전 점검 — 전환 보류
 
 [Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)와 [실제 점검 증빙](evidence/2026-11-10/message-delivery-preflight/README.md).
-공식 표본은 발행 시각 최신순이 아니었고 기존 수집은 ERROR였다. 새 AI 판단을 서버 검증까지 대조한 6예문은 2통과/3확인/1실패다.
+공식 표본은 발행 시각 최신순이 아니었고 기존 수집은 ERROR였다. 이후 [순서 독립 수집·연결 오류 보완](evidence/2026-11-10/message-collection-fix/README.md)을 구현했으며 아직 운영 미배포다. 새 AI 판단을 서버 검증까지 대조한 6예문은 2통과/3확인/1실패다.
 **아래 전환 값은 아직 적용하면 안 된다.** 정렬에 의존하지 않는 수집·현재 오류·AI 판단을 보완하고 재검수한다.
 직원/관리자방의 latest 참조도 고정 숫자 버전 확인이 남아 있다. Secret/Firestore 조회 권한 부족을 키 누락으로 단정하지 않는다.
 
@@ -28,7 +28,7 @@
 1. 동일한 기준 commit/이미지로 통합할 변경과 아래 설정을 검토한다. 기존 KMA LIVE·기준 상태·정규 예약을 보존한다.
    현재 배포의 문자 상태·권한/키 연결·운영방 접근을 읽기 전용으로 확인한다. 실제 시험 발송/기상 dispatch/기준 초기화는 하지 않는다.
 2. 공식 API의 당일 첫 페이지가 최신순인지, 공개 지연·추가 페이지/실제 처리량과 500회 한도 안의 수집을 확인한다.
-   현재 20건/하루와 $1/하루·$20/월은 제한 운영의 초기값이며 처리량 보장값이 아니다.
+   당일 전체 순회/과거 보충 완료 시각·누락/지연과 적응형 순회 간격을 확인한다. 현재 20건/하루와 $1/하루·$20/월은 제한 운영의 초기값이며 처리량 보장값이 아니다.
    새 AI 판단의 실제 품질은 호출/토큰 상한을 정한 별도 평가로 측정한다. 자동 테스트를 그 정확도 실적으로 쓰지 않는다.
 3. `main` push/운영 배포는 사용자 요청 후 수행한다. 배포 후에도 실제 전파는 꺼진 상태로 검수하며,
    새 배포의 API/worker 버전·같은 봇/방 고정 버전·Firestore·1분 예약·직원 공개 링크를 확인한 뒤 전파 시작을 실행한다.
@@ -40,7 +40,7 @@
 | --- | --- |
 | `MESSAGE_COLLECTION_ENABLED` / `MESSAGE_COLLECTION_CONTRACT_VERIFIED` | true / true |
 | `MESSAGE_NOTIFICATION_PREPARATION_ENABLED` | true |
-| `MESSAGE_COLLECTION_FAST_ENABLED` / `MESSAGE_COLLECTION_INTERVAL_MINUTES` | true / 5 |
+| `MESSAGE_COLLECTION_FAST_ENABLED` / `MESSAGE_COLLECTION_INTERVAL_MINUTES` | true / 5 (진행 예약, 전체 순회 간격은 조회량에 따라 늘어남) |
 | `MESSAGE_FEED_REQUEST_LIMIT` | 450 (사용자 500회 중 앱 공통 최근 24시간 상한) |
 | `MESSAGE_ANALYSIS_DAILY_LIMIT` | 20, 실제 처리량과 함께 확정 |
 | `MESSAGE_AI_SPEND_BUDGET_ENABLED` | true |

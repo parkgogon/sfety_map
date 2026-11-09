@@ -29,6 +29,7 @@ export interface MessageAutomation {
   budget: { limit:number; attempts:number|null; remaining:number|null; active:boolean };
   feed_budget?: { limit:number; used:number; remaining:number; window_hours:number; next_available_at:string|null };
   latest_first_enabled?: boolean; last_latest_success_at?:string|null; last_backfill_success_at?:string|null;
+  recent_scan_enabled?:boolean; last_current_scan_success_at?:string|null; current_scan_interval_seconds?:number;
   spend_budget?: { enabled:boolean; currency?:string; reservation_usd?:number; can_start?:boolean; blocked?:boolean;
     daily?: { limit_usd:number; settled_usd:number; reserved_usd:number; unsettled_calls:number };
     monthly?: { limit_usd:number; settled_usd:number; reserved_usd:number; unsettled_calls:number } };

@@ -16,6 +16,11 @@ class FeedBudgetUnavailable(Exception):
     pass
 
 
+def recent_request_reserve(limit):
+    """Keep the default 289/161 split, leaving history capacity for smaller quotas."""
+    return max(0, min(limit-1, (limit*289+449)//450))
+
+
 class OfficialRequestBudget:
     """Reserve before HTTP; failures also count. Never refund uncertain attempts."""
     KEY = "official-request-budget"
