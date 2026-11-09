@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, delivery-runtime]
         default: metadata
   pull_request:
     types: [labeled]
@@ -19,6 +19,78 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  delivery-runtime:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'delivery-runtime'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+      PROBE_IMAGE: asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/delivery-preflight:${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Compare existing bindings and prepare isolated candidate
+        run: python scripts/preflight_message_delivery.py prepare
+      - name: Build temporary image with unchanged runtime dependencies
+        run: |
+          gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+          docker build -f delivery-preflight/Dockerfile -t "$PROBE_IMAGE" .
+          docker push "$PROBE_IMAGE"
+      - name: Run private check with the existing runtime account
+        run: |
+          gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
+            --image="$PROBE_IMAGE" \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args=/app/preflight.py,serve \
+            --env-vars-file=delivery-preflight/runtime-env.json --execution-environment=gen2 \
+            --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=240s \
+            --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+        id: invoker
+      - name: Collect sanitized preflight result with no actual sends
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python scripts/invoke_safetydata_runtime.py
+      - name: Verify production configuration and schedules stayed unchanged
+        if: always()
+        run: python scripts/preflight_message_delivery.py compare
+      - name: Remove only this temporary service
+        if: always()
+        run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - name: Remove only this temporary image
+        if: always()
+        run: gcloud artifacts docker images delete "$PROBE_IMAGE" --project=keco-safety-map --delete-tags --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-delivery-runtime-preflight
+          path: |
+            safetydata-runtime-check/report.json
+            delivery-preflight/metadata-before.json
+            delivery-preflight/metadata-unchanged.json
+          retention-days: 14
+          if-no-files-found: warn
+
   inspect:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata') ||

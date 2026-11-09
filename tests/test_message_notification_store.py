@@ -34,7 +34,12 @@ class AtomicFirestore:
                         v=row[1].get(f.field_path)
                         return v is not None and (v==f.value if f.op_string=='==' else v>=f.value if f.op_string=='>=' else v<=f.value)
                     rows=[row for row in rows if accepted(row)]
-                rows.sort(key=lambda row:row[1][self.order] if self.order else row[0],reverse=self.descending)
+                def order_value(row):
+                    value = row[1]
+                    for field in self.order.split('.'):
+                        value = value[field]
+                    return value
+                rows.sort(key=order_value if self.order else lambda row:row[0],reverse=self.descending)
                 return [Mock(id=key.rsplit('/',1)[1],to_dict=lambda v=value:copy.deepcopy(v)) for key,value in rows[:self.maximum]]
         return Collection()
 
