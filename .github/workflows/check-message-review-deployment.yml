@@ -79,7 +79,7 @@ jobs:
         run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
       - name: Remove only this temporary image
         if: always()
-        run: gcloud artifacts docker images delete "$PROBE_IMAGE" --project=keco-safety-map --delete-tags --quiet
+        run: python scripts/preflight_message_delivery.py cleanup-image
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -88,6 +88,7 @@ jobs:
             safetydata-runtime-check/report.json
             delivery-preflight/metadata-before.json
             delivery-preflight/metadata-unchanged.json
+            delivery-preflight/image-cleanup.json
           retention-days: 14
           if-no-files-found: warn
 

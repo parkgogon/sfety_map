@@ -67,6 +67,26 @@ class DeliveryPreflightTests(unittest.TestCase):
                 telegram_check(VALUES, session)
             self.assertFalse(session.post.called)
 
+    def test_existing_admin_private_destination_is_readable_without_claiming_post_permission(self):
+        session = Mock()
+        values = {**VALUES, KEYS[2]: '123456'}
+        session.get.side_effect = [response({'ok': True, 'result': {'id': 123, 'is_bot': True}}),
+            response({'ok': True, 'result': {'id': int(values[KEYS[1]]), 'type': 'supergroup'}}),
+            response({'ok': True, 'result': {'user': {'id': 123}, 'status': 'administrator'}}),
+            response({'ok': True, 'result': {'id': 123456, 'type': 'private'}})]
+        result = telegram_check(values, session)
+        self.assertEqual(result['read_calls'], 4)
+        self.assertTrue(result['groups']['admin_group']['read_access_observed'])
+        self.assertIsNone(result['groups']['admin_group']['posting_permission_observed'])
+        self.assertFalse(session.post.called)
+
+    def test_private_staff_destination_is_never_accepted_as_the_staff_group(self):
+        session = Mock()
+        session.get.side_effect = [response({'ok': True, 'result': {'id': 123, 'is_bot': True}}),
+            response({'ok': True, 'result': {'id': int(VALUES[KEYS[1]]), 'type': 'private'}})]
+        with self.assertRaisesRegex(ValueError, 'staff_group_required'):
+            telegram_check(VALUES, session)
+
     def test_scoped_adapters_cannot_address_other_collections_or_production_documents(self):
         client, root = Mock(), Mock(path='message_delivery_preflight/123456789')
         scoped = ScopedClient(client, root)

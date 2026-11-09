@@ -93,7 +93,7 @@ def resolve_secrets(bindings, session):
         values[key] = raw
         versions[key] = {'secret_name': ref['name'], 'numeric_version': match[1]}
     require(re.fullmatch(r'[0-9]+:[A-Za-z0-9_-]+', values[KEYS[0]]), 'invalid_existing_bot_format')
-    require(all(re.fullmatch(r'-[0-9]+', values[key]) for key in KEYS[1:]), 'group_chat_required')
+    require(all(re.fullmatch(r'-?[0-9]+', values[key]) for key in KEYS[1:]), 'numeric_chat_required')
     require(values[KEYS[1]] != values[KEYS[2]], 'staff_admin_must_differ')
     return values, versions
 
@@ -116,7 +116,14 @@ def telegram_check(values, session):
     result = {}
     for label, key in (('staff_group', KEYS[1]), ('admin_group', KEYS[2])):
         chat = read('getChat', {'chat_id': values[key]})
-        require(str(chat.get('id')) == values[key] and chat.get('type') in {'group', 'supergroup'}, 'group_identity_unverified')
+        require(str(chat.get('id')) == values[key], 'destination_identity_unverified')
+        if label == 'admin_group' and chat.get('type') == 'private':
+            # The existing legacy admin destination can be the owner's bot DM.
+            # getChat cannot prove the user has not blocked this bot; do not claim it can.
+            result[label] = {'destination_type': 'private', 'identity_matches': True,
+                             'read_access_observed': True, 'posting_permission_observed': None}
+            continue
+        require(chat.get('type') in {'group', 'supergroup'}, 'staff_group_required' if label == 'staff_group' else 'admin_destination_unverified')
         member = read('getChatMember', {'chat_id': values[key], 'user_id': me['id']})
         require((member.get('user') or {}).get('id') == me['id'], 'bot_membership_unverified')
         status = member.get('status')
@@ -270,8 +277,14 @@ def run():
         credentials, _ = google.auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
         report['phase'] = 'resolve_existing_secrets'
         values, report['fixed_versions'] = resolve_secrets(json.loads(os.environ['PREFLIGHT_BINDINGS']), AuthorizedSession(credentials))
+        report['findings'] = []
         report['phase'] = 'read_only_telegram'
-        report['telegram'] = telegram_check(values, requests.Session())
+        try:
+            report['telegram'] = telegram_check(values, requests.Session())
+        except Exception as error:
+            reason = str(error) if isinstance(error, ValueError) and re.fullmatch(r'[a-z_]{1,80}', str(error)) else 'telegram_read_access_unverified'
+            report['findings'].append(reason)
+            report['telegram'] = {'status': 'blocked', 'actual_send_receipt': 'not_tested'}
         values.clear()
         report['phase'] = 'public_staff_link'
         response = requests.get(HOME, timeout=(3, 7), allow_redirects=False)
@@ -279,7 +292,16 @@ def run():
         report['public_map'] = {'unauthenticated_http_200': True, 'url': HOME, 'real_employee_device': 'not_tested'}
         report['phase'] = 'isolated_firestore'
         from google.cloud import firestore
+        from safety_dashboard.adapters.firestore_message_pipeline import FirestoreMessagePipelineStore
+        from safety_dashboard.application.message_delivery import CONTROL
+        from safety_dashboard.application.message_notification_jobs import CONFIG_KEY
         client = firestore.Client(project=PROJECT)
+        # Explicit reads only. Never run configure()/run() against this store.
+        production = FirestoreMessagePipelineStore(client=client)
+        controls = {key: production.get(key) for key in (CONTROL, CONFIG_KEY)}
+        report['production_documents_read'] = 2
+        require(not controls[CONTROL] or controls[CONTROL].get('mode') == 'paused', 'production_delivery_control_active_or_unknown')
+        report['production_control_state'] = 'paused' if controls[CONTROL] else 'not_created'
         root = client.collection(ROOT_COLLECTION).document(run_id)
         root.create({'kind': 'isolated_synthetic_preflight', 'revision': revision,
                      'created_at': dt.datetime.now(dt.timezone.utc)}, timeout=5)
@@ -287,7 +309,11 @@ def run():
         fixture = json.loads(Path('/app/delivery-fixture.json').read_text())
         report['storage'] = storage_checks(ScopedClient(client, root), fixture=fixture,
                                           now=dt.datetime.now(dt.timezone.utc), revision=revision)
-        report.update(status='passed', phase='finished')
+        after = {key: production.get(key) for key in (CONTROL, CONFIG_KEY)}
+        report['production_documents_read'] += 2
+        require(controls == after, 'production_control_changed_during_check')
+        report['production_control_unchanged_during_check'] = True
+        report.update(status='blocked' if report['findings'] else 'passed', phase='finished')
     except Exception as error:
         report['error_type'] = type(error).__name__ if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,79}', type(error).__name__) else 'unknown'
         if isinstance(error, ValueError) and re.fullmatch(r'[a-z_]{1,80}', str(error)):
@@ -326,13 +352,22 @@ def handler():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['prepare', 'compare', 'serve'])
+    parser.add_argument('mode', choices=['prepare', 'compare', 'serve', 'cleanup-image'])
     args = parser.parse_args()
     if args.mode == 'serve':
         HTTPServer(('0.0.0.0', int(os.getenv('PORT', '8080'))), handler()).serve_forever()
         return
     out = Path('delivery-preflight')
     out.mkdir(exist_ok=True)
+    if args.mode == 'cleanup-image':
+        image = os.environ['PROBE_IMAGE']
+        require(re.fullmatch(r'asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/delivery-preflight:[0-9]{8,20}', image), 'invalid_probe_image')
+        result = subprocess.run(['gcloud', 'artifacts', 'docker', 'images', 'delete', image, '--project', PROJECT,
+                                 '--delete-tags', '--quiet'], capture_output=True, text=True, timeout=45)
+        status = 'deleted' if not result.returncode else 'retained_permission_denied' if 'PERMISSION_DENIED' in result.stderr else 'cleanup_unverified'
+        (out/'image-cleanup.json').write_text(json.dumps({'image': image, 'status': status})+'\n')
+        print('Temporary image:', status)
+        return
     snapshot = metadata(query)
     if args.mode == 'compare':
         require(snapshot == json.loads((out/'metadata-before.json').read_text()), 'production_metadata_changed')
