@@ -38,6 +38,21 @@ def validate_assessment(assessment, text, candidates, queries):
         raise ValueError("전파 판단에는 실제로 조회한 장소/시설 조회 ID만 사용할 수 있습니다.")
 
 
+def record_only_rejection(assessment, parts, source_text):
+    """The same suppression checks are used at agent submission and saved-result replay."""
+    if assessment.urgency == 'immediate' or assessment.relevance in {'facility','nearby','area_operations'}:
+        return '업무 관련성·긴급성과 기록만 하겠다는 판단이 맞지 않아 확인이 필요합니다.'
+    if assessment.relevance == 'general' and any(p.intent not in {'prevention','advisory'} for p in parts):
+        return '사고·통제·해제 내용이 있어 일반 안내로만 처리할 수 없습니다.'
+    if assessment.relevance == 'outside_scope':
+        from safety_dashboard.application.message_analysis import REGION_ALIASES
+        outside_names = [name for full,short in REGION_ALIASES.items() if not target_region_in(full) for name in (full,short)]
+        cited_outside = any(re.search(r'(?<![가-힣])'+re.escape(name)+r'(?=\s|[.,\[\]()]|$)', ' '.join(assessment.evidence)) for name in outside_names)
+        if target_region_in(source_text) or not cited_outside:
+            return '범위 밖이라는 원문 지역 근거가 부족하거나 소관 지역 정보가 섞여 있습니다.'
+    return None
+
+
 def _instant(value):
     parsed = dt.datetime.fromisoformat(value)
     if parsed.tzinfo is None:
@@ -107,17 +122,9 @@ def notification_preview(record, catalog, *, base_url="", now=None):
         return finish("attention_required", assessment.reason)
 
     if assessment.need == "record_only":
-        if assessment.urgency == "immediate" or assessment.relevance in {"facility", "nearby", "area_operations"}:
-            return finish("attention_required", "업무 관련성·긴급성과 기록만 하겠다는 판단이 맞지 않아 확인이 필요합니다.")
-        if assessment.relevance == "general" and any(p.intent not in {"prevention", "advisory"} for p in draft.parts):
-            return finish("attention_required", "사고·통제·해제 내용이 있어 일반 안내로만 처리할 수 없습니다.")
-        if assessment.relevance == "outside_scope":
-            outside_names = [name for full, short in REGION_ALIASES.items()
-                             if not target_region_in(full) for name in (full, short)]
-            cited_outside = any(re.search(r"(?<![가-힣])"+re.escape(name)+r"(?=\s|[.,\[\]()]|$)", " ".join(assessment.evidence))
-                                for name in outside_names)
-            if target_region_in(source.text) or not cited_outside:
-                return finish("attention_required", "범위 밖이라는 원문 지역 근거가 부족하거나 소관 지역 정보가 섞여 있습니다.")
+        reason = record_only_rejection(assessment, draft.parts, source.text)
+        if reason:
+            return finish('attention_required', reason)
         return finish("record_only", assessment.reason)
 
     if assessment.relevance not in {"facility", "nearby", "area_operations"} or assessment.urgency == "unknown":

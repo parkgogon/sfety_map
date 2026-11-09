@@ -9,6 +9,32 @@ from tests.test_message_notification import assessment
 
 
 class MessageAgentRecoveryTests(unittest.TestCase):
+    def test_body_city_is_kept_when_agent_uses_only_the_issuer_district(self):
+        req=request('event')
+        wrong=search_args(region_hint='달서구');wrong['evidence']=req.text
+        correct={**wrong,'region_hint':'대구'}
+        body={**draft([part(req.text,locations=[location(candidate_ids=['P1'])])]),'notification_assessment':assessment(req.text,refs=['P1'])}
+        agent=service([call('search_places',wrong),call('search_places',correct),call('find_nearby_facilities',{'candidate_id':'P1'}),call('submit_analysis',body)])
+        result=agent.analyze(req)
+        self.assertIn('본문 상위 지역은 대구',agent.client.inputs[1][-1]['output'])
+        self.assertEqual(agent.places.queries,['대구 성서산업단지'])
+        self.assertEqual(result['analysis']['notification_assessment']['need'],'notify')
+
+    def test_inconsistent_record_only_is_returned_to_the_agent_for_correction(self):
+        req=request('partial_release')
+        rows=[part('가람교 하부도로 통제는 15시 해제되었습니다.','release',time_text='15시',ends_at='2026-11-07T15:00:00+09:00'),
+              part('푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.','active_restriction')]
+        body=draft(rows,['통제 지역이 어느 시·군인가요?'])
+        for bad in (assessment(req.text,need='record_only',relevance='general',urgency='reference'),
+                    assessment(req.text,need='record_only',relevance='general',urgency='immediate'),
+                    assessment(req.text,need='record_only',relevance='outside_scope',urgency='reference')):
+            with self.subTest(bad=bad):
+                agent=service([call('submit_analysis',{**body,'notification_assessment':bad}),
+                    call('submit_analysis',{**body,'notification_assessment':assessment(req.text,need='uncertain',relevance='unknown')})])
+                result=agent.analyze(req)
+                self.assertEqual(result['trace'][0]['status'],'invalid')
+                self.assertIn('need=uncertain',agent.client.inputs[1][-1]['output'])
+                self.assertEqual(result['analysis']['notification_assessment']['need'],'uncertain')
     def test_explicit_release_clock_is_preserved_even_when_city_is_unknown(self):
         req=request('partial_release')
         released=part('가람교 하부도로 통제는 15시 해제되었습니다.','release',time_text='')

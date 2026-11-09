@@ -234,7 +234,8 @@ class NotificationPreviewTests(unittest.TestCase):
 
     def test_outside_scope_label_without_an_explicit_outside_region_is_not_enough_to_suppress(self):
         text = "화재가 발생했습니다. 업무 관련 지역이 어디인지 확인이 필요합니다."
-        record, _ = analyzed_record(text, assessment(text, need="record_only", relevance="outside_scope", urgency="reference"))
+        record, _ = analyzed_record(text, assessment(text, need="uncertain", relevance="outside_scope", urgency="reference"))
+        record['analysis']['analysis']['notification_assessment']['need']='record_only'
         self.assertEqual(preview(record)["decision"], "attention_required")
 
     def test_invalid_coordinates_are_not_used_for_distances(self):

@@ -17,7 +17,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationErro
 
 from safety_dashboard.application.nearby_report import NearbyReport
 from safety_dashboard.application.message_facility_queries import FacilityQuery, query_facilities, target_region_in
-from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment
+from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment, record_only_rejection
 from safety_dashboard.domain.models import Facility, GeoPoint
 from safety_dashboard.application.message_spend_budget import SpendBudgetLimit, SpendBudgetUnavailable
 
@@ -192,6 +192,7 @@ INSTRUCTIONS = """공공기관 재난문자의 뜻과 소관시설 업무 관련
   place_search_available=false이면 반복하지 않고 미확인 질문과 uncertain으로 제출한다.
 - location_text는 원문의 한 장소, search_name은 그 안의 고유 지명/시설명이다. evidence에 그 장소가 있어야 한다.
   region_hint는 원문/발신처의 상위 지역을 그대로 쓴다. 본문 지역을 우선하고 구청의 구 이름으로 산·하천 전체를 좁히지 않는다.
+  본문 장소에 광역지역이 있으면 구 이름만 region_hint에 쓰지 않는다. 본문이 광역지역만 명시하면 그 지역을 사용한다.
   학교 운동장은 학교 고유명과 school로, 산업단지는 industrial_complex로 검색한다. 사고지와 목적지는 따로 검색한다.
 - 이름과 category_name/category_group_code가 맞는 후보만 candidate_ids에 연결한다. 산/학교, 산업단지/관리기관·체육관은 다르다.
   넓은 지역/도로/산의 대표점은 실제 발생 지점이 아니다. 그 차이를 questions에 남긴다.
@@ -312,7 +313,7 @@ class MessageAnalysisService:
                     if draft.notification_assessment:
                         try:
                             validate_assessment(draft.notification_assessment, request.text, candidates, facility_queries)
-                            self._validate_notification(draft, candidates, nearby, facility_queries, eligible)
+                            self._validate_notification(draft, candidates, nearby, facility_queries, eligible, request.text)
                         except ValueError as error:
                             raise DraftEvidenceError(str(error)) from None
                     analysis = draft.model_dump()
@@ -359,9 +360,13 @@ class MessageAnalysisService:
         raise AnalysisUnavailable("조회 횟수 안에 분석을 완료하지 못했습니다. 장소나 문구를 확인해 주세요.")
 
     @staticmethod
-    def _validate_notification(draft, candidates, nearby, queries, eligible):
+    def _validate_notification(draft, candidates, nearby, queries, eligible, source_text):
         """Return the existing server gate's feedback while the agent can still correct it."""
         assessment = draft.notification_assessment
+        if assessment.need == 'record_only':
+            reason = record_only_rejection(assessment, draft.parts, source_text)
+            if reason:
+                raise DraftEvidenceError(reason+' 지역/시설이 미상인 사고·통제는 need=uncertain으로 제출하고 확인 질문을 남기세요.')
         if assessment.need != "notify":
             return
         verified = False
@@ -403,6 +408,12 @@ class MessageAnalysisService:
                 issues.append("region_hint는 원문·발신처·수신지역에 명시된 지역만 인용하세요. 지역이 없으면 null로 남기고 어느 시·군인지 질문하세요.")
             body = re.sub(r"^\s*\[[^\]\r\n]{1,80}\]\s*", "", request.text)
             tokens = (search.region_hint or '').split()
+            if tokens and not source_region_matches(search.region_hint, search.region_hint):
+                upper = sorted({short for full,short in REGION_ALIASES.items() if source_region_matches(full,body)})
+                if len(upper) == 1:
+                    issuer_only = all(t not in body for t in tokens)
+                    detail = '발신 구역만으로 본문 장소를 좁히지 말고 본문 상위 지역을 사용하세요.' if issuer_only else '본문에 있는 하위 구역과 상위 지역을 함께 명시하세요.'
+                    issues.append(f'region_hint에 상위 광역지역/시·군이 빠졌습니다. 본문 상위 지역은 {upper[0]}입니다. '+detail)
             if len(tokens) > 1 and source_region_matches(tokens[0], body):
                 issuer_only = [t for t in tokens[1:] if t.endswith(('시','군','구')) and t not in body]
                 if issuer_only:
