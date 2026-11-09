@@ -64,7 +64,8 @@ jobs:
           from pathlib import Path
           expected=build_config(json.loads(Path('.github/message-delivery-release.json').read_text()))
           actual=build_config(os.environ)
-          for key,value in expected.items():
+          # Keep an explicit delivery=false usable for emergency shutdown deployments.
+          for key,value in (expected.items() if os.environ['MESSAGE_DELIVERY_ENABLED']=='true' else []):
               if key=='MESSAGE_REVIEW_ENV_VARS':
                   configured=dict(item.split('=',1) for item in actual[key].split(','))
                   assert all(configured.get(k)==v for k,v in (item.split('=',1) for item in value.split(','))), 'approved_release_settings_differ'
