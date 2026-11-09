@@ -33,6 +33,8 @@ from safety_dashboard.application.message_feed import OfficialFeedService
 from safety_dashboard.application.message_spatial import MessageSpatialService
 from safety_dashboard.application.message_analysis import MessageAnalysisService
 from safety_dashboard.application.message_automation import MessageAutomationStatus
+from safety_dashboard.application.message_notification_jobs import MessageNotificationPreparation
+from safety_dashboard.application.message_delivery import MessageDelivery
 
 LOGGER = logging.getLogger("safety_dashboard.api")
 
@@ -58,6 +60,8 @@ def create_app(
     message_feed_service: OfficialFeedService | None = None,
     message_spatial_service: MessageSpatialService | None = None,
     message_automation_service: MessageAutomationStatus | None = None,
+    message_notification_preparation_service: MessageNotificationPreparation | None = None,
+    message_delivery_service: MessageDelivery | None = None,
 ) -> FastAPI:
     services = build_services(
         service,
@@ -72,6 +76,8 @@ def create_app(
         message_feed_service,
         message_spatial_service,
         message_automation_service,
+        message_notification_preparation_service,
+        message_delivery_service,
     )
     application = FastAPI(
         title="K-ECO Safety Monitoring API",

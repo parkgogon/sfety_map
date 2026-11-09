@@ -1,10 +1,13 @@
 """OpenAI Responses transport. Credentials and raw errors never leave this adapter."""
 
 import os
+import hashlib
+import json
 import requests
 
 from safety_dashboard.application.message_analysis import AnalysisUnavailable
 from safety_dashboard.config.environment import env_text
+from safety_dashboard.application.message_spend_budget import SpendBudgetLimit, SpendBudgetUnavailable, MAX_OUTPUT
 
 DEFAULT_MODEL = "gpt-5.4-mini-2026-03-17"
 
@@ -14,25 +17,42 @@ class OpenAIConnectionError(AnalysisUnavailable):
 
 
 class OpenAIResponsesClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, *, reasoning_effort: str = "low", session=None):
+    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, *, reasoning_effort: str = "low", session=None, spend_factory=None):
         self._api_key = api_key
         self.model = model
         self.configured = bool(api_key)
         self.reasoning_effort = reasoning_effort if reasoning_effort in {"none", "low"} else "low"
         self._session = session or requests.Session()
+        self.spend_factory = spend_factory
         self._usage = dict.fromkeys(("requests", "usage_reports", "input_tokens", "cached_input_tokens", "output_tokens", "total_tokens"), 0)
 
     def usage_snapshot(self) -> dict[str, int]:
         return dict(self._usage)
 
     @classmethod
-    def from_environment(cls):
+    def from_environment(cls, *, spend_factory=None):
         return cls(env_text("OPENAI_API_KEY"), os.getenv("OPENAI_MODEL", "").strip() or DEFAULT_MODEL,
-                   reasoning_effort=os.getenv("OPENAI_REASONING_EFFORT", "low"))
+                   reasoning_effort=os.getenv("OPENAI_REASONING_EFFORT", "low"), spend_factory=spend_factory)
+
+    def check_budget(self):
+        if self.spend_factory:
+            self.spend_factory().check(self.model)
 
     def respond(self, items, tools, instructions, timeout):
         if not self.configured:
             raise AnalysisUnavailable("서버에 OpenAI API 키가 아직 설정되지 않았습니다.")
+        budget, reservation = None, None
+        if self.spend_factory:
+            try:
+                if any(t.get("type") != "function" for t in tools):
+                    raise SpendBudgetUnavailable("비용 기준에 없는 AI 도구입니다.")
+                budget = self.spend_factory()
+                fingerprint = hashlib.sha256(json.dumps(items[:1], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+                reservation = budget.reserve(self.model, source_fingerprint=fingerprint)
+            except SpendBudgetLimit:
+                raise
+            except Exception:
+                raise AnalysisUnavailable("AI 비용을 예약하지 못해 호출을 시작하지 않았습니다.") from None
         try:
             self._usage["requests"] += 1
             response = self._session.post(
@@ -41,7 +61,7 @@ class OpenAIResponsesClient:
                 json={"model": self.model, "instructions": instructions, "input": items, "tools": tools,
                       "tool_choice": "required", "parallel_tool_calls": False, "store": False,
                       "include": ["reasoning.encrypted_content"], "reasoning": {"effort": self.reasoning_effort},
-                      "max_output_tokens": 4000},
+                      "max_output_tokens": MAX_OUTPUT, "service_tier": "default"},
                 timeout=(min(5, timeout / 2), max(1, timeout - min(5, timeout / 2))),
                 allow_redirects=False,
             )
@@ -57,6 +77,11 @@ class OpenAIResponsesClient:
                 raise OpenAIConnectionError(messages.get(response.status_code, "AI 서비스 연결에 실패했습니다. 서버의 키·모델 설정을 확인해 주세요."))
             data = response.json()
             usage = data.get("usage")
+            if budget:
+                try:
+                    budget.settle(reservation, usage)
+                except SpendBudgetUnavailable:
+                    raise AnalysisUnavailable("AI 사용량을 확인하지 못했습니다. 비용 예약을 유지하며 자동 재분석하지 않습니다.") from None
             if isinstance(usage, dict):
                 self._usage["usage_reports"] += 1
                 for key in ("input_tokens", "output_tokens", "total_tokens"):

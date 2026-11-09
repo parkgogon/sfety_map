@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from scripts.evaluate_disaster_messages import check_case, evaluate, main, select_examples, write_report
+from scripts.evaluate_disaster_messages import check_case, check_notification, evaluate, main, select_examples, write_report
 from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
 from tests.test_message_analysis import EXAMPLES, draft, part, request
 
@@ -17,6 +17,40 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_new_contract_rejects_untraced_basis_and_ungrounded_notification(self):
+        example = EXAMPLES[0]
+        response = result([part(example['text'], 'prevention')])
+        self.assertFalse(check_notification(example, response)['notification_contract_and_evidence'])
+        assessment = dict(need='record_only', urgency='reference', relevance='general',
+                          reason='반복 예방 안내', evidence=[example['text']], basis_refs=[])
+        response['analysis']['notification_assessment'] = assessment
+        self.assertTrue(all(check_notification(example, response).values()))
+        assessment.update(need='notify', relevance='nearby', basis_refs=['P999'])
+        self.assertFalse(check_notification(example, response)['notification_contract_and_evidence'])
+        assessment['basis_refs'] = []
+        checks = check_notification(example, response)
+        self.assertFalse(checks['prevention_record_only'])
+        self.assertFalse(checks['notification_has_actual_lookup_basis'])
+
+    def test_unknown_region_is_not_accepted_for_automatic_notification(self):
+        example = next(row for row in EXAMPLES if row['id'] == 'ambiguous')
+        response = result([part(example['text'], 'active_restriction')])
+        response['analysis']['notification_assessment'] = dict(need='notify', urgency='immediate',
+            relevance='area_operations', reason='지역 미상', evidence=[example['text']], basis_refs=[])
+        self.assertFalse(check_notification(example, response)['unknown_region_not_automatically_notified'])
+
+    def test_live_evaluation_refuses_unpriced_model_before_http_and_reports_own_cap(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict('os.environ',
+            {'OPENAI_API_KEY': 'fake-key', 'OPENAI_MODEL': 'unpriced-model'}), \
+            patch('requests.Session.post', side_effect=AssertionError('must not call')) as post, \
+            contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(['--live', '--case', 'prevention', '--output-dir', directory]), 1)
+            post.assert_not_called()
+            report = json.loads((Path(directory)/'results.json').read_text())
+            self.assertEqual(report['spend_budget']['daily']['limit_usd'], 1)
+            self.assertEqual(report['spend_budget']['monthly']['limit_usd'], 1)
+            self.assertEqual(report['spend_budget']['daily']['calls'], 0)
+
     def test_school_destination_cannot_be_replaced_by_general_sports_ground(self):
         example = next(row for row in EXAMPLES if row["id"] == "destination")
         response = result([part(example["text"], locations=[{

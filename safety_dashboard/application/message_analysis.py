@@ -16,7 +16,10 @@ from typing import Annotated, Literal, Protocol
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError
 
 from safety_dashboard.application.nearby_report import NearbyReport
+from safety_dashboard.application.message_facility_queries import FacilityQuery, query_facilities
+from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment
 from safety_dashboard.domain.models import Facility, GeoPoint
+from safety_dashboard.application.message_spend_budget import SpendBudgetLimit, SpendBudgetUnavailable
 
 KST = dt.timezone(dt.timedelta(hours=9))
 MAX_MODEL_CALLS = 6
@@ -80,6 +83,12 @@ class AnalysisBusy(AnalysisUnavailable):
     pass
 
 
+class AnalysisBudgetBusy(AnalysisBusy):
+    def __init__(self, retry_at):
+        super().__init__("문자 AI 비용 한도로 대기 중입니다. 원문과 대기 기록은 유지됩니다.")
+        self.retry_at = retry_at
+
+
 class DraftEvidenceError(ValueError):
     """Only application-authored, safe feedback for a correctable draft."""
 
@@ -119,6 +128,12 @@ class AnalysisDraft(StrictModel):
     summary: str = Field(min_length=1, max_length=600)
     parts: list[MessagePart] = Field(min_length=1, max_length=8)
     questions: list[str] = Field(max_length=5)
+    # Old saved results remain valid. New strict tool submissions include this field.
+    notification_assessment: NotificationAssessment | None = None
+
+
+class NotificationSubmission(AnalysisDraft):
+    notification_assessment: NotificationAssessment | None
 
 
 class SearchPlaces(StrictModel):
@@ -202,6 +217,20 @@ candidate_ids에는 해당 장소 종류에 맞는 후보만 넣는다. 이름�
 질문은 업무상 필요한 정보가 부족할 때만 남긴다. 명확한 예방 안내에서 추가 조회 필요 여부를 묻지 않는다.
 한국어로 submit_analysis를 호출해 완료한다. 모든 결과는 검토 전 자료다.
 최대 6회 모델 응답 안에 끝내야 하므로 불필요한 반복 검색은 하지 않는다.
+
+같은 최종 제출에서 notification_assessment에 직원 단체방으로 전달할 필요성을 판단한다.
+need는 notify/record_only/uncertain, urgency는 immediate/scheduled/reference/unknown,
+relevance는 facility/nearby/area_operations/general/outside_scope/unknown이다.
+판단 근거 evidence는 원문 그대로 인용하고 reason에 업무 관련성과 미확인 사항을 구분한다.
+가까운 시설이 없다는 이유만으로 무관/안전으로 판정하지 않는다. 지역 전체 단수·정전·통제·대피도 업무 관련성이 있다.
+특정 소관시설을 원문에서 직접 언급하거나 행정구역 운영 상황이면 find_monitored_facilities로
+시설명 또는 광역지역부터 명시된 행정구역을 원문 그대로 조회한다. 지역형을 지도 대표점 반경으로 대체하지 않는다.
+광역지역만 조회할 때에는 원문에 해당 광역지역 전역/전체 범위가 명시되어야 한다.
+시설명/지역은 evidence에 포함된 문자열이며, 명칭은 정확히 일치해야 한다. KMA 코드로 행정구역을 추정하지 않는다.
+basis_refs에는 실제 조회 ID(P1 등의 장소 후보 또는 FQ1 등의 명칭/지역 조회)만 연결한다.
+일반적인 반복 예방/참고 안내로 추가 업무 정보가 없으면 record_only, 근거가 부족하면 uncertain이다.
+위치만 모호하지만 소관 지역의 즉각적인 안내 필요성이 명확하면 notify로 판단하고 미확인 위치를 reason/questions에 남긴다.
+기록만 하겠다는 판단에도 원문 근거가 필요하다. 발송/수신자 선택은 도구가 아니며 이 단계는 미리보기만 준비한다.
 """
 
 
@@ -213,7 +242,8 @@ def function_tool(name: str, description: str, model: type[BaseModel]) -> dict:
 TOOLS = [
     function_tool("search_places", "단일 원문 장소와 역할, 명시된 지역으로 실제 지도 후보를 검색한다. 지역 미상은 null이다.", SearchPlaces),
     function_tool("find_nearby_facilities", "검색된 후보 주변의 소관시설을 사용자가 고른 참고 반경으로 조회한다.", FindNearby),
-    function_tool("submit_analysis", "근거와 장소 역할, 구간별 상태를 포함한 최종 검토 초안을 제출한다.", AnalysisDraft),
+    function_tool("find_monitored_facilities", "원문의 정확한 소관시설명 또는 광역지역부터 명시된 행정구역으로 시설 주소를 대조한다. 좌표/거리를 추정하지 않는다.", FacilityQuery),
+    function_tool("submit_analysis", "근거와 장소 역할, 구간별 상태와 전파 필요성 판단을 함께 제출한다.", NotificationSubmission),
 ]
 
 
@@ -243,6 +273,14 @@ class MessageAnalysisService:
                 self._starts.popleft()
             if self._starts and (now - self._starts[-1] < 20 or len(self._starts) >= 20):
                 raise AnalysisBusy("분석 요청 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.")
+            check_budget = getattr(self.client, "check_budget", None)
+            if check_budget:
+                try:
+                    check_budget()
+                except SpendBudgetLimit as error:
+                    raise AnalysisBudgetBusy(error.retry_at) from None
+                except SpendBudgetUnavailable:
+                    raise AnalysisUnavailable("AI 비용 원장을 확인하지 못해 분석을 시작하지 않았습니다.") from None
             if self.gate_factory:
                 gate = self.gate_factory()
                 gate.acquire(owner)
@@ -262,13 +300,20 @@ class MessageAnalysisService:
         items = [{"role": "user", "content": json.dumps({**source, "place_search_available": self.places.configured}, ensure_ascii=False)}]
         candidates: dict[str, dict] = {}
         nearby: dict[str, dict] = {}
+        facility_queries: dict[str, dict] = {}
         trace: list[dict] = []
         for turn in range(MAX_MODEL_CALLS):
             remaining = MAX_SECONDS - (self.clock() - started)
             if remaining <= 1:
                 raise AnalysisUnavailable("분석 제한 시간에 도달했습니다. 입력을 줄여 다시 시도해 주세요.")
             tools = TOOLS if turn < MAX_MODEL_CALLS - 1 else [TOOLS[-1]]
-            output = self.client.respond(items, tools, INSTRUCTIONS, min(30, remaining))
+            try:
+                output = self.client.respond(items, tools, INSTRUCTIONS, min(30, remaining))
+            except SpendBudgetLimit as error:
+                if turn == 0:
+                    raise AnalysisBudgetBusy(error.retry_at) from None
+                # Earlier responses were already paid: never restore this as unattempted.
+                raise AnalysisUnavailable("분석 도중 AI 비용 한도에 도달했습니다. 유료 분석을 자동 반복하지 않습니다.") from None
             # Preserve all response items, including reasoning state, for stateless Responses.
             items.extend(output)
             calls = [item for item in output if item.get("type") == "function_call"]
@@ -281,16 +326,25 @@ class MessageAnalysisService:
                 if name == "submit_analysis":
                     draft = AnalysisDraft.model_validate(args)
                     eligible = self._validate(draft, request, candidates, nearby)
+                    if draft.notification_assessment:
+                        try:
+                            validate_assessment(draft.notification_assessment, request.text, candidates, facility_queries)
+                        except ValueError as error:
+                            raise DraftEvidenceError(str(error)) from None
+                    analysis = draft.model_dump()
+                    if draft.notification_assessment is None:
+                        analysis.pop("notification_assessment")
                     trace.append({"tool": name, "detail": "원문 인용과 장소 후보 ID 검증 완료", "status": "ok"})
-                    return {"input": source, "analysis": draft.model_dump(), "review_required": True,
+                    return {"input": source, "analysis": analysis, "review_required": True,
                             "candidates": list(candidates.values()),
                             "nearby": [value for key, value in nearby.items() if key in eligible],
+                            **({"facility_queries": list(facility_queries.values())} if facility_queries else {}),
                             "trace": trace, "model": self.client.model, "model_calls": turn + 1,
                             "elapsed_ms": round((self.clock() - started) * 1000)}
                 remaining = MAX_SECONDS - (self.clock() - started)
                 if remaining <= 1:
                     raise AnalysisUnavailable("분석 제한 시간에 도달했습니다.")
-                result, detail = self._tool(name, args, request, candidates, nearby, remaining)
+                result, detail = self._tool(name, args, request, candidates, nearby, remaining, facility_queries)
                 trace.append({"tool": name, "detail": detail, "status": result.get("status", "ok"),
                               **{key: result[key] for key in ("candidate_id", "role") if key in result}})
             except DraftEvidenceError as error:
@@ -303,7 +357,17 @@ class MessageAnalysisService:
                           "output": json.dumps(result, ensure_ascii=False)})
         raise AnalysisUnavailable("조회 횟수 안에 분석을 완료하지 못했습니다. 장소나 문구를 확인해 주세요.")
 
-    def _tool(self, name, args, request, candidates, nearby, remaining):
+    def _tool(self, name, args, request, candidates, nearby, remaining, facility_queries=None):
+        if name == "find_monitored_facilities":
+            query = FacilityQuery.model_validate(args)
+            try:
+                result = query_facilities(query, request.text, self.facilities())
+            except ValueError as error:
+                raise DraftEvidenceError(str(error)) from None
+            if facility_queries is not None:
+                result["id"] = f"FQ{len(facility_queries)+1}"
+                facility_queries[result["id"]] = result
+            return result, f"시설 명칭/주소 대조 · {result['total_count']}개소 · {result['status']}"
         if name == "search_places":
             search = SearchPlaces.model_validate(args)
             if (search.evidence not in request.text or search.location_text not in search.evidence

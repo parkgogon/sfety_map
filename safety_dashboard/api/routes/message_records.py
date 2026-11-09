@@ -19,9 +19,28 @@ from typing import Literal
 from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisUnavailable
 from safety_dashboard.application.message_feed_budget import FeedRequestLimit, FeedBudgetUnavailable
 from safety_dashboard.application.message_pipeline import moment, UTC
+from safety_dashboard.application.message_notification import notification_preview
+from pydantic import BaseModel, ConfigDict, Field
 import datetime as dt
 
 NO_STORE = {"Cache-Control": "private, no-store"}
+
+
+class DeliveryControlInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["start", "pause"]
+    expected_generation: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+
+
+class DeliveryResolutionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    resolution: Literal["confirmed_received", "handled_separately"]
+
+
+class DeliveryReconsiderInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_version: int = Field(ge=1)
+    expected_generation: str = Field(pattern=r"^[a-f0-9]{32}$")
 
 
 def build_router(services):
@@ -82,11 +101,39 @@ def build_router(services):
     @router.get("/status")
     def status():
         return {**services.message_records.availability(), "feed_configured": services.message_feed.provider.configured,
-                "auto_collection_enabled": services.message_automation.settings.enabled}
+                "auto_collection_enabled": services.message_automation.settings.enabled,
+                "notification_preparation_enabled": services.message_notification_preparation.enabled}
 
     @router.get("/automation")
     def automation():
         return services.message_automation.read()
+
+    @router.get("/notifications/status")
+    @guarded
+    def delivery_status():
+        return services.message_delivery.status()
+
+    @router.post("/notifications/control")
+    @guarded
+    def delivery_control(request: DeliveryControlInput):
+        return services.message_delivery.configure(request.action, request.expected_generation)
+
+    @router.get("/notifications")
+    @guarded
+    def notifications(kind: Literal["deliveries", "decisions", "exceptions"] = "deliveries", before: str | None = Query(None, max_length=240)):
+        return services.message_delivery.page(kind, before)
+
+    @router.post("/notifications/reconsider/{identifier}")
+    @guarded
+    def reconsider_delivery(identifier: str, request: DeliveryReconsiderInput):
+        return services.message_delivery.reconsider(check_id(identifier),request.expected_version,request.expected_generation)
+
+    @router.post("/notifications/{delivery_id}/acknowledge")
+    @guarded
+    def acknowledge_delivery(delivery_id: str, request: DeliveryResolutionInput):
+        if not re.fullmatch(r"message-delivery-[a-f0-9]{64}", delivery_id):
+            raise RecordNotFound(delivery_id)
+        return services.message_delivery.acknowledge(delivery_id, request.resolution)
 
     @router.get("")
     @guarded
@@ -113,6 +160,30 @@ def build_router(services):
     @guarded
     def detail(identifier: str):
         return services.message_records.get(check_id(identifier))
+
+    @router.get("/{identifier}/notification-preview")
+    @guarded
+    def preview_notification(identifier: str, expected_version: int = Query(ge=1)):
+        record = services.message_records.get(check_id(identifier))
+        if record["version"] != expected_version:
+            raise RecordConflict("기록이 변경됐습니다. 현재 기록을 다시 불러와 주세요.")
+        preview = notification_preview(record, services.message_spatial.catalog(),
+                                       base_url=services.alert_settings.dashboard_base_url)
+        # Detect edits that raced the catalog lookup; no writes or paid analysis here.
+        if services.message_records.get(record["id"])["version"] != expected_version:
+            raise RecordConflict("미리보기를 준비하는 동안 기록이 변경됐습니다. 다시 확인해 주세요.")
+        return preview
+
+    @router.get("/{identifier}/notification-preparation")
+    @guarded
+    def stored_notification(identifier: str, expected_version: int = Query(ge=1)):
+        record = services.message_records.get(check_id(identifier))
+        if record["version"] != expected_version:
+            raise RecordConflict("기록이 변경됐습니다. 현재 기록을 다시 불러와 주세요.")
+        result = services.message_notification_preparation.read_record(record["id"])
+        if services.message_records.get(record["id"])["version"] != expected_version:
+            raise RecordConflict("알림 준비 이력 조회 중 기록이 변경됐습니다.")
+        return {"record_version": expected_version, **result}
 
     @router.get("/{identifier}/history")
     @guarded

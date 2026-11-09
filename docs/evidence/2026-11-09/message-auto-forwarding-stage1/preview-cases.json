@@ -1,0 +1,176 @@
+{
+  "point": {
+    "policy_version": "message-notification-preview-v1",
+    "phase": "preview",
+    "dispatch_enabled": false,
+    "record_version": 3,
+    "source_revision": 1,
+    "analysis_revision": 1,
+    "catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_kind": "example",
+    "decision": "notify_ready",
+    "reason": "창작 입력의 업무 관련 정보를 확인함",
+    "assessment": {
+      "need": "notify",
+      "urgency": "immediate",
+      "relevance": "nearby",
+      "reason": "창작 입력의 업무 관련 정보를 확인함",
+      "evidence": [
+        "대구 성서산업단지에서 화재가 발생했습니다. 인근 통행에 주의하세요."
+      ],
+      "basis_refs": [
+        "P1"
+      ]
+    },
+    "facilities": [
+      {
+        "id": "FA",
+        "name": "창작 A처리장",
+        "address": "대구광역시 달서구 시험로 1",
+        "facility_type": "처리장",
+        "distance_m": 111,
+        "basis": "성서산업단지 검색 기준점"
+      },
+      {
+        "id": "FB",
+        "name": "창작 B측정소",
+        "address": "대구광역시 달서구 시험로 2",
+        "facility_type": "측정소",
+        "distance_m": 222,
+        "basis": "성서산업단지 검색 기준점"
+      }
+    ],
+    "limitations": [
+      "성서산업단지 검색 기준점의 직선거리이며 실제 발생 위치·위험 범위와 다를 수 있습니다."
+    ],
+    "preview_text": "[재난문자 알림 미리보기 · 미발송]\n발행 2026-11-09 07:06 (한국 시간)\n창작 예문\n원문 핵심 내용\n대구 성서산업단지에서 화재가 발생했습니다. 인근 통행에 주의하세요.\n주변 참고시설: 창작 A처리장 · 직선 0.11km (성서산업단지 검색 기준점)\n주변 참고시설: 창작 B측정소 · 직선 0.22km (성서산업단지 검색 기준점)\n성서산업단지 검색 기준점의 직선거리이며 실제 발생 위치·위험 범위와 다를 수 있습니다.\n현장 지도: https://example.test/",
+    "map_url": "https://example.test/"
+  },
+  "area": {
+    "policy_version": "message-notification-preview-v1",
+    "phase": "preview",
+    "dispatch_enabled": false,
+    "record_version": 3,
+    "source_revision": 1,
+    "analysis_revision": 1,
+    "catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_kind": "example",
+    "decision": "notify_ready",
+    "reason": "창작 입력의 업무 관련 정보를 확인함",
+    "assessment": {
+      "need": "notify",
+      "urgency": "immediate",
+      "relevance": "area_operations",
+      "reason": "창작 입력의 업무 관련 정보를 확인함",
+      "evidence": [
+        "대구광역시 달서구 전역이 단수 상태입니다. 시설 운영에 참고하세요."
+      ],
+      "basis_refs": [
+        "FQ1"
+      ]
+    },
+    "facilities": [
+      {
+        "id": "FA",
+        "name": "창작 A처리장",
+        "facility_type": "처리장",
+        "address": "대구광역시 달서구 시험로 1",
+        "basis": "대구광역시 달서구",
+        "distance_m": null
+      },
+      {
+        "id": "FB",
+        "name": "창작 B측정소",
+        "facility_type": "측정소",
+        "address": "대구광역시 달서구 시험로 2",
+        "basis": "대구광역시 달서구",
+        "distance_m": null
+      }
+    ],
+    "limitations": [
+      "시설 주소/명칭 대조이며 피해·운영 중단 확인이 아닙니다."
+    ],
+    "preview_text": "[재난문자 알림 미리보기 · 미발송]\n발행 2026-11-09 07:06 (한국 시간)\n창작 예문\n원문 핵심 내용\n대구광역시 달서구 전역이 단수 상태입니다. 시설 운영에 참고하세요.\n관련 참고시설: 창작 A처리장 (대구광역시 달서구)\n관련 참고시설: 창작 B측정소 (대구광역시 달서구)\n시설 주소/명칭 대조이며 피해·운영 중단 확인이 아닙니다.\n현장 지도: https://example.test/",
+    "map_url": "https://example.test/"
+  },
+  "general": {
+    "policy_version": "message-notification-preview-v1",
+    "phase": "preview",
+    "dispatch_enabled": false,
+    "record_version": 3,
+    "source_revision": 1,
+    "analysis_revision": 1,
+    "catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_kind": "example",
+    "decision": "record_only",
+    "reason": "창작 입력의 업무 관련 정보를 확인함",
+    "assessment": {
+      "need": "record_only",
+      "urgency": "reference",
+      "relevance": "general",
+      "reason": "창작 입력의 업무 관련 정보를 확인함",
+      "evidence": [
+        "기온이 내려갑니다. 외출 시 건강관리에 유의하시기 바랍니다."
+      ],
+      "basis_refs": []
+    },
+    "facilities": [],
+    "limitations": [],
+    "preview_text": null,
+    "map_url": ""
+  },
+  "source_only": {
+    "policy_version": "message-notification-preview-v1",
+    "phase": "preview",
+    "dispatch_enabled": false,
+    "record_version": 3,
+    "source_revision": 1,
+    "analysis_revision": 1,
+    "catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_kind": "example",
+    "decision": "notify_source_only",
+    "reason": "창작 입력의 업무 관련 정보를 확인함",
+    "assessment": {
+      "need": "notify",
+      "urgency": "immediate",
+      "relevance": "area_operations",
+      "reason": "창작 입력의 업무 관련 정보를 확인함",
+      "evidence": [
+        "대구광역시 달서구 화재로 인근 주민은 즉시 대피하시기 바랍니다."
+      ],
+      "basis_refs": []
+    },
+    "facilities": [],
+    "limitations": [
+      "정확한 위치·관련 시설이 미확인되어 원문 중심으로 안내합니다."
+    ],
+    "preview_text": "[재난문자 알림 미리보기 · 미발송]\n발행 2026-11-09 07:06 (한국 시간)\n창작 예문\n원문 핵심 내용\n대구광역시 달서구 화재로 인근 주민은 즉시 대피하시기 바랍니다.\n정확한 위치·관련 시설이 미확인되어 원문 중심으로 안내합니다.\n현장 지도: https://example.test/",
+    "map_url": "https://example.test/"
+  },
+  "ambiguous": {
+    "policy_version": "message-notification-preview-v1",
+    "phase": "preview",
+    "dispatch_enabled": false,
+    "record_version": 3,
+    "source_revision": 1,
+    "analysis_revision": 1,
+    "catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "input_kind": "example",
+    "decision": "attention_required",
+    "reason": "업무 관련 위치/지역의 근거를 확인하지 못했습니다. 수신지역으로 사고 도시를 추정하지 않습니다.",
+    "assessment": {
+      "need": "notify",
+      "urgency": "immediate",
+      "relevance": "area_operations",
+      "reason": "창작 입력의 업무 관련 정보를 확인함",
+      "evidence": [
+        "중앙동 사거리 사고로 도로를 통제합니다. 인근 차량은 우회하세요."
+      ],
+      "basis_refs": []
+    },
+    "facilities": [],
+    "limitations": [],
+    "preview_text": null,
+    "map_url": ""
+  }
+}

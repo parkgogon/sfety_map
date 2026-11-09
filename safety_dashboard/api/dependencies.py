@@ -26,6 +26,8 @@ from safety_dashboard.application.message_automation import MessageAutomationSta
 from safety_dashboard.application.message_feed import OfficialFeedService
 from safety_dashboard.application.message_spatial import MessageSpatialService
 from safety_dashboard.application.message_review import MessageReviewService
+from safety_dashboard.application.message_notification_jobs import MessageNotificationPreparation
+from safety_dashboard.application.message_delivery import MessageDelivery
 from safety_dashboard.application.message_relations import MessageRelationService
 
 from dataclasses import dataclass
@@ -51,6 +53,8 @@ class ApiServices:
     message_review: MessageReviewService
     message_relations: MessageRelationService
     message_automation: MessageAutomationStatus
+    message_notification_preparation: MessageNotificationPreparation
+    message_delivery: MessageDelivery
 
 
 def build_services(
@@ -66,6 +70,8 @@ def build_services(
     message_feed_service: OfficialFeedService | None = None,
     message_spatial_service: MessageSpatialService | None = None,
     message_automation_service: MessageAutomationStatus | None = None,
+    message_notification_preparation_service: MessageNotificationPreparation | None = None,
+    message_delivery_service: MessageDelivery | None = None,
 ) -> ApiServices:
     settings = ApiSettings.from_environment()
     alert_settings = AlertSettings.from_environment()
@@ -162,4 +168,6 @@ def build_services(
         message_review=MessageReviewService(records, message_spatial_service.catalog if message_spatial_service else CsvFacilityRepository(settings.facility_path).snapshot, MessageRelationService(records).context),
         message_relations=MessageRelationService(records),
         message_automation=message_automation_service or messages.automation,
+        message_notification_preparation=message_notification_preparation_service or messages.notification_preparation,
+        message_delivery=message_delivery_service or messages.notification_delivery,
     )

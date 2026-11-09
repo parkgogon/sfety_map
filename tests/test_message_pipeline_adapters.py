@@ -103,7 +103,7 @@ class AutomationDeployTests(unittest.TestCase):
         for name, value in (("MESSAGE_ANALYSIS_DAILY_LIMIT", "1000"), ("MESSAGE_COLLECTION_START_AT", "2026-11-08"), ("MESSAGE_COLLECTION_CATCHUP_DAYS", "1")):
             with self.assertRaises(ValueError): build_config({**env, name: value})
 
-    def run_configure(self, enabled, missing=False, denied=False, state="ENABLED"):
+    def run_configure(self, enabled, missing=False, denied=False, state="ENABLED", extra_env=None):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory); log = folder/"calls.jsonl"
             fake = folder/"gcloud"
@@ -121,8 +121,18 @@ class AutomationDeployTests(unittest.TestCase):
                    "MESSAGE_COLLECTION_ENABLED": str(enabled).lower(), "GCP_PROJECT_ID": "fake-project", "GCP_REGION": "fake-region",
                    "WORKER_IMAGE": "fake-image", "GITHUB_SHA": "fake-revision", "MESSAGE_REVIEW_ENV_VARS": "MESSAGE_COLLECTION_ENABLED=true",
                    "MESSAGE_REVIEW_SECRET_BINDINGS": "OPENAI_API_KEY=OPENAI_API_KEY:1,KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:1,SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1"}
+            env.update(extra_env or {})
             result = subprocess.run(["bash", "scripts/configure_message_automation.sh"], env=env, text=True, capture_output=True, timeout=20)
-            return result, [json.loads(line) for line in log.read_text().splitlines()]
+            return result, [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+
+    def test_five_minute_schedule_requires_latest_mode_and_does_not_call_any_worker_route(self):
+        result,calls=self.run_configure(True,extra_env={'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_COLLECTION_INTERVAL_MINUTES':'5'})
+        self.assertEqual(result.returncode,0,result.stderr)
+        collect=next(args for args in calls if args[:4]==['scheduler','jobs','update','http'] and args[4]=='safety-message-collect')
+        self.assertIn('--schedule=*/5 * * * *',collect)
+        self.assertFalse(any('curl' in str(args) or 'dispatch' in str(args) for args in calls))
+        result,_=self.run_configure(True,extra_env={'MESSAGE_COLLECTION_INTERVAL_MINUTES':'5'})
+        self.assertNotEqual(result.returncode,0)
 
     def test_disabled_deployment_pauses_only_message_schedules_and_fails_on_permission_error(self):
         result, calls = self.run_configure(False)

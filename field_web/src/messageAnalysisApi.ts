@@ -18,6 +18,33 @@ export const ROLE_LABELS = {
   evacuation_destination: "대피 목적지", reference: "참고 장소",
 };
 
+export interface NotificationAssessment {
+  need: "notify" | "record_only" | "uncertain";
+  urgency: "immediate" | "scheduled" | "reference" | "unknown";
+  relevance: "facility" | "nearby" | "area_operations" | "general" | "outside_scope" | "unknown";
+  reason: string;
+  evidence: string[];
+  basis_refs: string[];
+}
+
+export interface NotificationPreview {
+  policy_version: string;
+  phase: "preview";
+  dispatch_enabled: false;
+  record_version: number;
+  source_revision: number;
+  analysis_revision: number;
+  catalog_digest: string;
+  input_kind: MessageInput["input_kind"];
+  decision: "notify_ready" | "notify_source_only" | "record_only" | "attention_required" | "analysis_unavailable" | "blocked";
+  reason: string;
+  assessment: NotificationAssessment | null;
+  facilities: Array<{id: string; name: string; address: string; facility_type: string; basis: string; distance_m: number | null}>;
+  limitations: string[];
+  preview_text: string | null;
+  map_url: string;
+}
+
 export interface MessageAnalysisResult {
   input: MessageInput;
   analysis: {
@@ -34,6 +61,7 @@ export interface MessageAnalysisResult {
       }>;
     }>;
     questions: string[];
+    notification_assessment?: NotificationAssessment | null;
   };
   review_required: true;
   candidates: Array<{ id: string; name: string; address: string; latitude: number; longitude: number; query: string; evidence: string; scope_matches_source?: boolean }>;

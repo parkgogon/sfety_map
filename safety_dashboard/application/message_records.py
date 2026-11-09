@@ -86,6 +86,7 @@ class RecordStore(Protocol):
     def commit(self, record: dict, expected: int, event: str) -> dict: ...
     def history(self, identifier: str, before: int | None, limit: int) -> list[dict]: ...
     def observe_official(self, identifier: str, digest: str, fetched_at: str) -> dict | None: ...
+    def list_notification_dirty(self, limit: int) -> list[dict]: ...
 
 
 def content_hash(value: dict) -> str:
@@ -132,9 +133,15 @@ class MemoryRecordStore:
                 raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 진행해 주세요.")
             saved = preserve_observation(record, current)
             saved["version"] = expected + 1
+            saved["notification_dirty"] = True
             self.records[saved["id"]] = saved
             self.versions.setdefault(saved["id"], []).append({"event": event, "record": copy.deepcopy(saved)})
             return copy.deepcopy(saved)
+
+    def list_notification_dirty(self, limit=20):
+        with self.lock:
+            rows = sorted((r for r in self.records.values() if r.get("notification_dirty")), key=lambda r: r["id"])
+            return copy.deepcopy(rows[:limit])
 
     def observe_official(self, identifier, digest, fetched_at):
         with self.lock:

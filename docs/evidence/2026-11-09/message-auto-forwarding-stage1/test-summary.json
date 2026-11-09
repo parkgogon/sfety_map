@@ -1,0 +1,27 @@
+{
+  "base_revision": "b7b0a55",
+  "phase": "notification_assessment_and_preview",
+  "python_tests": 561,
+  "react_tests": 272,
+  "react_test_files": 42,
+  "build": "passed",
+  "compile": "passed",
+  "facilities": 195,
+  "browser_scenarios": 15,
+  "browser_widths": [
+    1440,
+    390,
+    360
+  ],
+  "automatic_test_external_http_tcp_attempts": 0,
+  "new_paid_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "actual_model_classification_evaluated": false,
+  "pending": [
+    "durable_dispatch_jobs",
+    "latest_collection_priority_and_spend_budget",
+    "urgent_source_fallback_policy",
+    "telegram_delivery"
+  ]
+}

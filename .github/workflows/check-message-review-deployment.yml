@@ -45,7 +45,7 @@ jobs:
       - name: Inspect Cloud Run, database and secret metadata only
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-        run: python scripts/check_message_review_deployment.py --project "$GCP_PROJECT_ID" --output-dir message-review-audit
+        run: python scripts/check_message_review_deployment.py --project "$GCP_PROJECT_ID" --delivery --output-dir message-review-audit
       - name: Publish sanitized report
         if: always()
         run: |

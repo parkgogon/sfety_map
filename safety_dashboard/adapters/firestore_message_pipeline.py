@@ -30,6 +30,8 @@ class FirestoreMessagePipelineStore:
             return result
         return self.transaction_runner(apply)(self.client.transaction())
 
-    def scan(self, low, high, limit):
-        query = self.collection.where(filter=FieldFilter('queue_key', '>=', low)).where(filter=FieldFilter('queue_key', '<=', high)).order_by('queue_key').limit(limit)
+    def scan(self, low, high, limit, *, reverse=False):
+        query = self.collection.where(filter=FieldFilter('queue_key', '>=', low)).where(filter=FieldFilter('queue_key', '<=', high))
+        query = query.order_by('queue_key', direction=firestore.Query.DESCENDING) if reverse else query.order_by('queue_key')
+        query = query.limit(limit)
         return [snap.to_dict() for snap in query.stream(timeout=5)]

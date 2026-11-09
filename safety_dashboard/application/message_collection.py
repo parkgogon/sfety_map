@@ -57,6 +57,11 @@ class OfficialMessageCollector:
                 state["start_at"] = stamp(start)
             state.update(last_attempt_at=stamp(now), last_error="")
             today = now.astimezone(KST).date()
+            if state.get("strategy") == "latest_first_v1":
+                unfinished = state.pop("latest_part", None)
+                if unfinished:
+                    state.setdefault("work", []).insert(0, unfinished)
+                state["strategy"] = "legacy_v1"
             if not state.get("work"):
                 anchor = moment(state.get("last_success_at") or state["start_at"]).astimezone(KST).date()
                 wanted = min(anchor, today) - dt.timedelta(days=1)
@@ -74,6 +79,8 @@ class OfficialMessageCollector:
                     state["work"] = [{"region": None, "date": (today-dt.timedelta(days=i)).isoformat(), "page": 1, "offset": 0}
                                      for i in range((today-first).days+1)] + state["work"]
             save()
+            state.setdefault("coverage_gap", False)
+            state.setdefault("cycle_skipped", 0)
             state.setdefault("cycle_skipped_reasons", {})
             state.setdefault("cycle_ignored_before_start", 0)
             def skip(reason, count=1):
@@ -87,7 +94,7 @@ class OfficialMessageCollector:
                 if not self.leases.owns("collection-lease", owner, self.now()):
                     return {"state": "lease_expired", "pages": pages}
                 rows = page["messages"]
-                fingerprint = content_hash({"rows": [self._signature(row) for row in rows], "more": page["has_more"]})
+                fingerprint = content_hash({"rows": [self._signature(row) for row in rows], "more": page["has_more"], "skipped": page.get("skipped", 0)})
                 if part.get("verify_head"):
                     state["work"].pop(0)
                     if fingerprint != part["head_hash"]:
@@ -103,32 +110,9 @@ class OfficialMessageCollector:
                         skip("source_fields", page["skipped"])
                 while part["offset"] < len(rows) and self.clock()-started < self.settings.scan_seconds:
                     row = rows[part["offset"]]
-                    # crtDt is documented as a start date. Accept exact-day or range responses.
-                    row_day = row.created_at.astimezone(KST).date()
-                    scope = recipient_scope(row.regions)
-                    before_start = row.created_at < moment(state["start_at"])
-                    valid_date = dt.date.fromisoformat(part["date"]) <= row_day <= today
-                    # The overlap intentionally returns older rows. Unknown recipients
-                    # in never-imported history must not invalidate the current window.
-                    # Known IDs still take the normal validation/correction path.
-                    previous = self.records.store.get(self.records.official_record_id(row.id)) if valid_date and before_start and scope is not False else None
-                    if not valid_date:
-                        skip("query_date")
-                    elif before_start and not previous:
-                        state["cycle_ignored_before_start"] += 1
-                    elif scope is None:
-                        skip("recipient_region")
-                    elif not scope:
-                        pass
-                    else:
-                        try:
-                            message = MessageSource(text=row.content, source="행정안전부 공개 재난문자 API",
-                                                    issued_at=row.created_at, recipient_regions=[r for r in row.regions if r != "-"]).canonical()
-                        except (ValidationError, ValueError):
-                            skip("source_validation")
-                        else:
-                            self._import(message, row.id, fetched_at, state["start_at"])
-                            imported += 1
+                    observed, ignored = self._observe_row(row, part["date"], today, fetched_at, state["start_at"], skip)
+                    imported += observed
+                    state["cycle_ignored_before_start"] += ignored
                     part["offset"] += 1
                     state["last_progress_at"] = stamp(self.now())
                     if part["offset"] % 10 == 0:
@@ -164,6 +148,30 @@ class OfficialMessageCollector:
     @staticmethod
     def _signature(row):
         return {"id": row.id, "text": row.content, "issued_at": row.created_at.isoformat(), "regions": list(row.regions)}
+
+    def _observe_row(self, row, query_date, today, fetched_at, start_at, skip):
+        """Common validation for legacy catch-up and latest-first collection."""
+        row_day = row.created_at.astimezone(KST).date()
+        scope = recipient_scope(row.regions)
+        before_start = row.created_at < moment(start_at)
+        valid_date = dt.date.fromisoformat(query_date) <= row_day <= today
+        previous = self.records.store.get(self.records.official_record_id(row.id)) if valid_date and before_start and scope is not False else None
+        if not valid_date:
+            skip("query_date")
+        elif before_start and not previous:
+            return 0, 1
+        elif scope is None:
+            skip("recipient_region")
+        elif scope:
+            try:
+                message = MessageSource(text=row.content, source="행정안전부 공개 재난문자 API",
+                    issued_at=row.created_at, recipient_regions=[r for r in row.regions if r != "-"]).canonical()
+            except (ValidationError, ValueError):
+                skip("source_validation")
+            else:
+                self._import(message, row.id, fetched_at, start_at)
+                return 1, 0
+        return 0, 0
 
     def _import(self, message, identifier, fetched_at, start_at):
         previous = self.records.store.get(self.records.official_record_id(identifier))

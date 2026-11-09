@@ -21,6 +21,9 @@ from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 from safety_dashboard.adapters.kakao_places import KakaoPlaceSearch
 from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
 from safety_dashboard.application.message_analysis import AnalysisUnavailable, MessageAnalysisInput, MessageAnalysisService
+from safety_dashboard.application.message_pipeline import MemoryPipelineStore
+from safety_dashboard.application.message_spend_budget import MessageSpendBudget
+from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment
 
 CASE_IDS = ("prevention", "event", "scheduled", "partial_release", "ambiguous", "destination")
 KST = dt.timezone(dt.timedelta(hours=9))
@@ -99,7 +102,29 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
     return checks
 
 
-def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, clock=time.monotonic):
+def check_notification(example, result):
+    """Independent, narrow quality checks, never expected answers in the model input."""
+    checks = {"notification_contract_and_evidence": False}
+    try:
+        assessment = NotificationAssessment.model_validate(result["analysis"].get("notification_assessment"))
+        validate_assessment(assessment, example["text"],
+                            {p["id"]: p for p in result.get("candidates", [])},
+                            {q["id"]: q for q in result.get("facility_queries", [])})
+        checks["notification_contract_and_evidence"] = True
+        if example["id"] == "prevention":
+            checks["prevention_record_only"] = assessment.need == "record_only"
+        if example["id"] == "ambiguous":
+            checks["unknown_region_not_automatically_notified"] = assessment.need != "notify"
+        if assessment.need == "notify":
+            checks["notification_has_operational_scope"] = assessment.relevance in {"facility", "nearby", "area_operations"}
+            checks["notification_has_actual_lookup_basis"] = bool(assessment.basis_refs)
+    except (ValueError, TypeError, KeyError):
+        pass
+    return checks
+
+
+def evaluate(examples, service, client, *, with_places=False, assess_notifications=False,
+             pause=time.sleep, clock=time.monotonic):
     rows = []
     last_started = None
     for example in examples:
@@ -117,6 +142,8 @@ def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, 
                 **{key: example[key] for key in ("text", "source", "issued_at")},
                 reference_radius_km=3, input_kind="example"))
             checks = check_case(example, result, with_places=with_places)
+            if assess_notifications:
+                checks.update(check_notification(example, result))
             row.update(status="pass" if all(checks.values()) else "needs_review", checks=checks, result=result)
         except OpenAIConnectionError as error:
             row["error"] = str(error)  # Only adapter-authored public messages.
@@ -152,6 +179,10 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
              "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 | 장소 후보 | 시설 조회 |", "|---|---|---:|---:|---:|---:|---:|---:|"]
     if report.get("reassessment"):
         lines[2:2] = ["- 기존 실제 API 응답 재평가입니다. 추가 OpenAI/Kakao 호출은 0건이며, 아래 사용량·시간은 원본 실행 값입니다."]
+    if report.get("spend_budget"):
+        budget = report["spend_budget"]["daily"]
+        lines[2:2] = [f"- 이번 실행 전체 상한 $1.00: 정산 ${budget['settled_usd']:.6f}, 미정산 예약 ${budget['reserved_usd']:.6f}.",
+                       "- 평가 전용 메모리 원장이며 운영 원장·기록·발송에는 연결하지 않습니다. 청구 금액은 Usage와 대조합니다."]
     for row in report["cases"]:
         usage = row["usage"]
         result = row.get("result", {})
@@ -179,7 +210,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not args.live:
         parser.error("실제 API 평가는 --live를 지정해야 합니다.")
-    client = OpenAIResponsesClient.from_environment()
+    # Freeze ledger periods for this whole invocation, including a KST midnight.
+    # This is a separate one-run $1 cap, never the production Firestore ledger.
+    evaluation_started = dt.datetime.now(KST)
+    budget = MessageSpendBudget(MemoryPipelineStore(), daily_cents=100, monthly_cents=100,
+                                now=lambda: evaluation_started)
+    client = OpenAIResponsesClient.from_environment(spend_factory=lambda: budget)
     places = KakaoPlaceSearch.from_environment() if args.with_places else KakaoPlaceSearch("")
     report = {"report_version": 1, "evaluated_at": dt.datetime.now(KST).isoformat(),
               "model": client.model, "reasoning_effort": client.reasoning_effort,
@@ -195,10 +231,11 @@ def main(argv=None):
             selected = select_examples(examples, args.case)
             facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
             service = MessageAnalysisService(client, places, lambda: facilities)
-            report["cases"] = evaluate(selected, service, client, with_places=args.with_places)
+            report["cases"] = evaluate(selected, service, client, with_places=args.with_places, assess_notifications=True)
             report["status"] = "pass" if len(report["cases"]) == len(selected) and all(row["status"] == "pass" for row in report["cases"]) else "needs_review"
         except Exception:
             report["error"] = "평가 준비 오류. 원본 예외·설정값은 기록하지 않았습니다."
+    report["spend_budget"] = budget.status()
     write_report(report, args.output_dir, tuple(os.getenv(key, "") for key in ("OPENAI_API_KEY", "KAKAO_REST_API_KEY")))
     return 0 if report["status"] == "pass" else 1
 
