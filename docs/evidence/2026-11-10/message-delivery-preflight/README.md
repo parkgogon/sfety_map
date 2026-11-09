@@ -9,9 +9,11 @@
 
 `status-before.json`은 00:45 KST 문자 수집 오류, 마지막 전체 정상 11월 9일 08:00 KST, 남은 파티션 3을 보여준다. 운영 수집/분석을 수동 실행하거나 기준 상태를 초기화하지 않았다. 실제 시험 발송은 0건이다. 임시 검수 서비스 생성/삭제는 운영 앱 배포와 구분한다.
 
+[01:00 KST 정규 실행 후 읽기 전용 재확인](https://github.com/parkgogon/sfety_map/actions/runs/42650339581)에서도 ERROR/잔여 파티션 3을 관측했다. 임시 검수 서비스는 삭제됐다. `status-after.json` 참조.
+
 ## 실제 점검 결과
 
-- [기능 브랜치 CI](https://github.com/parkgogon/sfety_map/actions/runs/42648802413) 성공: Python 664/React 279, 빌드·CSV·컴파일. PR이므로 배포 job은 실행하지 않았다. 이후 메타데이터/평가 보완 관련 검사 45개도 통과했다.
+- [최종 기능 브랜치 CI](https://github.com/parkgogon/sfety_map/actions/runs/42650808312) 성공: Python **666개**/React **279개**, 빌드·CSV 195개·컴파일·배포 변수 검사. 자동 외부 HTTP/TCP 0, PR이므로 모든 배포 job은 제외됐다. 메타데이터/평가 보완 관련 검사 45개도 통과했다. 최초 664개 통과 이후 검사 2개를 추가했다.
 - [확장 메타데이터](https://github.com/parkgogon/sfety_map/actions/runs/42649023753): 기존 서비스 3개/예약 3개는 그대로다. 봇은 버전 1, 직원방/관리자방은 latest 참조다. 버전 1이라고 추정하지 않는다. Secret/Firestore 메타데이터 조회는 권한 부족으로 미확인이다.
 - [공식 API](https://github.com/parkgogon/sfety_map/actions/runs/42649030373): 5회, 기록/모델/발송 0. 당일은 비었으며 전일 소표본 두 페이지는 날짜/지역/ID 분리/head 안정성은 맞고 발행 시각 내림차순은 아니었다. `latest_order_verified=false`. 실제 공개 지연은 미측정이다.
 - [실제 AI 평가](https://github.com/parkgogon/sfety_map/actions/runs/42649017948): 창작 6건/23 Responses, 표준 요금 기준 정산 $0.04697715, 미정산 예약 0, 실행 상한 $1. 계정 청구는 Usage와 대조한다. 처음 부분 검사 4통과/1확인/1실패였으나 서버 검증까지 포함한 재평가는 **2통과/3확인/1실패**다.
