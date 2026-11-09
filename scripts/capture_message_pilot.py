@@ -10,6 +10,8 @@ SAFE_ENV={'APP_REVISION','APP_MODULE','MESSAGE_REVIEW_STORE','MESSAGE_COLLECTION
           'MESSAGE_ANALYSIS_DAILY_LIMIT','MESSAGE_COLLECTION_MAX_PAGES','MESSAGE_COLLECTION_CATCHUP_DAYS',
           'MESSAGE_COLLECTION_INTERVAL_MINUTES','MESSAGE_FEED_REQUEST_LIMIT','MESSAGE_COLLECTION_START_AT',
           'ALERT_AUTOMATION_MODE','ALERT_USER_DELIVERY_MODE','ALERT_INCLUDED_WARNING_TYPES','ALERT_EXCLUDED_WARNING_TYPES'}
+SAFE_ENV.update({'MESSAGE_NOTIFICATION_PREPARATION_ENABLED','MESSAGE_COLLECTION_FAST_ENABLED','MESSAGE_AI_SPEND_BUDGET_ENABLED',
+                 'MESSAGE_EMERGENCY_FALLBACK_ENABLED','MESSAGE_DELIVERY_ENABLED','MESSAGE_AI_DAILY_BUDGET_CENTS','MESSAGE_AI_MONTHLY_BUDGET_CENTS'})
 
 
 def service_summary(value):
@@ -22,7 +24,9 @@ def service_summary(value):
             'execution_environment':template.get('metadata',{}).get('annotations',{}).get('run.googleapis.com/execution-environment'),
             'settings':{e['name']:e['value'] for e in container.get('env',[]) if e.get('name') in SAFE_ENV and 'value' in e},
             'message_secret_versions':{e['name']:e['valueFrom']['secretKeyRef']['key'] for e in container.get('env',[])
-                                      if e.get('name') in {'OPENAI_API_KEY','KAKAO_REST_API_KEY','SAFETY_DATA_API_KEY'} and e.get('valueFrom',{}).get('secretKeyRef')}}
+                                      if e.get('name') in {'OPENAI_API_KEY','KAKAO_REST_API_KEY','SAFETY_DATA_API_KEY'} and e.get('valueFrom',{}).get('secretKeyRef')},
+            'delivery_secret_references':{e['name']:e['valueFrom']['secretKeyRef'] for e in container.get('env',[])
+                                      if e.get('name') in {'TELEGRAM_BOT_TOKEN','TELEGRAM_USER_CHAT_ID','TELEGRAM_ADMIN_CHAT_ID'} and e.get('valueFrom',{}).get('secretKeyRef')}}
 
 
 def job_summary(value):
@@ -39,7 +43,7 @@ def read(*args):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--revision',required=True);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--revision',required=True);parser.add_argument('--delivery',action='store_true');args=parser.parse_args()
     result={'services':{},'jobs':{}}
     for name in ('safety-dashboard-api','safety-message-worker','safety-alert-worker'):
         result['services'][name]=service_summary(read('run','services','describe',name,'--region='+REGION))
@@ -54,15 +58,21 @@ def main():
         assert service['settings']['APP_REVISION']==args.revision
         assert service['settings']['MESSAGE_COLLECTION_ENABLED']=='true'
         assert service['settings']['MESSAGE_COLLECTION_CONTRACT_VERIFIED']=='true'
-        assert service['settings']['MESSAGE_COLLECTION_INTERVAL_MINUTES']=='15'
+        assert service['settings']['MESSAGE_COLLECTION_INTERVAL_MINUTES']==('5' if args.delivery else '15')
         assert service['settings']['MESSAGE_FEED_REQUEST_LIMIT']=='450'
         assert service['settings']['MESSAGE_ANALYSIS_DAILY_LIMIT']=='20'
         assert service['message_secret_versions']=={'OPENAI_API_KEY':'1','KAKAO_REST_API_KEY':'1','SAFETY_DATA_API_KEY':'1'}
-    for name,cron,route in (('safety-message-collect','*/15 * * * *','collect'),('safety-message-analyze','* * * * *','analyze-next'),('safety-alert-dispatch','*/5 * * * *','dispatch')):
+        if args.delivery:
+            assert all(service['settings'][key]=='true' for key in ('MESSAGE_NOTIFICATION_PREPARATION_ENABLED','MESSAGE_COLLECTION_FAST_ENABLED',
+                'MESSAGE_AI_SPEND_BUDGET_ENABLED','MESSAGE_EMERGENCY_FALLBACK_ENABLED','MESSAGE_DELIVERY_ENABLED'))
+            assert service['delivery_secret_references']=={'TELEGRAM_BOT_TOKEN':{'name':'TELEGRAM_BOT_TOKEN','key':'1'},
+                'TELEGRAM_USER_CHAT_ID':{'name':'TELEGRAM_USER_CHAT_ID','key':'2'},'TELEGRAM_ADMIN_CHAT_ID':{'name':'TELEGRAM_CHAT_ID','key':'1'}}
+    for name,cron,route in (('safety-message-collect','*/5 * * * *' if args.delivery else '*/15 * * * *','collect'),('safety-message-analyze','* * * * *','analyze-next'),('safety-alert-dispatch','*/5 * * * *','dispatch')):
         job=result['jobs'][name]
         assert job['state']=='ENABLED' and job['schedule']==cron and job['uri'].endswith('/internal/v1/'+route)
         assert job['oidc_account']=='safety-alert-scheduler@'+PROJECT+'.iam.gserviceaccount.com'
     assert result['services']['safety-alert-worker']['execution_environment']=='gen2'
+    if args.delivery:assert result['services']['safety-message-worker']['execution_environment']=='gen2'
     assert not result['message_worker_public']
     print('Private worker, fixed versions, bounded pilot settings and three schedules verified. No jobs invoked.')
 
