@@ -4,7 +4,7 @@ import unittest
 from pydantic import ValidationError
 
 from safety_dashboard.application.message_analysis import AnalysisDraft, NotificationSubmission, compatible_place, SearchPlaces
-from tests.test_message_analysis import FakePlaces, PLACE, call, draft, part, location, request, search_args, service
+from tests.test_message_analysis import FakeClient, FakePlaces, PLACE, MessageAnalysisService, FACILITIES, call, draft, part, location, request, search_args, service
 from tests.test_message_notification import assessment
 
 
@@ -55,13 +55,42 @@ class MessageAgentRecoveryTests(unittest.TestCase):
         args['evidence']=req.text
         body=draft([part(req.text,'scheduled_restriction',[location('금호강 둔치 주차장 진입로','restricted_area')],
             time_text='내일 09시부터 12시까지',starts_at='2026-11-08T09:00:00+09:00',ends_at='2026-11-08T12:00:00+09:00')],['정확한 주차장 위치가 어디인가요?'])
-        agent=service([call('search_places',args),call('search_places',args),
+        quoted={**args,'evidence':'"'+args['evidence']+'"'}
+        agent=service([call('search_places',quoted),call('search_places',args),call('search_places',args),
             call('submit_analysis',{**body,'notification_assessment':assessment(req.text,need='uncertain',urgency='scheduled',relevance='unknown')})],places=FakePlaces([]))
         result=agent.analyze(req)
         self.assertEqual(len(agent.places.queries),1)
-        self.assertIn('재사용',result['trace'][1]['detail'])
+        self.assertIn('따옴표',agent.client.inputs[1][-1]['output'])
+        self.assertIn('재사용',result['trace'][2]['detail'])
         self.assertEqual(result['analysis']['parts'][0]['starts_at'],'2026-11-08T09:00:00+09:00')
         self.assertEqual(result['analysis']['notification_assessment']['need'],'uncertain')
+
+    def test_issue_timestamp_is_not_repaired_by_inventing_a_time_quote(self):
+        req=request('ambiguous')
+        body=draft([part(req.text,'active_restriction',[location('중앙동 사거리','restricted_area')])],['어느 시·군인가요?'])
+        a=assessment(req.text,need='uncertain',relevance='unknown')
+        first={**body,'parts':[{**body['parts'][0],'starts_at':req.issued_at.isoformat()}],'notification_assessment':a}
+        second={**first,'parts':[{**first['parts'][0],'time_text':req.issued_at.isoformat()}]}
+        agent=service([call('submit_analysis',first),call('submit_analysis',second),call('submit_analysis',{**body,'notification_assessment':a})])
+        result=agent.analyze(req)
+        self.assertIn('발행 시각을',agent.client.inputs[1][-1]['output'])
+        self.assertIn('ISO 날짜',agent.client.inputs[2][-1]['output'])
+        self.assertIsNone(result['analysis']['parts'][0]['starts_at'])
+
+    def test_last_two_responses_remain_available_for_submission_and_correction(self):
+        req=request('prevention')
+        good={**draft([part(req.text,'prevention')]),'notification_assessment':assessment(req.text,need='record_only',relevance='general',urgency='reference')}
+        bad={**good,'parts':[{**good['parts'][0],'evidence':'"'+req.text+'"'}]}
+        class RecordingClient(FakeClient):
+            def respond(self,items,tools,instructions,timeout):
+                self.allowed.append([t['name'] for t in tools])
+                return super().respond(items,tools,instructions,timeout)
+        client=RecordingClient([call('find_nearby_facilities',{'candidate_id':None})]*4+[call('submit_analysis',bad),call('submit_analysis',good)])
+        client.allowed=[]
+        result=MessageAnalysisService(client,FakePlaces(),lambda:FACILITIES).analyze(req)
+        self.assertEqual(result['model_calls'],6)
+        self.assertEqual(client.allowed[-2:],[['submit_analysis'],['submit_analysis']])
+        self.assertEqual(result['analysis']['notification_assessment']['need'],'record_only')
 
     def test_invalid_fields_receive_paths_without_the_rejected_values(self):
         req=request('prevention')

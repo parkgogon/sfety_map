@@ -61,6 +61,13 @@ class EvaluationTests(unittest.TestCase):
             relevance='nearby', reason='사고 안내', evidence=[example['text']], basis_refs=[])
         self.assertFalse(check_notification(example, response, catalog=('digest', ()))['notify_passes_server_validation'])
 
+    def test_marking_all_incidents_uncertain_cannot_pass_actionable_cases(self):
+        example=EXAMPLES[1]
+        response=result([part(example['text'])])
+        response['analysis']['notification_assessment']=dict(need='uncertain',urgency='unknown',relevance='unknown',
+            reason='확인 필요',evidence=[example['text']],basis_refs=[])
+        self.assertFalse(check_notification(example,response)['actionable_incident_not_silently_suppressed'])
+
     def test_unknown_region_is_not_accepted_for_automatic_notification(self):
         example = next(row for row in EXAMPLES if row['id'] == 'ambiguous')
         response = result([part(example['text'], 'active_restriction')])

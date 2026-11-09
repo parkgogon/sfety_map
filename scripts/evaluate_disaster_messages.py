@@ -151,6 +151,10 @@ def check_notification(example, result, *, catalog=None):
             checks["prevention_record_only"] = assessment.need == "record_only"
         if example["id"] == "ambiguous":
             checks["unknown_region_not_automatically_notified"] = assessment.need != "notify"
+        if example['id'] in {'event','destination'}:
+            checks['actionable_incident_not_silently_suppressed'] = assessment.need == 'notify'
+        if example['id'] in {'ambiguous','partial_release'}:
+            checks['unlocated_incident_remains_uncertain'] = assessment.need == 'uncertain'
         if assessment.need == "notify":
             checks["notification_has_operational_scope"] = assessment.relevance in {"facility", "nearby", "area_operations"}
             checks["notification_basis_or_verified_source_only"] = bool(assessment.basis_refs)
@@ -159,6 +163,10 @@ def check_notification(example, result, *, catalog=None):
                 preview = server_preview(example, result, catalog)
                 checks["notify_passes_server_validation"] = preview["decision"] in {"notify_ready", "notify_source_only"}
                 checks["notification_basis_or_verified_source_only"] |= preview["decision"] == "notify_source_only"
+        elif catalog is not None:
+            checks['non_notify_passes_server_validation'] = False
+            preview = server_preview(example, result, catalog)
+            checks['non_notify_passes_server_validation'] = preview['decision'] == ('record_only' if assessment.need == 'record_only' else 'attention_required')
     except (ValueError, TypeError, KeyError):
         pass
     return checks
