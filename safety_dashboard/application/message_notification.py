@@ -40,6 +40,8 @@ def validate_assessment(assessment, text, candidates, queries):
 
 def record_only_rejection(assessment, parts, source_text):
     """The same suppression checks are used at agent submission and saved-result replay."""
+    if assessment.relevance == 'unknown':
+        return '업무 관련성이 미상이므로 기록만 하겠다는 판단을 확정할 수 없습니다.'
     if assessment.urgency == 'immediate' or assessment.relevance in {'facility','nearby','area_operations'}:
         return '업무 관련성·긴급성과 기록만 하겠다는 판단이 맞지 않아 확인이 필요합니다.'
     if assessment.relevance == 'general' and any(p.intent not in {'prevention','advisory'} for p in parts):

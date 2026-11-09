@@ -27,6 +27,7 @@ class MessageAgentRecoveryTests(unittest.TestCase):
         body=draft(rows,['통제 지역이 어느 시·군인가요?'])
         for bad in (assessment(req.text,need='record_only',relevance='general',urgency='reference'),
                     assessment(req.text,need='record_only',relevance='general',urgency='immediate'),
+                    assessment(req.text,need='record_only',relevance='unknown',urgency='reference'),
                     assessment(req.text,need='record_only',relevance='outside_scope',urgency='reference')):
             with self.subTest(bad=bad):
                 agent=service([call('submit_analysis',{**body,'notification_assessment':bad}),
