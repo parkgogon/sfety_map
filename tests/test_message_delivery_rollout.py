@@ -21,7 +21,7 @@ def fixture():
     status = {'deployment_enabled': True, 'can_activate': True, 'active': False, 'state': 'ready',
         'generation': None, 'worker': {'revision': REVISION, 'at': NOW.isoformat(), 'state': 'paused_or_unconfigured', 'generation': None}}
     session = Mock(headers={})
-    values = {'/api/v1/health/operations': {'status': 'ready'}, PREFIX+'/automation': automation,
+    values = {'/api/v1/health/operations': {'status': 'ok', 'reason': 'ready'}, PREFIX+'/automation': automation,
         PREFIX+'/status': {'storage_mode': 'firestore', 'notification_preparation_enabled': True},
         '/internal/v1/message-analysis/status': {'configured': True, 'place_search_configured': True},
         PREFIX+'/notifications/status': status}
@@ -78,6 +78,13 @@ class DeliveryRolloutTests(unittest.TestCase):
         report=self.run_check(session,'start')
         self.assertEqual(report['reason'],'delivery_not_off_before_start')
         self.assertEqual(report['control_requests'],0)
+
+    def test_non_ready_operations_response_cannot_start_even_with_http_200(self):
+        session, _, _, values = fixture()
+        values['/api/v1/health/operations']['reason'] = 'kma_unavailable'
+        report = self.run_check(session, 'start')
+        self.assertEqual(report['reason'], 'operations_not_ready')
+        self.assertEqual(session.post.call_count, 1)
 
     def test_lost_start_acknowledgement_is_read_back_without_second_post(self):
         session, _, status, values = fixture()

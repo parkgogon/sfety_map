@@ -49,11 +49,20 @@ jobs:
           python3 scripts/capture_message_pilot.py --revision "$VERIFY_REVISION" --delivery
       - name: Run private post-deployment check or authorized single start
         run: |
+          python3 - <<'PY'
+          import base64,os
+          from pathlib import Path
+          source=base64.b64encode(Path('safety_dashboard/operations/rollout_message_delivery.py').read_bytes()).decode()
+          loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('VERIFY_LOADER='+loader+'\n')
+          PY
+      - name: Execute current verification tool against the fixed deployed image
+        run: |
           gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
             --image="asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api:$VERIFY_REVISION" \
             --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
-            --command=python --args=-m,safety_dashboard.operations.rollout_message_delivery \
-            --set-env-vars="VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_DELIVERY_ACTION=$DELIVERY_ACTION" \
+            --command=python --args="^|^-c|$VERIFY_LOADER" \
+            --set-env-vars="VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_DELIVERY_ACTION=$DELIVERY_ACTION,VERIFY_SCRIPT_REVISION=$GITHUB_SHA" \
             --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
             --execution-environment=gen2 --cpu=1 --memory=1Gi --concurrency=1 --min-instances=0 --max-instances=1 \
             --timeout=240s --no-allow-unauthenticated --quiet

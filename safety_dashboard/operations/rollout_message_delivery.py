@@ -118,7 +118,7 @@ def rollout(session, *, password, revision, action, now=None, browser=None):
         session.headers['X-Alert-Admin-Token'] = authenticated['token']
         report['phase'] = 'release_checks'
         health = request('/api/v1/health/operations')
-        require(health.get('status') == 'ready', 'operations_not_ready')
+        require(health.get('status') == 'ok' and health.get('reason') == 'ready', 'operations_not_ready')
         configured = request(PREFIX+'/status')
         require(configured.get('storage_mode') == 'firestore' and configured.get('notification_preparation_enabled'), 'persistent_preparation_not_ready')
         analysis = request('/internal/v1/message-analysis/status')
@@ -166,6 +166,9 @@ def handler():
                     import requests
                     type(self).result = rollout(requests.Session(), password=os.getenv('ADMIN_ACCESS_PASSWORD', ''),
                         revision=os.getenv('VERIFY_APP_REVISION', ''), action=os.getenv('VERIFY_DELIVERY_ACTION', 'status'), browser=browser_check)
+                    script_revision = os.getenv('VERIFY_SCRIPT_REVISION', '')
+                    if re.fullmatch(r'[a-f0-9]{40}', script_revision):
+                        type(self).result['verification_script_revision'] = script_revision
             data = json.dumps(self.result, ensure_ascii=False).encode()
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
