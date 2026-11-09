@@ -1,0 +1,152 @@
+{
+  "checked_at": "2026-11-09T15:52:50.688388+00:00",
+  "project": "keco-safety-map",
+  "audit_complete": false,
+  "service": {
+    "metadata_status": "observed",
+    "ready": true,
+    "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c"
+  },
+  "configuration": {
+    "message_store_firestore": true,
+    "model_matches_evaluated": true,
+    "reasoning_low": true,
+    "admin_auth_configured": true,
+    "project_configured": true
+  },
+  "firestore": {
+    "metadata_status": "permission_denied",
+    "native": null,
+    "iam_hint": "unverified",
+    "runtime_read_write": "not_tested"
+  },
+  "secrets": [
+    {
+      "environment_key": "OPENAI_API_KEY",
+      "binding": "secret_reference",
+      "required_for": "manual_ai_review",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    },
+    {
+      "environment_key": "KAKAO_REST_API_KEY",
+      "binding": "secret_reference",
+      "required_for": "manual_ai_review",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    },
+    {
+      "environment_key": "SAFETY_DATA_API_KEY",
+      "binding": "secret_reference",
+      "required_for": "official_feed",
+      "version_state": "unverified",
+      "iam_hint": "unverified",
+      "metadata_status": "permission_denied",
+      "iam_metadata_status": "permission_denied"
+    }
+  ],
+  "findings": [
+    "firestore_metadata_permission_denied",
+    "project_iam_metadata_unavailable",
+    "OPENAI_API_KEY_version_unverified",
+    "OPENAI_API_KEY_iam_unverified",
+    "KAKAO_REST_API_KEY_version_unverified",
+    "KAKAO_REST_API_KEY_iam_unverified",
+    "SAFETY_DATA_API_KEY_version_unverified",
+    "SAFETY_DATA_API_KEY_iam_unverified"
+  ],
+  "unverified": [
+    "runtime_secret_access",
+    "firestore_transaction_and_history",
+    "official_api_response_and_terms",
+    "real_kakao_sdk_on_message_screen",
+    "mobile_device"
+  ],
+  "boundaries": {
+    "secret_payloads_read": 0,
+    "firestore_documents_read_or_written": 0,
+    "model_place_feed_calls": 0,
+    "deployments_or_messages_sent": 0
+  },
+  "delivery_preflight": {
+    "services": {
+      "safety-dashboard-api": {
+        "metadata_status": "observed",
+        "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+        "delivery_flags": {
+          "MESSAGE_NOTIFICATION_PREPARATION_ENABLED": false,
+          "MESSAGE_COLLECTION_FAST_ENABLED": false,
+          "MESSAGE_AI_SPEND_BUDGET_ENABLED": false,
+          "MESSAGE_EMERGENCY_FALLBACK_ENABLED": false,
+          "MESSAGE_DELIVERY_ENABLED": false
+        }
+      },
+      "safety-message-worker": {
+        "metadata_status": "observed",
+        "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+        "delivery_flags": {
+          "MESSAGE_NOTIFICATION_PREPARATION_ENABLED": false,
+          "MESSAGE_COLLECTION_FAST_ENABLED": false,
+          "MESSAGE_AI_SPEND_BUDGET_ENABLED": false,
+          "MESSAGE_EMERGENCY_FALLBACK_ENABLED": false,
+          "MESSAGE_DELIVERY_ENABLED": false
+        }
+      },
+      "safety-alert-worker": {
+        "metadata_status": "observed",
+        "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+        "delivery_flags": {
+          "MESSAGE_NOTIFICATION_PREPARATION_ENABLED": false,
+          "MESSAGE_COLLECTION_FAST_ENABLED": false,
+          "MESSAGE_AI_SPEND_BUDGET_ENABLED": false,
+          "MESSAGE_EMERGENCY_FALLBACK_ENABLED": false,
+          "MESSAGE_DELIVERY_ENABLED": false
+        }
+      }
+    },
+    "schedules": {
+      "safety-message-collect": {
+        "metadata_status": "observed",
+        "state": "ENABLED",
+        "schedule": "*/15 * * * *"
+      },
+      "safety-message-analyze": {
+        "metadata_status": "observed",
+        "state": "ENABLED",
+        "schedule": "* * * * *"
+      },
+      "safety-alert-dispatch": {
+        "metadata_status": "observed",
+        "state": "ENABLED",
+        "schedule": "*/5 * * * *"
+      }
+    },
+    "telegram_references": [
+      {
+        "environment_key": "TELEGRAM_BOT_TOKEN",
+        "secret_name": "TELEGRAM_BOT_TOKEN",
+        "version_reference": "1",
+        "numeric_version_pinned": true
+      },
+      {
+        "environment_key": "TELEGRAM_USER_CHAT_ID",
+        "secret_name": "TELEGRAM_USER_CHAT_ID",
+        "version_reference": "latest",
+        "numeric_version_pinned": false
+      },
+      {
+        "environment_key": "TELEGRAM_ADMIN_CHAT_ID",
+        "secret_name": "TELEGRAM_CHAT_ID",
+        "version_reference": "latest",
+        "numeric_version_pinned": false
+      }
+    ],
+    "findings": [],
+    "telegram_access": "not_tested_no_messages_sent",
+    "numeric_versions_require_confirmation": true
+  }
+}

@@ -23,7 +23,7 @@ from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, Ope
 from safety_dashboard.application.message_analysis import AnalysisUnavailable, MessageAnalysisInput, MessageAnalysisService
 from safety_dashboard.application.message_pipeline import MemoryPipelineStore
 from safety_dashboard.application.message_spend_budget import MessageSpendBudget
-from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment
+from safety_dashboard.application.message_notification import NotificationAssessment, notification_preview, validate_assessment
 
 CASE_IDS = ("prevention", "event", "scheduled", "partial_release", "ambiguous", "destination")
 KST = dt.timezone(dt.timedelta(hours=9))
@@ -102,7 +102,16 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
     return checks
 
 
-def check_notification(example, result):
+def server_preview(example, result, catalog):
+    """Replay the authored result as an example, never as a live official record."""
+    record = {"version": 1, "source_revision": 1, "analysis_revision": 1, "origin": "example",
+        "analysis_state": "completed", "analysis_source_revision": 1, "facility_digest": catalog[0],
+        "message": result["input"], "analysis": result}
+    as_of = dt.datetime.fromisoformat(example["issued_at"])+dt.timedelta(minutes=1)
+    return notification_preview(record, catalog, now=as_of)
+
+
+def check_notification(example, result, *, catalog=None):
     """Independent, narrow quality checks, never expected answers in the model input."""
     checks = {"notification_contract_and_evidence": False}
     try:
@@ -117,13 +126,18 @@ def check_notification(example, result):
             checks["unknown_region_not_automatically_notified"] = assessment.need != "notify"
         if assessment.need == "notify":
             checks["notification_has_operational_scope"] = assessment.relevance in {"facility", "nearby", "area_operations"}
-            checks["notification_has_actual_lookup_basis"] = bool(assessment.basis_refs)
+            checks["notification_basis_or_verified_source_only"] = bool(assessment.basis_refs)
+            if catalog is not None:
+                checks["notify_passes_server_validation"] = False
+                preview = server_preview(example, result, catalog)
+                checks["notify_passes_server_validation"] = preview["decision"] in {"notify_ready", "notify_source_only"}
+                checks["notification_basis_or_verified_source_only"] |= preview["decision"] == "notify_source_only"
     except (ValueError, TypeError, KeyError):
         pass
     return checks
 
 
-def evaluate(examples, service, client, *, with_places=False, assess_notifications=False,
+def evaluate(examples, service, client, *, with_places=False, assess_notifications=False, catalog=None,
              pause=time.sleep, clock=time.monotonic):
     rows = []
     last_started = None
@@ -143,7 +157,7 @@ def evaluate(examples, service, client, *, with_places=False, assess_notificatio
                 reference_radius_km=3, input_kind="example"))
             checks = check_case(example, result, with_places=with_places)
             if assess_notifications:
-                checks.update(check_notification(example, result))
+                checks.update(check_notification(example, result, catalog=catalog))
             row.update(status="pass" if all(checks.values()) else "needs_review", checks=checks, result=result)
         except OpenAIConnectionError as error:
             row["error"] = str(error)  # Only adapter-authored public messages.
@@ -175,6 +189,7 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
              f"- 모델: `{report['model']}`", f"- 장소 검색: {report['place_search_mode']}",
              "- 창작 예문 평가이며 실제 재난·발송 실적이 아닙니다.",
              "- 아래 통과는 지정한 점검 항목의 결과입니다. 전체 의미·장소 후보는 사람이 검토해야 합니다.",
+             "- 자동전파 판단은 서버 근거 검증도 통과해야 합니다. 예문 발행 1분 후를 기준으로 재현하며 공식 기록으로 바꾸지 않습니다.",
              "- 실제 과금은 OpenAI Usage에서 확인합니다. 토큰 수를 비용으로 단정하지 않습니다.", "",
              "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 | 장소 후보 | 시설 조회 |", "|---|---|---:|---:|---:|---:|---:|---:|"]
     if report.get("reassessment"):
@@ -229,9 +244,11 @@ def main(argv=None):
         try:
             examples = json.loads((ROOT / "field_web/src/messageExamples.json").read_text(encoding="utf-8"))
             selected = select_examples(examples, args.case)
-            facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
+            repository = CsvFacilityRepository(ROOT / "facilities_info.csv")
+            catalog = repository.snapshot()
+            facilities = catalog[1]
             service = MessageAnalysisService(client, places, lambda: facilities)
-            report["cases"] = evaluate(selected, service, client, with_places=args.with_places, assess_notifications=True)
+            report["cases"] = evaluate(selected, service, client, with_places=args.with_places, assess_notifications=True, catalog=catalog)
             report["status"] = "pass" if len(report["cases"]) == len(selected) and all(row["status"] == "pass" for row in report["cases"]) else "needs_review"
         except Exception:
             report["error"] = "평가 준비 오류. 원본 예외·설정값은 기록하지 않았습니다."

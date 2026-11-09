@@ -87,7 +87,7 @@ def role_hint(policy, member, roles):
     return "allow_binding_found" if found else "unverified"
 
 
-def audit(project, *, query=gcloud_json, checked_at=None):
+def audit(project, *, query=gcloud_json, checked_at=None, keys=KEYS):
     if not PROJECT.fullmatch(project):
         raise ValueError("유효한 GCP 프로젝트 ID가 필요합니다.")
     common = ["--project", project]
@@ -131,7 +131,8 @@ def audit(project, *, query=gcloud_json, checked_at=None):
         name, version = ref.get("name", key), ref.get("key", "latest")
         binding = "secret_reference" if ref else "plaintext_present" if entry.get("value") else "missing"
         if service_error: binding = "unverified"
-        row = {"environment_key": key, "binding": binding, "required_for": "official_feed" if key == "SAFETY_DATA_API_KEY" else "manual_ai_review",
+        purpose = "official_feed" if key == "SAFETY_DATA_API_KEY" else "group_delivery" if key.startswith("TELEGRAM_") else "manual_ai_review"
+        row = {"environment_key": key, "binding": binding, "required_for": purpose,
                "version_state": "unverified", "iam_hint": "unverified"}
         if not SECRET.fullmatch(name) or not VERSION.fullmatch(version):
             row["metadata_status"] = "external_or_unsupported_reference"
@@ -141,13 +142,16 @@ def audit(project, *, query=gcloud_json, checked_at=None):
         row["metadata_status"] = error or "observed"
         row["iam_metadata_status"] = policy_error or "observed"
         row["version_state"] = meta.get("state") if meta and meta.get("state") in ("ENABLED", "DISABLED", "DESTROYED") else "unverified"
+        resolved = re.fullmatch(r"projects/[A-Za-z0-9_-]+/secrets/"+re.escape(name)+r"/versions/([1-9][0-9]*)", (meta or {}).get("name", ""))
+        row.update(secret_name=name, version_reference=version,
+                   resolved_numeric_version=resolved.group(1) if resolved else version if version.isdigit() and meta else None)
         row["iam_hint"] = role_hint(policy, member, {"roles/secretmanager.secretAccessor", "roles/secretmanager.admin"})
         project_hint = role_hint(project_policy, member, {"roles/secretmanager.secretAccessor", "roles/secretmanager.admin"})
         if project_hint == "allow_binding_found": row["iam_hint"] = project_hint
         return row
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        secrets = list(pool.map(inspect_secret, KEYS))
+        secrets = list(pool.map(inspect_secret, keys))
     for row in secrets:
         if row["binding"] != "secret_reference": findings.append(row["environment_key"] + "_binding_" + row["binding"])
         if row["version_state"] != "ENABLED": findings.append(row["environment_key"] + "_version_unverified")
@@ -175,9 +179,9 @@ def markdown(report):
     lines = ["# 재난문자 운영 연결 메타데이터 점검", "", f"확인 시각: {report['checked_at']}",
         f"메타데이터 조회: {'완료' if report['audit_complete'] else '일부 미확인'}", "",
         "이 보고서는 설정 존재만 확인합니다. 실제 키 사용·저장 성공·지도 동작 검증을 대신하지 않습니다.", "",
-        "| 서버 환경변수 | 연결 방식 | Secret 버전 | 권한 단서 |", "| --- | --- | --- | --- |"]
+        "| 서버 환경변수 | 연결 방식 | 버전 상태 | 고정 숫자 버전 | 권한 단서 |", "| --- | --- | --- | --- | --- |"]
     for row in report["secrets"]:
-        lines.append(f"| {row['environment_key']} | {row['binding']} | {row['version_state']} | {row['iam_hint']} |")
+        lines.append(f"| {row['environment_key']} | {row['binding']} | {row['version_state']} | {row.get('resolved_numeric_version') or '미확인'} | {row['iam_hint']} |")
     if report.get("delivery_preflight"):
         data = report["delivery_preflight"]
         lines += ["", "## 자동전파 전환 준비", "", "기존 worker·예약·Telegram 참조만 읽었습니다. 운영방 접근·수신은 시험하지 않았습니다.",
@@ -199,9 +203,13 @@ def main(argv=None):
     parser.add_argument("--delivery", action="store_true", help="기존 worker·예약·Telegram 참조 메타데이터도 조회")
     args = parser.parse_args(argv)
     try:
-        report = audit(args.project)
+        report = audit(args.project, keys=KEYS+("TELEGRAM_BOT_TOKEN", "TELEGRAM_USER_CHAT_ID", "TELEGRAM_ADMIN_CHAT_ID") if args.delivery else KEYS)
         if args.delivery:
             report["delivery_preflight"] = delivery_metadata(args.project)
+            delivery_rows = [row for row in report["secrets"] if row["required_for"] == "group_delivery"]
+            report["delivery_preflight"]["numeric_versions_require_confirmation"] = (
+                len(delivery_rows) != 3 or any(row.get("resolved_numeric_version") is None or row["version_state"] != "ENABLED"
+                                               for row in delivery_rows))
     except ValueError:
         print("GCP 프로젝트 설정을 확인해 주세요. 점검을 실행하지 않았습니다.")
         return 2

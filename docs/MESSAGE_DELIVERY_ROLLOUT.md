@@ -3,6 +3,13 @@
 2026-11-09 KST. 1~4단계는 로컬 구현/가짜 제공자 검증 결과다. 현재 운영 앱 `5f58be1`을 이 작업에서 변경하지 않았다.
 기존 OpenAI·Kakao·SafetyData 키와 Telegram 봇/직원방/관리자방을 재사용한다. 키를 재발급하거나 채팅/GitHub 파일에 넣지 않는다.
 
+## 11월 10일 사전 점검 — 전환 보류
+
+[Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)와 [실제 점검 증빙](evidence/2026-11-10/message-delivery-preflight/README.md).
+공식 표본은 발행 시각 최신순이 아니었고 기존 수집은 ERROR였다. 새 AI 판단을 서버 검증까지 대조한 6예문은 2통과/3확인/1실패다.
+**아래 전환 값은 아직 적용하면 안 된다.** 정렬에 의존하지 않는 수집·현재 오류·AI 판단을 보완하고 재검수한다.
+직원/관리자방의 latest 참조도 고정 숫자 버전 확인이 남아 있다. Secret/Firestore 조회 권한 부족을 키 누락으로 단정하지 않는다.
+
 ## 구현된 운영 흐름
 
 ```text

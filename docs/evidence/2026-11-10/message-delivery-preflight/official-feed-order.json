@@ -1,0 +1,61 @@
+{
+  "status": "needs_contract_review",
+  "probe_origin": "cloud_run_runtime",
+  "secret_version": "1",
+  "api_calls": 5,
+  "checks": {
+    "date_filter_matches": true,
+    "requested_page_size_matches": true,
+    "second_page_has_rows": true,
+    "page_ids_disjoint": true,
+    "second_page_date_matches": true,
+    "sample_pages_non_increasing": false,
+    "region_filter_matches": true,
+    "head_stable": true,
+    "prior_date_range_matches": true
+  },
+  "requests": [
+    {
+      "date": "2026-11-10",
+      "region": null,
+      "page": 1,
+      "rows": 0,
+      "api_result": "valid_empty_response"
+    },
+    {
+      "date": "2026-11-09",
+      "region": null,
+      "page": 1,
+      "rows": 2,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-09",
+      "region": null,
+      "page": 2,
+      "rows": 2,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-09",
+      "region": "경상북도",
+      "page": 1,
+      "rows": 1,
+      "api_result": "sample_received"
+    },
+    {
+      "date": "2026-11-09",
+      "region": null,
+      "page": 1,
+      "rows": 2,
+      "api_result": "sample_received"
+    }
+  ],
+  "records_written": 0,
+  "model_calls": 0,
+  "messages_sent": 0,
+  "latest_order_verified": false,
+  "publication_delay": "not_measured",
+  "ordering_scope": "two_small_pages_at_one_instant_only",
+  "prior_date_sample_rows": 2
+}

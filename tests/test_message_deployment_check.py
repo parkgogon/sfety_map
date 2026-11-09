@@ -14,6 +14,20 @@ MEMBER = 'serviceAccount:runtime@sample-project.iam.gserviceaccount.com'
 
 
 class MessageDeploymentCheckTests(unittest.TestCase):
+    def test_owner_can_resolve_latest_to_numeric_version_without_reading_secret_payload(self):
+        self.service['spec']['template']['spec']['containers'][0]['env'] += [
+            {'name': 'TELEGRAM_ADMIN_CHAT_ID', 'valueFrom': {'secretKeyRef': {'name': 'TELEGRAM_CHAT_ID', 'key': 'latest'}}}]
+        def query(args):
+            if args[:3] == ['secrets', 'versions', 'describe']:
+                return {'name':'projects/sample-project/secrets/TELEGRAM_CHAT_ID/versions/7', 'state':'ENABLED'}, ''
+            return self.query(args)
+        report = audit('sample-project', query=query, keys=('TELEGRAM_ADMIN_CHAT_ID',))
+        row = report['secrets'][0]
+        self.assertEqual(row['resolved_numeric_version'], '7')
+        self.assertEqual(row['secret_name'], 'TELEGRAM_CHAT_ID')
+        self.assertEqual(row['version_reference'], 'latest')
+        self.assertEqual(report['boundaries']['secret_payloads_read'], 0)
+
     def test_delivery_preflight_reads_existing_metadata_without_exposing_plaintext_or_assuming_latest(self):
         calls = []
         def query(args):

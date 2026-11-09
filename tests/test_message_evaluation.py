@@ -30,7 +30,14 @@ class EvaluationTests(unittest.TestCase):
         assessment['basis_refs'] = []
         checks = check_notification(example, response)
         self.assertFalse(checks['prevention_record_only'])
-        self.assertFalse(checks['notification_has_actual_lookup_basis'])
+        self.assertFalse(checks['notification_basis_or_verified_source_only'])
+
+    def test_model_notify_does_not_pass_if_server_cannot_validate_its_basis(self):
+        example = EXAMPLES[1]
+        response = result([part(example['text'])])
+        response['analysis']['notification_assessment'] = dict(need='notify', urgency='immediate',
+            relevance='nearby', reason='사고 안내', evidence=[example['text']], basis_refs=[])
+        self.assertFalse(check_notification(example, response, catalog=('digest', ()))['notify_passes_server_validation'])
 
     def test_unknown_region_is_not_accepted_for_automatic_notification(self):
         example = next(row for row in EXAMPLES if row['id'] == 'ambiguous')
