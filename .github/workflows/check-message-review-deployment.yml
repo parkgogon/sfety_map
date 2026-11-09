@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, delivery-runtime]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime]
         default: metadata
       probe_revision:
         description: Exact deployed source SHA for current collection replay
@@ -22,6 +22,65 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  refresh-message-runtime:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'refresh-message-runtime' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      EXPECTED_REVISION: ${{ inputs.probe_revision }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Verify the existing release before refreshing only its message runtime
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch(r"[a-f0-9]{40}",os.environ["EXPECTED_REVISION"])'
+          python3 scripts/capture_message_pilot.py --revision "$EXPECTED_REVISION" --delivery
+          cp release-check/pilot-metadata.json release-check/metadata-before-refresh.json
+      - name: Refresh the single private message worker without changing code or state
+        run: |
+          python3 - <<'PY'
+          import os,subprocess
+          result=subprocess.run(['gcloud','run','services','update','safety-message-worker','--project=keco-safety-map',
+              '--region=asia-northeast3','--update-env-vars=MESSAGE_RUNTIME_REFRESH='+os.environ['GITHUB_RUN_ID'],'--quiet'],
+              capture_output=True,text=True,timeout=240)
+          assert result.returncode==0, 'message_runtime_refresh_failed'
+          PY
+      - name: Verify fixed versions, schedules and original settings remain unchanged
+        run: |
+          python3 scripts/capture_message_pilot.py --revision "$EXPECTED_REVISION" --delivery
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          before=json.loads(Path('release-check/metadata-before-refresh.json').read_text())
+          after=json.loads(Path('release-check/pilot-metadata.json').read_text())
+          for name,old in before['services'].items():
+              new=after['services'][name]
+              assert old['settings']==new['settings'] and old['message_secret_versions']==new['message_secret_versions'] and old['delivery_secret_references']==new['delivery_secret_references']
+              assert old['image']==new['image']
+              if name!='safety-message-worker':assert old['ready_revision']==new['ready_revision'] and old['traffic']==new['traffic']
+          assert before['services']['safety-message-worker']['ready_revision']!=after['services']['safety-message-worker']['ready_revision']
+          for name,old in before['jobs'].items():
+              assert all(old[k]==after['jobs'][name][k] for k in ('state','schedule','uri','oidc_account','oidc_audience'))
+          Path('release-check/refresh-result.json').write_text(json.dumps({'message_runtime_refreshed':True,
+              'source_image_changed':False,'original_settings_changed':False,'scheduled_targets_changed':False,
+              'test_messages_sent':0,'jobs_manually_invoked':0})+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-runtime-refresh
+          path: release-check/
+          retention-days: 14
+
   delivery-runtime:
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'delivery-runtime'
     runs-on: ubuntu-latest
