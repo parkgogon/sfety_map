@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import unittest
 from unittest.mock import Mock
+import requests
 
 import yaml
 
@@ -39,11 +40,21 @@ class CollectionReplayTests(unittest.TestCase):
 
     def test_repeated_private_request_does_not_repeat_feed_reads(self):
         run=Mock(return_value={'status':'passed'})
-        request=handler(run).__new__(handler(run))
+        cls=handler(run);request=cls.__new__(cls)
         request.path='/verify';request.headers={};request.wfile=io.BytesIO()
         request.send_response=Mock();request.send_header=Mock();request.end_headers=Mock()
         request.do_POST();request.do_POST()
         run.assert_called_once()
+
+    def test_connect_timeout_uses_only_one_bounded_comparison(self):
+        feed=Mock(configured=True)
+        feed.fetch_page.side_effect=requests.ConnectTimeout('private-key')
+        compare=Mock(return_value={'status':'passed'})
+        report=diagnose(store=self.store,provider=feed,now=lambda:NOW,compare=compare)
+        self.assertEqual(report['feed_calls'],2)
+        self.assertEqual(report['transport_comparison']['status'],'passed')
+        compare.assert_called_once()
+        self.assertNotIn('private-key',json.dumps(report))
 
     def test_workflow_only_binds_feed_key_and_deletes_own_private_service(self):
         config=yaml.safe_load((Path(__file__).resolve().parents[1]/'.github/workflows/check-message-review-deployment.yml').read_text())
