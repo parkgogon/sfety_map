@@ -26,7 +26,7 @@ class PipelineStore(Protocol):
     def run(self, keys, update):
         ...
 
-    def scan(self, low, high, limit):
+    def scan(self, low, high, limit, *, reverse=False):
         ...
 
 class MemoryPipelineStore:
@@ -45,9 +45,9 @@ class MemoryPipelineStore:
             self.values.update(copy.deepcopy(writes))
             return copy.deepcopy(result)
 
-    def scan(self, low, high, limit):
+    def scan(self, low, high, limit, *, reverse=False):
         with self.lock:
-            values = sorted((v for v in self.values.values() if low <= v.get('queue_key', '') <= high), key=lambda v: v['queue_key'])
+            values = sorted((v for v in self.values.values() if low <= v.get('queue_key', '') <= high), key=lambda v: v['queue_key'], reverse=reverse)
             return copy.deepcopy(values[:limit])
 
 class AnalysisDailyLimit(AnalysisBusy):

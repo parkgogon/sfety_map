@@ -41,4 +41,15 @@ describe("문자 수집·분석 상태",()=>{
   expect(container.textContent).toContain("오늘 분석 시작 1/20건");expect(container.textContent).not.toContain("오늘 분석 한도에 도달했습니다");
   expect(container.textContent).toContain("다시 조회 가능한 시각");expect(container.textContent).toContain("남은 작업은 유지");
  });
+ it("shows latest coverage separately and retains uncertain costs in the budget display",async()=>{
+  value.state="partial";value.recent_scan_enabled=true;value.last_current_scan_success_at=value.last_attempt_at;value.last_backfill_success_at=null;value.current_scan_interval_seconds=600;
+  value.spend_budget={enabled:true,can_start:false,reservation_usd:.318,
+   daily:{limit_usd:1,settled_usd:.72,reserved_usd:.25,unsettled_calls:1},
+   monthly:{limit_usd:20,settled_usd:2.43,reserved_usd:.318,unsettled_calls:1}};
+  await render();expect(container.textContent).toContain("오늘 자료 끝까지 순회");expect(container.textContent).toContain("과거 보충 완료 아직 없음");
+  expect(container.textContent).toContain("다음 당일 순회 간격 10분");expect(container.textContent).not.toContain("최신 첫 페이지 정상 확인");
+  expect(container.textContent).toContain("오늘 $0.720 / $1.00");expect(container.textContent).toContain("이번 달 $2.430 / $20.00");
+  expect(container.textContent).toContain("미정산 예약: 오늘 $0.250");expect(container.textContent).toContain("이 앱의 문자 분석 기준");
+  expect(container.textContent).toContain("비용 한도 또는 정산 확인");expect(container.textContent).toContain("원문과 준비된 안내는 유지");
+ });
 });

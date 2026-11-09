@@ -21,9 +21,39 @@ from safety_dashboard.adapters.facility_csv import CsvFacilityRepository
 from safety_dashboard.adapters.kakao_places import KakaoPlaceSearch
 from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
 from safety_dashboard.application.message_analysis import AnalysisUnavailable, MessageAnalysisInput, MessageAnalysisService
+from safety_dashboard.application.message_pipeline import MemoryPipelineStore
+from safety_dashboard.application.message_spend_budget import MessageSpendBudget
+from safety_dashboard.application.message_notification import NotificationAssessment, notification_preview, validate_assessment
 
 CASE_IDS = ("prevention", "event", "scheduled", "partial_release", "ambiguous", "destination")
 KST = dt.timezone(dt.timedelta(hours=9))
+
+
+class EvaluationClient(OpenAIResponsesClient):
+    """Authored examples only: retain tool arguments/validation feedback, never reasoning."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tool_exchanges = []
+
+    def respond(self, items, tools, instructions, timeout):
+        entry = {"calls": []}
+        if items and items[-1].get('type') == 'function_call_output':
+            try:
+                value = json.loads(items[-1]['output'])
+                entry['feedback'] = {k:value[k] for k in ('status','detail','next_step','fields','remaining_model_responses',
+                    'nearby_queried_ids','matched_facility_query_ids') if k in value}
+            except (ValueError,TypeError):
+                entry['feedback'] = {'status':'unreadable'}
+        self.tool_exchanges.append(entry)
+        output = super().respond(items, tools, instructions, timeout)
+        for item in output:
+            if item.get('type') == 'function_call':
+                try:
+                    args = json.loads(item.get('arguments',''))
+                except (ValueError,TypeError):
+                    args = {'invalid_json': True}
+                entry['calls'].append({'name': item.get('name'), 'arguments': args})
+        return output
 
 
 def select_examples(examples: list[dict], case: str) -> list[dict]:
@@ -99,7 +129,51 @@ def check_case(example: dict, result: dict, *, with_places: bool = False) -> dic
     return checks
 
 
-def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, clock=time.monotonic):
+def server_preview(example, result, catalog):
+    """Replay the authored result as an example, never as a live official record."""
+    record = {"version": 1, "source_revision": 1, "analysis_revision": 1, "origin": "example",
+        "analysis_state": "completed", "analysis_source_revision": 1, "facility_digest": catalog[0],
+        "message": result["input"], "analysis": result}
+    as_of = dt.datetime.fromisoformat(example["issued_at"])+dt.timedelta(minutes=1)
+    return notification_preview(record, catalog, now=as_of)
+
+
+def check_notification(example, result, *, catalog=None):
+    """Independent, narrow quality checks, never expected answers in the model input."""
+    checks = {"notification_contract_and_evidence": False}
+    try:
+        assessment = NotificationAssessment.model_validate(result["analysis"].get("notification_assessment"))
+        validate_assessment(assessment, example["text"],
+                            {p["id"]: p for p in result.get("candidates", [])},
+                            {q["id"]: q for q in result.get("facility_queries", [])})
+        checks["notification_contract_and_evidence"] = True
+        if example["id"] == "prevention":
+            checks["prevention_record_only"] = assessment.need == "record_only"
+        if example["id"] == "ambiguous":
+            checks["unknown_region_not_automatically_notified"] = assessment.need != "notify"
+        if example['id'] in {'event','destination'}:
+            checks['actionable_incident_not_silently_suppressed'] = assessment.need == 'notify'
+        if example['id'] in {'ambiguous','partial_release'}:
+            checks['unlocated_incident_remains_uncertain'] = assessment.need == 'uncertain'
+        if assessment.need == "notify":
+            checks["notification_has_operational_scope"] = assessment.relevance in {"facility", "nearby", "area_operations"}
+            checks["notification_basis_or_verified_source_only"] = bool(assessment.basis_refs)
+            if catalog is not None:
+                checks["notify_passes_server_validation"] = False
+                preview = server_preview(example, result, catalog)
+                checks["notify_passes_server_validation"] = preview["decision"] in {"notify_ready", "notify_source_only"}
+                checks["notification_basis_or_verified_source_only"] |= preview["decision"] == "notify_source_only"
+        elif catalog is not None:
+            checks['non_notify_passes_server_validation'] = False
+            preview = server_preview(example, result, catalog)
+            checks['non_notify_passes_server_validation'] = preview['decision'] == ('record_only' if assessment.need == 'record_only' else 'attention_required')
+    except (ValueError, TypeError, KeyError):
+        pass
+    return checks
+
+
+def evaluate(examples, service, client, *, with_places=False, assess_notifications=False, catalog=None,
+             pause=time.sleep, clock=time.monotonic):
     rows = []
     last_started = None
     for example in examples:
@@ -110,6 +184,7 @@ def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, 
                 pause(delay)
         last_started = clock()
         before = client.usage_snapshot()
+        before_trace = len(client.tool_exchanges) if isinstance(client, EvaluationClient) else None
         row = {"id": example["id"], "label": example["label"], "status": "error"}
         abort_batch = False
         try:
@@ -117,6 +192,8 @@ def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, 
                 **{key: example[key] for key in ("text", "source", "issued_at")},
                 reference_radius_km=3, input_kind="example"))
             checks = check_case(example, result, with_places=with_places)
+            if assess_notifications:
+                checks.update(check_notification(example, result, catalog=catalog))
             row.update(status="pass" if all(checks.values()) else "needs_review", checks=checks, result=result)
         except OpenAIConnectionError as error:
             row["error"] = str(error)  # Only adapter-authored public messages.
@@ -128,6 +205,8 @@ def evaluate(examples, service, client, *, with_places=False, pause=time.sleep, 
             abort_batch = True
         after = client.usage_snapshot()
         row["usage"] = {key: after[key] - before[key] for key in after}
+        if before_trace is not None:
+            row['tool_exchanges'] = client.tool_exchanges[before_trace:]
         row["elapsed_ms"] = round((clock() - last_started) * 1000)
         rows.append(row)
         print(f"{example['id']}: {row['status']}", flush=True)
@@ -148,10 +227,15 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
              f"- 모델: `{report['model']}`", f"- 장소 검색: {report['place_search_mode']}",
              "- 창작 예문 평가이며 실제 재난·발송 실적이 아닙니다.",
              "- 아래 통과는 지정한 점검 항목의 결과입니다. 전체 의미·장소 후보는 사람이 검토해야 합니다.",
+             "- 자동전파 판단은 서버 근거 검증도 통과해야 합니다. 예문 발행 1분 후를 기준으로 재현하며 공식 기록으로 바꾸지 않습니다.",
              "- 실제 과금은 OpenAI Usage에서 확인합니다. 토큰 수를 비용으로 단정하지 않습니다.", "",
              "| 예문 | 점검 결과 | API 요청 | 입력 토큰 | 출력 토큰 | 처리 시간 | 장소 후보 | 시설 조회 |", "|---|---|---:|---:|---:|---:|---:|---:|"]
     if report.get("reassessment"):
         lines[2:2] = ["- 기존 실제 API 응답 재평가입니다. 추가 OpenAI/Kakao 호출은 0건이며, 아래 사용량·시간은 원본 실행 값입니다."]
+    if report.get("spend_budget"):
+        budget = report["spend_budget"]["daily"]
+        lines[2:2] = [f"- 이번 실행 전체 상한 ${budget['limit_usd']:.2f}: 정산 ${budget['settled_usd']:.6f}, 미정산 예약 ${budget['reserved_usd']:.6f}.",
+                       "- 평가 전용 메모리 원장이며 운영 원장·기록·발송에는 연결하지 않습니다. 청구 금액은 Usage와 대조합니다."]
     for row in report["cases"]:
         usage = row["usage"]
         result = row.get("result", {})
@@ -176,10 +260,16 @@ def main(argv=None):
     parser.add_argument("--case", choices=("all", *CASE_IDS), default="all")
     parser.add_argument("--with-places", action="store_true", help="Kakao REST 키로 실제 장소 검색도 실행")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "output/message-evaluation")
+    parser.add_argument('--budget-cents', type=int, choices=range(1,101), default=100, help='이번 평가 전체 상한(미국 센트), 최대 100')
     args = parser.parse_args(argv)
     if not args.live:
         parser.error("실제 API 평가는 --live를 지정해야 합니다.")
-    client = OpenAIResponsesClient.from_environment()
+    # Freeze ledger periods for this whole invocation, including a KST midnight.
+    # This is a separate one-run $1 cap, never the production Firestore ledger.
+    evaluation_started = dt.datetime.now(KST)
+    budget = MessageSpendBudget(MemoryPipelineStore(), daily_cents=args.budget_cents, monthly_cents=args.budget_cents,
+                                now=lambda: evaluation_started)
+    client = EvaluationClient.from_environment(spend_factory=lambda: budget)
     places = KakaoPlaceSearch.from_environment() if args.with_places else KakaoPlaceSearch("")
     report = {"report_version": 1, "evaluated_at": dt.datetime.now(KST).isoformat(),
               "model": client.model, "reasoning_effort": client.reasoning_effort,
@@ -193,12 +283,15 @@ def main(argv=None):
         try:
             examples = json.loads((ROOT / "field_web/src/messageExamples.json").read_text(encoding="utf-8"))
             selected = select_examples(examples, args.case)
-            facilities = CsvFacilityRepository(ROOT / "facilities_info.csv").list_monitored()
+            repository = CsvFacilityRepository(ROOT / "facilities_info.csv")
+            catalog = repository.snapshot()
+            facilities = catalog[1]
             service = MessageAnalysisService(client, places, lambda: facilities)
-            report["cases"] = evaluate(selected, service, client, with_places=args.with_places)
+            report["cases"] = evaluate(selected, service, client, with_places=args.with_places, assess_notifications=True, catalog=catalog)
             report["status"] = "pass" if len(report["cases"]) == len(selected) and all(row["status"] == "pass" for row in report["cases"]) else "needs_review"
         except Exception:
             report["error"] = "평가 준비 오류. 원본 예외·설정값은 기록하지 않았습니다."
+    report["spend_budget"] = budget.status()
     write_report(report, args.output_dir, tuple(os.getenv(key, "") for key in ("OPENAI_API_KEY", "KAKAO_REST_API_KEY")))
     return 0 if report["status"] == "pass" else 1
 

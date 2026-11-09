@@ -1,0 +1,26 @@
+{
+  "base_revision": "b7b0a55",
+  "phase": "durable_preview_preparation",
+  "python_tests": 584,
+  "new_server_tests": 23,
+  "react_tests": 272,
+  "react_test_files": 42,
+  "compile": "passed",
+  "build": "passed",
+  "facilities": 195,
+  "recovery_scenarios": 8,
+  "automatic_test_external_http_tcp_attempts": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "feature_default_enabled": false,
+  "dispatch_enabled": false,
+  "actual_firestore_iam_verified": false,
+  "actual_model_classification_evaluated": false,
+  "remaining": [
+    "latest_collection_priority",
+    "token_and_cost_budget",
+    "urgent_source_fallback",
+    "telegram_delivery_and_live_activation"
+  ]
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from safety_dashboard.application.message_records import RecordConflict, RecordStorageUnavailable, preserve_observation, newer_observation
 
@@ -28,7 +29,7 @@ class FirestoreMessageRecordStore:
         return [snap.to_dict() for snap in query.limit(limit).stream(timeout=5)]
 
     def commit(self, record, expected, event):
-        value = {**record, "version": expected + 1}
+        value = {**record, "version": expected + 1, "notification_dirty": True}
         if len(json.dumps(value, ensure_ascii=False).encode()) > 800_000:
             raise RecordStorageUnavailable("검토 기록이 저장 크기 한도를 넘었습니다.")
         ref = self.records.document(record["id"])
@@ -44,6 +45,10 @@ class FirestoreMessageRecordStore:
             return saved
 
         return self.transaction_runner(write)(self.client.transaction())
+
+    def list_notification_dirty(self, limit=20):
+        query = self.records.where(filter=FieldFilter("notification_dirty", "==", True)).limit(limit)
+        return [snap.to_dict() for snap in query.stream(timeout=5)]
 
     def observe_official(self, identifier, digest, fetched_at):
         ref = self.records.document(identifier)

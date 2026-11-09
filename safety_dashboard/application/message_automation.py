@@ -4,7 +4,8 @@ from dataclasses import dataclass
 import datetime as dt
 import os
 from safety_dashboard.application.message_pipeline import AnalysisRunGate, MessageAnalysisQueue, UTC, moment
-from safety_dashboard.application.message_feed_budget import OfficialRequestBudget
+from safety_dashboard.application.message_feed_budget import OfficialRequestBudget, recent_request_reserve
+from safety_dashboard.application.message_spend_budget import MessageSpendBudget
 
 @dataclass(frozen=True)
 class MessageAutomationSettings:
@@ -18,6 +19,13 @@ class MessageAutomationSettings:
     scan_seconds: int = 120
     auto_max_age_hours: int = 24
     start_at: dt.datetime | None = None
+    notification_preparation_enabled: bool = False
+    latest_first_enabled: bool = False
+    spend_budget_enabled: bool = False
+    daily_budget_cents: int = 100
+    monthly_budget_cents: int = 2000
+    emergency_fallback_enabled: bool = False
+    delivery_enabled: bool = False
 
     @classmethod
     def from_environment(cls, env=None):
@@ -43,10 +51,26 @@ class MessageAutomationSettings:
                     raise ValueError()
             except ValueError:
                 raise ValueError('MESSAGE_COLLECTION_START_AT: 시간대가 있는 ISO 시각이 필요합니다.') from None
-        minutes = number('MESSAGE_COLLECTION_INTERVAL_MINUTES', 15, 15, 60)
-        if minutes not in (15, 30, 60):
-            raise ValueError('MESSAGE_COLLECTION_INTERVAL_MINUTES: 15, 30, 60 중 하나가 필요합니다.')
+        fast = flag('MESSAGE_COLLECTION_FAST_ENABLED')
+        if fast and (number('MESSAGE_COLLECTION_MAX_PAGES', 4, 1, 4) < 2 or number('MESSAGE_FEED_REQUEST_LIMIT', 450, 1, 450) < 2):
+            raise ValueError('MESSAGE_COLLECTION_FAST_ENABLED: 당일·과거 순회를 위해 페이지와 조회 한도가 각각 2 이상 필요합니다.')
+        minutes = number('MESSAGE_COLLECTION_INTERVAL_MINUTES', 5 if fast else 15, 5, 60)
+        if minutes not in ((5,) if fast else (15, 30, 60)):
+            raise ValueError('MESSAGE_COLLECTION_INTERVAL_MINUTES: 최신 우선은 5분, 기존 수집은 15, 30, 60분 중 하나가 필요합니다.')
+        fallback = flag('MESSAGE_EMERGENCY_FALLBACK_ENABLED')
+        if fallback and not flag('MESSAGE_NOTIFICATION_PREPARATION_ENABLED'):
+            raise ValueError('MESSAGE_EMERGENCY_FALLBACK_ENABLED: 알림 준비 활성화가 필요합니다.')
+        delivery = flag('MESSAGE_DELIVERY_ENABLED')
+        if delivery and not all((flag('MESSAGE_COLLECTION_ENABLED'), flag('MESSAGE_COLLECTION_CONTRACT_VERIFIED'),
+                                 flag('MESSAGE_NOTIFICATION_PREPARATION_ENABLED'), fast, flag('MESSAGE_AI_SPEND_BUDGET_ENABLED'), fallback)):
+            raise ValueError('MESSAGE_DELIVERY_ENABLED: 공식 수집·최신 우선·알림 준비·비용 제한·긴급 대체 설정이 필요합니다.')
         return cls(enabled=flag('MESSAGE_COLLECTION_ENABLED'), contract_verified=flag('MESSAGE_COLLECTION_CONTRACT_VERIFIED'),
+                   notification_preparation_enabled=flag('MESSAGE_NOTIFICATION_PREPARATION_ENABLED'),
+                   latest_first_enabled=fast, spend_budget_enabled=flag('MESSAGE_AI_SPEND_BUDGET_ENABLED'),
+                   daily_budget_cents=number('MESSAGE_AI_DAILY_BUDGET_CENTS', 100, 1, 100_000),
+                   monthly_budget_cents=number('MESSAGE_AI_MONTHLY_BUDGET_CENTS', 2000, 1, 1_000_000),
+                   emergency_fallback_enabled=fallback,
+                   delivery_enabled=delivery,
                    daily_limit=number('MESSAGE_ANALYSIS_DAILY_LIMIT', 20, 1, 100),
                    max_pages=number('MESSAGE_COLLECTION_MAX_PAGES', 4, 1, 4),
                    catchup_days=number('MESSAGE_COLLECTION_CATCHUP_DAYS', 7, 2, 30),
@@ -67,9 +91,14 @@ class MessageAutomationStatus:
         try:
             store = self.store_factory()
             state = store.get('collection-state') or {}
-            result.update(last_attempt_at=state.get('last_attempt_at'), last_success_at=state.get('last_success_at'), start_at=state.get('start_at'), queue=MessageAnalysisQueue(store).counts(), budget=AnalysisRunGate(store, settings.daily_limit, now=self.now).status(), remaining_partitions=len(state.get('work', [])), skipped_rows=state.get('cycle_skipped', 0), coverage_gap=bool(state.get('coverage_gap')),
+            result.update(last_attempt_at=state.get('last_attempt_at'), last_success_at=state.get('last_success_at'), start_at=state.get('start_at'), queue=MessageAnalysisQueue(store).counts(), budget=AnalysisRunGate(store, settings.daily_limit, now=self.now).status(), remaining_partitions=len(state.get('work', []))+bool(state.get('current_work')), skipped_rows=state.get('cycle_skipped', 0), coverage_gap=bool(state.get('coverage_gap')),
                           skipped_reasons=state.get('cycle_skipped_reasons', {}), ignored_before_start=state.get('cycle_ignored_before_start', 0),
-                          feed_budget=OfficialRequestBudget(store,settings.request_limit,now=self.now).status())
+                          latest_first_enabled=settings.latest_first_enabled, last_latest_success_at=state.get('last_latest_success_at'),
+                          recent_scan_enabled=settings.latest_first_enabled, last_current_scan_success_at=state.get('last_current_scan_success_at'),
+                          current_scan_interval_seconds=state.get('current_scan_interval_seconds', 300),
+                          last_backfill_success_at=state.get('last_backfill_success_at'),
+                          feed_budget=OfficialRequestBudget(store,settings.request_limit,now=self.now,latest_reserve=recent_request_reserve(settings.request_limit) if settings.latest_first_enabled else 0).status(),
+                          spend_budget=MessageSpendBudget(store,daily_cents=settings.daily_budget_cents,monthly_cents=settings.monthly_budget_cents,now=self.now).status() if settings.spend_budget_enabled else {'enabled': False})
         except Exception:
             result.update(state='store_unavailable', detail='수집·분석 상태를 조회하지 못했습니다. 저장된 검토 기록은 유지됩니다.')
             return result
@@ -91,8 +120,8 @@ class MessageAutomationStatus:
             result.update(state='stale', detail='자동 수집 실행이 지연되고 있습니다. 마지막 정상 조회 시각을 확인해 주세요.')
         elif state.get('last_error'):
             result.update(state='error', detail='공식 문자 조회를 완료하지 못했습니다. 이전 기록과 대기 작업은 유지됩니다.')
-        elif state.get('work') or state.get('cycle_skipped') or state.get('coverage_gap'):
-            if state.get('work') or state.get('coverage_gap'):
+        elif state.get('work') or state.get('latest_part') or state.get('current_work') or state.get('cycle_skipped') or state.get('coverage_gap'):
+            if state.get('work') or state.get('latest_part') or state.get('current_work') or state.get('coverage_gap'):
                 detail='일부 기간·페이지를 추가 확인 중입니다. 현재 목록이 전체 수집 결과는 아닙니다.'
             else:
                 labels={'recipient_region':'수신지역 확인 필요','source_fields':'원문 필드 확인 필요','query_date':'발행 날짜 확인 필요','source_validation':'원문 형식 확인 필요'}
@@ -100,6 +129,8 @@ class MessageAutomationStatus:
                 counts=' · '.join(f'{label} {reasons[key]}회' for key,label in labels.items() if reasons.get(key))
                 detail='조회는 끝났지만 일부 문자 항목을 확인하지 못했습니다.'+(' '+counts if counts else '')+' 같은 항목의 겹침 조회도 포함한 횟수이며, 이전 기록은 유지됩니다.'
             result.update(state='partial', detail=detail)
+            if settings.latest_first_enabled and result['feed_budget']['background_remaining'] == 0 and state.get('work'):
+                result['detail'] = '과거 자료는 조회 몫이 회복될 때 이어갑니다. 당일 자료도 마지막 페이지까지 순회하며 전체 수집 완료는 아닙니다.'
         elif not state.get('last_success_at'):
             result.update(state='starting', detail='첫 정상 조회 완료를 기다리고 있습니다.')
         else:

@@ -13,6 +13,10 @@ on:
         description: Also call Kakao Local (requires KAKAO_REST_API_KEY)
         type: boolean
         default: false
+      budget_cents:
+        description: Whole evaluation budget in US cents (1-100)
+        type: string
+        default: '50'
   # Enables an explicitly requested evaluation before this file exists on main.
   # Only repository collaborators can add labels. Fork PRs never receive secrets.
   pull_request:
@@ -50,9 +54,10 @@ jobs:
           OPENAI_REASONING_EFFORT: low
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
           EVALUATION_CASE: ${{ inputs.case || 'all' }}
+          EVALUATION_BUDGET_CENTS: ${{ inputs.budget_cents || '50' }}
           WITH_PLACES: ${{ inputs.with_places || github.event.label.name == 'ai-evaluation-with-places' }}
         run: |
-          args=(--live --case "$EVALUATION_CASE" --output-dir evaluation-results)
+          args=(--live --case "$EVALUATION_CASE" --budget-cents "$EVALUATION_BUDGET_CENTS" --output-dir evaluation-results)
           if [[ "$WITH_PLACES" == "true" ]]; then
             args+=(--with-places)
           fi

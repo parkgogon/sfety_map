@@ -1,0 +1,13 @@
+.message-delivery {display:grid;gap:18px;min-width:0}
+.delivery-status {background:#f0f7f9}
+.delivery-status h2 {font-size:22px;margin:12px 0}
+.delivery-row-top,.delivery-row-actions {display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.delivery-row-actions {justify-content:flex-start;margin-top:14px}
+.delivery-row-actions a,.delivery-row-actions button {text-align:center;min-height:42px;box-sizing:border-box}
+.delivery-list {list-style:none;display:grid;gap:12px;margin:18px 0;padding:0}
+.delivery-list>li {border:1px solid #dce4ea;border-radius:12px;padding:18px;min-width:0;overflow-wrap:anywhere}
+.delivery-list .delivery-attention {border-color:#e5c37c;background:#fffbf1}
+.delivery-list pre {white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:14px;line-height:1.75;background:#f5f8fb;border-radius:9px;padding:14px;max-height:400px;overflow-y:auto}
+.delivery-list summary {cursor:pointer;margin-top:12px}
+.delivery-list p {line-height:1.65}
+@media(max-width:700px){.message-delivery {gap:13px}.delivery-status h2 {font-size:20px}.delivery-list>li {padding:14px}.delivery-row-actions {gap:8px}.delivery-row-actions a,.delivery-row-actions button {flex:1 1 130px;padding:11px}.delivery-list pre {font-size:13px;padding:12px}}

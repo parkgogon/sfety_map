@@ -27,7 +27,7 @@ def identifier(row):
     return str(field(row, "SN", "sn"))
 
 
-def issued_date(row):
+def issued_at(row):
     raw = str(field(row, "CRT_DT", "crtDt", "crt_dt") or "").replace("/", "-").replace(".", "-")
     try:
         value = dt.datetime.fromisoformat(raw)
@@ -36,12 +36,23 @@ def issued_date(row):
             value = dt.datetime.strptime(raw, "%Y%m%d%H%M%S")
         except ValueError:
             return None
-    return (value.replace(tzinfo=KST) if value.tzinfo is None else value.astimezone(KST)).date()
+    return value.replace(tzinfo=KST) if value.tzinfo is None else value.astimezone(KST)
+
+
+def issued_date(row):
+    value = issued_at(row)
+    return value.date() if value else None
+
+
+def descending_times(data):
+    values = [issued_at(row) for row in data]
+    return bool(values) and all(values) and all(a >= b for a, b in zip(values, values[1:]))
 
 
 def probe(key, *, fetch=read_api, today=None):
     report = {"status": "inconclusive", "probe_origin": "cloud_run_runtime", "secret_version": "1",
-              "api_calls": 0, "checks": {}, "requests": [], "records_written": 0, "model_calls": 0, "messages_sent": 0}
+              "api_calls": 0, "checks": {}, "requests": [], "records_written": 0, "model_calls": 0, "messages_sent": 0,
+              "latest_order_verified": False, "publication_delay": "not_measured"}
     today = today or dt.datetime.now(KST).date()
 
     def request(day, region=None, page=1):
@@ -77,6 +88,7 @@ def probe(key, *, fetch=read_api, today=None):
         report["checks"]["second_page_has_rows"] = bool(other)
         report["checks"]["page_ids_disjoint"] = bool(other) and not ({identifier(r) for r in baseline} & {identifier(r) for r in other})
         report["checks"]["second_page_date_matches"] = bool(other) and all(issued_date(r) == day for r in other)
+        report["checks"]["sample_pages_non_increasing"] = descending_times(baseline + other)
         recipients = str(field(baseline[0], "RCPTN_RGN_NM", "rcptnRgnNm") or "")
         region = next((p for p in PROVINCES if p in recipients), None)
         if region:
@@ -86,6 +98,12 @@ def probe(key, *, fetch=read_api, today=None):
             report["checks"]["region_filter_matches"] = False
         head = request(day)
         report["checks"]["head_stable"] = [identifier(r) for r in head] == [identifier(r) for r in baseline]
+        times = [issued_at(r) for r in baseline + other]
+        report["latest_order_verified"] = bool(
+            report["checks"]["sample_pages_non_increasing"] and report["checks"]["head_stable"]
+            and report["checks"]["page_ids_disjoint"] and report["checks"]["requested_page_size_matches"]
+            and all(times) and len(set(times)) > 1 and day == today)
+        report["ordering_scope"] = "two_small_pages_at_one_instant_only"
         # crtDt is a start date. Exercise the previous-day overlap used by collection.
         # If the baseline already came from an earlier day, it exercised this path.
         prior = request(today-dt.timedelta(days=1)) if day == today else baseline

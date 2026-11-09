@@ -20,7 +20,7 @@ export interface MessageRecord {
   review_working_copy?: { input: PrepareReviewInput; source_revision:number; analysis_revision:number; saved_at_version:number };
   relation_last_change?: {action:string;target_id:string;reason:string;at:string}|null;
 }
-export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean; auto_collection_enabled?: boolean }
+export interface RecordStatus { storage_configured: boolean; storage_mode: string; feed_configured: boolean; auto_collection_enabled?: boolean; notification_preparation_enabled?:boolean }
 export interface MessageAutomation {
   auto_collection_enabled: boolean; feed_configured: boolean; interval_seconds: number;
   state: "disabled"|"needs_key"|"needs_verification"|"starting"|"live"|"partial"|"stale"|"error"|"store_unavailable"|"request_limit";
@@ -28,6 +28,11 @@ export interface MessageAutomation {
   queue: Record<"pending"|"running"|"done"|"failed"|"obsolete"|"deferred",number>|null;
   budget: { limit:number; attempts:number|null; remaining:number|null; active:boolean };
   feed_budget?: { limit:number; used:number; remaining:number; window_hours:number; next_available_at:string|null };
+  latest_first_enabled?: boolean; last_latest_success_at?:string|null; last_backfill_success_at?:string|null;
+  recent_scan_enabled?:boolean; last_current_scan_success_at?:string|null; current_scan_interval_seconds?:number;
+  spend_budget?: { enabled:boolean; currency?:string; reservation_usd?:number; can_start?:boolean; blocked?:boolean;
+    daily?: { limit_usd:number; settled_usd:number; reserved_usd:number; unsettled_calls:number };
+    monthly?: { limit_usd:number; settled_usd:number; reserved_usd:number; unsettled_calls:number } };
 }
 export interface RecordPage { records: MessageRecord[]; next_cursor: string | null }
 export interface OfficialPage {

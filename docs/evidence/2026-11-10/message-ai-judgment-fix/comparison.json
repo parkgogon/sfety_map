@@ -1,0 +1,659 @@
+{
+  "checked_at": "2026-11-09T22:10:54.298037+00:00",
+  "additional_external_calls": 0,
+  "messages_sent": 0,
+  "as_of": "example issued_at plus one minute; origin remains example",
+  "reports": {
+    "baseline": {
+      "cases": [
+        {
+          "id": "prevention",
+          "status": "pass",
+          "server_decision": "record_only",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "no_incident_or_unnecessary_lookup": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "prevention_record_only": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "event",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "scheduled",
+          "status": "error",
+          "server_decision": "analysis_unavailable"
+        },
+        {
+          "id": "partial_release",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "released_segment": true,
+            "still_restricted_segment": true,
+            "release_end_time": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "unlocated_incident_remains_uncertain": false,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": false
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "ambiguous",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "asks_for_location_confirmation": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "no_city_guess_facility_lookup": true,
+            "notification_contract_and_evidence": true,
+            "unknown_region_not_automatically_notified": false,
+            "unlocated_incident_remains_uncertain": false,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": false,
+            "notify_passes_server_validation": false
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "destination",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "incident_site": true,
+            "destination_role": true,
+            "destination_not_incident": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "separate_incident_and_destination_queries": true,
+            "destination_school_kind_matches": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": false
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        }
+      ],
+      "passed": 2,
+      "settled_usd": 0.04697715,
+      "reserved_usd": 0.0
+    },
+    "attempt_1": {
+      "cases": [
+        {
+          "id": "prevention",
+          "status": "pass",
+          "server_decision": "record_only",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "no_incident_or_unnecessary_lookup": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "prevention_record_only": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "event",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "scheduled",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "not_current_restriction": true,
+            "scheduled_end": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": false,
+            "notification_contract_and_evidence": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "partial_release",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "released_segment": true,
+            "still_restricted_segment": true,
+            "release_end_time": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "ambiguous",
+          "status": "error",
+          "server_decision": "analysis_unavailable"
+        },
+        {
+          "id": "destination",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "incident_site": true,
+            "destination_role": true,
+            "destination_not_incident": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "separate_incident_and_destination_queries": true,
+            "destination_school_kind_matches": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        }
+      ],
+      "passed": 4,
+      "settled_usd": 0.0688824,
+      "reserved_usd": 0.0
+    },
+    "attempt_2": {
+      "cases": [
+        {
+          "id": "prevention",
+          "status": "pass",
+          "server_decision": "record_only",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "no_incident_or_unnecessary_lookup": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "prevention_record_only": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "event",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "scheduled",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "not_current_restriction": true,
+            "scheduled_end": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "notification_contract_and_evidence": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "partial_release",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "released_segment": true,
+            "still_restricted_segment": true,
+            "release_end_time": false,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "ambiguous",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "asks_for_location_confirmation": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "no_city_guess_facility_lookup": true,
+            "notification_contract_and_evidence": true,
+            "unknown_region_not_automatically_notified": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "destination",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "incident_site": true,
+            "destination_role": true,
+            "destination_not_incident": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "separate_incident_and_destination_queries": true,
+            "destination_school_kind_matches": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": false,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": false,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        }
+      ],
+      "passed": 4,
+      "settled_usd": 0.04448835,
+      "reserved_usd": 0.0
+    },
+    "attempt_3": {
+      "cases": [
+        {
+          "id": "prevention",
+          "status": "pass",
+          "server_decision": "record_only",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "no_incident_or_unnecessary_lookup": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "prevention_record_only": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "event",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": false,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": false,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "scheduled",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "not_current_restriction": true,
+            "scheduled_end": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "notification_contract_and_evidence": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "partial_release",
+          "status": "needs_review",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "released_segment": true,
+            "still_restricted_segment": true,
+            "release_end_time": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "unlocated_incident_remains_uncertain": false,
+            "non_notify_passes_server_validation": false
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "ambiguous",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "asks_for_location_confirmation": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "no_city_guess_facility_lookup": true,
+            "notification_contract_and_evidence": true,
+            "unknown_region_not_automatically_notified": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false
+        },
+        {
+          "id": "destination",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "incident_site": true,
+            "destination_role": true,
+            "destination_not_incident": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "separate_incident_and_destination_queries": true,
+            "destination_school_kind_matches": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false
+        }
+      ],
+      "passed": 4,
+      "settled_usd": 0.03045585,
+      "reserved_usd": 0.0
+    },
+    "attempt_4": {
+      "cases": [
+        {
+          "id": "prevention",
+          "status": "pass",
+          "server_decision": "record_only",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "no_incident_or_unnecessary_lookup": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "prevention_record_only": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "record_only",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        },
+        {
+          "id": "event",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        },
+        {
+          "id": "scheduled",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "publication_relative_start": true,
+            "not_current_restriction": true,
+            "scheduled_end": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "notification_contract_and_evidence": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        },
+        {
+          "id": "partial_release",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "released_segment": true,
+            "still_restricted_segment": true,
+            "release_end_time": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "notification_contract_and_evidence": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        },
+        {
+          "id": "ambiguous",
+          "status": "pass",
+          "server_decision": "attention_required",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "asks_for_location_confirmation": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "no_city_guess_facility_lookup": true,
+            "notification_contract_and_evidence": true,
+            "unknown_region_not_automatically_notified": true,
+            "unlocated_incident_remains_uncertain": true,
+            "non_notify_passes_server_validation": true
+          },
+          "model_need": "uncertain",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        },
+        {
+          "id": "destination",
+          "status": "pass",
+          "server_decision": "notify_ready",
+          "checks": {
+            "expected_intents": true,
+            "expected_location_roles": true,
+            "review_required": true,
+            "incident_site": true,
+            "destination_role": true,
+            "destination_not_incident": true,
+            "no_place_provider_failures": true,
+            "auditable_facility_lookup_scope": true,
+            "primary_place_search_attempted": true,
+            "separate_incident_and_destination_queries": true,
+            "destination_school_kind_matches": true,
+            "primary_place_kind_matches": true,
+            "reference_facility_lookup_exercised": true,
+            "notification_contract_and_evidence": true,
+            "actionable_incident_not_silently_suppressed": true,
+            "notification_has_operational_scope": true,
+            "notification_basis_or_verified_source_only": true,
+            "notify_passes_server_validation": true
+          },
+          "model_need": "notify",
+          "server_dispatch_enabled": false,
+          "retained_agent_path_replayed": true
+        }
+      ],
+      "passed": 6,
+      "settled_usd": 0.03334005,
+      "reserved_usd": 0.0
+    }
+  }
+}

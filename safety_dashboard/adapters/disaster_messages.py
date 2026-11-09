@@ -43,10 +43,11 @@ class SafetyDataDisasterMessageProvider:
         self.timeout = timeout
         self.gate_factory = gate_factory
 
-    def _reserve(self):
+    def _reserve(self, priority="normal"):
         if self.gate_factory:
             try:
-                self.gate_factory().reserve()
+                gate = self.gate_factory()
+                gate.reserve() if priority == "normal" else gate.reserve(priority=priority)
             except (FeedRequestLimit, FeedBudgetUnavailable):
                 raise
             except Exception:
@@ -56,11 +57,11 @@ class SafetyDataDisasterMessageProvider:
     def configured(self):
         return bool(self.api_key and self.api_key != "YOUR_SAFETY_DATA_API_KEY")
 
-    def fetch_page(self, region: str | None, date: dt.date, page: int, size: int) -> dict:
+    def fetch_page(self, region: str | None, date: dt.date, page: int, size: int, *, priority="normal") -> dict:
         """관리자 목록용. 시설별 최대 5건/재난종류 필터와 분리한다."""
         if not self.configured:
             raise DisasterMessageDataError("공식 문자 조회 미설정")
-        self._reserve()
+        self._reserve(priority)
         params = {"serviceKey": self.api_key, "pageNo": page, "numOfRows": size,
                   "returnType": "json", "crtDt": date.strftime("%Y%m%d")}
         if region:

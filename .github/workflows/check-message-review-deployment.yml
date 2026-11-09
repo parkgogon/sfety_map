@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, delivery-runtime]
         default: metadata
   pull_request:
     types: [labeled]
@@ -19,6 +19,79 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  delivery-runtime:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'delivery-runtime'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+      PROBE_IMAGE: asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/delivery-preflight:${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Compare existing bindings and prepare isolated candidate
+        run: python scripts/preflight_message_delivery.py prepare
+      - name: Build temporary image with unchanged runtime dependencies
+        run: |
+          gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+          docker build -f delivery-preflight/Dockerfile -t "$PROBE_IMAGE" .
+          docker push "$PROBE_IMAGE"
+      - name: Run private check with the existing runtime account
+        run: |
+          gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
+            --image="$PROBE_IMAGE" \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args=/app/preflight.py,serve \
+            --env-vars-file=delivery-preflight/runtime-env.json --execution-environment=gen2 \
+            --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=240s \
+            --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+        id: invoker
+      - name: Collect sanitized preflight result with no actual sends
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python scripts/invoke_safetydata_runtime.py
+      - name: Verify production configuration and schedules stayed unchanged
+        if: always()
+        run: python scripts/preflight_message_delivery.py compare
+      - name: Remove only this temporary service
+        if: always()
+        run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - name: Remove only this temporary image
+        if: always()
+        run: python scripts/preflight_message_delivery.py cleanup-image
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-delivery-runtime-preflight
+          path: |
+            safetydata-runtime-check/report.json
+            delivery-preflight/metadata-before.json
+            delivery-preflight/metadata-unchanged.json
+            delivery-preflight/image-cleanup.json
+          retention-days: 14
+          if-no-files-found: warn
+
   inspect:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata') ||
@@ -45,7 +118,7 @@ jobs:
       - name: Inspect Cloud Run, database and secret metadata only
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-        run: python scripts/check_message_review_deployment.py --project "$GCP_PROJECT_ID" --output-dir message-review-audit
+        run: python scripts/check_message_review_deployment.py --project "$GCP_PROJECT_ID" --delivery --output-dir message-review-audit
       - name: Publish sanitized report
         if: always()
         run: |
@@ -117,6 +190,84 @@ jobs:
         if: always()
         with:
           name: safetydata-runtime-check
+          path: safetydata-runtime-check/
+          retention-days: 7
+          if-no-files-found: warn
+
+  collection-diagnostics:
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'collection-diagnostics' || inputs.mode == 'collection-diagnostics-gen2' || inputs.mode == 'collection-candidate')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+      COLLECTION_PROBE_EXECUTION: ${{ inputs.mode != 'collection-diagnostics' && 'gen2' || 'gen1' }}
+      COLLECTION_PROBE_CANDIDATE: ${{ inputs.mode == 'collection-candidate' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare read-only collection replay
+        run: |
+          python3 - <<'PY'
+          import base64,os
+          from pathlib import Path
+          loader="import base64,types,sys;"
+          if os.environ['COLLECTION_PROBE_CANDIDATE']=='true':
+              for name in ('safety_dashboard.application.message_feed_budget','safety_dashboard.adapters.disaster_messages','safety_dashboard.application.message_collection','safety_dashboard.application.message_collection_latest'):
+                  path=name.replace('.','/')+'.py'
+                  source=base64.b64encode(Path(path).read_bytes()).decode()
+                  loader+="m=types.ModuleType("+repr(name)+");m.__file__="+repr('/app/'+path)+";sys.modules[m.__name__]=m;exec(base64.b64decode("+repr(source)+"),m.__dict__);"
+          source=base64.b64encode(Path('scripts/diagnose_collection_runtime.py').read_bytes()).decode()
+          loader+="exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('PROBE_LOADER='+loader+'\n')
+          PY
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Assert the deployed source still matches the replay image
+        run: |
+          python3 - <<'PY'
+          import json,subprocess
+          value=json.loads(subprocess.run(['gcloud','run','services','describe','safety-message-worker','--project=keco-safety-map','--region=asia-northeast3','--format=json'],capture_output=True,text=True,check=True).stdout)
+          env={e['name']:e.get('value') for e in value['spec']['template']['spec']['containers'][0]['env']}
+          assert env['APP_REVISION']=='5f58be1d12a8ac57c0ec365e4eeb86b392fc348c', 'source_changed_do_not_replay'
+          PY
+      - name: Run isolated deployed-code replay with no production writes
+        run: |
+          gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
+            --image=asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:5f58be1d12a8ac57c0ec365e4eeb86b392fc348c \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args="^|^-c|$PROBE_LOADER" \
+            --set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1 \
+            --execution-environment="$COLLECTION_PROBE_EXECUTION" \
+            --set-env-vars="COLLECTION_PROBE_EXECUTION=$COLLECTION_PROBE_EXECUTION,COLLECTION_PROBE_CANDIDATE=$COLLECTION_PROBE_CANDIDATE,COLLECTION_CANDIDATE_REVISION=$GITHUB_SHA" \
+            --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=120s \
+            --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+        id: invoker
+      - name: Collect sanitized collection replay
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python3 scripts/invoke_safetydata_runtime.py
+      - name: Remove only this temporary collection replay
+        if: always()
+        run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collection-runtime-diagnostics
           path: safetydata-runtime-check/
           retention-days: 7
           if-no-files-found: warn

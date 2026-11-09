@@ -1,0 +1,68 @@
+{
+  "status": "passed",
+  "checked_at": "2026-11-09T22:35:41.554395+00:00",
+  "production_documents_written": 0,
+  "production_control_changed": false,
+  "messages_sent": 0,
+  "feed_model_place_calls": 0,
+  "secret_values_exported": false,
+  "phase": "finished",
+  "candidate_revision": "0e49d501f3dd3b1cb476a369184b713ac37636a1",
+  "fixed_versions": {
+    "TELEGRAM_BOT_TOKEN": {
+      "secret_name": "TELEGRAM_BOT_TOKEN",
+      "numeric_version": "1"
+    },
+    "TELEGRAM_USER_CHAT_ID": {
+      "secret_name": "TELEGRAM_USER_CHAT_ID",
+      "numeric_version": "2"
+    },
+    "TELEGRAM_ADMIN_CHAT_ID": {
+      "secret_name": "TELEGRAM_CHAT_ID",
+      "numeric_version": "1"
+    }
+  },
+  "findings": [],
+  "telegram": {
+    "read_calls": 4,
+    "groups_distinct": true,
+    "groups": {
+      "staff_group": {
+        "group_identity_matches": true,
+        "bot_member": true,
+        "posting_permission_observed": true
+      },
+      "admin_group": {
+        "destination_type": "private",
+        "identity_matches": true,
+        "read_access_observed": true,
+        "posting_permission_observed": null
+      }
+    },
+    "actual_send_receipt": "not_tested"
+  },
+  "public_map": {
+    "unauthenticated_http_200": true,
+    "url": "https://keco-safety-map.web.app/",
+    "real_employee_device": "not_tested"
+  },
+  "production_documents_read": 4,
+  "production_control_state": "not_created",
+  "storage": {
+    "isolated_transactions_and_history": true,
+    "old_preview_excluded": true,
+    "pause_resume_excludes_backlog": true,
+    "control_conflict_rejected": true,
+    "new_revision_requires_start": true,
+    "fake_receipt_persisted_once": true,
+    "human_review_unchanged": true,
+    "public_preview_link": "https://keco-safety-map.web.app/",
+    "fake_staff_requests": 1,
+    "actual_firestore_paths": "message_delivery_preflight/<run>/disaster_message_{pipeline,reviews}"
+  },
+  "production_control_unchanged_during_check": true,
+  "cleanup": {
+    "complete": true,
+    "documents_deleted": 33
+  }
+}

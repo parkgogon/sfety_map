@@ -1,0 +1,101 @@
+{
+  "services": {
+    "safety-dashboard-api": {
+      "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+      "runtime_account_matches": true,
+      "delivery_enabled": false,
+      "telegram_references": {
+        "TELEGRAM_BOT_TOKEN": {
+          "name": "TELEGRAM_BOT_TOKEN",
+          "version": "1"
+        },
+        "TELEGRAM_USER_CHAT_ID": {
+          "name": "TELEGRAM_USER_CHAT_ID",
+          "version": "latest"
+        },
+        "TELEGRAM_ADMIN_CHAT_ID": {
+          "name": "TELEGRAM_CHAT_ID",
+          "version": "latest"
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-dashboard-api-00091-wjr"
+        }
+      ]
+    },
+    "safety-alert-worker": {
+      "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+      "runtime_account_matches": true,
+      "delivery_enabled": false,
+      "telegram_references": {
+        "TELEGRAM_BOT_TOKEN": {
+          "name": "TELEGRAM_BOT_TOKEN",
+          "version": "1"
+        },
+        "TELEGRAM_USER_CHAT_ID": {
+          "name": "TELEGRAM_USER_CHAT_ID",
+          "version": "latest"
+        },
+        "TELEGRAM_ADMIN_CHAT_ID": {
+          "name": "TELEGRAM_CHAT_ID",
+          "version": "latest"
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-alert-worker-00079-twg"
+        }
+      ]
+    },
+    "safety-message-worker": {
+      "source_revision": "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c",
+      "runtime_account_matches": true,
+      "delivery_enabled": false,
+      "telegram_references": {},
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-message-worker-00003-sj2"
+        }
+      ]
+    }
+  },
+  "schedules": {
+    "safety-message-collect": {
+      "state": "ENABLED",
+      "schedule": "*/15 * * * *",
+      "timeZone": "Asia/Seoul"
+    },
+    "safety-message-analyze": {
+      "state": "ENABLED",
+      "schedule": "* * * * *",
+      "timeZone": "Asia/Seoul"
+    },
+    "safety-alert-dispatch": {
+      "state": "ENABLED",
+      "schedule": "*/5 * * * *",
+      "timeZone": "Asia/Seoul"
+    }
+  },
+  "bindings": {
+    "TELEGRAM_BOT_TOKEN": {
+      "name": "TELEGRAM_BOT_TOKEN",
+      "version": "1"
+    },
+    "TELEGRAM_USER_CHAT_ID": {
+      "name": "TELEGRAM_USER_CHAT_ID",
+      "version": "latest"
+    },
+    "TELEGRAM_ADMIN_CHAT_ID": {
+      "name": "TELEGRAM_CHAT_ID",
+      "version": "latest"
+    }
+  },
+  "public_map": "https://keco-safety-map.web.app/"
+}

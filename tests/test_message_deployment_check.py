@@ -8,12 +8,51 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from scripts.check_message_review_deployment import audit, gcloud_json, main, markdown, role_hint, KEYS
+from scripts.check_message_review_deployment import audit, delivery_metadata, gcloud_json, main, markdown, role_hint, KEYS
 
 MEMBER = 'serviceAccount:runtime@sample-project.iam.gserviceaccount.com'
 
 
 class MessageDeploymentCheckTests(unittest.TestCase):
+    def test_owner_can_resolve_latest_to_numeric_version_without_reading_secret_payload(self):
+        self.service['spec']['template']['spec']['containers'][0]['env'] += [
+            {'name': 'TELEGRAM_ADMIN_CHAT_ID', 'valueFrom': {'secretKeyRef': {'name': 'TELEGRAM_CHAT_ID', 'key': 'latest'}}}]
+        def query(args):
+            if args[:3] == ['secrets', 'versions', 'describe']:
+                return {'name':'projects/sample-project/secrets/TELEGRAM_CHAT_ID/versions/7', 'state':'ENABLED'}, ''
+            return self.query(args)
+        report = audit('sample-project', query=query, keys=('TELEGRAM_ADMIN_CHAT_ID',))
+        row = report['secrets'][0]
+        self.assertEqual(row['resolved_numeric_version'], '7')
+        self.assertEqual(row['secret_name'], 'TELEGRAM_CHAT_ID')
+        self.assertEqual(row['version_reference'], 'latest')
+        self.assertEqual(report['boundaries']['secret_payloads_read'], 0)
+
+    def test_delivery_preflight_reads_existing_metadata_without_exposing_plaintext_or_assuming_latest(self):
+        calls = []
+        def query(args):
+            calls.append(args)
+            if args[0] == 'scheduler':
+                return {'state': 'ENABLED', 'schedule': '*/5 * * * *'}, ''
+            service = copy.deepcopy(self.service)
+            service['spec']['template']['spec']['containers'][0]['env'] += [
+                {'name': 'TELEGRAM_BOT_TOKEN', 'valueFrom': {'secretKeyRef': {'name': 'TELEGRAM_BOT_TOKEN', 'key': 'latest'}}},
+                {'name': 'TELEGRAM_USER_CHAT_ID', 'value': 'private-staff-chat'}]
+            return service, ''
+        report = delivery_metadata('sample-project', query=query)
+        self.assertEqual(len(calls), 6)
+        self.assertTrue(report['numeric_versions_require_confirmation'])
+        self.assertEqual(report['telegram_references'][0]['version_reference'], 'latest')
+        self.assertIsNone(report['telegram_references'][1]['secret_name'])
+        self.assertNotIn('private', json.dumps(report))
+        self.assertTrue(all(c[0] in {'run', 'scheduler'} and 'describe' in c for c in calls))
+
+    def test_delivery_metadata_permission_denial_is_unverified(self):
+        report = delivery_metadata('sample-project', query=lambda args: (None, 'permission_denied'))
+        self.assertEqual(len(report['findings']), 6)
+        self.assertTrue(report['numeric_versions_require_confirmation'])
+        self.assertTrue(all(r['delivery_flags'] is None for r in report['services'].values()))
+
     def setUp(self):
         env = [{'name':key,'valueFrom':{'secretKeyRef':{'name':key,'key':'1'}}} for key in KEYS]
         env += [{'name':'ADMIN_ACCESS_PASSWORD','valueFrom':{'secretKeyRef':{'name':'admin-secret','key':'latest'}}},

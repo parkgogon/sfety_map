@@ -1,0 +1,55 @@
+{
+  "phase": "preview_only",
+  "checks": [
+    {
+      "case": "restart_and_duplicate",
+      "jobs": 1,
+      "new_model_calls_during_recovery": 0,
+      "human_version_changes": 0
+    },
+    {
+      "case": "interruption_before_commit",
+      "dirty_before": true,
+      "dirty_after": false,
+      "jobs_after_recovery": 1,
+      "new_model_calls_during_recovery": 0
+    },
+    {
+      "case": "provisional_then_analyzed",
+      "job_before_analysis": null,
+      "job_state_after": "pending"
+    },
+    {
+      "case": "official_correction",
+      "old_state": "invalidated",
+      "new_state": "pending",
+      "jobs_for_distinct_source_versions": 2
+    },
+    {
+      "case": "same_source_reanalysis",
+      "state": "invalidated",
+      "new_job_created": false
+    },
+    {
+      "case": "manual_never_auto_queued",
+      "jobs": 0,
+      "human_version_changes": 0
+    },
+    {
+      "case": "example_never_auto_queued",
+      "jobs": 0,
+      "human_version_changes": 0
+    },
+    {
+      "case": "atomic_firestore_spy_abort",
+      "partial_jobs": 0,
+      "state_after_restart": "pending",
+      "new_model_calls_during_recovery": 0
+    }
+  ],
+  "external_http_tcp_attempts": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "firestore_mode": "transaction spy, not production IAM validation"
+}

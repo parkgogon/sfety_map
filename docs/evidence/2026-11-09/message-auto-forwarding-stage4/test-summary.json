@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-09 KST",
+  "source_base_commit": "b7b0a55cb5d8749f947d0bfe789ff5840d3bc858",
+  "stage": 4,
+  "phase": "local_implementation_with_fake_transports",
+  "python_tests": 657,
+  "new_server_tests": 27,
+  "react_tests": 279,
+  "react_test_files": 43,
+  "compile": "passed",
+  "build": "passed",
+  "shell_syntax": "passed",
+  "facilities": 195,
+  "reproduction_scenarios": 10,
+  "browser_widths": [
+    1440,
+    390,
+    360
+  ],
+  "browser_tab_checks": 9,
+  "browser_global_control_changes": 2,
+  "browser_human_record_changes": 0,
+  "automatic_test_external_http_tcp_attempts": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "feature_default_enabled": false,
+  "existing_preview_promoted": false,
+  "actual_firestore_iam_verified": false,
+  "actual_telegram_receipt_verified": false,
+  "actual_staff_device_access_verified": false,
+  "actual_model_quality_evaluated": false,
+  "live_feed_ordering_and_delay_verified": false,
+  "remaining": [
+    "production_readiness_and_bounded_model_evaluation",
+    "authorized_release_and_global_start"
+  ],
+  "notification_policy_version": "message-notification-preview-v3"
+}

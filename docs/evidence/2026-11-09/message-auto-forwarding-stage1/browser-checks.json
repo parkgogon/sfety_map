@@ -1,0 +1,152 @@
+{
+  "checks": [
+    {
+      "case": "point",
+      "width": 1440,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "area",
+      "width": 1440,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "general",
+      "width": 1440,
+      "decision": "기록 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "source_only",
+      "width": 1440,
+      "decision": "원문 중심 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "ambiguous",
+      "width": 1440,
+      "decision": "판단 확인 필요",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "point",
+      "width": 390,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "area",
+      "width": 390,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "general",
+      "width": 390,
+      "decision": "기록 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "source_only",
+      "width": 390,
+      "decision": "원문 중심 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "ambiguous",
+      "width": 390,
+      "decision": "판단 확인 필요",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "point",
+      "width": 360,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "area",
+      "width": 360,
+      "decision": "요약 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "general",
+      "width": 360,
+      "decision": "기록 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "source_only",
+      "width": 360,
+      "decision": "원문 중심 전파 추천",
+      "horizontal_overflow": false
+    },
+    {
+      "case": "ambiguous",
+      "width": 360,
+      "decision": "판단 확인 필요",
+      "horizontal_overflow": false
+    }
+  ],
+  "page_errors": [],
+  "unexpected_requests": [],
+  "record_changes": 0,
+  "new_analysis_requests": 0,
+  "new_model_http_calls": 0,
+  "messages_sent": 0,
+  "map_mode": "local fake SDK; no real tiles",
+  "state_before": {
+    "fake_analyzer_calls": 5,
+    "records": {
+      "point": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "area": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "general": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "source_only": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "ambiguous": {
+        "version": 3,
+        "review_state": "unreviewed"
+      }
+    }
+  },
+  "state_after": {
+    "fake_analyzer_calls": 5,
+    "records": {
+      "point": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "area": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "general": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "source_only": {
+        "version": 3,
+        "review_state": "unreviewed"
+      },
+      "ambiguous": {
+        "version": 3,
+        "review_state": "unreviewed"
+      }
+    }
+  },
+  "preview_gets": 15
+}

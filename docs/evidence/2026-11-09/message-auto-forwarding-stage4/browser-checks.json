@@ -1,0 +1,32 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "width": 1440,
+      "tabs": 3,
+      "horizontal_overflow": false,
+      "fixture_receipts": "sent/unknown/waiting"
+    },
+    {
+      "width": 390,
+      "tabs": 3,
+      "horizontal_overflow": false,
+      "fixture_receipts": "sent/unknown/waiting"
+    },
+    {
+      "width": 360,
+      "tabs": 3,
+      "horizontal_overflow": false,
+      "fixture_receipts": "sent/unknown/waiting"
+    }
+  ],
+  "page_errors": [],
+  "unexpected_requests": [],
+  "browser_model_requests": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "global_control_changes": 2,
+  "human_record_changes": 0,
+  "fake_sender_calls_during_browser_actions": 0
+}

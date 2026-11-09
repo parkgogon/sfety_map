@@ -38,19 +38,29 @@ if [[ "${MESSAGE_COLLECTION_ENABLED:-false}" != "true" ]]; then
 fi
 
 [[ -n "$MESSAGE_REVIEW_SECRET_BINDINGS" ]]
+message_worker_secrets="$MESSAGE_REVIEW_SECRET_BINDINGS"
+if [[ "${MESSAGE_DELIVERY_ENABLED:-false}" == "true" ]]; then
+  [[ -n "${MESSAGE_DELIVERY_SECRET_BINDINGS:-}" ]] || exit 2
+  message_worker_secrets="$message_worker_secrets,$MESSAGE_DELIVERY_SECRET_BINDINGS"
+fi
+if [[ "${MESSAGE_COLLECTION_FAST_ENABLED:-false}" == "true" && "${MESSAGE_COLLECTION_INTERVAL_MINUTES:-15}" != "5" ]]; then
+  echo '최신 우선 수집은 5분 주기가 필요합니다.' >&2; exit 2
+fi
 case "${MESSAGE_COLLECTION_INTERVAL_MINUTES:-15}" in
+  5) [[ "${MESSAGE_COLLECTION_FAST_ENABLED:-false}" == "true" ]] || exit 2; message_schedule="*/5 * * * *" ;;
   15|30) message_schedule="*/${MESSAGE_COLLECTION_INTERVAL_MINUTES:-15} * * * *" ;;
   60) message_schedule="0 * * * *" ;;
-  *) echo '문자 조회 주기는 15, 30, 60분 중 하나여야 합니다.' >&2; exit 2 ;;
+  *) echo '문자 조회 주기는 최신 우선 5분 또는 기존 15, 30, 60분이어야 합니다.' >&2; exit 2 ;;
 esac
 gcloud run deploy safety-message-worker \
   --image "$WORKER_IMAGE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
   --platform managed --no-allow-unauthenticated \
+  --execution-environment gen2 \
   --service-account "safety-dashboard-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
   --port 8080 --cpu 1 --memory 512Mi --concurrency 2 --timeout 180 \
   --min-instances 0 --max-instances 1 \
-  --set-env-vars "APP_MODULE=safety_dashboard.operations.message_worker:app,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,TZ=Asia/Seoul,APP_REVISION=$GITHUB_SHA,$MESSAGE_REVIEW_ENV_VARS" \
-  --set-secrets "$MESSAGE_REVIEW_SECRET_BINDINGS" --quiet
+  --set-env-vars "APP_MODULE=safety_dashboard.operations.message_worker:app,GOOGLE_CLOUD_PROJECT=$GCP_PROJECT_ID,TZ=Asia/Seoul,APP_REVISION=$GITHUB_SHA,DASHBOARD_BASE_URL=${DASHBOARD_BASE_URL:-https://keco-safety-map.web.app},$MESSAGE_REVIEW_ENV_VARS" \
+  --set-secrets "$message_worker_secrets" --quiet
 
 MESSAGE_WORKER_URL="$(gcloud run services describe safety-message-worker --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.url)')"
 MESSAGE_SCHEDULER_ACCOUNT="safety-alert-scheduler@$GCP_PROJECT_ID.iam.gserviceaccount.com"

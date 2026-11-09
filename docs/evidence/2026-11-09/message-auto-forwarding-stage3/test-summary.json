@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-09 KST",
+  "source_base_commit": "b7b0a55cb5d8749f947d0bfe789ff5840d3bc858",
+  "stage": 3,
+  "phase": "preview_only",
+  "python_tests": 630,
+  "new_server_tests": 46,
+  "react_tests": 273,
+  "react_test_files": 42,
+  "compile": "passed",
+  "build": "passed",
+  "shell_syntax": "passed",
+  "facilities": 195,
+  "reproduction_scenarios": 8,
+  "automatic_test_external_http_tcp_attempts": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "dispatch_enabled": false,
+  "new_feature_default_enabled": false,
+  "initial_app_daily_budget_usd": 1,
+  "initial_app_monthly_budget_usd": 20,
+  "per_response_reservation_usd": 0.318,
+  "actual_firestore_iam_verified": false,
+  "actual_model_quality_evaluated": false,
+  "live_api_ordering_and_delay_verified": false,
+  "remaining": [
+    "telegram_delivery_and_live_activation",
+    "delivery_history_and_operator_incident_ui",
+    "production_throughput_and_bounded_model_quality_evaluation"
+  ]
+}

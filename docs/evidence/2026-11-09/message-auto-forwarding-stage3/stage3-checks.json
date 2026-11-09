@@ -1,0 +1,56 @@
+{
+  "phase": "preview_only",
+  "checks": [
+    {
+      "case": "latest_survives_background_exhaustion",
+      "latest_pages": 1,
+      "background_pages": 0,
+      "backlog_preserved": true
+    },
+    {
+      "case": "one_page_24h_simulation",
+      "latest_requests": 288,
+      "history_requests": 24,
+      "total_requests": 312
+    },
+    {
+      "case": "unknown_response_keeps_reserve",
+      "reserved_usd": 0.318,
+      "next_call": "blocked_before_http"
+    },
+    {
+      "case": "actual_cached_token_settlement",
+      "input_tokens": 1000,
+      "cached_input_tokens": 200,
+      "output_tokens": 100,
+      "usd": 0.001065
+    },
+    {
+      "case": "clean_waiting_record_rechecked_on_quota_exhaustion",
+      "jobs": 1,
+      "whole_original_preserved": true,
+      "invented_facilities": 0
+    },
+    {
+      "case": "quota_recovery_reuses_fallback",
+      "state": "pending",
+      "automatic_paid_reanalysis": false
+    },
+    {
+      "case": "fallback_freshness_expiry",
+      "state": "invalidated",
+      "new_jobs": 0
+    },
+    {
+      "case": "nonemergency_incident_deduplication",
+      "staff_jobs": 0,
+      "admin_incidents": 1,
+      "source_count": 1
+    }
+  ],
+  "external_http_tcp_attempts": 0,
+  "real_model_http_calls": 0,
+  "real_messages_sent": 0,
+  "production_deployed": false,
+  "actual_model_quality_evaluated": false
+}

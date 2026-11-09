@@ -4,15 +4,17 @@ from __future__ import annotations
 import datetime as dt
 import uuid
 
-from safety_dashboard.application.message_analysis import AnalysisBusy
+from safety_dashboard.application.message_analysis import AnalysisBusy, AnalysisBudgetBusy
 from safety_dashboard.application.message_pipeline import AnalysisRunGate, MessageAnalysisQueue, PipelineLeases, UTC, moment
 from safety_dashboard.application.message_records import AnalyzeRecord, RecordConflict, RecordNotFound
 
 
 class MessageQueueProcessor:
-    def __init__(self, records, store, settings, *, now=lambda: dt.datetime.now(UTC)):
+    def __init__(self, records, store, settings, *, now=lambda: dt.datetime.now(UTC), on_analyzed=None, before_analysis=None):
         self.records, self.store, self.settings, self.now = records, store, settings, now
         self.queue, self.leases = MessageAnalysisQueue(store), PipelineLeases(store)
+        self.on_analyzed = on_analyzed
+        self.before_analysis = before_analysis
 
     @staticmethod
     def matches(record, task):
@@ -78,10 +80,17 @@ class MessageQueueProcessor:
                     if record["analysis_state"] == "running":
                         self.queue.finish(task["id"], "pending", self.now(), "analysis_in_progress", owner=owner, delay=60)
                         continue
+                    if self.before_analysis and not self.before_analysis(record):
+                        self.queue.finish(task["id"], "deferred", self.now(), "raw_fallback_prepared", owner=owner)
+                        continue
                     if (self.now()-moment(task["enqueued_at"])).total_seconds() > self.settings.auto_max_age_hours*3600:
                         self.queue.finish(task["id"], "deferred", self.now(), "old_backlog_manual_review", owner=owner)
                         continue
-                    self.records.analyze(record["id"], AnalyzeRecord(expected_version=record["version"], reference_radius_km=record["reference_radius_km"]))
+                    saved = self.records.analyze(record["id"], AnalyzeRecord(expected_version=record["version"], reference_radius_km=record["reference_radius_km"]))
+                except AnalysisBudgetBusy as error:
+                    delay = max(60, (moment(error.retry_at)-self.now()).total_seconds())
+                    self.queue.finish(task["id"], "pending", self.now(), "spend_limit", owner=owner, delay=delay)
+                    return {"state": "spend_limit", "retry_at": error.retry_at}
                 except AnalysisBusy:
                     self.queue.finish(task["id"], "pending", self.now(), "analysis_deferred", owner=owner, delay=60)
                     return {"state": "busy"}
@@ -96,8 +105,12 @@ class MessageQueueProcessor:
                     return {"state": "changed"}
                 except Exception:
                     self.queue.finish(task["id"], "failed", self.now(), "manual_retry_required", owner=owner)
+                    if self.on_analyzed:
+                        self.on_analyzed(self.records.get(task["record_id"]))
                     return {"state": "failed"}
                 self.queue.finish(task["id"], "done", self.now(), "analysis_saved", owner=owner)
+                if self.on_analyzed:
+                    self.on_analyzed(saved)
                 return {"state": "analyzed"}
             return {"state": "idle"}
         finally:

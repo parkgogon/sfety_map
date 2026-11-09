@@ -1,7 +1,7 @@
 name: Test and deploy field map
 
-# User-authorized limited pilot (2026-11-08). Explicit repository variables override
-# these versioned defaults; false disables collection and pauses its two jobs.
+# User-authorized automatic forwarding release (2026-11-10 KST). Explicit repository
+# variables override these versioned defaults; delivery still requires a separate start.
 # Runtime/application defaults remain disabled outside this deployment workflow.
 
 on:
@@ -39,13 +39,40 @@ jobs:
           MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION || '1' }}
           MESSAGE_COLLECTION_ENABLED: ${{ vars.MESSAGE_COLLECTION_ENABLED || 'true' }}
           MESSAGE_COLLECTION_CONTRACT_VERIFIED: ${{ vars.MESSAGE_COLLECTION_CONTRACT_VERIFIED || 'true' }}
+          MESSAGE_NOTIFICATION_PREPARATION_ENABLED: ${{ vars.MESSAGE_NOTIFICATION_PREPARATION_ENABLED || 'true' }}
+          MESSAGE_COLLECTION_FAST_ENABLED: ${{ vars.MESSAGE_COLLECTION_FAST_ENABLED || 'true' }}
+          MESSAGE_AI_SPEND_BUDGET_ENABLED: ${{ vars.MESSAGE_AI_SPEND_BUDGET_ENABLED || 'true' }}
+          MESSAGE_EMERGENCY_FALLBACK_ENABLED: ${{ vars.MESSAGE_EMERGENCY_FALLBACK_ENABLED || 'true' }}
+          MESSAGE_DELIVERY_ENABLED: ${{ vars.MESSAGE_DELIVERY_ENABLED || 'true' }}
+          MESSAGE_DELIVERY_BOT_VERSION: ${{ vars.MESSAGE_DELIVERY_BOT_VERSION || '1' }}
+          MESSAGE_DELIVERY_STAFF_VERSION: ${{ vars.MESSAGE_DELIVERY_STAFF_VERSION || '2' }}
+          MESSAGE_DELIVERY_ADMIN_VERSION: ${{ vars.MESSAGE_DELIVERY_ADMIN_VERSION || '1' }}
+          TELEGRAM_ADMIN_SECRET_NAME: ${{ vars.TELEGRAM_ADMIN_SECRET_NAME || 'TELEGRAM_CHAT_ID' }}
+          MESSAGE_AI_DAILY_BUDGET_CENTS: ${{ vars.MESSAGE_AI_DAILY_BUDGET_CENTS || '100' }}
+          MESSAGE_AI_MONTHLY_BUDGET_CENTS: ${{ vars.MESSAGE_AI_MONTHLY_BUDGET_CENTS || '2000' }}
           MESSAGE_ANALYSIS_DAILY_LIMIT: ${{ vars.MESSAGE_ANALYSIS_DAILY_LIMIT || '20' }}
           MESSAGE_COLLECTION_MAX_PAGES: ${{ vars.MESSAGE_COLLECTION_MAX_PAGES || '4' }}
           MESSAGE_FEED_REQUEST_LIMIT: ${{ vars.MESSAGE_FEED_REQUEST_LIMIT || '450' }}
-          MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '15' }}
+          MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '5' }}
           MESSAGE_COLLECTION_CATCHUP_DAYS: ${{ vars.MESSAGE_COLLECTION_CATCHUP_DAYS || '7' }}
           MESSAGE_COLLECTION_START_AT: ${{ vars.MESSAGE_COLLECTION_START_AT }}
-        run: python scripts/build_message_review_deploy_config.py
+        run: |
+          python scripts/build_message_review_deploy_config.py
+          python - <<'PY'
+          import json,os
+          from scripts.build_message_review_deploy_config import build_config
+          from pathlib import Path
+          expected=build_config(json.loads(Path('.github/message-delivery-release.json').read_text()))
+          actual=build_config(os.environ)
+          # Keep an explicit delivery=false usable for emergency shutdown deployments.
+          for key,value in (expected.items() if os.environ['MESSAGE_DELIVERY_ENABLED']=='true' else []):
+              if key=='MESSAGE_REVIEW_ENV_VARS':
+                  configured=dict(item.split('=',1) for item in actual[key].split(','))
+                  assert all(configured.get(k)==v for k,v in (item.split('=',1) for item in value.split(','))), 'approved_release_settings_differ'
+              else:
+                  assert actual[key]==value, 'approved_release_bindings_differ'
+          print('Approved release settings match. Existing collection cutoff is preserved.')
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -86,10 +113,20 @@ jobs:
       MESSAGE_REVIEW_FEED_VERSION: ${{ vars.MESSAGE_REVIEW_FEED_VERSION || '1' }}
       MESSAGE_COLLECTION_ENABLED: ${{ vars.MESSAGE_COLLECTION_ENABLED || 'true' }}
       MESSAGE_COLLECTION_CONTRACT_VERIFIED: ${{ vars.MESSAGE_COLLECTION_CONTRACT_VERIFIED || 'true' }}
+      MESSAGE_NOTIFICATION_PREPARATION_ENABLED: ${{ vars.MESSAGE_NOTIFICATION_PREPARATION_ENABLED || 'true' }}
+      MESSAGE_COLLECTION_FAST_ENABLED: ${{ vars.MESSAGE_COLLECTION_FAST_ENABLED || 'true' }}
+      MESSAGE_AI_SPEND_BUDGET_ENABLED: ${{ vars.MESSAGE_AI_SPEND_BUDGET_ENABLED || 'true' }}
+      MESSAGE_EMERGENCY_FALLBACK_ENABLED: ${{ vars.MESSAGE_EMERGENCY_FALLBACK_ENABLED || 'true' }}
+      MESSAGE_DELIVERY_ENABLED: ${{ vars.MESSAGE_DELIVERY_ENABLED || 'true' }}
+      MESSAGE_DELIVERY_BOT_VERSION: ${{ vars.MESSAGE_DELIVERY_BOT_VERSION || '1' }}
+      MESSAGE_DELIVERY_STAFF_VERSION: ${{ vars.MESSAGE_DELIVERY_STAFF_VERSION || '2' }}
+      MESSAGE_DELIVERY_ADMIN_VERSION: ${{ vars.MESSAGE_DELIVERY_ADMIN_VERSION || '1' }}
+      MESSAGE_AI_DAILY_BUDGET_CENTS: ${{ vars.MESSAGE_AI_DAILY_BUDGET_CENTS || '100' }}
+      MESSAGE_AI_MONTHLY_BUDGET_CENTS: ${{ vars.MESSAGE_AI_MONTHLY_BUDGET_CENTS || '2000' }}
       MESSAGE_ANALYSIS_DAILY_LIMIT: ${{ vars.MESSAGE_ANALYSIS_DAILY_LIMIT || '20' }}
       MESSAGE_COLLECTION_MAX_PAGES: ${{ vars.MESSAGE_COLLECTION_MAX_PAGES || '4' }}
       MESSAGE_FEED_REQUEST_LIMIT: ${{ vars.MESSAGE_FEED_REQUEST_LIMIT || '450' }}
-      MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '15' }}
+      MESSAGE_COLLECTION_INTERVAL_MINUTES: ${{ vars.MESSAGE_COLLECTION_INTERVAL_MINUTES || '5' }}
       MESSAGE_COLLECTION_CATCHUP_DAYS: ${{ vars.MESSAGE_COLLECTION_CATCHUP_DAYS || '7' }}
       MESSAGE_COLLECTION_START_AT: ${{ vars.MESSAGE_COLLECTION_START_AT }}
     steps:
@@ -116,7 +153,13 @@ jobs:
         run: |-
           SECRET_BINDINGS="KMA_API_KEY=KMA_API_KEY:1,SOLAPI_WEBHOOK_SECRET=SOLAPI_WEBHOOK_SECRET:1,ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest"
           if [[ "$ALERT_AUTOMATION_ENABLED" == "true" ]]; then
-            SECRET_BINDINGS="$SECRET_BINDINGS,ALERT_ADMIN_TOKEN=ALERT_ADMIN_TOKEN:1,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:1,TELEGRAM_USER_CHAT_ID=TELEGRAM_USER_CHAT_ID:latest,TELEGRAM_ADMIN_CHAT_ID=$TELEGRAM_ADMIN_SECRET_NAME:latest"
+            SECRET_BINDINGS="$SECRET_BINDINGS,ALERT_ADMIN_TOKEN=ALERT_ADMIN_TOKEN:1"
+            if [[ "$MESSAGE_DELIVERY_ENABLED" != "true" ]]; then
+              SECRET_BINDINGS="$SECRET_BINDINGS,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:1,TELEGRAM_USER_CHAT_ID=TELEGRAM_USER_CHAT_ID:latest,TELEGRAM_ADMIN_CHAT_ID=$TELEGRAM_ADMIN_SECRET_NAME:latest"
+            fi
+          fi
+          if [[ -n "$MESSAGE_DELIVERY_SECRET_BINDINGS" ]]; then
+            SECRET_BINDINGS="$SECRET_BINDINGS,$MESSAGE_DELIVERY_SECRET_BINDINGS"
           fi
           if [[ -n "$MESSAGE_REVIEW_SECRET_BINDINGS" ]]; then
             SECRET_BINDINGS="$SECRET_BINDINGS,$MESSAGE_REVIEW_SECRET_BINDINGS"

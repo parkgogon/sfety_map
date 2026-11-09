@@ -1,0 +1,53 @@
+{
+  "additional_model_place_feed_calls": 0,
+  "real_messages_sent": 0,
+  "synthetic_as_of": "each authored issue time plus one minute, example origin retained",
+  "cases": [
+    {
+      "id": "prevention",
+      "model_status": "pass",
+      "model_need": "record_only",
+      "server_decision": "record_only",
+      "server_reason": "산불 예방 협조를 요청하는 일반 예방 안내로, 특정 사고·통제·대피나 소관시설 운영 정보는 없다. 지역은 대구시로 제시되지만 업무상 즉시 전파가 필요한 사건성 정보는 아니다.",
+      "dispatch_enabled": false
+    },
+    {
+      "id": "event",
+      "model_status": "pass",
+      "model_need": "notify",
+      "server_decision": "notify_ready",
+      "server_reason": "대구 성서산업단지 인근 공장에서 화재가 발생했고, 주변 주민에게 연기 유입 주의와 창문 닫기 안내가 포함되어 있어 즉시 공유가 필요한 상황입니다. 구체적인 피해 범위나 통제 구간은 원문에 없습니다.",
+      "dispatch_enabled": false
+    },
+    {
+      "id": "scheduled",
+      "model_status": "error",
+      "server_decision": "analysis_unavailable",
+      "reason": "조회 횟수 안에 분석을 완료하지 못했습니다. 장소나 문구를 확인해 주세요."
+    },
+    {
+      "id": "partial_release",
+      "model_status": "pass",
+      "model_need": "notify",
+      "server_decision": "attention_required",
+      "server_reason": "판단에 연결한 시설·위치 조회 근거가 맞지 않습니다.",
+      "dispatch_enabled": false
+    },
+    {
+      "id": "ambiguous",
+      "model_status": "needs_review",
+      "model_need": "notify",
+      "server_decision": "attention_required",
+      "server_reason": "업무 관련 위치/지역의 근거를 확인하지 못했습니다. 수신지역으로 사고 도시를 추정하지 않습니다.",
+      "dispatch_enabled": false
+    },
+    {
+      "id": "destination",
+      "model_status": "pass",
+      "model_need": "notify",
+      "server_decision": "attention_required",
+      "server_reason": "판단에 연결한 시설·위치 조회 근거가 맞지 않습니다.",
+      "dispatch_enabled": false
+    }
+  ]
+}

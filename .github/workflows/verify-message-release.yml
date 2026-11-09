@@ -5,7 +5,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [baseline, verify, status, collect]
+        options: [baseline, verify, status, collect, delivery-status, delivery-start, delivery-observe]
         default: baseline
       revision:
         description: Deployed main image SHA for verification
@@ -23,6 +23,65 @@ permissions:
   contents: read
 
 jobs:
+  delivery:
+    if: github.event_name == 'workflow_dispatch' && startsWith(inputs.mode, 'delivery-') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERIFY_REVISION: ${{ inputs.revision }}
+      DELIVERY_ACTION: ${{ inputs.mode == 'delivery-start' && 'start' || inputs.mode == 'delivery-observe' && 'observe' || 'status' }}
+      CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Verify deployed revision, pinned rooms and regular schedules
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch(r"[a-f0-9]{40}",os.environ["VERIFY_REVISION"])'
+          python3 scripts/capture_message_pilot.py --revision "$VERIFY_REVISION" --delivery
+      - name: Run private post-deployment check or authorized single start
+        run: |
+          gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
+            --image="asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api:$VERIFY_REVISION" \
+            --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            --command=python --args=-m,safety_dashboard.operations.rollout_message_delivery \
+            --set-env-vars="VERIFY_APP_REVISION=$VERIFY_REVISION,VERIFY_DELIVERY_ACTION=$DELIVERY_ACTION" \
+            --set-secrets=ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest \
+            --execution-environment=gen2 --cpu=1 --memory=1Gi --concurrency=1 --min-instances=0 --max-instances=1 \
+            --timeout=240s --no-allow-unauthenticated --quiet
+          CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')
+          echo "CHECK_URL=$CHECK_URL" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v3
+        id: invoker
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ env.CHECK_URL }}
+      - name: Save sanitized status without source messages or credentials
+        env:
+          CHECK_ID_TOKEN: ${{ steps.invoker.outputs.id_token }}
+        run: python3 scripts/invoke_safetydata_runtime.py
+      - name: Remove only this temporary verifier
+        if: always()
+        run: gcloud run services delete "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-delivery-${{ env.DELIVERY_ACTION }}
+          path: |
+            release-check/pilot-metadata.json
+            safetydata-runtime-check/report.json
+          retention-days: 14
+
   baseline:
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.mode == 'baseline') ||

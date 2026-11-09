@@ -7,9 +7,44 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.build_message_review_deploy_config import build_config, main
+from safety_dashboard.application.message_automation import MessageAutomationSettings
 
 
 class MessageDeployConfigTests(unittest.TestCase):
+    def test_stage_three_flags_are_opt_in_and_cost_defaults_are_visible(self):
+        settings=MessageAutomationSettings.from_environment({})
+        self.assertFalse(settings.latest_first_enabled)
+        self.assertFalse(settings.spend_budget_enabled)
+        self.assertFalse(settings.emergency_fallback_enabled)
+        config=build_config({})['MESSAGE_REVIEW_ENV_VARS']
+        self.assertIn('MESSAGE_COLLECTION_FAST_ENABLED=false',config)
+        self.assertIn('MESSAGE_AI_SPEND_BUDGET_ENABLED=false',config)
+        self.assertIn('MESSAGE_EMERGENCY_FALLBACK_ENABLED=false',config)
+        self.assertIn('MESSAGE_AI_DAILY_BUDGET_CENTS=100',config)
+        self.assertIn('MESSAGE_AI_MONTHLY_BUDGET_CENTS=2000',config)
+
+    def test_latest_mode_and_cost_values_match_runtime_and_deployment_validation(self):
+        env={'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_AI_SPEND_BUDGET_ENABLED':'true',
+             'MESSAGE_AI_DAILY_BUDGET_CENTS':'150','MESSAGE_AI_MONTHLY_BUDGET_CENTS':'3000',
+             'MESSAGE_NOTIFICATION_PREPARATION_ENABLED':'true','MESSAGE_EMERGENCY_FALLBACK_ENABLED':'true'}
+        settings=MessageAutomationSettings.from_environment(env)
+        config=build_config(env)['MESSAGE_REVIEW_ENV_VARS']
+        self.assertEqual(settings.interval_seconds,300)
+        self.assertEqual(settings.daily_budget_cents,150)
+        self.assertEqual(settings.monthly_budget_cents,3000)
+        self.assertIn('MESSAGE_COLLECTION_INTERVAL_MINUTES=5',config)
+        for invalid in ({'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_COLLECTION_INTERVAL_MINUTES':'15'},
+                        {'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_COLLECTION_MAX_PAGES':'01'},
+                        {'MESSAGE_COLLECTION_FAST_ENABLED':'true','MESSAGE_FEED_REQUEST_LIMIT':'1'},
+                        {'MESSAGE_COLLECTION_INTERVAL_MINUTES':'5'},
+                        {'MESSAGE_AI_DAILY_BUDGET_CENTS':'1.5'},
+                        {'MESSAGE_AI_DAILY_BUDGET_CENTS':'0'},
+                        {'MESSAGE_AI_MONTHLY_BUDGET_CENTS':'-1'},
+                        {'MESSAGE_EMERGENCY_FALLBACK_ENABLED':'true'}):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):MessageAutomationSettings.from_environment(invalid)
+                with self.assertRaises(ValueError):build_config(invalid)
+
     def test_default_does_not_enable_paid_provider_or_official_feed_bindings(self):
         config=build_config({})
         self.assertEqual(config['MESSAGE_REVIEW_SECRET_BINDINGS'],'')
@@ -54,3 +89,22 @@ class MessageDeployConfigTests(unittest.TestCase):
             self.assertEqual(main(['--github-env',str(p)]),2)
             self.assertEqual(p.read_text(),'EXISTING=keep\n')
             self.assertIn('MESSAGE_REVIEW_OPENAI_VERSION',output.getvalue())
+
+    def test_live_delivery_is_off_by_default_and_requires_independent_flags_and_pinned_existing_rooms(self):
+        self.assertFalse(MessageAutomationSettings.from_environment({}).delivery_enabled)
+        self.assertEqual(build_config({})['MESSAGE_DELIVERY_SECRET_BINDINGS'],'')
+        env={'MESSAGE_COLLECTION_ENABLED':'true','MESSAGE_COLLECTION_CONTRACT_VERIFIED':'true',
+             'MESSAGE_REVIEW_AI_ENABLED':'true','MESSAGE_REVIEW_OPENAI_VERSION':'1','MESSAGE_REVIEW_KAKAO_VERSION':'1',
+             'MESSAGE_REVIEW_FEED_ENABLED':'true','MESSAGE_REVIEW_FEED_VERSION':'1','MESSAGE_COLLECTION_FAST_ENABLED':'true',
+             'MESSAGE_AI_SPEND_BUDGET_ENABLED':'true','MESSAGE_NOTIFICATION_PREPARATION_ENABLED':'true',
+             'MESSAGE_EMERGENCY_FALLBACK_ENABLED':'true','MESSAGE_DELIVERY_ENABLED':'true',
+             'MESSAGE_DELIVERY_BOT_VERSION':'1','MESSAGE_DELIVERY_STAFF_VERSION':'2','MESSAGE_DELIVERY_ADMIN_VERSION':'3'}
+        config=build_config(env)
+        self.assertEqual(config['MESSAGE_DELIVERY_SECRET_BINDINGS'],
+            'TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:1,TELEGRAM_USER_CHAT_ID=TELEGRAM_USER_CHAT_ID:2,TELEGRAM_ADMIN_CHAT_ID=TELEGRAM_CHAT_ID:3')
+        self.assertNotIn('TELEGRAM',config['MESSAGE_REVIEW_SECRET_BINDINGS'])
+        self.assertTrue(MessageAutomationSettings.from_environment(env).delivery_enabled)
+        for changes in ({'MESSAGE_AI_SPEND_BUDGET_ENABLED':'false'},{'MESSAGE_COLLECTION_ENABLED':'false'},
+                        {'MESSAGE_DELIVERY_STAFF_VERSION':'latest'},{'TELEGRAM_ADMIN_SECRET_NAME':'unvalidated,SECRET'}):
+            with self.subTest(changes=changes):
+                with self.assertRaises(ValueError):build_config({**env,**changes})

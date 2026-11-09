@@ -4,6 +4,7 @@ import type { MessageAnalysisStatus } from "./messageAnalysisApi";
 import type { MessageReviewDetail } from "./messageReviewApi";
 import MessageQuickReview from "./MessageQuickReview";
 import MessageAutomationStatus from "./MessageAutomationStatus";
+import MessageNotificationPreview from "./MessageNotificationPreview";
 import examples from "./messageExamples.json";
 import "./styles/message_inbox.css";
 
@@ -136,6 +137,7 @@ export default function MessageInbox({token,status,recordsStatus}:{token:string;
       {!busy&&record.review_state!=="completed"&&record.analysis_state!=="running"&&(!record.analysis||record.analysis_state==="failed")&&<button className="primary-button" disabled={!status?.configured} onClick={()=>void analyzeSaved()}>저장한 문자로 검토안 준비</button>}
       <details><summary>검색 과정·변경 이력·후속 문자 관리</summary>{record.analysis&&<ol>{record.analysis.trace.map((step,i)=><li key={i}>{step.detail}</li>)}</ol>}<a href={advancedUrl(record.id)} onClick={e=>{if(reviewBusy||dirty&&!window.confirm("저장 전 수정 내용을 취소하고 상세 관리를 열까요?"))e.preventDefault();}}>상세 관리 열기</a></details>
     </section>}
+    {record&&!busy&&record.analysis?.analysis.notification_assessment&&<MessageNotificationPreview key={`notification-${record.id}:${record.version}`} token={token} recordId={record.id} version={record.version}/>}
     {record&&!busy&&(record.review_state==="completed"?<CompletedReview key={`${record.id}:${record.version}`} token={token} record={record} onChange={changed}/>:record.analysis&&record.analysis_state!=="running"?<MessageQuickReview key={`${record.id}:${record.version}`} token={token} record={record} onChange={changed} onHold={value=>{changed(value);choose(null);setNotice("추가 확인이 필요한 기록으로 보류했습니다.");}} onBusyChange={setReviewBusy} onDirtyChange={setDirty}/>:null)}
   </div>;
 }

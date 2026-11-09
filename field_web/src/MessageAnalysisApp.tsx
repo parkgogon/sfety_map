@@ -6,6 +6,7 @@ import examples from "./messageExamples.json";
 import "./styles/message_analysis.css";
 import MessageRecordWorkspace from "./MessageRecordWorkspace";
 import MessageInbox from "./MessageInbox";
+import MessageDeliveryPanel from "./MessageDeliveryPanel";
 import { recordRequest, type RecordStatus } from "./messageRecordsApi";
 
 function koreanTime(value: string | null): string {
@@ -67,8 +68,10 @@ export function MessageAnalysisOutput({ result, reviewCompleted = false }: { res
 
 export default function MessageAnalysisApp() {
   const advanced = new URLSearchParams(window.location.search).get("view") === "advanced";
+  const requestedView = new URLSearchParams(window.location.search).get("view");
   const auth = useAdminSession();
   const [recordsStatus, setRecordsStatus] = useState<RecordStatus | null>(null);
+  const deliveryView = requestedView === "delivery" || (!requestedView && !!recordsStatus?.notification_preparation_enabled);
   const [recordsError, setRecordsError] = useState("");
   const [status, setStatus] = useState<MessageAnalysisStatus | null>(null);
   const [text, setText] = useState("");
@@ -126,7 +129,7 @@ export default function MessageAnalysisApp() {
 
   return <div className="control-shell message-shell">
     <header className="control-header">
-      <div className="control-brand"><span className="brand-mark">K-ECO SAFETY MONITORING</span><h1>재난문자 검토</h1></div>
+      <div className="control-brand"><span className="brand-mark">K-ECO SAFETY MONITORING</span><h1>{deliveryView?"재난문자 자동전파":"재난문자 검토"}</h1></div>
       <div className="control-header-actions">
         <button className="secondary-button" onClick={() => navigateWithMode("/control")}>중앙 관제 ↗</button>
         {auth.adminToken && <button className="secondary-button" onClick={auth.handleLogout}>로그아웃</button>}
@@ -145,10 +148,10 @@ export default function MessageAnalysisApp() {
           <p className="message-caption">AI 결과는 검토용 참고자료이며 공식 특보 위험등급과 별개입니다.</p>
         </section>}
         {recordsStatus?.storage_configured && error && <p role="alert" className="message-error">{error}</p>}
-        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? advanced ? <>
+        {!recordsStatus && !recordsError ? <p role="status">검토 기록 연결을 확인하고 있습니다…</p> : recordsStatus?.storage_configured ? deliveryView ? <MessageDeliveryPanel token={auth.adminToken}/> : advanced ? <>
           <a className="secondary-button" href={`/control/messages${window.location.search.replace(/[?&]view=advanced/, "").replace(/^&/, "?")}`}>간단 검토로 돌아가기</a>
           <MessageRecordWorkspace token={auth.adminToken} status={status} recordsStatus={recordsStatus} renderResult={(value, completed) => <MessageAnalysisOutput result={value} reviewCompleted={completed} />} />
-        </> : <MessageInbox token={auth.adminToken} status={status} recordsStatus={recordsStatus} /> : <>
+        </> : <><a className="secondary-button" href="/control/messages?view=delivery">자동전파·이력 보기</a><MessageInbox token={auth.adminToken} status={status} recordsStatus={recordsStatus} /></> : <>
         {recordsError && <p className="message-error" role="alert">{recordsError}</p>}
         {recordsStatus && !recordsStatus.storage_configured && <p className="message-notice">검토 기록 저장소가 연결되지 않았습니다. 아래 결과는 저장되지 않으며 새로고침하면 초기화됩니다.</p>}
         <div className="message-workspace">

@@ -23,6 +23,27 @@ def page(*items):
 
 
 class RuntimeProbeTests(unittest.TestCase):
+    def test_order_check_rejects_ascending_and_cross_page_inversion_without_exporting_rows(self):
+        for hours, expected in [([15, 14, 13, 12], True), ([12, 13, 14, 15], False), ([15, 13, 14, 12], False)]:
+            def fetch(key, day, **kwargs):
+                offset = (kwargs['page']-1)*2
+                data = [message(f"private-{offset+i}") for i in range(2)]
+                for i, row in enumerate(data):
+                    row['CRT_DT'] = DAY.isoformat()+f" {hours[offset+i]:02d}:00:00"
+                return page(*data)
+            report = probe('key', fetch=fetch, today=DAY)
+            self.assertEqual(report['checks']['sample_pages_non_increasing'], expected)
+            self.assertEqual(report['latest_order_verified'], expected)
+            self.assertEqual(report['publication_delay'], 'not_measured')
+            self.assertNotIn('private-', json.dumps(report))
+
+    def test_equal_timestamps_or_historical_samples_do_not_verify_current_latest_order(self):
+        def fetch(key, day, **kwargs):
+            return page(*(message(f"{kwargs['page']}-{i}", day=day) for i in range(2)))
+        report = probe('key', fetch=fetch, today=DAY)
+        self.assertTrue(report['checks']['sample_pages_non_increasing'])
+        self.assertFalse(report['latest_order_verified'])
+
     def test_real_sample_dates_region_pagination_and_stable_head_are_checked_without_exporting_content(self):
         calls = []
         def fetch(key, day, *, region, page: int, size):
