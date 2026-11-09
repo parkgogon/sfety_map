@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 BASE = 'https://keco-safety-map.web.app'
 PREFIX = '/internal/v1/message-records'
 UTC = dt.timezone.utc
+COLLECTION_START = '2026-11-08T13:45:00.961104+00:00'
 READS = {'/api/v1/health/operations', '/internal/v1/message-analysis/status',
          PREFIX+'/status', PREFIX+'/automation', PREFIX+'/notifications/status'}
 
@@ -40,7 +41,7 @@ def checks(automation, status, revision, now, action):
     require(automation['budget']['limit'] == 20 and automation['feed_budget']['limit'] == 450, 'request_limits_differ')
     spend = automation.get('spend_budget', {})
     require(spend.get('enabled') and spend['daily']['limit_usd'] == 1 and spend['monthly']['limit_usd'] == 20, 'spend_limits_differ')
-    require(dt.datetime.fromisoformat(automation['start_at']) == dt.datetime.fromisoformat('2026-11-08T22:45:00+09:00'), 'collection_cutoff_changed')
+    require(dt.datetime.fromisoformat(automation['start_at']) == dt.datetime.fromisoformat(COLLECTION_START), 'collection_cutoff_changed')
     worker = status.get('worker') or {}
     require(worker.get('revision') == revision and fresh(worker.get('at'), 180, now), 'regular_worker_not_observed')
     require(automation.get('state') in {'live', 'partial'}, 'regular_collection_not_ready')

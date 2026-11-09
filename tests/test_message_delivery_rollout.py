@@ -5,7 +5,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import Mock
 
-from safety_dashboard.operations.rollout_message_delivery import BASE, PREFIX, allowed_browser_request, rollout
+from safety_dashboard.operations.rollout_message_delivery import BASE, PREFIX, COLLECTION_START, allowed_browser_request, rollout
 from scripts.build_message_review_deploy_config import build_config
 
 NOW = dt.datetime.fromisoformat('2026-11-10T09:00:00+09:00')
@@ -16,7 +16,7 @@ def fixture():
     automation = {'auto_collection_enabled': True, 'feed_configured': True, 'interval_seconds': 300,
         'recent_scan_enabled': True, 'budget': {'limit': 20}, 'feed_budget': {'limit': 450},
         'spend_budget': {'enabled': True, 'daily': {'limit_usd': 1}, 'monthly': {'limit_usd': 20}},
-        'start_at': '2026-11-08T22:45:00+09:00', 'state': 'partial', 'current_scan_interval_seconds': 300,
+        'start_at': COLLECTION_START, 'state': 'partial', 'current_scan_interval_seconds': 300,
         'last_current_scan_success_at': NOW.isoformat()}
     status = {'deployment_enabled': True, 'can_activate': True, 'active': False, 'state': 'ready',
         'generation': None, 'worker': {'revision': REVISION, 'at': NOW.isoformat(), 'state': 'paused_or_unconfigured', 'generation': None}}
@@ -127,3 +127,5 @@ class DeliveryRolloutTests(unittest.TestCase):
         proposed=json.loads((root/'docs/evidence/2026-11-10/message-delivery-runtime/proposed-repository-variables.json').read_text())
         self.assertEqual(build_config(release),build_config(proposed))
         self.assertIn('TELEGRAM_USER_CHAT_ID=TELEGRAM_USER_CHAT_ID:2',build_config(release)['MESSAGE_DELIVERY_SECRET_BINDINGS'])
+        prior=json.loads((root/'docs/evidence/2026-11-10/message-delivery-preflight/status-before.json').read_text())
+        self.assertEqual(COLLECTION_START,prior['automation']['start_at'])
