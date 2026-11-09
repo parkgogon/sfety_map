@@ -1,0 +1,83 @@
+import json
+import unittest
+
+from pydantic import ValidationError
+
+from safety_dashboard.application.message_analysis import AnalysisDraft, NotificationSubmission, compatible_place, SearchPlaces
+from tests.test_message_analysis import FakePlaces, PLACE, call, draft, part, location, request, search_args, service
+from tests.test_message_notification import assessment
+
+
+class MessageAgentRecoveryTests(unittest.TestCase):
+    def test_unknown_region_notify_is_corrected_without_guessing_a_city(self):
+        req=request('ambiguous',recipient_regions=['대구광역시','부산광역시'])
+        body=draft([part(req.text,'active_restriction',[location('중앙동 사거리 인근','restricted_area')])],['어느 시·군의 중앙동인가요?'])
+        agent=service([call('submit_analysis',{**body,'notification_assessment':assessment(req.text,relevance='area_operations')}),
+                       call('submit_analysis',{**body,'notification_assessment':assessment(req.text,need='uncertain',relevance='unknown')})])
+        result=agent.analyze(req)
+        self.assertEqual(result['analysis']['notification_assessment']['need'],'uncertain')
+        self.assertEqual(agent.places.queries,[])
+        self.assertIn('need=uncertain',agent.client.inputs[1][-1]['output'])
+        self.assertEqual([s['status'] for s in result['trace']],['invalid','ok'])
+
+    def test_destination_basis_is_rejected_then_corrected_within_six_responses(self):
+        text='대구 성서산업단지에서 화재가 발생했습니다. 성서초등학교 운동장으로 대피하세요.'
+        places=FakePlaces([PLACE,{**PLACE,'name':'성서초등학교','category_name':'교육 > 학교','category_group_code':'SC4'}])
+        body=draft([part(text,locations=[location(candidate_ids=['P1']),location('성서초등학교','evacuation_destination',['P2'])])])
+        agent=service([call('search_places',search_args()),call('find_nearby_facilities',{'candidate_id':'P1'}),
+            call('search_places',search_args('성서초등학교','evacuation_destination')),
+            call('submit_analysis',{**body,'notification_assessment':assessment(text,refs=['P1','P2'])}),
+            call('submit_analysis',{**body,'notification_assessment':assessment(text,refs=['P1'])})],places=places)
+        result=agent.analyze(request(text=text))
+        self.assertEqual(result['model_calls'],5)
+        self.assertEqual(result['analysis']['notification_assessment']['basis_refs'],['P1'])
+        self.assertEqual([r['candidate_id'] for r in result['nearby']],['P1'])
+        self.assertIn('대피 목적지',agent.client.inputs[4][-1]['output'])
+
+    def test_released_bridge_cannot_support_an_unlocated_active_restriction(self):
+        req=request('partial_release')
+        places=FakePlaces([{**PLACE,'name':'가람교','address':'서울 성동구','category_name':'교통,수송 > 도로시설 > 교량,다리'}])
+        released=part('가람교 하부도로 통제는 15시 해제되었습니다.','release',[location('가람교 하부도로','restricted_area',['P1'])],
+                      time_text='15시',ends_at='2026-11-07T15:00:00+09:00')
+        active=part('푸른교 하부도로는 침수로 계속 통제 중이니 진입하지 마세요.','active_restriction',[location('푸른교 하부도로','restricted_area')])
+        body=draft([released,active],['푸른교가 위치한 시·군을 확인해야 합니다.'])
+        agent=service([call('search_places',search_args('가람교 하부도로','restricted_area',None,search_name='가람교',place_kind='bridge')),
+            call('submit_analysis',{**body,'notification_assessment':assessment(req.text,relevance='area_operations',refs=['P1'])}),
+            call('submit_analysis',{**body,'notification_assessment':assessment(req.text,need='uncertain',relevance='unknown')})],places=places)
+        result=agent.analyze(req)
+        self.assertEqual(result['analysis']['notification_assessment']['need'],'uncertain')
+        self.assertEqual([p['intent'] for p in result['analysis']['parts']],['release','active_restriction'])
+        self.assertEqual(result['nearby'],[])
+
+    def test_repeated_failed_parking_search_is_reused_then_finishes_with_scheduled_times(self):
+        req=request('scheduled')
+        args=search_args('영천 금호강 둔치 주차장 진입로','restricted_area','영천',search_name='금호강 둔치 주차장',place_kind='parking')
+        args['evidence']=req.text
+        body=draft([part(req.text,'scheduled_restriction',[location('금호강 둔치 주차장 진입로','restricted_area')],
+            time_text='내일 09시부터 12시까지',starts_at='2026-11-08T09:00:00+09:00',ends_at='2026-11-08T12:00:00+09:00')],['정확한 주차장 위치가 어디인가요?'])
+        agent=service([call('search_places',args),call('search_places',args),
+            call('submit_analysis',{**body,'notification_assessment':assessment(req.text,need='uncertain',urgency='scheduled',relevance='unknown')})],places=FakePlaces([]))
+        result=agent.analyze(req)
+        self.assertEqual(len(agent.places.queries),1)
+        self.assertIn('재사용',result['trace'][1]['detail'])
+        self.assertEqual(result['analysis']['parts'][0]['starts_at'],'2026-11-08T09:00:00+09:00')
+        self.assertEqual(result['analysis']['notification_assessment']['need'],'uncertain')
+
+    def test_invalid_fields_receive_paths_without_the_rejected_values(self):
+        req=request('prevention')
+        agent=service([call('find_nearby_facilities',{'candidate_id':None}),
+            call('submit_analysis',{**draft([part(req.text,'prevention')]),'notification_assessment':assessment(req.text,need='record_only',relevance='general',urgency='reference')})])
+        agent.analyze(req)
+        feedback=json.loads(agent.client.inputs[1][-1]['output'])
+        self.assertEqual(feedback['fields'][0]['path'],'candidate_id')
+        self.assertNotIn('input',feedback['fields'][0])
+        self.assertEqual(feedback['remaining_model_responses'],5)
+
+    def test_new_tool_contract_requires_assessment_but_old_saved_analysis_still_loads(self):
+        body=draft([part(request('prevention').text,'prevention')])
+        self.assertIsNone(AnalysisDraft.model_validate(body).notification_assessment)
+        with self.assertRaises(ValidationError):NotificationSubmission.model_validate({**body,'notification_assessment':None})
+
+    def test_real_kakao_combined_bridge_category_keeps_a_matching_bridge(self):
+        search=SearchPlaces.model_validate(search_args('가람교','restricted_area',None,place_kind='bridge'))
+        self.assertTrue(compatible_place(search,{'name':'가람교','address':'서울 성동구','category_name':'교통,수송 > 도로시설 > 교량,다리'}))

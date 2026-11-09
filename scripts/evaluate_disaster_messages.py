@@ -29,6 +29,33 @@ CASE_IDS = ("prevention", "event", "scheduled", "partial_release", "ambiguous", 
 KST = dt.timezone(dt.timedelta(hours=9))
 
 
+class EvaluationClient(OpenAIResponsesClient):
+    """Authored examples only: retain tool arguments/validation feedback, never reasoning."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tool_exchanges = []
+
+    def respond(self, items, tools, instructions, timeout):
+        entry = {"calls": []}
+        if items and items[-1].get('type') == 'function_call_output':
+            try:
+                value = json.loads(items[-1]['output'])
+                entry['feedback'] = {k:value[k] for k in ('status','detail','next_step','fields','remaining_model_responses',
+                    'nearby_queried_ids','matched_facility_query_ids') if k in value}
+            except (ValueError,TypeError):
+                entry['feedback'] = {'status':'unreadable'}
+        self.tool_exchanges.append(entry)
+        output = super().respond(items, tools, instructions, timeout)
+        for item in output:
+            if item.get('type') == 'function_call':
+                try:
+                    args = json.loads(item.get('arguments',''))
+                except (ValueError,TypeError):
+                    args = {'invalid_json': True}
+                entry['calls'].append({'name': item.get('name'), 'arguments': args})
+        return output
+
+
 def select_examples(examples: list[dict], case: str) -> list[dict]:
     # Keep the paid batch fixed even if the UI examples are expanded later.
     if len(examples) != len(CASE_IDS) or {example["id"] for example in examples} != set(CASE_IDS):
@@ -149,6 +176,7 @@ def evaluate(examples, service, client, *, with_places=False, assess_notificatio
                 pause(delay)
         last_started = clock()
         before = client.usage_snapshot()
+        before_trace = len(client.tool_exchanges) if isinstance(client, EvaluationClient) else None
         row = {"id": example["id"], "label": example["label"], "status": "error"}
         abort_batch = False
         try:
@@ -169,6 +197,8 @@ def evaluate(examples, service, client, *, with_places=False, assess_notificatio
             abort_batch = True
         after = client.usage_snapshot()
         row["usage"] = {key: after[key] - before[key] for key in after}
+        if before_trace is not None:
+            row['tool_exchanges'] = client.tool_exchanges[before_trace:]
         row["elapsed_ms"] = round((clock() - last_started) * 1000)
         rows.append(row)
         print(f"{example['id']}: {row['status']}", flush=True)
@@ -196,7 +226,7 @@ def write_report(report: dict, output_dir: Path, secrets: tuple[str, ...] = ()) 
         lines[2:2] = ["- 기존 실제 API 응답 재평가입니다. 추가 OpenAI/Kakao 호출은 0건이며, 아래 사용량·시간은 원본 실행 값입니다."]
     if report.get("spend_budget"):
         budget = report["spend_budget"]["daily"]
-        lines[2:2] = [f"- 이번 실행 전체 상한 $1.00: 정산 ${budget['settled_usd']:.6f}, 미정산 예약 ${budget['reserved_usd']:.6f}.",
+        lines[2:2] = [f"- 이번 실행 전체 상한 ${budget['limit_usd']:.2f}: 정산 ${budget['settled_usd']:.6f}, 미정산 예약 ${budget['reserved_usd']:.6f}.",
                        "- 평가 전용 메모리 원장이며 운영 원장·기록·발송에는 연결하지 않습니다. 청구 금액은 Usage와 대조합니다."]
     for row in report["cases"]:
         usage = row["usage"]
@@ -222,15 +252,16 @@ def main(argv=None):
     parser.add_argument("--case", choices=("all", *CASE_IDS), default="all")
     parser.add_argument("--with-places", action="store_true", help="Kakao REST 키로 실제 장소 검색도 실행")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "output/message-evaluation")
+    parser.add_argument('--budget-cents', type=int, choices=range(1,101), default=100, help='이번 평가 전체 상한(미국 센트), 최대 100')
     args = parser.parse_args(argv)
     if not args.live:
         parser.error("실제 API 평가는 --live를 지정해야 합니다.")
     # Freeze ledger periods for this whole invocation, including a KST midnight.
     # This is a separate one-run $1 cap, never the production Firestore ledger.
     evaluation_started = dt.datetime.now(KST)
-    budget = MessageSpendBudget(MemoryPipelineStore(), daily_cents=100, monthly_cents=100,
+    budget = MessageSpendBudget(MemoryPipelineStore(), daily_cents=args.budget_cents, monthly_cents=args.budget_cents,
                                 now=lambda: evaluation_started)
-    client = OpenAIResponsesClient.from_environment(spend_factory=lambda: budget)
+    client = EvaluationClient.from_environment(spend_factory=lambda: budget)
     places = KakaoPlaceSearch.from_environment() if args.with_places else KakaoPlaceSearch("")
     report = {"report_version": 1, "evaluated_at": dt.datetime.now(KST).isoformat(),
               "model": client.model, "reasoning_effort": client.reasoning_effort,

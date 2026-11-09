@@ -16,7 +16,7 @@ from typing import Annotated, Literal, Protocol
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError
 
 from safety_dashboard.application.nearby_report import NearbyReport
-from safety_dashboard.application.message_facility_queries import FacilityQuery, query_facilities
+from safety_dashboard.application.message_facility_queries import FacilityQuery, query_facilities, target_region_in
 from safety_dashboard.application.message_notification import NotificationAssessment, validate_assessment
 from safety_dashboard.domain.models import Facility, GeoPoint
 from safety_dashboard.application.message_spend_budget import SpendBudgetLimit, SpendBudgetUnavailable
@@ -55,7 +55,7 @@ def compatible_place(search: SearchPlaces, place: dict) -> bool:
     group = place.get("category_group_code", "")
     kind_matches = {
         "mountain": leaf == "산", "industrial_complex": leaf == "산업단지", "school": group == "SC4",
-        "bridge": leaf in {"교량", "다리"}, "road": "도로" in place.get("category_name", ""),
+        "bridge": leaf in {"교량", "다리", "교량,다리"}, "road": "도로" in place.get("category_name", ""),
         "parking": group == "PK6" or leaf == "주차장", "other": True,
     }[search.place_kind]
     def normalized(value):
@@ -133,7 +133,7 @@ class AnalysisDraft(StrictModel):
 
 
 class NotificationSubmission(AnalysisDraft):
-    notification_assessment: NotificationAssessment | None
+    notification_assessment: NotificationAssessment
 
 
 class SearchPlaces(StrictModel):
@@ -203,6 +203,9 @@ place_search_available가 false면 검색을 반복하지 말고 위치 확인 �
 산과 학교/행정실은 서로 다른 장소다. 대표점을 쓰더라도 실제 발생 지점이 미상임을 질문에 남긴다.
 candidate_ids에는 해당 장소 종류에 맞는 후보만 넣는다. 이름에 같은 단어가 있어도 다른 종류인 결과는 제외한다.
 후보를 검색하지 못하면 candidate_ids는 빈 배열이다. 좌표/시설/후보 ID를 만들지 않는다.
+한 장소의 검색이 실패하면 원문에 있는 다른 고유 시설명으로 최대 한 번만 보완한다.
+같은 검색을 되풀이하거나 원문에 없는 시설명/행정구역을 만들어 검색하지 않는다.
+정확한 주차장·진입로 이름이 없으면 상위 하천/도로를 그 지점으로 바꾸지 말고 위치 확인 질문을 남긴다.
 사고 장소 또는 통제/대피 대상 지역의 후보가 유용하면 find_nearby_facilities로 참고 시설을 확인한다.
 사용자는 reference_radius_km로 대표 후보 주변의 참고 시설 조회를 요청했다.
 원문 지역과 주소가 맞고 장소 종류도 맞는 대표 후보를 찾았다면, 가장 적합한 1곳의
@@ -228,8 +231,17 @@ relevance는 facility/nearby/area_operations/general/outside_scope/unknown이다
 광역지역만 조회할 때에는 원문에 해당 광역지역 전역/전체 범위가 명시되어야 한다.
 시설명/지역은 evidence에 포함된 문자열이며, 명칭은 정확히 일치해야 한다. KMA 코드로 행정구역을 추정하지 않는다.
 basis_refs에는 실제 조회 ID(P1 등의 장소 후보 또는 FQ1 등의 명칭/지역 조회)만 연결한다.
+장소를 검색했다는 사실만으로 전파 근거가 되지는 않는다. P ID는 현재 사고/통제/대피 대상에
+연결되고 find_nearby_facilities로 조회한 후보만 basis_refs에 넣는다.
+대피 목적지/참고 장소/해제만 된 구간의 P ID는 현재 상황의 basis_refs에 넣지 않는다.
+예를 들어 사고 장소와 대피 목적지를 따로 찾았어도, 전파 판단의 장소 근거는 사고 장소의 ID만 쓴다.
 일반적인 반복 예방/참고 안내로 추가 업무 정보가 없으면 record_only, 근거가 부족하면 uncertain이다.
 위치만 모호하지만 소관 지역의 즉각적인 안내 필요성이 명확하면 notify로 판단하고 미확인 위치를 reason/questions에 남긴다.
+본문의 소관 지역도 모르고 검증된 소관시설 근거도 없으면, 사고가 긴급해도 need=uncertain이다.
+읍·면·동만 있거나 발신기관의 실제 소재지를 모르면 도시를 추측하지 않는다. 수신지역 여러 개 중 하나를 고르지 않는다.
+예정 상황에서 위치/시설 근거가 미확인이면 need=uncertain으로 제출하되 예정 시각과 통제 역할은 보존한다.
+검색에 실패했다고 분석 전체를 포기하거나 같은 검색으로 남은 응답을 소진하지 않는다.
+도구가 알려주는 남은 응답 수를 확인하고 마지막 응답은 반드시 최종 제출에 쓴다.
 기록만 하겠다는 판단에도 원문 근거가 필요하다. 발송/수신자 선택은 도구가 아니며 이 단계는 미리보기만 준비한다.
 """
 
@@ -302,6 +314,7 @@ class MessageAnalysisService:
         nearby: dict[str, dict] = {}
         facility_queries: dict[str, dict] = {}
         trace: list[dict] = []
+        tool_cache = {}
         for turn in range(MAX_MODEL_CALLS):
             remaining = MAX_SECONDS - (self.clock() - started)
             if remaining <= 1:
@@ -329,6 +342,7 @@ class MessageAnalysisService:
                     if draft.notification_assessment:
                         try:
                             validate_assessment(draft.notification_assessment, request.text, candidates, facility_queries)
+                            self._validate_notification(draft, candidates, nearby, facility_queries, eligible)
                         except ValueError as error:
                             raise DraftEvidenceError(str(error)) from None
                     analysis = draft.model_dump()
@@ -344,18 +358,58 @@ class MessageAnalysisService:
                 remaining = MAX_SECONDS - (self.clock() - started)
                 if remaining <= 1:
                     raise AnalysisUnavailable("분석 제한 시간에 도달했습니다.")
-                result, detail = self._tool(name, args, request, candidates, nearby, remaining, facility_queries)
+                cache_key = (name, json.dumps(args, sort_keys=True, ensure_ascii=False))
+                if cache_key in tool_cache:
+                    result, detail = tool_cache[cache_key]
+                    detail = "동일 조회 결과 재사용 · " + detail
+                else:
+                    result, detail = self._tool(name, args, request, candidates, nearby, remaining, facility_queries)
+                    tool_cache[cache_key] = result, detail
                 trace.append({"tool": name, "detail": detail, "status": result.get("status", "ok"),
                               **{key: result[key] for key in ("candidate_id", "role") if key in result}})
             except DraftEvidenceError as error:
                 result = {"status": "invalid", "detail": str(error)}
                 trace.append({"tool": str(name)[:80], "detail": f"근거 검증 실패 · {error}", "status": "invalid"})
-            except (ValidationError, ValueError, TypeError, KeyError):
+            except ValidationError as error:
+                result = {"status": "invalid", "detail": "필드 경로의 형식을 고쳐 다시 제출하세요. 원문 인용을 바꾸거나 추측하지 마세요.",
+                          "fields": [{"path": ".".join(map(str, e["loc"])), "type": e["type"]} for e in error.errors()[:8]]}
+                trace.append({"tool": str(name)[:80], "detail": "필드 형식 검증 실패 · 수정 요청", "status": "invalid"})
+            except (ValueError, TypeError, KeyError):
                 result = {"status": "invalid", "detail": "입력 형식, 원문 인용, 시간, 후보 ID를 확인하고 수정하세요."}
                 trace.append({"tool": str(name)[:80], "detail": "형식 또는 근거 검증 실패 · 수정 요청", "status": "invalid"})
+            result = {**result, "remaining_model_responses": MAX_MODEL_CALLS-turn-1,
+                      "nearby_queried_ids": list(nearby),
+                      "matched_facility_query_ids": [key for key, query in facility_queries.items() if query["status"] == "ok"]}
+            if result.get("status") in {"not_found", "unavailable", "needs_confirmation"}:
+                result["next_step"] = "같은 조회를 반복하지 마세요. 원문의 다른 고유명으로 한 번 보완하거나, 미확인 위치 질문과 uncertain 판단을 포함해 제출하세요."
+            if turn >= MAX_MODEL_CALLS-2:
+                result["next_step"] = "다음 응답은 submit_analysis입니다. 확인되지 않은 정보는 질문과 uncertain 판단으로 남기고 원문 시각/역할을 보존하세요."
             items.append({"type": "function_call_output", "call_id": call["call_id"],
                           "output": json.dumps(result, ensure_ascii=False)})
         raise AnalysisUnavailable("조회 횟수 안에 분석을 완료하지 못했습니다. 장소나 문구를 확인해 주세요.")
+
+    @staticmethod
+    def _validate_notification(draft, candidates, nearby, queries, eligible):
+        """Return the existing server gate's feedback while the agent can still correct it."""
+        assessment = draft.notification_assessment
+        if assessment.need != "notify":
+            return
+        verified = False
+        for ref in assessment.basis_refs:
+            if ref in candidates:
+                if ref not in eligible or ref not in nearby:
+                    raise DraftEvidenceError("basis_refs의 장소는 현재 사고/통제/대피 대상이며 주변 시설을 조회한 후보여야 합니다. 대피 목적지·참고 지점·해제 구간의 ID는 빼세요. 근거가 부족하면 uncertain으로 제출하세요.")
+                if not any(candidates[ref]["location_text"] in e for e in assessment.evidence):
+                    raise DraftEvidenceError("전파 evidence에는 근거 장소가 포함된 원문 인용이 필요합니다.")
+                verified |= bool(nearby[ref]["total_count"])
+            else:
+                query = queries[ref]
+                quote = query["query"]["evidence"]
+                if not any(quote in e or e in quote for e in assessment.evidence):
+                    raise DraftEvidenceError("전파 판단과 시설 조회의 원문 근거가 다릅니다.")
+                verified |= query["status"] == "ok" and query["total_count"] > 0
+        if not verified and not (assessment.urgency == "immediate" and target_region_in(" ".join(assessment.evidence))):
+            raise DraftEvidenceError("전파할 소관 지역/시설 근거를 확인하지 못했습니다. need=uncertain으로 제출하고 위치 확인 질문을 남기세요. 예정 상황의 시각·통제 역할은 그대로 보존하세요.")
 
     def _tool(self, name, args, request, candidates, nearby, remaining, facility_queries=None):
         if name == "find_monitored_facilities":

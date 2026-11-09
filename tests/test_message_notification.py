@@ -131,8 +131,10 @@ class NotificationPreviewTests(unittest.TestCase):
 
     def test_multiple_recipient_regions_do_not_establish_an_incident_city(self):
         text = "중앙동 사거리 사고로 도로를 통제합니다. 인근 차량은 우회하세요."
-        record, _ = analyzed_record(text, assessment(text, relevance="area_operations"),
+        record, _ = analyzed_record(text, assessment(text, need="uncertain", relevance="area_operations"),
                                     regions=["대구광역시", "부산광역시"])
+        # A malformed historical result must remain blocked even after new submissions reject it earlier.
+        record['analysis']['analysis']['notification_assessment']['need'] = 'notify'
         result = preview(record)
         self.assertEqual(result["decision"], "attention_required")
         self.assertIsNone(result["preview_text"])
@@ -150,10 +152,11 @@ class NotificationPreviewTests(unittest.TestCase):
         places = FakePlaces([{**FakePlaces().rows[0], "name": "성서초등학교", "category_group_code": "SC4"}])
         client = FakeClient([call("search_places", search_args("성서초등학교", "evacuation_destination")),
             call("submit_analysis", {**draft([part(text, locations=[location("성서초등학교", "evacuation_destination", ["P1"])])]),
-                                     "notification_assessment": assessment(text, refs=["P1"])})])
+                                     "notification_assessment": assessment(text, need="uncertain", refs=["P1"])})])
         svc = MessageAnalysisService(client, places, lambda: CATALOG)
         record, _ = analyzed_record(text, assessment(text))
         record["analysis"] = svc.analyze(MessageAnalysisInput.model_validate(record["analysis"]["input"]))
+        record['analysis']['analysis']['notification_assessment']['need'] = 'notify'
         self.assertEqual(preview(record)["decision"], "attention_required")
 
     def test_scheduled_notice_requires_and_preserves_future_start(self):

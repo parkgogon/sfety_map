@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from scripts.evaluate_disaster_messages import check_case, check_notification, evaluate, main, select_examples, write_report
+from scripts.evaluate_disaster_messages import EvaluationClient, check_case, check_notification, evaluate, main, select_examples, write_report
 from safety_dashboard.adapters.openai_messages import OpenAIConnectionError, OpenAIResponsesClient
 from tests.test_message_analysis import EXAMPLES, draft, part, request
 
@@ -17,6 +17,28 @@ def result(parts):
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_evaluation_diagnostics_keep_tools_but_not_reasoning_credentials_or_instructions(self):
+        session=Mock()
+        session.post.return_value.status_code=200
+        session.post.return_value.json.return_value={'status':'completed','output':[
+            {'type':'reasoning','encrypted_content':'opaque-private-state'},
+            {'type':'function_call','name':'submit_analysis','arguments':'{"summary":"authored-example"}'}]}
+        client=EvaluationClient('private-key',session=session)
+        client.respond([{'type':'function_call_output','output':json.dumps({'status':'invalid','detail':'필드 확인','private_field':'private-contact'})}],[],'private-instructions',10)
+        saved=json.dumps(client.tool_exchanges)
+        for value in ('private-key','private-instructions','opaque-private-state','private-contact'):
+            self.assertNotIn(value,saved)
+        self.assertEqual(client.tool_exchanges[0]['calls'][0]['name'],'submit_analysis')
+        self.assertEqual(client.tool_exchanges[0]['feedback']['status'],'invalid')
+
+    def test_budget_below_single_request_reservation_stops_before_any_paid_call(self):
+        with tempfile.TemporaryDirectory() as directory,patch.dict('os.environ',{'OPENAI_API_KEY':'fake-key','OPENAI_MODEL':'gpt-5.4-mini-2026-03-17'}), \
+            patch('requests.Session.post',side_effect=AssertionError('no paid call')) as post, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(['--live','--case','prevention','--budget-cents','31','--output-dir',directory]),1)
+            post.assert_not_called()
+            report=json.loads((Path(directory)/'results.json').read_text())
+            self.assertEqual(report['spend_budget']['daily']['limit_usd'],.31)
+            self.assertEqual(report['spend_budget']['daily']['calls'],0)
     def test_new_contract_rejects_untraced_basis_and_ungrounded_notification(self):
         example = EXAMPLES[0]
         response = result([part(example['text'], 'prevention')])
