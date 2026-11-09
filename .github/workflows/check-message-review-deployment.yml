@@ -6,8 +6,11 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, delivery-runtime]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, delivery-runtime]
         default: metadata
+      probe_revision:
+        description: Exact deployed source SHA for current collection replay
+        type: string
   pull_request:
     types: [labeled]
 
@@ -195,7 +198,7 @@ jobs:
           if-no-files-found: warn
 
   collection-diagnostics:
-    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'collection-diagnostics' || inputs.mode == 'collection-diagnostics-gen2' || inputs.mode == 'collection-candidate')
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'collection-diagnostics' || inputs.mode == 'collection-diagnostics-gen2' || inputs.mode == 'collection-candidate' || inputs.mode == 'collection-current')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -205,6 +208,8 @@ jobs:
       CHECK_SERVICE: message-feed-check-${{ github.run_id }}
       COLLECTION_PROBE_EXECUTION: ${{ inputs.mode != 'collection-diagnostics' && 'gen2' || 'gen1' }}
       COLLECTION_PROBE_CANDIDATE: ${{ inputs.mode == 'collection-candidate' && 'true' || 'false' }}
+      COLLECTION_PROBE_RECENT: ${{ inputs.mode == 'collection-current' && 'true' || 'false' }}
+      COLLECTION_SOURCE_REVISION: ${{ inputs.mode == 'collection-current' && inputs.probe_revision || '5f58be1d12a8ac57c0ec365e4eeb86b392fc348c' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -212,8 +217,9 @@ jobs:
       - name: Prepare read-only collection replay
         run: |
           python3 - <<'PY'
-          import base64,os
+          import base64,os,re
           from pathlib import Path
+          assert re.fullmatch(r'[a-f0-9]{40}',os.environ['COLLECTION_SOURCE_REVISION'])
           loader="import base64,types,sys;"
           if os.environ['COLLECTION_PROBE_CANDIDATE']=='true':
               for name in ('safety_dashboard.application.message_feed_budget','safety_dashboard.adapters.disaster_messages','safety_dashboard.application.message_collection','safety_dashboard.application.message_collection_latest'):
@@ -232,20 +238,20 @@ jobs:
       - name: Assert the deployed source still matches the replay image
         run: |
           python3 - <<'PY'
-          import json,subprocess
+          import json,subprocess,os
           value=json.loads(subprocess.run(['gcloud','run','services','describe','safety-message-worker','--project=keco-safety-map','--region=asia-northeast3','--format=json'],capture_output=True,text=True,check=True).stdout)
           env={e['name']:e.get('value') for e in value['spec']['template']['spec']['containers'][0]['env']}
-          assert env['APP_REVISION']=='5f58be1d12a8ac57c0ec365e4eeb86b392fc348c', 'source_changed_do_not_replay'
+          assert env['APP_REVISION']==os.environ['COLLECTION_SOURCE_REVISION'], 'source_changed_do_not_replay'
           PY
       - name: Run isolated deployed-code replay with no production writes
         run: |
           gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
-            --image=asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:5f58be1d12a8ac57c0ec365e4eeb86b392fc348c \
+            --image="asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:$COLLECTION_SOURCE_REVISION" \
             --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
             --command=python --args="^|^-c|$PROBE_LOADER" \
             --set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1 \
             --execution-environment="$COLLECTION_PROBE_EXECUTION" \
-            --set-env-vars="COLLECTION_PROBE_EXECUTION=$COLLECTION_PROBE_EXECUTION,COLLECTION_PROBE_CANDIDATE=$COLLECTION_PROBE_CANDIDATE,COLLECTION_CANDIDATE_REVISION=$GITHUB_SHA" \
+            --set-env-vars="COLLECTION_PROBE_EXECUTION=$COLLECTION_PROBE_EXECUTION,COLLECTION_PROBE_CANDIDATE=$COLLECTION_PROBE_CANDIDATE,COLLECTION_PROBE_RECENT=$COLLECTION_PROBE_RECENT,COLLECTION_SOURCE_REVISION=$COLLECTION_SOURCE_REVISION,COLLECTION_CANDIDATE_REVISION=$GITHUB_SHA" \
             --cpu=1 --memory=512Mi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=120s \
             --no-allow-unauthenticated --quiet
           CHECK_URL=$(gcloud run services describe "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 --format='value(status.url)')

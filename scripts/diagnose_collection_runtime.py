@@ -20,7 +20,7 @@ from safety_dashboard.application.message_feed_budget import OfficialRequestBudg
 from safety_dashboard.application.message_pipeline import MemoryPipelineStore
 from safety_dashboard.application.message_records import MemoryRecordStore, MessageRecordService
 
-SOURCE_REVISION = "5f58be1d12a8ac57c0ec365e4eeb86b392fc348c"
+SOURCE_REVISION = os.getenv('COLLECTION_SOURCE_REVISION', '5f58be1d12a8ac57c0ec365e4eeb86b392fc348c')
 
 
 def compare_transport(day, page, region, key):
@@ -63,12 +63,17 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
               "production_documents_written": 0, "production_write_access": "not_tested",
               "exceptions": [], "phase": "read_pipeline_metadata"}
     candidate = os.getenv('COLLECTION_PROBE_CANDIDATE') == 'true'
-    report['candidate_strategy'] = 'recent_window_v2' if candidate else None
+    recent = candidate or os.getenv('COLLECTION_PROBE_RECENT') == 'true'
+    report['candidate_strategy'] = 'recent_window_v2' if recent else None
     revision = os.getenv('COLLECTION_CANDIDATE_REVISION', '')
     report['candidate_revision'] = revision if candidate and re.fullmatch(r'[a-f0-9]{40}', revision) else None
     try:
         store = store if store is not None else FirestoreMessagePipelineStore("keco-safety-map")
         state = store.get("collection-state") or {}
+        report['last_error_stage'] = state.get('last_error_stage') if state.get('last_error_stage') in {'initialize','persist_progress','fetch_page','observe_row'} else None
+        report['lane_errors'] = {k:v is True for k,v in state.get('lane_errors',{}).items() if k in {'current','background'}}
+        if state.get('current_work'):
+            report['current_partition_before'] = partition_summary(state['current_work'])
         budget = store.get(OfficialRequestBudget.KEY)
         report["production_documents_read"] = 2
         report["partitions_before"] = [partition_summary(p) for p in state.get("work", [])[:12]]
@@ -83,7 +88,7 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
         records_store = MemoryRecordStore()
         records = MessageRecordService(lambda: records_store, None, storage_mode="memory")
         source = provider if provider is not None else SafetyDataDisasterMessageProvider(os.getenv("SAFETY_DATA_API_KEY", ""),
-            gate_factory=lambda: OfficialRequestBudget(memory, 450, **({'latest_reserve':289} if candidate else {})))
+            gate_factory=lambda: OfficialRequestBudget(memory, 450, **({'latest_reserve':289} if recent else {})))
 
         class BoundedFeed:
             configured = source.configured
@@ -96,7 +101,7 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
 
         def trace(frame, event, arg):
             filename = frame.f_code.co_filename.rsplit("/", 1)[-1]
-            if event == "exception" and filename in {"message_collection.py", "message_feed_budget.py", "disaster_messages.py"}:
+            if event == "exception" and filename in {"message_collection.py", "message_collection_latest.py", "message_feed_budget.py", "disaster_messages.py"}:
                 name = arg[0].__name__
                 if name not in {"StopIteration", "GeneratorExit"} and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,79}", name):
                     report["exceptions"].append({"file": filename, "function": frame.f_code.co_name,
@@ -107,7 +112,7 @@ def diagnose(*, store=None, provider=None, now=None, compare=compare_transport):
         report["phase"] = "bounded_memory_replay"
         settings = MessageAutomationSettings(enabled=True, contract_verified=True, max_pages=2, scan_seconds=40)
         collector_class = OfficialMessageCollector
-        if candidate:
+        if recent:
             from safety_dashboard.application.message_collection_latest import RecentWindowMessageCollector
             collector_class = RecentWindowMessageCollector
         collector = collector_class(BoundedFeed(), records, memory, settings,
