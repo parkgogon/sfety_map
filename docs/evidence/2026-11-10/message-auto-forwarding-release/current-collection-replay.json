@@ -1,0 +1,77 @@
+{
+  "status": "passed",
+  "probe_origin": "isolated_collection_replay",
+  "source_revision": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+  "execution_environment": "gen2",
+  "feed_calls": 2,
+  "max_feed_calls": 2,
+  "feed_calls_are_upper_bound": true,
+  "model_calls": 0,
+  "messages_sent": 0,
+  "production_documents_written": 0,
+  "production_write_access": "not_tested",
+  "exceptions": [],
+  "phase": "finished",
+  "candidate_strategy": "recent_window_v2",
+  "candidate_revision": null,
+  "last_error_stage": "fetch_page",
+  "lane_errors": {
+    "current": true
+  },
+  "current_partition_before": {
+    "date": "2026-11-10",
+    "page": 1,
+    "offset": 0,
+    "verify_head": false,
+    "region_filter_present": false
+  },
+  "production_documents_read": 2,
+  "partitions_before": [
+    {
+      "date": "2026-11-10",
+      "page": 1,
+      "offset": 0,
+      "verify_head": false,
+      "region_filter_present": false
+    },
+    {
+      "date": "2026-11-09",
+      "page": 1,
+      "offset": 0,
+      "verify_head": false,
+      "region_filter_present": false
+    },
+    {
+      "date": "2026-11-08",
+      "page": 1,
+      "offset": 0,
+      "verify_head": false,
+      "region_filter_present": false
+    }
+  ],
+  "start_at": "2026-11-08T13:45:00.961104+00:00",
+  "last_attempt_at": "2026-11-09T23:20:04.105806+00:00",
+  "last_success_at": "2026-11-08T23:00:12.174683+00:00",
+  "replay_result": {
+    "state": "error",
+    "pages": 2,
+    "observed": 3
+  },
+  "partitions_after": [
+    {
+      "date": "2026-11-08",
+      "page": 1,
+      "offset": 0,
+      "verify_head": false,
+      "region_filter_present": false
+    }
+  ],
+  "current_partition_after": {
+    "date": "2026-11-10",
+    "page": 1,
+    "offset": 0,
+    "verify_head": false,
+    "region_filter_present": false
+  },
+  "memory_records": 2
+}

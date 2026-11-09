@@ -1,15 +1,15 @@
 # 공식 문자 자동전파 — 운영 반영 전 확인과 시작/중단
 
-2026-11-09 KST. 1~4단계는 로컬 구현/가짜 제공자 검증 결과다. 현재 운영 앱 `5f58be1`을 이 작업에서 변경하지 않았다.
-기존 OpenAI·Kakao·SafetyData 키와 Telegram 봇/직원방/관리자방을 재사용한다. 키를 재발급하거나 채팅/GitHub 파일에 넣지 않는다.
+2026-11-10 08:36 KST. 사용자 승인으로 [PR #4](https://github.com/parkgogon/sfety_map/pull/4)를 병합하고 운영 앱 `363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2`에 반영했다. [배포·오류 복구·시작/관측 증빙](evidence/2026-11-10/message-auto-forwarding-release/README.md).
+기존 OpenAI·Kakao·SafetyData 키와 Telegram 봇/직원방/관리자 수신처를 재사용했다. 키를 재발급하거나 채팅/GitHub 파일에 넣지 않는다.
 
-## 11월 10일 사전 점검 — 설정안 준비 완료, 운영 미반영
+## 11월 10일 운영 반영·전체 시작 완료
 
-[Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)와 [실제 점검 증빙](evidence/2026-11-10/message-delivery-preflight/README.md).
-공식 표본은 발행 시각 최신순이 아니었고 기존 수집은 ERROR였다. 이후 [순서 독립 수집·연결 오류 보완](evidence/2026-11-10/message-collection-fix/README.md)을 구현했으며 아직 운영 미배포다. 이후 [AI 판단/근거 보완](evidence/2026-11-10/message-ai-judgment-fix/README.md)도 같은 6예문/엄격한 서버 기준에서 최종 6/6 통과했다. 고정 예문 검수이며 일반 정확도는 아니다.
-[실제 런타임 연결 검수](evidence/2026-11-10/message-delivery-runtime/README.md)도 통과했다. 봇/직원방/관리자 수신처 숫자 버전은 **1/2/1**, 관리자 Secret은 `TELEGRAM_CHAT_ID`다. 직원 단체방의 봇 게시 권한을 읽기 전용으로 확인했고 관리자 수신처는 기존 개인 대화다. 실제 수신을 확인한 것은 아니다.
-같은 계정으로 실제 Firestore의 격리 공간에서 현재 어댑터·합성 fixture·가짜 제공자로 저장/이력/시작·중지를 검수했다. 운영 제어 읽기 4회/쓰기 0, 시험 문서 33개와 임시 서비스 삭제 성공. 점검 이미지 두 태그는 저장소 삭제 권한 부족으로 남아 있다.
-**아래 값은 미적용 전환 설정안이다.** [저장소 변수 제안](evidence/2026-11-10/message-delivery-runtime/proposed-repository-variables.json)과 [생성기 검증 결과](evidence/2026-11-10/message-delivery-runtime/proposed-generated-config.json)를 준비했다. 사용자 요청에 따른 운영 반영 후 새 배포 자체의 검수와 별도 시작이 필요하다.
+**08:35:13 KST 전체 시작 1회, 08:36 정규 worker active/같은 generation을 확인했다.** 수집 LIVE/잔여 파티션 0, PC 1440/390px 자동전파 중/3탭 검수 통과다. 기존 대기 preview와 시작 전 원문을 일괄 발송하지 않는다.
+초기 수집 ERROR는 문자 실행 환경만 1회 갱신한 뒤 정규 실행에서 회복을 관측했다. 코드/이미지/기존 설정/키 버전/예약·기상 기준은 보존했으며 저수준 원인·장기 안정성은 미확정이다.
+[AI 판단/근거 보완](evidence/2026-11-10/message-ai-judgment-fix/README.md)은 같은 6예문/서버 기준에서 최종 6/6이며 일반 정확도가 아니다. [기존 연결 검수](evidence/2026-11-10/message-delivery-runtime/README.md)의 봇/직원방/관리자 수신처 **1/2/1**을 실제 API/문자 worker에 고정했다.
+직원 수신처는 단체방, 관리자는 기존 개인 대화다. 실제 직원 수신/접속·현장 확인은 별도이며, 시작 상태나 가짜 제공자 시험으로 증명하지 않는다. 이전 점검 이미지 두 태그는 저장소 삭제 권한 부족으로 남아 있다.
+현재 운영값은 [버전 관리된 설정](../.github/message-delivery-release.json)과 아래 표를 따른다. 전환 전 증빙의 proposed 파일은 당시의 **미적용 제안 원본**으로 보존했다. 새로운 앱 배포 후에는 꺼진 상태의 검수와 별도 시작이 다시 필요하다. 점검 도구/문서의 `[skip ci]` 반영은 운영 앱 배포와 구분한다.
 
 ## 구현된 운영 흐름
 
@@ -24,7 +24,7 @@
 기존 수동 검토·직접 입력은 `view=review`, 상세 관리는 `view=advanced`로 유지한다.
 자동 판단/전송을 사람의 검토 완료·직원 열람·현장 확인으로 기록하지 않는다.
 
-## 배포 전에 남은 실제 검수
+## 이후 앱 배포 시 확인할 절차
 
 1. 동일한 기준 commit/이미지로 통합할 변경과 아래 설정을 검토한다. 기존 KMA LIVE·기준 상태·정규 예약을 보존한다.
    현재 배포의 문자 상태·권한/키 연결·운영방 접근을 읽기 전용으로 확인한다. 실제 시험 발송/기상 dispatch/기준 초기화는 하지 않는다.
@@ -35,9 +35,9 @@
    새 배포의 API/worker 버전·같은 봇/방 고정 버전·Firestore·1분 예약·직원 공개 링크를 확인한 뒤 전파 시작을 실행한다.
    실제 직원의 수신/접속과 장기 장애/지연 관측은 로컬 검수와 구분한다.
 
-## 준비할 비밀값 없는 설정
+## 현재 비밀값 없는 운영 설정
 
-| 변수 | 전환 시 값 |
+| 변수 | 현재 운영값 |
 | --- | --- |
 | `MESSAGE_COLLECTION_ENABLED` / `MESSAGE_COLLECTION_CONTRACT_VERIFIED` | true / true |
 | `MESSAGE_NOTIFICATION_PREPARATION_ENABLED` | true |
@@ -54,7 +54,7 @@
 OpenAI/Kakao/SafetyData는 기존 고정 버전 설정을 유지한다. 새 Telegram 바인딩은 API와 문자 worker에 같은 버전을 연결한다.
 직원방과 관리자방이 같은 값이면 시작할 수 없다. KMA worker의 바인딩·정책·기준 상태는 이 경로로 변경하지 않는다.
 배포 설정 생성기는 외부 호출 없이 검증하며, 플래그/버전이 빠지면 배포 전에 실패한다.
-현재 CI의 새 플래그 기본값은 모두 false다. 별도의 상주 서버나 추가 예약 작업은 만들지 않는다.
+앱 자체 기본값은 비활성이다. 이번 승인된 배포의 CI 기본값은 위 기능을 연결하며 명시적 저장소 변수가 우선한다. `MESSAGE_DELIVERY_ENABLED=false` 긴급 차단 배포도 가능하다. 별도의 상주 서버나 추가 예약 작업은 만들지 않았다.
 
 ## 시작과 정지 경계
 

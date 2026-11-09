@@ -1,0 +1,196 @@
+{
+  "services": {
+    "safety-dashboard-api": {
+      "ready_revision": "safety-dashboard-api-00092-jp4",
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-dashboard-api-00092-jp4"
+        }
+      ],
+      "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/api:363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+      "runtime_account": "safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com",
+      "execution_environment": null,
+      "settings": {
+        "APP_REVISION": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+        "ALERT_AUTOMATION_MODE": "live",
+        "ALERT_USER_DELIVERY_MODE": "telegram",
+        "MESSAGE_REVIEW_STORE": "firestore",
+        "MESSAGE_COLLECTION_ENABLED": "true",
+        "MESSAGE_COLLECTION_CONTRACT_VERIFIED": "true",
+        "MESSAGE_NOTIFICATION_PREPARATION_ENABLED": "true",
+        "MESSAGE_COLLECTION_FAST_ENABLED": "true",
+        "MESSAGE_AI_SPEND_BUDGET_ENABLED": "true",
+        "MESSAGE_EMERGENCY_FALLBACK_ENABLED": "true",
+        "MESSAGE_DELIVERY_ENABLED": "true",
+        "MESSAGE_ANALYSIS_DAILY_LIMIT": "20",
+        "MESSAGE_COLLECTION_MAX_PAGES": "4",
+        "MESSAGE_FEED_REQUEST_LIMIT": "450",
+        "MESSAGE_COLLECTION_CATCHUP_DAYS": "7",
+        "MESSAGE_AI_DAILY_BUDGET_CENTS": "100",
+        "MESSAGE_AI_MONTHLY_BUDGET_CENTS": "2000",
+        "MESSAGE_COLLECTION_INTERVAL_MINUTES": "5"
+      },
+      "message_secret_versions": {
+        "OPENAI_API_KEY": "1",
+        "KAKAO_REST_API_KEY": "1",
+        "SAFETY_DATA_API_KEY": "1"
+      },
+      "delivery_secret_references": {
+        "TELEGRAM_BOT_TOKEN": {
+          "key": "1",
+          "name": "TELEGRAM_BOT_TOKEN"
+        },
+        "TELEGRAM_USER_CHAT_ID": {
+          "key": "2",
+          "name": "TELEGRAM_USER_CHAT_ID"
+        },
+        "TELEGRAM_ADMIN_CHAT_ID": {
+          "key": "1",
+          "name": "TELEGRAM_CHAT_ID"
+        }
+      }
+    },
+    "safety-message-worker": {
+      "ready_revision": "safety-message-worker-00004-lnl",
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-message-worker-00004-lnl"
+        }
+      ],
+      "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+      "runtime_account": "safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com",
+      "execution_environment": "gen2",
+      "settings": {
+        "APP_MODULE": "safety_dashboard.operations.message_worker:app",
+        "APP_REVISION": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+        "MESSAGE_REVIEW_STORE": "firestore",
+        "MESSAGE_COLLECTION_ENABLED": "true",
+        "MESSAGE_COLLECTION_CONTRACT_VERIFIED": "true",
+        "MESSAGE_NOTIFICATION_PREPARATION_ENABLED": "true",
+        "MESSAGE_COLLECTION_FAST_ENABLED": "true",
+        "MESSAGE_AI_SPEND_BUDGET_ENABLED": "true",
+        "MESSAGE_EMERGENCY_FALLBACK_ENABLED": "true",
+        "MESSAGE_DELIVERY_ENABLED": "true",
+        "MESSAGE_ANALYSIS_DAILY_LIMIT": "20",
+        "MESSAGE_COLLECTION_MAX_PAGES": "4",
+        "MESSAGE_FEED_REQUEST_LIMIT": "450",
+        "MESSAGE_COLLECTION_CATCHUP_DAYS": "7",
+        "MESSAGE_AI_DAILY_BUDGET_CENTS": "100",
+        "MESSAGE_AI_MONTHLY_BUDGET_CENTS": "2000",
+        "MESSAGE_COLLECTION_INTERVAL_MINUTES": "5"
+      },
+      "message_secret_versions": {
+        "OPENAI_API_KEY": "1",
+        "KAKAO_REST_API_KEY": "1",
+        "SAFETY_DATA_API_KEY": "1"
+      },
+      "delivery_secret_references": {
+        "TELEGRAM_BOT_TOKEN": {
+          "key": "1",
+          "name": "TELEGRAM_BOT_TOKEN"
+        },
+        "TELEGRAM_USER_CHAT_ID": {
+          "key": "2",
+          "name": "TELEGRAM_USER_CHAT_ID"
+        },
+        "TELEGRAM_ADMIN_CHAT_ID": {
+          "key": "1",
+          "name": "TELEGRAM_CHAT_ID"
+        }
+      }
+    },
+    "safety-alert-worker": {
+      "ready_revision": "safety-alert-worker-00080-km4",
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "safety-alert-worker-00080-km4"
+        }
+      ],
+      "image": "asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+      "runtime_account": "safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com",
+      "execution_environment": "gen2",
+      "settings": {
+        "APP_MODULE": "safety_dashboard.alerts.worker_app:app",
+        "APP_REVISION": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+        "ALERT_AUTOMATION_MODE": "live",
+        "ALERT_USER_DELIVERY_MODE": "telegram",
+        "ALERT_EXCLUDED_WARNING_TYPES": "열대야"
+      },
+      "message_secret_versions": {},
+      "delivery_secret_references": {
+        "TELEGRAM_BOT_TOKEN": {
+          "key": "1",
+          "name": "TELEGRAM_BOT_TOKEN"
+        },
+        "TELEGRAM_USER_CHAT_ID": {
+          "key": "latest",
+          "name": "TELEGRAM_USER_CHAT_ID"
+        },
+        "TELEGRAM_ADMIN_CHAT_ID": {
+          "key": "latest",
+          "name": "TELEGRAM_CHAT_ID"
+        }
+      }
+    }
+  },
+  "jobs": {
+    "safety-message-collect": {
+      "state": "ENABLED",
+      "schedule": "*/5 * * * *",
+      "timeZone": "Asia/Seoul",
+      "status": {},
+      "lastAttemptTime": "2026-11-09T23:00:04.001553Z",
+      "scheduleTime": "2026-11-09T23:05:00Z",
+      "retryConfig": {
+        "maxBackoffDuration": "3600s",
+        "maxDoublings": 5,
+        "maxRetryDuration": "0s",
+        "minBackoffDuration": "5s"
+      },
+      "uri": "https://safety-message-worker-y62i44k74q-du.a.run.app/internal/v1/collect",
+      "oidc_account": "safety-alert-scheduler@keco-safety-map.iam.gserviceaccount.com",
+      "oidc_audience": "https://safety-message-worker-y62i44k74q-du.a.run.app"
+    },
+    "safety-message-analyze": {
+      "state": "ENABLED",
+      "schedule": "* * * * *",
+      "timeZone": "Asia/Seoul",
+      "status": {},
+      "lastAttemptTime": "2026-11-09T23:03:01.898708Z",
+      "scheduleTime": "2026-11-09T23:04:01.219371Z",
+      "retryConfig": {
+        "maxBackoffDuration": "3600s",
+        "maxDoublings": 5,
+        "maxRetryDuration": "0s",
+        "minBackoffDuration": "5s"
+      },
+      "uri": "https://safety-message-worker-y62i44k74q-du.a.run.app/internal/v1/analyze-next",
+      "oidc_account": "safety-alert-scheduler@keco-safety-map.iam.gserviceaccount.com",
+      "oidc_audience": "https://safety-message-worker-y62i44k74q-du.a.run.app"
+    },
+    "safety-alert-dispatch": {
+      "state": "ENABLED",
+      "schedule": "*/5 * * * *",
+      "timeZone": "Asia/Seoul",
+      "status": {},
+      "lastAttemptTime": "2026-11-09T23:00:01.495583Z",
+      "scheduleTime": "2026-11-09T23:05:00Z",
+      "retryConfig": {
+        "maxBackoffDuration": "3600s",
+        "maxDoublings": 5,
+        "maxRetryDuration": "0s",
+        "minBackoffDuration": "5s"
+      },
+      "uri": "https://safety-alert-worker-y62i44k74q-du.a.run.app/internal/v1/dispatch",
+      "oidc_account": "safety-alert-scheduler@keco-safety-map.iam.gserviceaccount.com",
+      "oidc_audience": "https://safety-alert-worker-y62i44k74q-du.a.run.app"
+    }
+  },
+  "message_worker_public": false
+}

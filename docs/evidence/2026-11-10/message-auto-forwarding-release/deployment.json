@@ -1,0 +1,19 @@
+{
+  "source_revision": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+  "run_id": 42716325390,
+  "run_url": "https://github.com/parkgogon/sfety_map/actions/runs/42716325390",
+  "conclusion": "success",
+  "jobs": {
+    "test": "success",
+    "deploy-api": "success",
+    "deploy-web": "success",
+    "configure-uptime-monitoring": "success"
+  },
+  "python_tests": 715,
+  "react_tests": 279,
+  "facility_rows": 195,
+  "fake_test_external_http_tcp_attempts": 0,
+  "verification_tool_revision": "7f773e3a279c5ca180f60c4c03041b9ce5e4ff7f",
+  "verification_tool_related_tests": 10,
+  "test_messages_sent": 0
+}

@@ -8,7 +8,7 @@
 
 사용자는 매 건 관리자 검토/발송을 요구하는 흐름을 줄이고, AI가 업무 관련성과 전파 필요성을 판단해
 기존 직원 단체방에 간략히 자동 공유하는 운영 방향에 동의했다. [보관된 계획](archive/MESSAGE_AUTO_FORWARDING_PLAN_20261109.md).
-1~4단계는 로컬 구현·검증했고 [Draft PR #4](https://github.com/parkgogon/sfety_map/pull/4)로 정리했으며 운영 미배포다. [11월 10일 초기 실연결 검수](evidence/2026-11-10/message-delivery-preflight/README.md)에서 확인한 문제에 대해 [수집 오류 진단·순서 독립 반복 순회](evidence/2026-11-10/message-collection-fix/README.md)를 후속 구현했고 [AI 판단/근거 연결 보완](evidence/2026-11-10/message-ai-judgment-fix/README.md)도 같은 6예문 최종 6/6 검수를 마쳤다. 실제 방 연결·고정 버전·격리 저장/제어 검수와 미적용 전환 설정 준비도 완료했다. 다음은 사용자 요청에 따른 운영 반영과 꺼진 상태의 배포 후 검수다.
+1~4단계를 구현·검증하고 [PR #4](https://github.com/parkgogon/sfety_map/pull/4)를 병합해 사용자 승인으로 운영에 반영했다. [수집 오류/순서 독립 순회](evidence/2026-11-10/message-collection-fix/README.md)와 [AI 판단/근거 연결](evidence/2026-11-10/message-ai-judgment-fix/README.md)을 보완했고, [기존 연결 검수](evidence/2026-11-10/message-delivery-runtime/README.md) 후 [배포·오류 복구·전체 시작/관측](evidence/2026-11-10/message-auto-forwarding-release/README.md)을 완료했다. 실제 앱은 `363ac2e`이며 11월 10일 08:35 시작, 08:36 정규 worker active를 확인했다. 다음은 정규 운영 관측이다.
 
 - [x] 1. AI 판단 계약·서버 근거 검증/처리 분기·짧은 알림 미리보기. Python 561개·React 272개/빌드·5유형/15브라우저 시나리오 통과.
   16개 운영 사례의 단계별 적용 범위를 구분하며, 실제 모델 정확도·원문 대체/전송 결과 검증은 후속이다.
@@ -21,7 +21,8 @@
 - [x] 4. 기존 방 고정 버전 바인딩·별도 전파 outbox·수신 결과/미상·429·동시/중단 복구·전파 이력/예외/전체 시작·정지 화면.
   Python 657개·React 279개/43파일·컴파일/CSV/빌드/셸 문법·10개 경계 재현·1440/390/360px 검수 통과. 실제 모델/시험 발송 0.
 - [x] 운영 전 연결 검수: [기존 봇/직원방/관리자 수신처 1/2/1·읽기 전용 Telegram·실제 격리 Firestore/시작·중지 검수](evidence/2026-11-10/message-delivery-runtime/README.md), Python 706개/React 279개 통과. 전환 설정은 미적용 제안이며 실제 시험 발송 0.
-- [ ] 운영 반영: 사용자 요청에 따른 설정/PR 반영·꺼진 상태의 배포 후 검수·전체 시작. 정규 순회/제공 지연·실처리량·직원 수신/접속·장기 장애 관측은 운영에서 확인한다.
+- [x] 운영 반영: 설정/PR·API/worker/웹·예약 반영, 수집 오류 회복 후 꺼진 상태 PC/휴대폰 검수, 전체 시작 1회와 같은 generation의 정규 worker active 확인. Python 715개·React 279개/빌드 통과, 실제 시험 발송 0.
+- [ ] 정규 운영 관측: 새 당일 순회와 적응형 간격 회복·제공 지연/실처리량·실제 직원 수신/접속·장기 장애/판단 품질은 별도로 관측한다.
 
 ## 재난문자 업무 간소화 — 2026-11-08 KST, 제한 운영 배포 완료
 

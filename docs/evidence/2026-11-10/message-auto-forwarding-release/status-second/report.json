@@ -1,0 +1,86 @@
+{
+  "status": "blocked",
+  "action": "status",
+  "source_revision": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+  "checked_at": "2026-11-09T23:18:06.244968+00:00",
+  "control_requests": 0,
+  "test_messages_sent": 0,
+  "manual_feed_model_dispatch_calls": 0,
+  "phase": "release_checks",
+  "automation": {
+    "state": "error",
+    "interval_seconds": 300,
+    "start_at": "2026-11-08T13:45:00.961104+00:00",
+    "last_attempt_at": "2026-11-09T23:15:04.061021+00:00",
+    "last_success_at": "2026-11-08T23:00:12.174683+00:00",
+    "last_current_scan_success_at": null,
+    "last_backfill_success_at": null,
+    "remaining_partitions": 4,
+    "current_scan_interval_seconds": 300,
+    "budget": {
+      "day": "2026-11-10",
+      "attempts": 0,
+      "limit": 20,
+      "remaining": 20,
+      "active": false
+    },
+    "feed_budget": {
+      "limit": 450,
+      "used": 98,
+      "remaining": 352,
+      "latest_reserve": 289,
+      "background_remaining": 66,
+      "window_hours": 24,
+      "next_available_at": null
+    },
+    "spend_budget": {
+      "enabled": true,
+      "currency": "USD",
+      "rate_version": "openai-standard-2026-11-09-mini-v1",
+      "reservation_usd": 0.318,
+      "model": "gpt-5.4-mini-2026-03-17",
+      "blocked": false,
+      "daily": {
+        "limit_usd": 1.0,
+        "settled_usd": 0.0,
+        "reserved_usd": 0.0,
+        "remaining_usd": 1.0,
+        "unsettled_calls": 0,
+        "calls": 0,
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reset_at": "2026-11-10T15:00:00.000000+00:00"
+      },
+      "monthly": {
+        "limit_usd": 20.0,
+        "settled_usd": 0.0,
+        "reserved_usd": 0.0,
+        "remaining_usd": 20.0,
+        "unsettled_calls": 0,
+        "calls": 0,
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "output_tokens": 0,
+        "reset_at": "2026-11-30T15:00:00.000000+00:00"
+      },
+      "can_start": true
+    }
+  },
+  "delivery": {
+    "active": false,
+    "state": "ready",
+    "generation": null,
+    "started_at": null,
+    "worker": {
+      "generation": null,
+      "revision": "363ac2edf5139b87ee0c6bcbe6bf5c134d1807d2",
+      "at": "2026-11-09T23:18:02.027083+00:00",
+      "state": "paused_or_unconfigured"
+    },
+    "worker_stale": null
+  },
+  "error_type": "ValueError",
+  "reason": "regular_collection_not_ready",
+  "verification_script_revision": "0d789041221bafc4cf2a62ad2fde65b2de881aa4"
+}
