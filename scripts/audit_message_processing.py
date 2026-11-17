@@ -74,6 +74,53 @@ def screenshot_case(record):
     return None
 
 
+def probe_screenshot_source(*, fetch=None, validate=None, scope=None):
+    """At most three official API reads; validate in memory, never import or send."""
+    if fetch is None:
+        from safety_dashboard.adapters.disaster_messages import SafetyDataDisasterMessageProvider
+        fetch = SafetyDataDisasterMessageProvider(os.getenv('SAFETY_DATA_API_KEY', '')).fetch_page
+    if validate is None:
+        from safety_dashboard.application.message_records import MessageSource
+        validate = lambda row: MessageSource(text=row.content, source='행정안전부 공개 재난문자 API',
+            issued_at=row.created_at, recipient_regions=[r for r in row.regions if r != '-']).canonical()
+    if scope is None:
+        from safety_dashboard.application.message_collection import recipient_scope
+        scope = recipient_scope
+    report = {'status': 'passed', 'checked_at': dt.datetime.now(UTC).isoformat(),
+        'api_calls': 0, 'production_documents_written': 0, 'model_calls': 0, 'messages_sent': 0,
+        'query_start_date': '2026-11-17', 'query_region': None, 'pages': [], 'matches': [],
+        'source_scan_complete': False}
+    for page in range(1, 4):
+        report['api_calls'] += 1
+        response = fetch(None, dt.date(2026, 11, 17), page, 100)
+        report['pages'].append({'page': page, 'rows': len(response['messages']),
+            'skipped': response.get('skipped', 0), 'has_more': response['has_more']})
+        for row in response['messages']:
+            case = screenshot_case({'origin': 'official', 'message': {'text': row.content, 'issued_at': row.created_at.isoformat()}})
+            if not case:
+                continue
+            item = {'case': case, 'issued_at': timestamp(row.created_at),
+                'recipient_count': len(row.regions), 'max_recipient_length': max(map(len, row.regions), default=0),
+                'recipient_scope': scope(row.regions), 'source_valid': True, 'validation_errors': []}
+            try:
+                validate(row)
+            except ValueError as error:
+                item['source_valid'] = False
+                if callable(getattr(error, 'errors', None)):
+                    for detail in error.errors(include_input=False)[:5]:
+                        item['validation_errors'].append({'field': '.'.join(map(str, detail.get('loc', ()))),
+                            'type': safe_text(detail.get('type'), 40),
+                            'max_length': detail.get('ctx', {}).get('max_length'),
+                            'actual_length': detail.get('ctx', {}).get('actual_length')})
+                else:
+                    item['validation_errors'] = [{'type': type(error).__name__}]
+            report['matches'].append(item)
+        if not response['has_more']:
+            report['source_scan_complete'] = True
+            break
+    return report
+
+
 class Reader:
     """Deliberately exposes no write, delete, transaction, or provider methods."""
     def __init__(self):
@@ -201,7 +248,7 @@ def handler():
                 self.send_error(400);return
             with self.lock:
                 if type(self).result is None:
-                    try:type(self).result = audit(Reader())
+                    try:type(self).result = probe_screenshot_source() if os.getenv('AUDIT_SOURCE_CASES') == '1' else audit(Reader())
                     except Exception as error:type(self).result = {'status':'blocked','error_type':type(error).__name__,'production_documents_written':0,'messages_sent_by_audit':0}
             data=json.dumps(self.result,ensure_ascii=False).encode();self.send_response(200)
             self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)

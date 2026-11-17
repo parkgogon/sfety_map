@@ -2,8 +2,9 @@ import copy
 import datetime as dt
 import json
 import unittest
+from types import SimpleNamespace
 
-from scripts.audit_message_processing import audit, digest, receipt, safe_text, screenshot_case
+from scripts.audit_message_processing import audit, digest, receipt, safe_text, screenshot_case, probe_screenshot_source
 
 NOW=dt.datetime.fromisoformat('2026-11-18T09:00:00+09:00')
 
@@ -25,6 +26,21 @@ def record(origin='official'):
 
 
 class MessageProcessingAuditTests(unittest.TestCase):
+    def test_source_probe_is_bounded_and_never_exports_original_or_contacts(self):
+        calls=[]
+        row=SimpleNamespace(content='상주시 지진 규모 3.7 private-original 010-1234-5678',
+            created_at=dt.datetime.fromisoformat('2026-11-17T23:10:00+09:00'), regions=('경상북도 상주시',))
+        def fetch(*args):
+            calls.append(args)
+            return {'messages':[row], 'skipped':0, 'has_more':True}
+        result=probe_screenshot_source(fetch=fetch, validate=lambda _:None, scope=lambda _:True)
+        self.assertEqual(len(calls),3)
+        self.assertEqual(result['api_calls'],3)
+        self.assertFalse(result['source_scan_complete'])
+        self.assertEqual(result['production_documents_written'],0)
+        for private in ('private-original','010-1234-5678'):
+            self.assertNotIn(private,json.dumps(result,ensure_ascii=False))
+
     def test_screenshot_cases_are_separate_and_not_inferred_from_recipient_city(self):
         def candidate(text, day):
             value=record();value['message'].update(text=text,issued_at=day+'T23:10:00+09:00')

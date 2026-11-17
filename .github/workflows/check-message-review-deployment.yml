@@ -6,7 +6,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history, message-case-source]
         default: metadata
       probe_revision:
         description: Exact deployed source SHA for current collection replay
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   message-history:
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'message-history'
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'message-history' || inputs.mode == 'message-case-source')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -31,6 +31,7 @@ jobs:
       id-token: write
     env:
       CHECK_SERVICE: message-feed-check-${{ github.run_id }}
+      CHECK_MODE: ${{ inputs.mode }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,6 +54,8 @@ jobs:
           image=container['image'];assert image=='asia-northeast3-docker.pkg.dev/keco-safety-map/safety-dashboard/worker:'+revision
           source=base64.b64encode(Path('scripts/audit_message_processing.py').read_bytes()).decode()
           loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
+          if os.environ['CHECK_MODE']=='message-case-source':
+              loader="import os;os.environ['AUDIT_SOURCE_CASES']='1';"+loader
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('AUDIT_IMAGE='+image+'\nPROBE_LOADER='+loader+'\n')
           out=Path('safetydata-runtime-check');out.mkdir(exist_ok=True)
           (out/'runtime-metadata.json').write_text(json.dumps({'source_revision':revision,
@@ -61,8 +64,13 @@ jobs:
           PY
       - name: Run IAM-private read-only Firestore audit with no key bindings
         run: |
+          EXTRA_BINDINGS=()
+          if [[ "$CHECK_MODE" == "message-case-source" ]]; then
+            EXTRA_BINDINGS=(--set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1)
+          fi
           gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
             --image="$AUDIT_IMAGE" --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
+            "${EXTRA_BINDINGS[@]}" \
             --command=python --args="^|^-c|$PROBE_LOADER" --execution-environment=gen2 \
             --cpu=1 --memory=1Gi --concurrency=1 --min-instances=0 --max-instances=1 --timeout=180s \
             --no-allow-unauthenticated --quiet
