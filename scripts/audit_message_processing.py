@@ -56,6 +56,24 @@ def receipt(value):
             'resolved_at': timestamp(value.get('resolved_at'))}
 
 
+def screenshot_case(record):
+    """Match the three user-supplied cases without exporting original text."""
+    message = record.get('message', {})
+    issued = when(message.get('issued_at'))
+    if not issued or record.get('origin') != 'official':
+        return None
+    day = issued.astimezone(KST).date().isoformat()
+    text = re.sub(r'\s+', '', message.get('text', ''))
+    if day == '2026-11-10' and '범물' in text and '화재' in text:
+        return 'beommul_fire'
+    if day == '2026-11-17' and '상주' in text and '지진' in text:
+        if '3.6' in text and ('조정' in text or '상세분석' in text):
+            return 'sangju_earthquake_correction'
+        if '3.7' in text:
+            return 'sangju_earthquake_initial'
+    return None
+
+
 class Reader:
     """Deliberately exposes no write, delete, transaction, or provider methods."""
     def __init__(self):
@@ -91,6 +109,8 @@ def audit(reader, *, now=None):
     official = [r for r in scanned if r.get('origin') == 'official' and (when(r.get('message', {}).get('issued_at')) or when(r.get('created_at')) or dt.datetime.min.replace(tzinfo=UTC)) >= cutoff]
     official.sort(key=lambda r: when(r.get('message', {}).get('issued_at')) or when(r['created_at']), reverse=True)
     selected = official[:MAX_ROWS]
+    # Keep screenshot cases first so size limiting cannot hide an older match.
+    selected.sort(key=lambda r: screenshot_case(r) is None)
     day = now.astimezone(KST).date().isoformat()
     month = now.astimezone(KST).strftime('%Y-%m')
     heads = ['notification-head-'+digest(r['id']) for r in selected]
@@ -113,6 +133,8 @@ def audit(reader, *, now=None):
         'collection': {'state':state, **{key: timestamp(collection.get(key)) for key in ('start_at','last_attempt_at','last_success_at','last_current_scan_success_at','last_backfill_success_at')},
             'last_error_stage': safe_text(collection.get('last_error_stage'), 40) if collection.get('last_error') else None,
             'remaining_partitions':len(collection.get('work',[]))+bool(collection.get('current_work')), 'skipped_rows':collection.get('cycle_skipped',0),
+            'skipped_reasons': {key: collection.get('cycle_skipped_reasons', {}).get(key, 0)
+                for key in ('source_fields', 'query_date', 'recipient_region', 'source_validation')},
             'coverage_gap':bool(collection.get('coverage_gap')), 'current_scan_interval_seconds':collection.get('current_scan_interval_seconds')},
         'delivery_control': {'mode':safe_text(control.get('mode'),20), 'started_at':timestamp(control.get('started_at')),
             'revision':safe_text(control.get('revision'),40), 'worker_at':timestamp(worker.get('at')), 'worker_state':safe_text(worker.get('state'),40),
@@ -122,6 +144,9 @@ def audit(reader, *, now=None):
         'spend': {label:{'settled_usd':base.get(key,{}).get('settled_nano',0)/1e9, 'reserved_usd':base.get(key,{}).get('reserved_nano',0)/1e9,
                   'unsettled_calls':base.get(key,{}).get('unsettled_calls',0), 'responses':base.get(key,{}).get('calls',0)}
                   for label,key in (('today','message-spend-day-'+day),('month','message-spend-month-'+month))},
+        'screenshot_cases': {key: {'matches_in_scanned_records': sum(screenshot_case(r) == key for r in scanned),
+            'record_ids': [r['id'] for r in scanned if screenshot_case(r) == key]}
+            for key in ('beommul_fire', 'sangju_earthquake_initial', 'sangju_earthquake_correction')},
         'records': [], 'exceptions': []}
     for record, head_id, task in zip(selected, heads, tasks):
         rid = record['id'];head = base.get(head_id,{})
@@ -130,7 +155,7 @@ def audit(reader, *, now=None):
         assessment = analysis.get('notification_assessment') or {}
         related = [d for d in history if d.get('record_id') == rid]
         current_outbox = outboxes.get('message-delivery-'+digest(head['job_id'])) if head.get('job_id') else None
-        row = {'record_id':rid,'issued_at':timestamp(record['message'].get('issued_at')),'collected_at':timestamp(record.get('created_at')),
+        row = {'record_id':rid,'screenshot_case':screenshot_case(record),'issued_at':timestamp(record['message'].get('issued_at')),'collected_at':timestamp(record.get('created_at')),
             'source_revision':record['source_revision'],'recipient_regions':[safe_text(r,50) for r in record['message'].get('recipient_regions',[])[:3]],
             'topic_keywords':[w for w in ('화재','산불','실종','호우','강풍','대설','지진','단수','통제','대피','훈련','안개','폭염','한파','건조','동파','침수') if w in record['message']['text']],
             'summary':safe_text(analysis.get('summary'),160),'analysis_state':safe_text(record.get('analysis_state'),30),

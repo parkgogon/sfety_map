@@ -3,7 +3,7 @@ import datetime as dt
 import json
 import unittest
 
-from scripts.audit_message_processing import audit, digest, receipt, safe_text
+from scripts.audit_message_processing import audit, digest, receipt, safe_text, screenshot_case
 
 NOW=dt.datetime.fromisoformat('2026-11-18T09:00:00+09:00')
 
@@ -25,6 +25,23 @@ def record(origin='official'):
 
 
 class MessageProcessingAuditTests(unittest.TestCase):
+    def test_screenshot_cases_are_separate_and_not_inferred_from_recipient_city(self):
+        def candidate(text, day):
+            value=record();value['message'].update(text=text,issued_at=day+'T23:10:00+09:00')
+            return value
+        self.assertEqual(screenshot_case(candidate('대구시 범물동 613 농막 화재 발생', '2026-11-10')), 'beommul_fire')
+        self.assertEqual(screenshot_case(candidate('경북 상주시 북서쪽 22km 지역 규모 3.7 지진발생', '2026-11-17')), 'sangju_earthquake_initial')
+        self.assertEqual(screenshot_case(candidate('상주시 규모 3.7 지진은 상세분석을 통해 규모 3.6로 조정됨', '2026-11-17')), 'sangju_earthquake_correction')
+        self.assertIsNone(screenshot_case(candidate('경북 상주시 화재', '2026-11-17')))
+        self.assertIsNone(screenshot_case(candidate('상주 지진 규모 3.7', '2026-11-16')))
+
+    def test_missing_screenshot_case_is_reported_without_claiming_source_feed_absence(self):
+        r=Reader();r.records=[record()]
+        result=audit(r,now=NOW)
+        self.assertEqual(result['screenshot_cases']['sangju_earthquake_initial']['matches_in_scanned_records'],0)
+        self.assertEqual(result['screenshot_cases']['beommul_fire']['record_ids'],[])
+        self.assertFalse(result['scan_limit_reached'])
+
     def test_audit_only_reads_and_excludes_manual_examples_original_text_and_contacts(self):
         r=Reader();r.records=[record(),{**record('example'),'id':'manual-private'}]
         before=copy.deepcopy(r.__dict__);result=audit(r,now=NOW)
