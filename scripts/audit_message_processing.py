@@ -204,6 +204,8 @@ def audit(reader, *, now=None):
         current_outbox = outboxes.get('message-delivery-'+digest(head['job_id'])) if head.get('job_id') else None
         row = {'record_id':rid,'screenshot_case':screenshot_case(record),'issued_at':timestamp(record['message'].get('issued_at')),'collected_at':timestamp(record.get('created_at')),
             'source_revision':record['source_revision'],'recipient_regions':[safe_text(r,50) for r in record['message'].get('recipient_regions',[])[:3]],
+            'recipient_count':len(record['message'].get('recipient_regions',[])),
+            'analysis_recipient_count':len((record.get('analysis') or {}).get('input',{}).get('recipient_regions',[])),
             'topic_keywords':[w for w in ('화재','산불','실종','호우','강풍','대설','지진','단수','통제','대피','훈련','안개','폭염','한파','건조','동파','침수') if w in record['message']['text']],
             'summary':safe_text(analysis.get('summary'),160),'analysis_state':safe_text(record.get('analysis_state'),30),
             'analysis_revision':record.get('analysis_revision'),'analysis_source_revision':record.get('analysis_source_revision'),
