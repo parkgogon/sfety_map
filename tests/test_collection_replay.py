@@ -72,7 +72,10 @@ class CollectionReplayTests(unittest.TestCase):
         self.assertIn("inputs.mode == 'collection-diagnostics'",job['if'])
         deploy=next(s['run'] for s in job['steps'] if s.get('name','').startswith('Run isolated'))
         self.assertIn('--no-allow-unauthenticated',deploy)
-        self.assertIn('5f58be1d12a8ac57c0ec365e4eeb86b392fc348c',deploy)
+        self.assertIn('worker:$COLLECTION_SOURCE_REVISION', deploy)
+        self.assertRegex(job['env']['COLLECTION_SOURCE_REVISION'], r"'[a-f0-9]{40}'")
+        guard=next(s['run'] for s in job['steps'] if s.get('name','').startswith('Assert the deployed'))
+        self.assertIn("env['APP_REVISION']==os.environ['COLLECTION_SOURCE_REVISION']", guard)
         for forbidden in ('OPENAI','TELEGRAM','ADMIN_ACCESS','KMA_API','dispatch'):
             self.assertNotIn(forbidden,deploy)
         self.assertTrue(any(s.get('if')=='always()' and 'services delete "$CHECK_SERVICE"' in s.get('run','') for s in job['steps']))
