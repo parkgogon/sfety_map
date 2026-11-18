@@ -21,12 +21,18 @@ def area_tokens(text: str) -> tuple[str, ...]:
     tokens = text.split()
     if not tokens:
         return ()
-    province = next((full for full, short in PROVINCES.items() if tokens[0] in (full, short)), None)
+    province = next((full for full, short in PROVINCES.items()
+                     if tokens[0] in (full, short) or (full.endswith("광역시") and tokens[0] == short + "시")), None)
     if not province or len(tokens) > 3:
         return ()
     if any(not re.fullmatch(r"[가-힣]+[시군구]", token) for token in tokens[1:]):
         return ()
     return (province, *tokens[1:])
+
+
+def facilities_in_area(scope, facilities):
+    return tuple(f for f in facilities if f.is_monitored
+                 and area_tokens(" ".join(f.address.split()[:len(scope)])) == scope)
 
 
 def target_region_in(text: str) -> bool:
@@ -50,7 +56,7 @@ def query_facilities(query: FacilityQuery, source_text: str, facilities, *, limi
         # A province-wide result needs an explicit province-wide source statement.
         if len(scope) == 1 and not re.search(re.escape(query.area_text) + r"\s*(?:전역|전체)", query.evidence):
             raise ValueError("광역지역 전체 조회에는 원문의 전역/전체 범위가 필요합니다. 시·군·구가 있으면 함께 넣으세요.")
-        selected = tuple(f for f in selected if area_tokens(" ".join(f.address.split()[:len(scope)])) == scope)
+        selected = facilities_in_area(scope, selected)
     if query.facility_name:
         key = re.sub(r"\s+", "", query.facility_name)
         selected = tuple(f for f in selected if re.sub(r"\s+", "", f.name) == key)

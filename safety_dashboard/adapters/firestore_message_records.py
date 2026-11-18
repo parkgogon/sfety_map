@@ -5,6 +5,7 @@ import json
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from safety_dashboard.application.message_earthquake import earthquake_report, observe_earthquake
 from safety_dashboard.application.message_records import RecordConflict, RecordStorageUnavailable, preserve_observation, newer_observation
 
 
@@ -40,6 +41,11 @@ class FirestoreMessageRecordStore:
             if (current["version"] if current else 0) != expected:
                 raise RecordConflict("기록이 변경됐습니다. 다시 불러온 뒤 진행해 주세요.")
             saved = preserve_observation(value, current)
+            if event in {"registered", "source_changed"} and (report := earthquake_report(saved)):
+                episode_ref = self.client.collection("disaster_message_pipeline").document(report.key)
+                episode = observe_earthquake(saved, report, episode_ref.get(transaction=transaction, timeout=5).to_dict())
+                if episode:
+                    transaction.set(episode_ref, episode)
             transaction.set(ref, saved)
             transaction.set(ref.collection("versions").document(f"{expected + 1:010d}"), {"event": event, "record": saved})
             return saved

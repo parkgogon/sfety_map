@@ -8,6 +8,7 @@ from safety_dashboard.application.message_collection_latest import LatestFirstMe
 from safety_dashboard.application.message_collection import OfficialMessageCollector
 from safety_dashboard.application.message_feed_budget import OfficialRequestBudget, FeedRequestLimit, recent_request_reserve
 from safety_dashboard.application.message_pipeline import MemoryPipelineStore, stamp
+from safety_dashboard.application.message_processing import MessageQueueProcessor
 from safety_dashboard.domain.models import DisasterMessage
 from tests.test_message_records import make_service
 
@@ -39,6 +40,40 @@ class LatestCollectionTests(unittest.TestCase):
     def row(self,identifier="SN-new",**overrides):
         return DisasterMessage(**{"id":identifier,"created_at":self.clock[0],"emergency_step":"안전안내",
             "disaster_type":"교통", "content":"대구 달서구에서 차량 사고로 도로를 통제합니다.","regions":("대구광역시",),**overrides})
+
+    def test_broad_alert_and_correction_keep_all_regions_and_analyze_once_per_source(self):
+        regions = tuple(f"경상북도 상주시 제{i}지역" for i in range(60))
+        initial = self.row("earthquake-initial", content="경북 상주시 북서쪽 22km 지역 규모 3.7 지진발생", regions=regions)
+        correction = self.row("earthquake-correction", content="경북 상주시 규모 3.7 지진은 규모 3.6으로 조정됨", regions=regions)
+        self.feed.result = lambda day, page: {"messages": [initial, correction] if day == NOW.date() else [],
+                                              "has_more": False, "skipped": 0}
+        self.collect()
+        self.clock[0] += dt.timedelta(minutes=5)
+        self.collect()
+        processor = MessageQueueProcessor(self.records, self.store, self.settings, now=lambda: self.clock[0])
+        self.assertEqual(processor.queue.counts()["pending"], 2)
+        self.assertEqual(processor.run()["state"], "analyzed")
+        self.assertEqual(processor.run()["state"], "analyzed")
+        self.assertEqual(processor.run()["state"], "idle")
+        for row in (initial, correction):
+            saved = self.records.get(self.records.official_record_id(row.id))
+            self.assertEqual(saved["message"]["recipient_regions"], list(regions))
+            self.assertEqual(saved["analysis"]["input"]["recipient_regions"], list(regions))
+            self.assertEqual(saved["source_revision"], 1)
+        self.assertEqual(self.store.get("collection-state")["cycle_skipped"], 0)
+
+    def test_bad_source_logs_record_id_and_field_without_inputs(self):
+        row = self.row("known-source-id", regions=("대구광역시", "민감한입력" * 30))
+        self.feed.result = lambda day, page: {"messages": [row] if day == NOW.date() else [],
+                                              "has_more": False, "skipped": 0}
+        with self.assertLogs("safety_dashboard.application.message_collection", level="WARNING") as log:
+            self.collect()
+        details = "\n".join(log.output)
+        self.assertIn(self.records.official_record_id(row.id), details)
+        self.assertIn("source_validation", details)
+        self.assertIn("recipient_regions:string_too_long", details)
+        self.assertNotIn(row.content, details)
+        self.assertNotIn("민감한입력", details)
 
     def test_today_head_precedes_busy_legacy_partition_and_keeps_original_start(self):
         start=NOW-dt.timedelta(hours=1)

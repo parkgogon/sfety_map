@@ -9,12 +9,13 @@ import threading
 import uuid
 import logging
 from collections.abc import Callable
-from typing import Annotated, Literal, Protocol
+from typing import Literal, Protocol
 
 from pydantic import AwareDatetime, Field
 
 from safety_dashboard.application.context_info import KST
-from safety_dashboard.application.message_analysis import AnalysisBusy, MessageAnalysisInput, StrictModel
+from safety_dashboard.application.message_analysis import AnalysisBusy, MessageAnalysisInput, RecipientRegions, StrictModel
+from safety_dashboard.application.message_earthquake import earthquake_report, observe_earthquake
 
 
 class RecordConflict(ValueError):
@@ -46,7 +47,7 @@ class MessageSource(StrictModel):
     text: str = Field(min_length=10, max_length=2000)
     source: str = Field(min_length=1, max_length=80)
     issued_at: AwareDatetime | None = None
-    recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
+    recipient_regions: RecipientRegions = Field(default_factory=list)
 
     def canonical(self):
         if any(not value.strip() or len(value) > 120 for value in self.recipient_regions):
@@ -111,6 +112,7 @@ class MemoryRecordStore:
     """명시적인 로컬/테스트용. 운영 Firestore 실패 시 대체하지 않는다."""
     def __init__(self):
         self.records, self.versions = {}, {}
+        self.earthquake_events = {}
         self.lock = threading.RLock()
 
     def get(self, identifier):
@@ -134,6 +136,10 @@ class MemoryRecordStore:
             saved = preserve_observation(record, current)
             saved["version"] = expected + 1
             saved["notification_dirty"] = True
+            if event in {"registered", "source_changed"} and (report := earthquake_report(saved)):
+                episode = observe_earthquake(saved, report, self.earthquake_events.get(report.key))
+                if episode:
+                    self.earthquake_events[report.key] = episode
             self.records[saved["id"]] = saved
             self.versions.setdefault(saved["id"], []).append({"event": event, "record": copy.deepcopy(saved)})
             return copy.deepcopy(saved)

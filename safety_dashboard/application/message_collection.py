@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import time
 import uuid
 
@@ -16,6 +17,7 @@ from safety_dashboard.application.message_analysis import REGION_ALIASES
 
 
 TARGET_NAMES = PROVINCES + tuple(REGION_ALIASES[name] for name in PROVINCES)
+LOGGER = logging.getLogger(__name__)
 
 
 def recipient_scope(regions):
@@ -158,18 +160,28 @@ class OfficialMessageCollector:
         before_start = row.created_at < moment(start_at)
         valid_date = dt.date.fromisoformat(query_date) <= row_day <= today
         previous = self.records.store.get(self.records.official_record_id(row.id)) if valid_date and before_start and scope is not False else None
+        def reject(reason, fields=""):
+            skip(reason)
+            LOGGER.warning("Official message skipped: record_id=%s issued_at=%s date_partition=%s reason=%s fields=%s",
+                           self.records.official_record_id(row.id), row.created_at.isoformat(),
+                           query_date, reason, fields)
+
         if not valid_date:
-            skip("query_date")
+            reject("query_date")
         elif before_start and not previous:
             return 0, 1
         elif scope is None:
-            skip("recipient_region")
+            reject("recipient_region")
         elif scope:
             try:
                 message = MessageSource(text=row.content, source="행정안전부 공개 재난문자 API",
                     issued_at=row.created_at, recipient_regions=[r for r in row.regions if r != "-"]).canonical()
-            except (ValidationError, ValueError):
-                skip("source_validation")
+            except ValidationError as error:
+                reject("source_validation", ",".join(
+                    f"{issue['loc'][0]}:{issue['type']}" for issue in error.errors(include_input=False)[:5]
+                ))
+            except ValueError:
+                reject("source_validation", "recipient_regions")
             else:
                 self._import(message, row.id, fetched_at, start_at)
                 return 1, 0

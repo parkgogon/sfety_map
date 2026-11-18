@@ -5,6 +5,7 @@ import copy
 import datetime as dt
 import json
 
+from safety_dashboard.application.message_earthquake import KEY_PREFIX as EARTHQUAKE_KEY_PREFIX, earthquake_report
 from safety_dashboard.application.message_notification import POLICY_VERSION, notification_preview
 from safety_dashboard.application.message_notification_fallback import emergency_original_preview, unavailable_reason, REASONS, KST
 from safety_dashboard.application.message_pipeline import UTC, moment, stamp
@@ -42,10 +43,13 @@ class MemoryNotificationStore:
         # One lock order across instances. Failed preparation never clears the marker.
         with self.records.lock, self.pipeline.lock:
             current = self.records.records.get(identifier)
-            values = {key: copy.deepcopy(self.pipeline.values.get(key)) for key in keys}
+            def storage(key):
+                return self.records.earthquake_events if key.startswith(EARTHQUAKE_KEY_PREFIX) else self.pipeline.values
+            values = {key: copy.deepcopy(storage(key).get(key)) for key in keys}
             writes, acknowledge, result = update(copy.deepcopy(current), values)
             validate_writes(keys, writes)
-            self.pipeline.values.update(copy.deepcopy(writes))
+            for key, value in writes.items():
+                storage(key)[key] = copy.deepcopy(value)
             if acknowledge and current:
                 self.records.records[identifier] = {**current, "notification_dirty": False}
             return copy.deepcopy(result)
@@ -69,6 +73,10 @@ def record_basis(record, digest, policy_version, base_url):
     keys = ("origin", "message", "source_revision", "content_hash", "analysis_revision", "analysis_source_revision",
             "analysis_state", "analysis", "facility_digest", "reference_radius_km", "note", "spatial_references",
             "review_state", "review_completion", "review_working_copy", "related_messages", "relation_epoch")
+    if earthquake_report(record):
+        # Official earthquake previews have their own source and catalogue
+        # checks. Completing the separate AI analysis must not cancel them.
+        keys = tuple(key for key in keys if not key.startswith("analysis") and key != "facility_digest")
     return content_hash({"record": {k: record.get(k) for k in keys}, "catalog_digest": digest,
                          "policy_version": policy_version, "base_url": base_url})
 
@@ -184,7 +192,7 @@ class MessageNotificationPreparation:
                 first = values[slot] is None
                 source_state = values[slot] or {"record_id": identifier, "source_revision": record["source_revision"],
                     "content_hash": record["content_hash"], "first_decision_id": did, "created_at": stamp(now), "finalized": False}
-                finalizable = scope != "eligible" or preview.get("preparation_kind") == "raw_emergency_fallback" or (
+                finalizable = scope != "eligible" or preview.get("preparation_kind") in {"raw_emergency_fallback", "official_earthquake"} or (
                     record.get("analysis_state") == "completed" and record.get("analysis_source_revision") == record["source_revision"]
                     and record.get("facility_digest") == catalog[0] and preview.get("assessment") is not None)
                 first_finalization = finalizable and not source_state["finalized"]
