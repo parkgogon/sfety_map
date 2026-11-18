@@ -6,10 +6,10 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history, message-case-source]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history, message-case-source, fire-guidance-replay]
         default: metadata
       probe_revision:
-        description: Exact deployed source SHA for current collection replay
+        description: Exact source SHA for current collection or candidate fire replay
         type: string
   pull_request:
     types: [labeled]
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   message-history:
-    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'message-history' || inputs.mode == 'message-case-source')
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'message-history' || inputs.mode == 'message-case-source' || inputs.mode == 'fire-guidance-replay')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -32,10 +32,17 @@ jobs:
     env:
       CHECK_SERVICE: message-feed-check-${{ github.run_id }}
       CHECK_MODE: ${{ inputs.mode }}
+      FIRE_CANDIDATE_SHA: ${{ inputs.probe_revision }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/checkout@v4
+        if: inputs.mode == 'fire-guidance-replay'
+        with:
+          ref: ${{ inputs.probe_revision }}
+          persist-credentials: false
+          path: fire-candidate
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -44,7 +51,7 @@ jobs:
       - name: Read existing message runtime metadata without changing it
         run: |
           python3 - <<'PY'
-          import base64,json,os,re,subprocess
+          import base64,json,os,re,subprocess,zlib
           from pathlib import Path
           value=json.loads(subprocess.run(['gcloud','run','services','describe','safety-message-worker',
               '--project=keco-safety-map','--region=asia-northeast3','--format=json'],capture_output=True,text=True,check=True).stdout)
@@ -56,17 +63,38 @@ jobs:
           loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
           if os.environ['CHECK_MODE']=='message-case-source':
               loader="import os;os.environ['AUDIT_SOURCE_CASES']='1';"+loader
+          if os.environ['CHECK_MODE']=='fire-guidance-replay':
+              sha=os.environ['FIRE_CANDIDATE_SHA']
+              assert re.fullmatch(r'[a-f0-9]{40}',sha)
+              assert subprocess.check_output(['git','-C','fire-candidate','rev-parse','HEAD'],text=True).strip()==sha
+              package='safety_dashboard.application.'
+              modules=[package+n for n in ('message_facility_queries','message_address','message_earthquake','message_fire')]
+              modules+=['safety_dashboard.adapters.kakao_places']
+              loader=("import base64,zlib,types,sys;"
+                  "from safety_dashboard.application.message_notification import notification_preview as baseline;"
+                  "import safety_dashboard.application.message_analysis;")
+              def load_module(target,path):
+                  code=base64.b64encode(zlib.compress(Path(path).read_bytes())).decode()
+                  return ("m=types.ModuleType("+repr(target)+");sys.modules[m.__name__]=m;"
+                          "exec(zlib.decompress(base64.b64decode("+repr(code)+")),m.__dict__);")
+              for name in modules:
+                  loader+=load_module(name,'fire-candidate/'+name.replace('.','/')+'.py')
+              loader+=load_module('candidate_notification','fire-candidate/safety_dashboard/application/message_notification.py')
+              loader+=load_module('fire_replay','scripts/replay_fire_guidance.py')
+              loader+="sys.modules['fire_replay'].serve(baseline,sys.modules['candidate_notification'].notification_preview)"
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('AUDIT_IMAGE='+image+'\nPROBE_LOADER='+loader+'\n')
           out=Path('safetydata-runtime-check');out.mkdir(exist_ok=True)
           (out/'runtime-metadata.json').write_text(json.dumps({'source_revision':revision,
               'ready_revision':value['status']['latestReadyRevisionName'],'image':image,
               'runtime_account':spec['serviceAccountName'],'settings':{k:v for k,v in env.items() if k.startswith('MESSAGE_') and not any(s in k for s in ('KEY','TOKEN','PASSWORD'))}} ,indent=2)+'\n')
           PY
-      - name: Run IAM-private read-only Firestore audit with no key bindings
+      - name: Run IAM-private read-only audit
         run: |
           EXTRA_BINDINGS=()
           if [[ "$CHECK_MODE" == "message-case-source" ]]; then
             EXTRA_BINDINGS=(--set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1)
+          elif [[ "$CHECK_MODE" == "fire-guidance-replay" ]]; then
+            EXTRA_BINDINGS=(--set-secrets=KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:1)
           fi
           gcloud run deploy "$CHECK_SERVICE" --project=keco-safety-map --region=asia-northeast3 \
             --image="$AUDIT_IMAGE" --service-account=safety-dashboard-runtime@keco-safety-map.iam.gserviceaccount.com \
