@@ -97,12 +97,17 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+MAX_RECIPIENT_REGIONS = 512  # One official alert can list districts nationwide.
+RecipientRegions = Annotated[list[Annotated[str, Field(min_length=1, max_length=120)]],
+                             Field(max_length=MAX_RECIPIENT_REGIONS)]
+
+
 class MessageAnalysisInput(StrictModel):
     text: str = Field(min_length=10, max_length=2000)
     issued_at: AwareDatetime | None = None
     source: str = Field(min_length=1, max_length=80)
     reference_radius_km: Literal[1, 3, 5, 10]
-    recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
+    recipient_regions: RecipientRegions = Field(default_factory=list)
     input_kind: Literal["example", "manual", "official"]
 
 

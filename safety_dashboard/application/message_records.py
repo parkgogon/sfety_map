@@ -9,12 +9,12 @@ import threading
 import uuid
 import logging
 from collections.abc import Callable
-from typing import Annotated, Literal, Protocol
+from typing import Literal, Protocol
 
 from pydantic import AwareDatetime, Field
 
 from safety_dashboard.application.context_info import KST
-from safety_dashboard.application.message_analysis import AnalysisBusy, MessageAnalysisInput, StrictModel
+from safety_dashboard.application.message_analysis import AnalysisBusy, MessageAnalysisInput, RecipientRegions, StrictModel
 
 
 class RecordConflict(ValueError):
@@ -46,7 +46,7 @@ class MessageSource(StrictModel):
     text: str = Field(min_length=10, max_length=2000)
     source: str = Field(min_length=1, max_length=80)
     issued_at: AwareDatetime | None = None
-    recipient_regions: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=30)
+    recipient_regions: RecipientRegions = Field(default_factory=list)
 
     def canonical(self):
         if any(not value.strip() or len(value) > 120 for value in self.recipient_regions):

@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import Field
 from safety_dashboard.application.context_info import KST
-from safety_dashboard.application.message_analysis import StrictModel
+from safety_dashboard.application.message_analysis import MAX_RECIPIENT_REGIONS, StrictModel
 from safety_dashboard.application.message_records import MessageSource
 
 PROVINCES = ("대구광역시", "경상북도", "부산광역시", "울산광역시", "경상남도")
@@ -23,7 +23,8 @@ class FeedRequest(StrictModel):
 
 
 class ImportOfficial(StrictModel):
-    import_token: str = Field(min_length=10, max_length=40000)
+    # Space for 120-character region names after JSON escaping and base64.
+    import_token: str = Field(min_length=10, max_length=MAX_RECIPIENT_REGIONS * 1024 + 20000)
 
 
 class OfficialFeedService:
