@@ -8,8 +8,11 @@ from fastapi.testclient import TestClient
 
 from safety_dashboard.adapters.telegram import TelegramDeliveryResult
 from safety_dashboard.admin.access import AdminAccessSettings, AdminAccessVerifier
+from safety_dashboard.adapters.firestore_message_notifications import FirestoreMessageNotificationStore
+from safety_dashboard.adapters.firestore_message_records import FirestoreMessageRecordStore
 from safety_dashboard.api.app import create_app
 from safety_dashboard.application.message_delivery import MessageDelivery, CONTROL, delivery_key
+from safety_dashboard.application.message_earthquake import earthquake_report
 from safety_dashboard.application.message_notification_jobs import head_key
 from safety_dashboard.application.message_pipeline import stamp
 from safety_dashboard.application.message_records import AnalyzeRecord, RecordConflict, SaveRecordNote
@@ -54,6 +57,97 @@ class DeliveryFixture(Fixture):
 
 
 class DeliveryTests(unittest.TestCase):
+    @staticmethod
+    def _earthquake(fixture, *, correction=False, minutes_ago=5):
+        occurred = NOW - dt.timedelta(minutes=minutes_ago)
+        text = f"{occurred:%Y-%m-%d %H:%M} 대구 달서구 북서쪽 22km 지역"
+        if correction:
+            text += "에서 발생한 규모 3.7 지진은 상세분석을 통해 규모 3.6로 조정됨"
+        else:
+            text += " 규모 3.7 지진발생/추가 지진 발생상황에 유의 바람"
+        return fixture.register("quake-" + ("correction" if correction else "initial"), message={
+            **fixture.message, "text": text + " [기상청]",
+            "issued_at": stamp(occurred + dt.timedelta(minutes=2 if correction else 0)),
+        })
+
+    def test_pending_earthquake_is_cancelled_when_the_correction_arrives(self):
+        f = DeliveryFixture()
+        original = self._earthquake(f)
+        initial_job = f.planner.prepare_record(original["id"])["job_id"]
+        f.delivery.consider_staff(initial_job)
+        self.assertEqual(f.outbox(initial_job)["state"], "pending")
+        correction = self._earthquake(f, correction=True)
+        f.planner.prepare_record(correction["id"])
+        f.delivery.run()
+        f.service().run()
+        self.assertEqual(f.outbox(initial_job)["detail"], "earthquake_superseded")
+        self.assertEqual(len(f.staff.calls), 1)
+        self.assertIn("규모 3.6 (상세 분석)", f.staff.calls[0])
+        self.assertNotIn("3.7", f.staff.calls[0])
+
+    def test_confirmed_initial_earthquake_is_followed_by_one_correction(self):
+        f = DeliveryFixture()
+        original = self._earthquake(f)
+        f.planner.prepare_record(original["id"])
+        f.delivery.run()
+        correction = self._earthquake(f, correction=True)
+        job = f.planner.prepare_record(correction["id"])["job_id"]
+        f.records.analyze(correction["id"], AnalyzeRecord(expected_version=correction["version"]))
+        f.planner.prepare_record(correction["id"])
+        f.delivery.run()
+        f.service().run()
+        self.assertEqual(len(f.staff.calls), 2)
+        self.assertIn("규모 3.7", f.staff.calls[0])
+        self.assertIn("규모 3.7 → 3.6 정정", f.staff.calls[1])
+        self.assertEqual(f.outbox(job)["preview_text"], f.staff.calls[1])
+
+    def test_correction_waits_for_an_in_flight_earthquake_receipt(self):
+        f = DeliveryFixture()
+        original = self._earthquake(f)
+        job = f.planner.prepare_record(original["id"])["job_id"]
+        f.delivery.consider_staff(job)
+        claim = f.delivery._claim(delivery_key(job))
+        correction = self._earthquake(f, correction=True)
+        f.planner.prepare_record(correction["id"])
+        f.service().run()
+        self.assertEqual(f.staff.calls, [])
+        f.delivery._finish(claim, "sent", "receipt_confirmed", message_id=42)
+        f.service().run()
+        self.assertEqual(len(f.staff.calls), 1)
+        self.assertIn("규모 3.7 → 3.6 정정", f.staff.calls[0])
+
+    def test_recovered_earthquake_keeps_original_time_without_staff_or_admin_delivery(self):
+        f = DeliveryFixture()
+        correction = self._earthquake(f, correction=True, minutes_ago=9 * 60)
+        original = self._earthquake(f, minutes_ago=9 * 60)
+        self.assertEqual(f.records.get(original["id"])["message"]["issued_at"], stamp(NOW-dt.timedelta(hours=9)))
+        for record in (original, correction):
+            self.assertIsNone(f.planner.prepare_record(record["id"])["job_id"])
+        f.delivery.run()
+        self.assertEqual(f.staff.calls, [])
+        self.assertEqual(f.admin.calls, [])
+
+    def test_firestore_commits_correction_and_latest_event_pointer_together(self):
+        f = DeliveryFixture(start=False)
+        client = notification_store_tests.AtomicFirestore()
+        f.records._store = FirestoreMessageRecordStore(client=client, transaction_runner=client.runner)
+        f.repo = FirestoreMessageNotificationStore(client=client, transaction_runner=client.runner)
+        f.clock[0] = NOW-dt.timedelta(minutes=6)
+        f.delivery.configure("start", None)
+        f.clock[0] = NOW
+        correction = self._earthquake(f, correction=True)
+        quake = earthquake_report(correction)
+        record_path = f"disaster_message_reviews/{correction['id']}"
+        self.assertIn(record_path, client.operations[-1][1])
+        self.assertIn(f"disaster_message_pipeline/{quake.key}", client.operations[-1][1])
+        original = self._earthquake(f)
+        self.assertTrue(quake.is_latest(correction, f.repo.get(quake.key)))
+        f.planner.prepare_record(original["id"])
+        f.planner.prepare_record(correction["id"])
+        f.delivery.run()
+        self.assertEqual(len(f.staff.calls), 1)
+        self.assertIn("3.6", f.staff.calls[0])
+
     def test_receipt_is_persisted_once_without_changing_human_review_or_preview_permission(self):
         f=DeliveryFixture();record,jid=f.ready();before=f.records.store.history(record['id'],None,100)
         result=f.delivery.run()

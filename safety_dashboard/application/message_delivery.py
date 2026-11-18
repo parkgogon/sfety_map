@@ -6,6 +6,8 @@ import re
 import uuid
 
 from safety_dashboard.application.message_analysis import AnalysisUnavailable
+from safety_dashboard.application.message_earthquake import earthquake_report
+from safety_dashboard.application.message_notification import earthquake_notice
 from safety_dashboard.application.message_notification_jobs import (
     CONFIG_KEY, NOTIFIABLE, head_key, job_key, source_key, record_basis, preview_hash,
 )
@@ -116,6 +118,10 @@ class MessageDelivery:
         did = 'notification-decision-'+content_hash({'source':slot,'basis':basis,'preview':semantic,'scope':'eligible'})
         oid, event = delivery_key(jid), 'message-delivery-reconsider-'+uuid.uuid4().hex
         keys = [CONTROL, CONFIG_KEY, jid, hid, slot, did, oid, history_key(oid), event]
+        quake = earthquake_report(record)
+        if quake:
+            keys.append(quake.key)
+
         def rearm(current, values):
             control, existing = values[CONTROL], values[oid]
             if (not self._active(control) or control['generation'] != expected_generation or not current
@@ -123,6 +129,8 @@ class MessageDelivery:
                 raise RecordConflict("전파 설정 또는 판단이 바뀌었습니다. 다시 확인해 주세요.")
             if existing and existing['attempts']:
                 raise RecordConflict("이미 전파를 요청한 원문입니다. 자동 재등록하지 않으며 수신 결과를 별도로 확인해 주세요.")
+            if quake and not quake.is_latest(current, values[quake.key]):
+                raise RecordConflict("이 지진의 최신 기상청 문자만 전파할 수 있습니다.")
             issued = current['message'].get('issued_at')
             if (current.get('origin') != 'official' or not issued or moment(issued) < moment(control['started_at'])
                     or preview['decision'] not in NOTIFIABLE or not preview.get('preview_text')):
@@ -178,16 +186,22 @@ class MessageDelivery:
         basis = record_basis(record, catalog[0], self.preparation.policy_version, self.preparation.base_url)
         preview = self.preparation._preview(record, catalog, job)
         identifier, hid = delivery_key(job_id), head_key(record["id"])
+        quake = earthquake_report(record)
+        keys = [identifier, history_key(identifier), job_id, hid, CONFIG_KEY, CONTROL]
+        if quake:
+            keys.append(quake.key)
 
         def prepare(current, values):
             if values[identifier] or not current or current["version"] != record["version"] or values[job_id] != job:
                 return {}, False, None
             if not self._valid_staff(current, job, values[hid], values[CONFIG_KEY], values[CONTROL], catalog, basis, preview):
                 return {}, False, None
+            if quake and not quake.is_latest(current, values[quake.key]):
+                return {}, False, None
             value = self._new_outbox(identifier, "staff_group", preview["preview_text"], values[CONTROL],
                 job_id=job_id, record_id=record["id"], source_revision=record["source_revision"], basis_hash=basis)
             return {identifier: value, history_key(identifier): history(value)}, False, None
-        store.run_record(record["id"], [identifier, history_key(identifier), job_id, hid, CONFIG_KEY, CONTROL], prepare)
+        store.run_record(record["id"], keys, prepare)
 
     def consider_incident(self, incident):
         store = self.preparation.store_factory()
@@ -211,7 +225,7 @@ class MessageDelivery:
         now = self.now()
         if moment(outbox["available_at"]) > now:
             return None
-        job = record = catalog = basis = preview = None
+        job = record = catalog = basis = preview = quake = None
         extra = []
         if outbox["destination"] == "staff_group":
             record = self.preparation.records.get(outbox["record_id"])
@@ -220,6 +234,9 @@ class MessageDelivery:
             basis = record_basis(record, catalog[0], self.preparation.policy_version, self.preparation.base_url)
             preview = self.preparation._preview(record, catalog, job)
             extra = [outbox["job_id"], head_key(record["id"]), CONFIG_KEY]
+            quake = earthquake_report(record)
+            if quake:
+                extra.append(quake.key)
         attempt_id = "message-delivery-attempt-"+uuid.uuid4().hex
         keys = [CONTROL, identifier, history_key(identifier), attempt_id, *extra]
         def claim(current, values):
@@ -230,15 +247,28 @@ class MessageDelivery:
             if record:
                 valid = valid and bool(current and current["version"] == record["version"] and values[outbox["job_id"]] == job
                     and self._valid_staff(current, job, values[head_key(record["id"])], values[CONFIG_KEY], control, catalog, basis, preview))
-            if not valid:
-                value = {**outbox, "state": "cancelled", "detail": "source_or_activation_changed", "updated_at": stamp(now), "queue_key": "MC|"+stamp(now)+"|"+identifier}
+            episode = values[quake.key] if quake else None
+            superseded = quake and current and not quake.is_latest(current, episode)
+            already_sent = episode and episode.get("confirmed_magnitude") == quake.magnitude
+            if not valid or superseded or already_sent:
+                detail = ("earthquake_superseded" if superseded else "earthquake_magnitude_already_sent"
+                          if already_sent else "source_or_activation_changed")
+                value = {**outbox, "state": "cancelled", "detail": detail, "updated_at": stamp(now), "queue_key": "MC|"+stamp(now)+"|"+identifier}
                 return {identifier: value, history_key(identifier): history(value)}, False, None
+            if episode and episode.get("in_flight"):
+                return {}, False, None
             value = {**outbox, "state": "sending", "detail": "request_started", "attempt_id": attempt_id,
                      "attempts": outbox["attempts"]+1, "updated_at": stamp(now), "expires_at": stamp(now+dt.timedelta(seconds=300)),
                      "queue_key": "MR|"+stamp(now+dt.timedelta(seconds=300))+"|"+identifier}
             attempt = {"id": attempt_id, "delivery_id": identifier, "state": "sending", "started_at": stamp(now),
                        "destination": outbox["destination"], "source_revision": outbox.get("source_revision")}
-            return {identifier: value, history_key(identifier): history(value), attempt_id: attempt}, False, value
+            writes = {identifier: value, attempt_id: attempt}
+            if quake:
+                value.update(earthquake_key=quake.key, earthquake_magnitude=quake.magnitude,
+                             preview_text=earthquake_notice(quake, preview["map_url"], prior_magnitude=episode.get("confirmed_magnitude")))
+                writes[quake.key] = {**episode, "in_flight": attempt_id}
+            writes[history_key(identifier)] = history(value)
+            return writes, False, value
         if record:
             return store.run_record(record["id"], keys, claim)
         def claim_admin(values):
@@ -253,6 +283,10 @@ class MessageDelivery:
         marker = incident_id+"-"+content_hash(identifier)
         alert = claimed["destination"] == "staff_group" and state in {"unknown", "rejected"}
         keys = [identifier, history_key(identifier), attempt_id, *([incident_id, marker] if alert else [])]
+        quake_key = claimed.get("earthquake_key")
+        if quake_key:
+            keys.append(quake_key)
+
         def finish(values):
             current = values[identifier]
             if not current or current.get("attempt_id") != attempt_id or current["state"] not in {"sending", "unknown"}:
@@ -264,6 +298,14 @@ class MessageDelivery:
                 value["queue_key"] = pending_key(value["destination"],value["available_at"],identifier)
             attempt = {**values[attempt_id], "state": state, "detail": detail, "message_id": message_id, "finished_at": stamp(now)}
             writes = {identifier: value, history_key(identifier): history(value), attempt_id: attempt}
+            if quake_key and (episode := values[quake_key]):
+                if episode.get("in_flight") == attempt_id:
+                    writes[quake_key] = {**episode, "in_flight": None}
+                    if state == "sent":
+                        writes[quake_key]["confirmed_magnitude"] = claimed["earthquake_magnitude"]
+                elif state == "sent" and not episode.get("confirmed_magnitude"):
+                    # A late receipt can still precede any confirmed correction.
+                    writes[quake_key] = {**episode, "confirmed_magnitude": claimed["earthquake_magnitude"]}
             if alert and not values[marker]:
                 incident = values[incident_id] or {"id": incident_id, "category": "delivery_"+state, "source_count": 0,
                     "created_at": stamp(now), "destination": "admin_group", "phase": "preview", "dispatch_enabled": False}
@@ -274,7 +316,13 @@ class MessageDelivery:
                     "preview_text": "[재난문자 전파 확인 필요]\n직원방 전파의 "+("수신 결과가 미상입니다. 중복을 피하려고 자동 재발송하지 않습니다." if state == "unknown" else "요청이 거절되었습니다. 연결 설정과 전파 이력을 확인해 주세요.")}
                 writes[marker] = {"delivery_id": identifier}
             return writes, None
-        store.run(keys, finish)
+        if quake_key:
+            def finish_earthquake(_record, values):
+                writes, result = finish(values)
+                return writes, False, result
+            store.run_record(claimed["record_id"], keys, finish_earthquake)
+        else:
+            store.run(keys, finish)
 
     def run(self):
         if not self.enabled or not self.preparation.enabled:

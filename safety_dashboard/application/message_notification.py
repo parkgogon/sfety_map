@@ -10,7 +10,8 @@ from urllib.parse import urlsplit, urlunsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from safety_dashboard.application.deep_links import build_facility_url, dashboard_home_url
-from safety_dashboard.application.message_facility_queries import FacilityQuery, query_facilities, target_region_in
+from safety_dashboard.application.message_earthquake import earthquake_report
+from safety_dashboard.application.message_facility_queries import FacilityQuery, area_tokens, facilities_in_area, query_facilities, target_region_in
 from safety_dashboard.application.nearby_report import NearbyReport
 from safety_dashboard.domain.models import GeoPoint
 
@@ -82,6 +83,17 @@ def _map_url(base_url, facilities):
     return build_facility_url(home, facilities[0]["id"]) if len(facilities) == 1 else home
 
 
+def earthquake_notice(quake, map_url, *, prior_magnitude=None):
+    magnitude = f"규모 {quake.magnitude}" + (" (상세 분석)" if quake.is_correction else "")
+    if quake.is_correction and prior_magnitude and prior_magnitude != quake.magnitude:
+        magnitude = f"규모 {prior_magnitude} → {quake.magnitude} 정정"
+    return "\n".join(line for line in (
+        "[기상청 지진 안내]",
+        f"발생 {quake.occurred_at:%Y-%m-%d %H:%M} (한국 시간)",
+        quake.location, magnitude, quake.guidance, map_url,
+    ) if line)
+
+
 def notification_preview(record, catalog, *, base_url="", now=None):
     """Revalidate the current record/catalog; returning notify_ready never enables dispatch."""
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -95,6 +107,20 @@ def notification_preview(record, catalog, *, base_url="", now=None):
 
     def finish(decision, reason):
         return {**output, "decision": decision, "reason": reason}
+
+    if quake := earthquake_report(record):
+        output.update(preparation_kind="official_earthquake", analysis_revision=0)
+        if max(now-quake.occurred_at, now-quake.issued_at) > dt.timedelta(hours=1):
+            return finish("record_only", "발생 후 1시간이 지난 지진 안내를 이력에 보관합니다.")
+        if quake.issued_at > now + dt.timedelta(minutes=5):
+            return finish("attention_required", "지진 문자 발행 시각을 확인해야 합니다.")
+        scope = area_tokens(quake.area)
+        if not scope or not facilities_in_area(scope, facilities):
+            return finish("record_only", "공식 문자에 적힌 행정구역에 등록된 소관시설이 없습니다.")
+        output["map_url"] = _map_url(base_url, [])
+        output["preview_text"] = earthquake_notice(quake, output["map_url"])
+        output["limitations"] = ["기상청이 발표한 발생 위치와 규모입니다. 시설별 영향은 현장에서 확인이 필요합니다."]
+        return finish("notify_source_only", "기상청 지진 문자와 본문 행정구역의 소관시설 주소를 확인했습니다.")
 
     if not result or record.get("analysis_state") != "completed":
         return finish("analysis_unavailable", "현재 원문의 분석을 완료하지 못했습니다. 자동 준비 상태에서 긴급 원문 대체 가능 여부를 따로 확인합니다.")
