@@ -6,10 +6,10 @@ on:
     inputs:
       mode:
         type: choice
-        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history, message-case-source, fire-guidance-replay]
+        options: [metadata, official-feed, source-diagnostics, collection-diagnostics, collection-diagnostics-gen2, collection-candidate, collection-current, refresh-message-runtime, delivery-runtime, message-history, message-case-source, fire-guidance-replay, restore-sangju-records]
         default: metadata
       probe_revision:
-        description: Exact source SHA for current collection or candidate fire replay
+        description: Exact source SHA for current collection, fire replay, or Sangju record recovery
         type: string
   pull_request:
     types: [labeled]
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   message-history:
-    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'message-history' || inputs.mode == 'message-case-source' || inputs.mode == 'fire-guidance-replay')
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'message-history' || inputs.mode == 'message-case-source' || inputs.mode == 'fire-guidance-replay' || inputs.mode == 'restore-sangju-records')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -63,6 +63,15 @@ jobs:
           loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
           if os.environ['CHECK_MODE']=='message-case-source':
               loader="import os;os.environ['AUDIT_SOURCE_CASES']='1';"+loader
+          if os.environ['CHECK_MODE']=='restore-sangju-records':
+              assert os.environ['FIRE_CANDIDATE_SHA']==revision, 'unexpected_deployed_revision'
+              limit=int(env['MESSAGE_FEED_REQUEST_LIMIT'])
+              assert limit==450
+              source=base64.b64encode(Path('scripts/restore_sangju_records.py').read_bytes()).decode()
+              loader=("import os,base64;"
+                  "os.environ['VERIFY_DEPLOYED_SHA']="+repr(revision)+";"
+                  "os.environ['VERIFY_FEED_LIMIT']="+repr(str(limit))+";"
+                  "exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})")
           if os.environ['CHECK_MODE']=='fire-guidance-replay':
               sha=os.environ['FIRE_CANDIDATE_SHA']
               assert re.fullmatch(r'[a-f0-9]{40}',sha)
@@ -88,10 +97,10 @@ jobs:
               'ready_revision':value['status']['latestReadyRevisionName'],'image':image,
               'runtime_account':spec['serviceAccountName'],'settings':{k:v for k,v in env.items() if k.startswith('MESSAGE_') and not any(s in k for s in ('KEY','TOKEN','PASSWORD'))}} ,indent=2)+'\n')
           PY
-      - name: Run IAM-private read-only audit
+      - name: Run the selected IAM-private check or bounded historical recovery
         run: |
           EXTRA_BINDINGS=()
-          if [[ "$CHECK_MODE" == "message-case-source" ]]; then
+          if [[ "$CHECK_MODE" == "message-case-source" || "$CHECK_MODE" == "restore-sangju-records" ]]; then
             EXTRA_BINDINGS=(--set-secrets=SAFETY_DATA_API_KEY=SAFETY_DATA_API_KEY:1)
           elif [[ "$CHECK_MODE" == "fire-guidance-replay" ]]; then
             EXTRA_BINDINGS=(--set-secrets=KAKAO_REST_API_KEY=KAKAO_REST_API_KEY:1)
