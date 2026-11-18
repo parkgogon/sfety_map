@@ -10,8 +10,10 @@ from urllib.parse import urlsplit, urlunsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from safety_dashboard.application.deep_links import build_facility_url, dashboard_home_url
+from safety_dashboard.application.message_address import quoted_parcel
 from safety_dashboard.application.message_earthquake import earthquake_report
 from safety_dashboard.application.message_facility_queries import FacilityQuery, area_tokens, facilities_in_area, query_facilities, target_region_in
+from safety_dashboard.application.message_fire import fire_guidance
 from safety_dashboard.application.nearby_report import NearbyReport
 from safety_dashboard.domain.models import GeoPoint
 
@@ -94,6 +96,63 @@ def earthquake_notice(quake, map_url, *, prior_magnitude=None):
     ) if line)
 
 
+def _parcel_facilities(draft, candidates, eligible, catalog, radius):
+    verified = {}
+    for part in draft.parts:
+        for location in part.locations:
+            if location.role != "incident_site" or len(location.candidate_ids) != 1:
+                continue
+            identifier = location.candidate_ids[0]
+            if identifier not in eligible:
+                continue
+            place = candidates[identifier]
+            if not place.get("address_verified"):
+                continue
+            parcel = quoted_parcel(place["location_text"], place["evidence"])
+            if parcel and parcel.matches(place["address"]):
+                verified[identifier] = place
+    points = {(p["latitude"], p["longitude"]) for p in verified.values()}
+    if len(points) != 1:
+        return []
+    place = next(iter(verified.values()))
+    lat, lon = next(iter(points))
+    if not (33 <= lat <= 39.5 and 124 <= lon <= 132):
+        return []
+    report = NearbyReport.build(GeoPoint(lat, lon), place["name"], place["address"], radius, catalog)
+    return [{"id": row.facility.id, "name": row.facility.name, "address": row.facility.address,
+             "facility_type": row.facility.facility_type, "distance_m": round(row.meters), "basis": place["address"]}
+            for row in report.facilities]
+
+
+def _fire_preview(source, draft, candidates, eligible, catalog, *, now, base_url):
+    if (source.input_kind != "official" or not source.issued_at
+            or not -dt.timedelta(minutes=5) <= now-source.issued_at <= dt.timedelta(hours=1)
+            or any(part.intent in {"release", "correction", "scheduled_restriction"} for part in draft.parts)):
+        return None
+    fire = fire_guidance(source.text)
+    if not fire or not facilities_in_area(fire.scope, catalog):
+        return None
+    try:
+        rows = _parcel_facilities(draft, candidates, eligible, tuple(f for f in catalog if f.is_monitored), source.reference_radius_km)
+    except (ValueError, KeyError, TypeError):
+        rows = []
+    map_url = _map_url(base_url, rows)
+    limits = ("공식 문자 지번 기준 직선거리입니다. 시설별 영향 범위는 현장에서 확인이 필요합니다." if rows
+              else "발생 지점과 인근 소관시설은 확인 중입니다.")
+    lines = ["[재난문자 기반 화재 안내]", f"발행 {source.issued_at.astimezone(KST):%Y-%m-%d %H:%M} (한국 시간)",
+             f"{fire.location} {fire.kind} 발생", f"공식 문자 안내 · {fire.instruction}"]
+    lines.extend(f"주변 참고시설 · {f['name']} · 직선 {f['distance_m']/1000:.2f}km" for f in rows[:3])
+    lines.append(limits)
+    if map_url:
+        lines.append("현장 지도 · " + map_url)
+    return {
+        "decision": "notify_ready" if rows else "notify_source_only",
+        "reason": "공식 화재 발생·행동 지시와 본문 행정구역의 소관시설 주소를 확인했습니다.",
+        "preparation_kind": "official_fire_guidance", "facilities": rows, "limitations": [limits],
+        "map_url": map_url, "preview_text": "\n".join(lines),
+    }
+
+
 def notification_preview(record, catalog, *, base_url="", now=None):
     """Revalidate the current record/catalog; returning notify_ready never enables dispatch."""
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -147,7 +206,8 @@ def notification_preview(record, catalog, *, base_url="", now=None):
         return finish("attention_required", "전파 판단의 원문·시각·장소·조회 근거를 검증하지 못했습니다.")
     output["assessment"] = assessment.model_dump()
     if assessment.need == "uncertain" or assessment.relevance == "unknown":
-        return finish("attention_required", assessment.reason)
+        fire = _fire_preview(source, draft, candidates, eligible, facilities, now=now, base_url=base_url)
+        return {**output, **fire} if fire else finish("attention_required", assessment.reason)
 
     if assessment.need == "record_only":
         reason = record_only_rejection(assessment, draft.parts, source.text)
@@ -211,6 +271,9 @@ def notification_preview(record, catalog, *, base_url="", now=None):
         return finish("attention_required", "판단에 연결한 시설·위치 조회 근거가 맞지 않습니다.")
 
     if not verified_basis:
+        fire = _fire_preview(source, draft, candidates, eligible, facilities, now=now, base_url=base_url)
+        if fire:
+            return {**output, **fire}
         if not target_region_in(" ".join(assessment.evidence)):
             return finish("attention_required", "업무 관련 위치/지역의 근거를 확인하지 못했습니다. 수신지역으로 사고 도시를 추정하지 않습니다.")
         if assessment.urgency != "immediate":

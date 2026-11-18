@@ -78,6 +78,10 @@ class FakePlaces:
         self.queries.append(query)
         return self.rows
 
+    def search_address(self, query, timeout):
+        self.queries.append(query)
+        return self.rows
+
 
 def service(responses, places=None, **kwargs):
     return MessageAnalysisService(FakeClient(responses), places or FakePlaces(), lambda: FACILITIES, **kwargs)
