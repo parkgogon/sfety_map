@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
 
+from safety_dashboard.adapters.kakao_places import KakaoPlaceSearch
 from safety_dashboard.admin.access import AdminAccessSettings, AdminAccessVerifier
 from safety_dashboard.api.app import create_app
 from safety_dashboard.application.message_analysis import MessageAnalysisInput, MessageAnalysisService
@@ -61,6 +62,67 @@ def point_case(*, destination=False):
 
 
 class NotificationPreviewTests(unittest.TestCase):
+    def test_active_fire_with_an_unresolved_parcel_gets_area_advice_without_distances(self):
+        text = "오늘 10:00경 대구시 성서동 613 농막 화재 발생. 입산 및 화재 현장 주변 접근 금지. [달서구]"
+        a = assessment(text, need="uncertain")
+        record, _ = analyzed_record(text, a, origin="official", regions=("대구광역시 달서구",))
+        result = preview(record)
+        self.assertEqual(result["preparation_kind"], "official_fire_guidance")
+        self.assertEqual(result["decision"], "notify_source_only")
+        self.assertEqual(result["facilities"], [])
+        self.assertIn("입산 및 화재 현장 주변 접근 금지", result["preview_text"])
+        self.assertIn("인근 소관시설은 확인 중", result["preview_text"])
+        self.assertNotIn("km", result["preview_text"])
+
+    def test_fire_area_advice_requires_current_active_instruction_and_local_facilities(self):
+        for text in (
+            "대구시 성서동 613 농막 화재 발생 시 즉시 대피하세요.",
+            "대구시 성서동 613 농막 화재 발생. 화재 현장 주변 접근 금지 해제.",
+            "대구시 성서동 613 농막 화재 발생. 화재 진화 완료. 현장 주변 접근 금지.",
+            "농막 화재 발생. 입산 및 화재 현장 주변 접근 금지. [달서구]",
+            "대구광역시 수성구 범물동 613 농막 화재 발생. 현장 접근 금지.",
+            "대구시 성서동 613 농막 화재 발생. 안전사고에 유의하세요.",
+        ):
+            with self.subTest(text=text):
+                record, _ = analyzed_record(text, assessment(text, need="uncertain"), origin="official", regions=("대구 달서구",))
+                self.assertEqual(preview(record)["decision"], "attention_required")
+        text = "대구시 성서동 613 농막 화재 발생. 입산 및 화재 현장 주변 접근 금지."
+        for origin, issued in (("manual", ISSUED), ("official", "2026-11-09T08:59:00+09:00")):
+            record, _ = analyzed_record(text, assessment(text, need="uncertain"), origin=origin, issued=issued)
+            self.assertEqual(preview(record)["decision"], "attention_required")
+
+    def test_fire_parcel_is_looked_up_first_and_only_exact_address_supplies_distances(self):
+        address = "대구시 성서동 613"
+        text = f"오늘 {address} 농막 화재 발생. 화재 현장 주변 접근 금지. [달서구]"
+        for matching in (True, False):
+            with self.subTest(matching=matching):
+                a = assessment(text, need="uncertain")
+                record, _ = analyzed_record(text, a, origin="official")
+                session = Mock()
+                session.get.return_value.status_code = 200
+                session.get.return_value.json.return_value = {"documents": [
+                    {"address": {"address_name": "대구 달서구 성서동 613-2", "x": 128.501, "y": 35.852}},
+                    *([{"address": {"address_name": "대구 달서구 성서동 613", "x": 128.5, "y": 35.85}}] if matching else []),
+                ]}
+                steps = [call("search_places", search_args(address, region_hint="대구", place_kind="other"))]
+                if matching:
+                    steps.append(call("find_nearby_facilities", {"candidate_id": "P1"}))
+                steps.append(call("submit_analysis", {
+                    **draft([part(text, locations=[location(address, candidate_ids=["P1"] if matching else [])])],
+                            ["발생 지점 확인"]),
+                    "notification_assessment": a,
+                }))
+                analysis = MessageAnalysisService(FakeClient(steps), KakaoPlaceSearch("fake-key", session=session), lambda: CATALOG)
+                source = MessageAnalysisInput(**record["message"], input_kind="official", reference_radius_km=3)
+                record["analysis"] = analysis.analyze(source)
+                self.assertEqual(session.get.call_count, 1)
+                self.assertTrue(session.get.call_args.args[0].endswith("/address.json"))
+                self.assertIn("성서동 613", session.get.call_args.kwargs["params"]["query"])
+                result = preview(record)
+                self.assertEqual(result["decision"], "notify_ready" if matching else "notify_source_only")
+                self.assertEqual([f["id"] for f in result["facilities"]], ["FA", "FB"] if matching else [])
+                self.assertEqual("직선" in result["preview_text"], matching)
+
     def test_point_event_uses_server_distances_and_has_public_links_without_private_data(self):
         record, client = point_case()
         result = preview(record)
