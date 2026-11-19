@@ -17,6 +17,28 @@ KST = dt.timezone(dt.timedelta(hours=9))
 
 
 def verify():
+    phase = "collection_status"
+    try:
+        from safety_dashboard.adapters.firestore_message_pipeline import FirestoreMessagePipelineStore
+        from safety_dashboard.adapters.firestore_alerts import FirestoreAlertStore
+        collection = FirestoreMessagePipelineStore("keco-safety-map").get("collection-state") or {}
+        fields = ("last_attempt_at", "last_success_at", "last_current_scan_success_at", "last_current_scan_pages",
+                  "current_scan_interval_seconds", "current_scan_started_at", "current_next_at", "last_backfill_success_at",
+                  "last_error_stage", "lane_errors", "coverage_gap")
+        uncertainty = {key: collection.get(key) for key in fields}
+        uncertainty["remaining_partitions"] = len(collection.get("work") or [])
+        working = collection.get("current_work") or {}
+        uncertainty["current_page"] = working.get("page")
+        weather = FirestoreAlertStore("keco-safety-map").notification_status()
+        observed = {key: weather.get(key) for key in ("last_run_at", "kma_health", "kma_failure_category",
+                                                      "kma_last_success_at", "kma_consecutive_errors")}
+        return {"status": "passed", "checked_at": dt.datetime.now(KST).isoformat(),
+                "collection": uncertainty, "weather": observed, "control_requests": 0}
+    except Exception as exc:
+        return {"status": "blocked", "phase": phase, "error_type": type(exc).__name__}
+
+
+def verify_history():
     phase = "authentication"
     session = requests.Session()
     try:
