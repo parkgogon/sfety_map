@@ -6,6 +6,7 @@ import datetime as dt
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 
+from safety_dashboard.alerts.history import weather_row
 from safety_dashboard.alerts.domain import (
     AlertBatch,
     AlertTransition,
@@ -445,6 +446,20 @@ class InMemoryAlertStore:
                     self.batch_delivery.get(batch_id, {}),
                 )
         return None
+
+    def history_rows(self, start, end):
+        for identifier, (batch, status) in self.batches.items():
+            values = self.batch_delivery.get(identifier, {})
+            processed = values.get("telegram_completed_at") or batch.created_at
+            if batch.mode == "live" and start <= processed < end:
+                yield weather_row(_automatic_event(identifier, batch, status, values), values, processed)
+        for identifier, values in self.manual_dispatches.items():
+            dispatch = values["dispatch"]
+            processed = values.get("completed_at") or dispatch.created_at
+            if start <= processed < end:
+                yield weather_row(_manual_event(identifier, values), {
+                    **values, "mode": dispatch.mode, "message_count": len(dispatch.messages)
+                }, processed)
 
     def notification_events(
         self,

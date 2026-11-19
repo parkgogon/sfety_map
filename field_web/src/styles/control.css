@@ -933,3 +933,5 @@
     height: 480px;
   }
 }
+.history-report-heading { display: flex; justify-content: space-between; align-items: center; margin-block: 12px; }
+.history-detail { display: block; color: var(--color-text-secondary); }

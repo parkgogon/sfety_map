@@ -100,7 +100,7 @@ describe("모바일 헤더와 패널", () => {
     await click(byLabel("더보기"));
     await resize(false);
     expect(container.querySelector('[role="dialog"]')).toBeNull();
-    expect(container.querySelector(".app-header")?.textContent).toContain("K-ECO SAFETY MONITORING");
+    expect(container.querySelector(".app-header")?.textContent).toContain("현장 안전지도");
     expect(container.querySelector(".status-line")?.textContent).toContain("KMA 정상");
     expect(container.querySelector('[data-testid="map"]')).toBe(map);
     expect(map?.getAttribute("data-selected")).toBe("F-1");
@@ -119,7 +119,7 @@ describe("모바일 헤더와 패널", () => {
     ["STALE", "KMA 수신 지연", "수신 지연 · 마지막 정상 자료 표시 중"],
     ["ERROR", "KMA 조회 불가", "특보 조회 불가 · 시설 위치만 확인 가능"],
     ["FALLBACK", "KMA 조회 불가", "특보 조회 불가 · 시설 위치만 확인 가능"],
-    ["SIMULATION", "모의훈련 · 실제 상황 아님", ""],
+    ["SIMULATION", "모의훈련", ""],
   ] as const)("%s의 수신 상태는 상태 패널을 닫아도 남는다", async (health, label, notice) => {
     data.status.health = health;
     if (health === "SIMULATION") window.history.replaceState({}, "", "/?mode=simulation");
@@ -198,9 +198,9 @@ describe("모바일 헤더와 패널", () => {
     await click(byText("모의훈련 화면 보기"));
     expect(window.location.search).toContain("mode=simulation");
     expect(container.querySelector('[role="dialog"]')).toBeNull();
-    expect(container.querySelector(".mobile-map-header")?.textContent).toContain("실제 상황 아님");
-    expect(container.querySelector(".simulation-banner")?.textContent).toContain("실시간으로 돌아가기");
-    await click(byLabel("더보기")); await click(byText("실시간 화면으로 돌아가기"));
+    expect(container.querySelector(".mobile-status-button")?.getAttribute("aria-label")).toContain("실제 상황 아님");
+    expect(container.querySelector(".mobile-map-header .exit-training")?.textContent).toBe("실시간 복귀");
+    await click(byText("실시간 복귀"));
     expect(window.location.search).not.toContain("mode=simulation");
     await click(byLabel("더보기")); await click(byText("모의훈련 화면 보기"));
     await click(byLabel("더보기")); await click(byText("중앙관제 열기"));

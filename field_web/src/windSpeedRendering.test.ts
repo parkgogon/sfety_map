@@ -23,8 +23,8 @@ function field(vectors: Array<WindVector | null>): WindVectorField {
 }
 
 describe("windSpeedRendering", () => {
-  it("기존 vector field sample을 0.14 alpha의 결정적 푸른 raster로 변환한다", () => {
-    expect(WIND_SPEED_LAYER_ALPHA).toBe(0.14);
+  it("기존 vector field sample을 0.43 alpha의 결정적 청록·남보라 raster로 변환한다", () => {
+    expect(WIND_SPEED_LAYER_ALPHA).toBe(0.43);
     const source = field([vector(0), vector(12.5), vector(25)]);
     const first = buildWindSpeedRaster(source);
     const second = buildWindSpeedRaster(source);
@@ -32,9 +32,9 @@ describe("windSpeedRendering", () => {
     expect(first?.width).toBe(3);
     expect(first?.height).toBe(1);
     expect(Array.from(first?.pixels ?? [])).toEqual([
-      238, 244, 248, 255,
-      114, 164, 202, 255,
-      24, 61, 112, 255,
+      175, 205, 221, 255,
+      46, 124, 158, 255,
+      71, 44, 120, 255,
     ]);
   });
 

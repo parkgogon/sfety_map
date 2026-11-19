@@ -19,6 +19,7 @@ from safety_dashboard.adapters.firestore_alert_common import (
     _telegram_message_to_dict,
     _transition_fingerprint,
 )
+from safety_dashboard.alerts.history import weather_row
 from safety_dashboard.alerts.domain import (
     ManualDispatchStatus,
     ManualTelegramDispatch,
@@ -195,6 +196,28 @@ class FirestoreAlertAuditRepository:
             events = [item for item in events if item.status == status]
         events.sort(key=lambda item: item.occurred_at, reverse=True)
         return tuple(events[:limit])
+
+    def history_rows(self, start, end):
+        sources = (
+            (self.collections.batches, "telegram_completed_at", _automatic_event_from_dict),
+            (self.collections.manual_dispatches, "completed_at", _manual_event_from_dict),
+        )
+        for collection, completed_field, convert in sources:
+            seen = set()
+            for field in ("created_at", completed_field):
+                query = self.client.collection(collection).where(
+                    filter=FieldFilter(field, ">=", start)
+                ).where(filter=FieldFilter(field, "<", end))
+                for snapshot in query.stream():
+                    if snapshot.id in seen:
+                        continue
+                    seen.add(snapshot.id)
+                    values = snapshot.to_dict() or {}
+                    if collection == self.collections.batches and values.get("mode") != "live":
+                        continue
+                    processed = values.get(completed_field) or values["created_at"]
+                    if start <= processed < end:
+                        yield weather_row(convert(snapshot.id, values), values, processed)
 
     def export_rows(self, start: dt.datetime, end: dt.datetime) -> list[dict[str, object]]:
         rows: list[dict[str, object]] = []

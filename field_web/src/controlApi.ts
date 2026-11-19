@@ -24,38 +24,6 @@ export interface ControlOverview {
 }
 
 
-export interface AlertMetrics {
-  from: string;
-  to: string;
-  total_auto_batches: number;
-  total_auto_facilities: number;
-  total_manual_batches: number;
-  total_manual_facilities: number;
-  total_telegram_sent: number;
-  total_sms_sent: number;
-  daily_breakdown: Array<{
-    date: string;
-    auto_batches: number;
-    auto_facilities: number;
-    manual_batches: number;
-    manual_facilities: number;
-    telegram_messages: number;
-    sms_messages: number;
-  }>;
-}
-
-export interface AlertEvent {
-  id: string;
-  timestamp: string;
-  source: "automatic" | "manual";
-  category: string;
-  event_type: string;
-  facility_count: number;
-  facilities: string[];
-  status: string;
-  detail: string;
-}
-
 export function getStoredAdminToken(): string {
   if (typeof window === "undefined") return "";
   return window.sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
@@ -162,78 +130,6 @@ export function useControlOverview(token: string) {
   }, [fetchOverview]);
 
   return { data, loading, error, refresh: fetchOverview };
-}
-
-export function useAlertMetrics(token: string, fromDate: string, toDate: string) {
-  const [data, setData] = useState<AlertMetrics | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMetrics = useCallback(async () => {
-    if (!token || !fromDate || !toDate) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `/internal/v1/notifications/metrics?from=${fromDate}&to=${toDate}`,
-        {
-          headers: { "X-Alert-Admin-Token": token },
-          credentials: "same-origin",
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`통계 자료를 불러오지 못했습니다 (${response.status})`);
-      }
-      const json = await response.json() as AlertMetrics;
-      setData(json);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "지표 통신 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [token, fromDate, toDate]);
-
-  useEffect(() => {
-    void fetchMetrics();
-  }, [fetchMetrics]);
-
-  return { data, loading, error, refresh: fetchMetrics };
-}
-
-export function useAlertEvents(token: string, fromDate: string, toDate: string, source = "all") {
-  const [data, setData] = useState<AlertEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchEvents = useCallback(async () => {
-    if (!token || !fromDate || !toDate) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `/internal/v1/notifications/events?from=${fromDate}&to=${toDate}&source=${source}&limit=100`,
-        {
-          headers: { "X-Alert-Admin-Token": token },
-          credentials: "same-origin",
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`이력 자료를 불러오지 못했습니다 (${response.status})`);
-      }
-      const json = await response.json() as { events: AlertEvent[] };
-      setData(json.events || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "이력 통신 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [token, fromDate, toDate, source]);
-
-  useEffect(() => {
-    void fetchEvents();
-  }, [fetchEvents]);
-
-  return { data, loading, error, refresh: fetchEvents };
 }
 
 export interface ManualDispatchPayload {

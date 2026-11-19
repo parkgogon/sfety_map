@@ -96,7 +96,7 @@ describe("App 모의훈련 및 기상 레이어 동작", () => {
     mockData.status.health = "SIMULATION";
     try {
       const html = renderToStaticMarkup(<App />);
-      expect(html).toContain("simulation-banner");
+      expect(html).toContain("exit-training");
       expect(html).toContain("실제 상황이 아닙니다");
       expect(html).toContain("실시간으로 돌아가기");
     } finally {
@@ -183,7 +183,9 @@ describe("현장 지도 기준점 통합", () => {
       await act(async () => container.querySelector<HTMLInputElement>(".group-options input")!.click());
       await click("확인");
       expect(container.querySelector('[data-testid="visible-facilities"]')?.textContent).toBe("");
-      await click("장소·주소");
+      const scope = container.querySelector<HTMLSelectElement>('select[aria-label="검색 대상"]')!;
+      scope.value = "location";
+      await act(async () => scope.dispatchEvent(new Event("change", { bubbles: true })));
       await click("지도에서 지정");
       await click("시험 지도 위치");
       await click("이곳을 기준점으로 지정");

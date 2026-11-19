@@ -60,8 +60,6 @@ export default function ControlApp() {
     fromDate,
     toDate,
     overview,
-    metrics,
-    events,
     weatherLayer,
     loginModalOpen,
     setLoginModalOpen,
@@ -111,6 +109,7 @@ export default function ControlApp() {
     );
   }
 
+  const trainingVisible = simulation || monitoringMode === "simulation";
   return (
     <div className="control-shell">
       <header className="control-header">
@@ -181,30 +180,20 @@ export default function ControlApp() {
         </div>
       </header>
 
-      {monitoringMode === "simulation" && (
-        <div className="simulation-banner" role="alert">
-          <div>
-            <strong>모의훈련</strong>
-            <span>실제 상황이 아닙니다</span>
-          </div>
-          <button type="button" onClick={() => changeMonitoringMode("live")}>
-            실시간으로 돌아가기
-          </button>
-        </div>
-      )}
-
       {/* 상태 스트립 */}
       <div
-        className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
+        className={`status-line ${trainingVisible ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
         role="status"
       >
         <span className="status-dot" aria-hidden="true" />
         <b>
-          {simulation
-            ? "모의훈련 자료"
+          {trainingVisible
+            ? "모의훈련"
             : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}
         </b>
         <span>· {formatReferenceTime(data.generated_at)} 기준</span>
+        {monitoringMode === "simulation" && <button type="button" className="exit-training"
+          title="실제 상황이 아닙니다" aria-label="실시간으로 돌아가기" onClick={() => changeMonitoringMode("live")}>실시간 복귀</button>}
         <a
           className="official-warning-link"
           href={KMA_OFFICIAL_WARNING_URL}
@@ -417,8 +406,6 @@ export default function ControlApp() {
           setDateRange={setDateRange}
           fromDate={fromDate}
           toDate={toDate}
-          metrics={metrics}
-          events={events}
         />
       )}
     </div>

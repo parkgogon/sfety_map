@@ -393,6 +393,14 @@ input:focus-visible {
   z-index: 3;
 }
 
+/* Keep the SDK's vector and marker panes above the wind canvases.
+   The marker artwork and cluster attribute are supplied by this app. */
+.map-frame-wind .map-canvas div:has(> div > img[src^="data:image/svg+xml"], > div > [data-facility-cluster]),
+.map-frame-wind .map-canvas div:has(> svg),
+.map-frame-wind .map-canvas > div + div {
+  z-index: 4 !important;
+}
+
 .map-information-card {
   background: rgba(255, 255, 255, .97);
   border: 1px solid rgba(20, 39, 70, .18);
@@ -1859,8 +1867,8 @@ input:focus-visible {
   }
 
   .grade-legend.grade-legend-collapsed {
-    left: auto;
-    right: var(--space-5);
+    left: var(--space-5);
+    right: auto;
   }
 
   .filter-sheet,
@@ -2029,4 +2037,29 @@ input:focus-visible {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
   }
+}
+
+.facility-group-all { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--color-border); cursor: pointer; }
+.facility-group-all input { width: 20px; height: 20px; accent-color: var(--color-brand-700); }
+.facility-group-all b { margin-left: auto; }
+.exit-training { flex: none; font-size: .8rem; font-weight: 700; border: 1px solid #bca8da; background: #f6f1ff; color: #553483; border-radius: 8px; padding: 5px 9px; }
+@media (min-width: 701px) {
+  .app-header { min-height: 56px; gap: 14px; padding-block: 4px; }
+  .app-header h1 { white-space: nowrap; margin: 0; }
+  .app-header .status-line { flex: 1; padding: 0; min-width: 0; background: transparent; border: 0; color: #deebf3; }
+  .app-header .status-line b { color: white; }
+  .app-header .official-warning-link { color: white; }
+  .map-search-panel { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; gap: 5px; align-items: start; width: min(490px, calc(100% - 64px)); }
+  .map-search-panel .search-row { min-width: 0; }
+  .map-search-panel .search-box, .map-search-panel .filter-button, .map-search-panel .weather-map-button, .search-target { min-height: 40px; height: 40px; }
+  .map-search-panel .filter-button, .map-search-panel .weather-map-button { flex-direction: row; width: auto; gap: 4px; padding: 0 9px; }
+  .search-target { background: white; border-radius: 8px; border: 1px solid var(--color-border); padding: 0 6px; font: inherit; }
+  .map-search-panel > :not(.search-target,.search-row,.weather-map-button,.filter-button) { grid-column: 1 / -1; }
+  .map-search-panel .filter-button { grid-column: 3; grid-row: 1; }
+  .map-search-panel .weather-map-button { grid-column: 4; grid-row: 1; }
+  .grade-legend { max-width: calc(100% - 48px); }
+}
+@media (min-width: 701px) and (max-width: 960px) {
+  .app-header { gap: 8px; padding-inline: 10px; }
+  .app-header .official-warning-link { font-size: .65rem; }
 }

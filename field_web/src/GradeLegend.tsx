@@ -75,11 +75,12 @@ export function GradeLegend({ selectedGrades, onToggle }: GradeLegendProps) {
         <button
           className="grade-legend-expand"
           type="button"
+          aria-label="범례 펼치기"
           aria-expanded="false"
           aria-controls="grade-legend-options"
           onClick={() => setCollapsed(false)}
         >
-          범례 <span aria-hidden="true">›</span>
+          범례 펼치기 <span aria-hidden="true">›</span>
         </button>
       </div>
     );

@@ -98,6 +98,7 @@ describe("현장 지도 필터", () => {
 
   it("API 기준 시각을 한국식 월일 시각으로 표시한다", () => {
     expect(formatReferenceTime("2026-08-11T09:05:00+09:00")).toContain("08. 11.");
+    expect(formatReferenceTime("2026-11-19T22:10:00Z")).toContain("11. 20. 07:10");
     expect(formatReferenceTime("invalid")).toBe("시각 미확인");
   });
 
@@ -168,12 +169,12 @@ describe("현장 지도 필터", () => {
     expect(temperatureColor(-100)).not.toContain("NaN");
   });
 
-  it("풍속은 위험색과 겹치지 않는 0~25m/s 푸른 연속 색상을 사용한다", () => {
+  it("풍속은 위험색과 겹치지 않는 0~25m/s 청록·남보라 연속 색상을 사용한다", () => {
     expect(WIND_SPEED_LEGEND_VALUES).toEqual([0, 5, 10, 15, 20, 25]);
-    expect(windSpeedColor(0)).toBe("rgba(238,244,248,1)");
-    expect(windSpeedColorChannels(12.5)).toEqual([114, 164, 202]);
-    expect(windSpeedColor(25)).toBe("rgba(24,61,112,1)");
-    expect(windSpeedColor(100)).toBe("rgba(24,61,112,1)");
+    expect(windSpeedColor(0)).toBe("rgba(175,205,221,1)");
+    expect(windSpeedColorChannels(12.5)).toEqual([46, 124, 158]);
+    expect(windSpeedColor(25)).toBe("rgba(71,44,120,1)");
+    expect(windSpeedColor(100)).toBe("rgba(71,44,120,1)");
     expect(windSpeedColor(Number.NaN)).not.toContain("NaN");
     expect([
       windSpeedColor(0),

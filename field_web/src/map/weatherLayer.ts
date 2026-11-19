@@ -201,14 +201,14 @@ export function useWeatherMapLayer(
       );
       if (!state.particles.length) return;
       state.particles.forEach((particle, index) => { particle.ageSeconds = particle.maxAgeSeconds * ((index * 0.618034) % 1); });
-      drawRefinedWindFlow(result.context, result.field, state.particles, Boolean(motionQuery?.matches));
+      drawRefinedWindFlow(result.context, result.field, state.particles, true);
       if (motionQuery?.matches) return;
       windAnimation = createWindParticleAnimation({
         requestFrame,
         cancelFrame,
         onFrame(deltaSeconds) {
           state = advanceWindParticleSystem(result.field, state, deltaSeconds, refinedWindSpeed);
-          drawRefinedWindFlow(result.context, result.field, state.particles);
+          drawRefinedWindFlow(result.context, result.field, state.particles, false, deltaSeconds);
         },
       });
       if (!document.hidden && !zooming) windAnimation.start();

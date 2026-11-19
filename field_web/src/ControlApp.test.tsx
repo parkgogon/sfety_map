@@ -117,8 +117,6 @@ vi.mock("./controlApi", () => ({
   setStoredAdminToken: vi.fn(),
   verifyAdminPassword: vi.fn(),
   useControlOverview: () => ({ data: null, loading: false, error: null, refresh: vi.fn() }),
-  useAlertMetrics: () => ({ data: null, loading: false, error: null, refresh: vi.fn() }),
-  useAlertEvents: () => ({ data: [], loading: false, error: null, refresh: vi.fn() }),
 }));
 
 describe("ControlApp 중앙관제 대시보드", () => {
@@ -219,7 +217,7 @@ describe("ControlApp 중앙관제 대시보드", () => {
     mockMonitoringData.status.health = "SIMULATION";
     try {
       const html = renderToStaticMarkup(<ControlApp />);
-      expect(html).toContain("simulation-banner");
+      expect(html).toContain("exit-training");
       expect(html).toContain("실제 상황이 아닙니다");
       expect(html).toContain("실시간으로 돌아가기");
       // 하단 중복 패널은 노출되지 않음

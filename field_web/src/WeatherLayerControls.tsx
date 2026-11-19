@@ -14,7 +14,7 @@ const OPTIONS: Array<{
   description: string;
 }> = [
   { kind: "rainfall", icon: "◉", description: "1시간 강수량 분포" },
-  { kind: "wind", icon: "≈", description: "푸른 풍속 색면과 입자로 보는 바람" },
+  { kind: "wind", icon: "≈", description: "풍속 색면과 흐름선으로 보는 바람" },
   { kind: "temperature", icon: "°", description: "현재 기온 분포" },
 ];
 
