@@ -1,7 +1,7 @@
 import { windSpeedColorChannels } from "./utils";
 import type { WindVectorField } from "./windParticleField";
 
-export const WIND_SPEED_LAYER_ALPHA = 0.14;
+export const WIND_SPEED_LAYER_ALPHA = 0.43;
 
 export interface WindSpeedRaster {
   width: number;

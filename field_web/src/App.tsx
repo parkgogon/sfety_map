@@ -1,3 +1,4 @@
+import { FacilityGroupAll } from "./FacilityGroupAll";
 import {
   setFacilityQuery,
   useFacilityFilters,
@@ -313,6 +314,7 @@ export default function App() {
   const live = data.status.health === "LIVE";
   const stale = data.status.health === "STALE";
   const feedAvailable = live || simulation || stale;
+  const trainingVisible = simulation || monitoringMode === "simulation";
   const filtersApplied =
     selectedGroups.size !== data.groups.length ||
     data.groups.some((group) => !selectedGroups.has(group.id)) ||
@@ -329,15 +331,53 @@ export default function App() {
             !!deepLinkNotice ||
             !["LIVE", "SIMULATION"].includes(data.status.zone_health)
           }
+          onExitTraining={() => changeMonitoringMode("live")}
           panel={mobilePanel}
           onOpen={openMobileHeaderPanel}
         />
       ) : (
-        <>
           <header className="app-header">
-            <div>
-              <span className="brand-mark">K-ECO SAFETY MONITORING</span>
-              <h1>현장 안전지도</h1>
+            <h1>현장 안전지도</h1>
+            <div
+              className={`status-line ${trainingVisible ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
+              role="status"
+            >
+              <span className="status-dot" aria-hidden="true" />
+              <b>
+                {trainingVisible
+                  ? "모의훈련"
+                  : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}
+              </b>
+              <span>
+                · {formatReferenceTime(data.generated_at)} 기준
+                {stale && formatElapsedTime(data.generated_at)
+                  ? ` (${formatElapsedTime(data.generated_at)})`
+                  : ""}
+              </span>
+              {monitoringMode === "simulation" && <button className="exit-training" type="button"
+                title="실제 상황이 아닙니다" aria-label="실시간으로 돌아가기"
+                onClick={() => changeMonitoringMode("live")}>실시간 복귀</button>}
+              <a
+                className="official-warning-link"
+                href={KMA_OFFICIAL_WARNING_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="기상청 실제 특보 발효현황을 새 탭에서 열기"
+              >
+                기상청 특보 <span aria-hidden="true">↗</span>
+              </a>
+              <span className="facility-count">
+                · 시설 {visibleFacilities.length}개 표시
+                {visibleFacilities.length === 0 && (
+                  <button
+                    className="reset-filter-inline"
+                    type="button"
+                    onClick={resetFilters}
+                  >
+                    (전체 표시)
+                  </button>
+                )}
+              </span>
             </div>
             <div className="header-actions">
               <button
@@ -359,58 +399,6 @@ export default function App() {
               </button>
             </div>
           </header>
-
-          <div
-            className={`status-line ${simulation ? "simulation" : live ? "live" : stale ? "stale" : "problem"}`}
-            role="status"
-          >
-            <span className="status-dot" aria-hidden="true" />
-            <b>
-              {simulation
-                ? "모의훈련 자료"
-                : `KMA ${live ? "정상" : stale ? "수신 지연" : "조회 불가"}`}
-            </b>
-            <span>
-              · {formatReferenceTime(data.generated_at)} 기준
-              {stale && formatElapsedTime(data.generated_at)
-                ? ` (${formatElapsedTime(data.generated_at)})`
-                : ""}
-            </span>
-            <a
-              className="official-warning-link"
-              href={KMA_OFFICIAL_WARNING_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="기상청 실제 특보 발효현황을 새 탭에서 열기"
-            >
-              기상청 특보 <span aria-hidden="true">↗</span>
-            </a>
-            <span className="facility-count">
-              · 시설 {visibleFacilities.length}개 표시
-              {visibleFacilities.length === 0 && (
-                <button
-                  className="reset-filter-inline"
-                  type="button"
-                  onClick={resetFilters}
-                >
-                  (전체 표시)
-                </button>
-              )}
-            </span>
-          </div>
-        </>
-      )}
-
-      {monitoringMode === "simulation" && (
-        <div className="simulation-banner" role="alert">
-          <div>
-            <strong>모의훈련</strong>
-            <span>실제 상황이 아닙니다</span>
-          </div>
-          <button type="button" onClick={() => changeMonitoringMode("live")}>
-            실시간으로 돌아가기
-          </button>
-        </div>
       )}
 
       {(() => {
@@ -534,33 +522,19 @@ export default function App() {
 
         {!isMobile && (
           <div className="map-search-panel">
-            <div
-              className="location-search-modes"
-              role="group"
-              aria-label="검색 대상"
-            >
-              <button
-                type="button"
-                aria-pressed={searchMode === "facilities"}
-                onClick={() => {
-                  reference.cancel();
-                  setSearchMode("facilities");
-                }}
-              >
-                우리 시설
-              </button>
-              <button
-                type="button"
-                aria-pressed={searchMode === "location"}
-                onClick={() => {
-                  setSearch("");
-                  clearFacility();
-                  setSearchMode("location");
-                }}
-              >
-                장소·주소{reference.point ? " · 기준점 표시 중" : ""}
-              </button>
-            </div>
+            <select className="search-target" aria-label="검색 대상" value={searchMode} onChange={event => {
+              if (event.target.value === "location") {
+                setSearch("");
+                clearFacility();
+                setSearchMode("location");
+              } else {
+                reference.cancel();
+                setSearchMode("facilities");
+              }
+            }}>
+              <option value="facilities">우리 시설</option>
+              <option value="location">장소·주소</option>
+            </select>
             {searchMode === "location" && (
               <LocationReferencePanel
                 reference={reference}
@@ -594,33 +568,29 @@ export default function App() {
                     </button>
                   )}
                 </label>
-                {!isMobile && (
-                  <button
-                    className="filter-button"
-                    type="button"
-                    onClick={() => setFilterOpen(true)}
-                  >
-                    <span aria-hidden="true">☷</span>
-                    <span>필터</span>
-                  </button>
-                )}
-                {!isMobile && (
-                  <button
-                    className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
-                    type="button"
-                    onClick={() => setWeatherLayerOpen(true)}
-                    aria-label="기상 실황 레이어 선택"
-                  >
-                    <span aria-hidden="true">☁</span>
-                    <b>
-                      {weatherLayerKind
-                        ? WEATHER_LAYER_LABELS[weatherLayerKind]
-                        : "기상"}
-                    </b>
-                  </button>
-                )}
               </div>
             )}
+            <button
+              className="filter-button"
+              type="button"
+              onClick={() => setFilterOpen(true)}
+            >
+              <span aria-hidden="true">☷</span>
+              <span>필터</span>
+            </button>
+            <button
+              className={`weather-map-button ${weatherLayerKind ? "active" : ""}`}
+              type="button"
+              onClick={() => setWeatherLayerOpen(true)}
+              aria-label="기상 실황 레이어 선택"
+            >
+              <span aria-hidden="true">☁</span>
+              <b>
+                {weatherLayerKind
+                  ? WEATHER_LAYER_LABELS[weatherLayerKind]
+                  : "기상"}
+              </b>
+            </button>
             {searchMode === "facilities" && search.trim() && (
               <div className="search-results">
                 {searchResults.length ? (
@@ -763,8 +733,8 @@ export default function App() {
 
         {!reference.picking &&
           !reference.candidate &&
-          ((!isMobile && (searchMode === "facilities" || reference.targetId)) ||
-            (isMobile && mobilePanel === "facility" && selectedFacility)) && (
+          selectedFacility &&
+          (!isMobile || mobilePanel === "facility") && (
             <FacilitySheet
               facility={selectedFacility}
               compact={isMobile}
@@ -835,6 +805,7 @@ export default function App() {
                 ×
               </button>
             </div>
+            <FacilityGroupAll groups={data.groups} selected={selectedGroups} onChange={setSelectedGroups} />
             <div className="group-options">
               {data.groups.map((group) => (
                 <label key={group.id}>
@@ -853,43 +824,11 @@ export default function App() {
                 </label>
               ))}
             </div>
-            {!isMobile && (
-              <div
-                className={`training-option ${monitoringMode === "simulation" ? "active" : ""}`}
-              >
-                <div>
-                  <strong>화면 확인</strong>
-                  <span>
-                    {monitoringMode === "simulation"
-                      ? "현재 고정된 훈련 특보를 표시하고 있습니다."
-                      : "특보 발생 시 화면을 미리 확인합니다."}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    changeMonitoringMode(
-                      monitoringMode === "simulation" ? "live" : "simulation",
-                    )
-                  }
-                >
-                  {monitoringMode === "simulation"
-                    ? "실시간 화면으로 돌아가기"
-                    : "모의훈련 화면 보기"}
-                </button>
-              </div>
+            {monitoringMode === "live" && (
+              <button type="button" className="training-option"
+                onClick={() => changeMonitoringMode("simulation")}>모의훈련 화면 보기</button>
             )}
             <div className="filter-actions">
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedGroups(
-                    new Set(data.groups.map((group) => group.id)),
-                  )
-                }
-              >
-                전체 선택
-              </button>
               <button
                 className="primary-button"
                 type="button"
@@ -1039,6 +978,7 @@ export default function App() {
           weatherError={weatherLayer.error}
           simulation={simulation}
           onSelectTab={setMobileSettingsTab}
+          onGroupsChange={setSelectedGroups}
           onToggleGroup={toggleGroup}
           onToggleGrade={toggleGrade}
           onResetFilters={resetFilters}

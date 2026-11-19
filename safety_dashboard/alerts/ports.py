@@ -157,6 +157,8 @@ class AlertAuditRepository(Protocol):
         since: dt.datetime,
     ) -> NotificationEvent | None: ...
 
+    def history_rows(self, start: dt.datetime, end: dt.datetime): ...
+
     def notification_events(
         self,
         start: dt.datetime,

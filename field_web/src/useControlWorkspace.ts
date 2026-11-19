@@ -3,8 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMonitoringData } from "./api";
 import {
   downloadReportPdf,
-  useAlertEvents,
-  useAlertMetrics,
   useControlOverview,
 } from "./controlApi";
 
@@ -84,16 +82,20 @@ export function useControlWorkspace() {
 
   // 실적/이력 기간
   const [dateRange, setDateRange] = useState<"today" | "7d" | "30d">("today");
-  const fromDate = useMemo(() => {
-    if (dateRange === "today") return todayYMD();
-    if (dateRange === "7d") return daysAgoYMD(7);
-    return daysAgoYMD(30);
-  }, [dateRange]);
-  const toDate = useMemo(() => todayYMD(), []);
-
+  const [today, setToday] = useState(() => kstDate());
+  useEffect(() => {
+    const updateDay = () => setToday(kstDate());
+    const nextMidnight = Date.parse(today + "T00:00:00+09:00") + 86_400_000;
+    const timer = window.setTimeout(updateDay, Math.max(1, nextMidnight - Date.now()));
+    document.addEventListener("visibilitychange", updateDay);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", updateDay);
+    };
+  }, [today]);
+  const fromDate = rangeStart(today, dateRange);
+  const toDate = today;
   const overview = useControlOverview(adminToken);
-  const metrics = useAlertMetrics(adminToken, fromDate, toDate);
-  const events = useAlertEvents(adminToken, fromDate, toDate);
   const weatherLayer = useWeatherLayer(weatherLayerKind, monitoringMode);
 
   // 초기 특보 영향 시설 자동 선택
@@ -325,8 +327,6 @@ export function useControlWorkspace() {
     fromDate,
     toDate,
     overview,
-    metrics,
-    events,
     weatherLayer,
     loginModalOpen,
     setLoginModalOpen,
@@ -356,15 +356,13 @@ export type ReadyControlWorkspace = Omit<
   "data"
 > & { data: MonitoringResponse };
 
-function todayYMD(): string {
-  const now = new Date();
-  return now.toISOString().slice(0, 10);
+function kstDate(now = Date.now()): string {
+  return new Date(now + 9 * 3_600_000).toISOString().slice(0, 10);
 }
 
-function daysAgoYMD(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
+function rangeStart(today: string, range: "today" | "7d" | "30d"): string {
+  const daysBack = range === "today" ? 0 : range === "7d" ? 6 : 29;
+  return new Date(Date.parse(today + "T00:00:00Z") - daysBack * 86_400_000).toISOString().slice(0, 10);
 }
 
 function setModeQuery(mode: MonitoringMode) {

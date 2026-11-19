@@ -1,3 +1,4 @@
+import { FacilityGroupAll } from "./FacilityGroupAll";
 import { FacilityIcon } from "./facilityIcons";
 import { GRADE_HELP, WARNING_ZONE_LEGENDS } from "./GradeLegend";
 import { MobileBottomSheet } from "./MobileBottomSheet";
@@ -23,6 +24,7 @@ interface Props {
   weatherError: string;
   simulation: boolean;
   onSelectTab: (tab: MobileSettingsTab) => void;
+  onGroupsChange: (groups: Set<string>) => void;
   onToggleGroup: (id: string) => void;
   onToggleGrade: (grade: RiskGrade) => void;
   onResetFilters: () => void;
@@ -71,6 +73,7 @@ export function MobileMapSettings({
   weatherError,
   simulation,
   onSelectTab,
+  onGroupsChange,
   onToggleGroup,
   onToggleGrade,
   onResetFilters,
@@ -98,8 +101,8 @@ export function MobileMapSettings({
     {tab === "facilities" && <div className="mobile-settings-section" role="tabpanel">
       <div className="mobile-settings-section-heading">
         <div><h3>시설 유형</h3><p>각 개수는 전체 시설 기준입니다.</p></div>
-        <button type="button" onClick={onResetFilters}>전체 표시</button>
       </div>
+      <FacilityGroupAll groups={groups} selected={selectedGroups} onChange={onGroupsChange} />
       <div className="mobile-setting-options group-options">
         {groups.map((group) => <label key={group.id}>
           <input type="checkbox" checked={selectedGroups.has(group.id)} onChange={() => onToggleGroup(group.id)} />

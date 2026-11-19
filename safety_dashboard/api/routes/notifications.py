@@ -4,6 +4,7 @@ from typing import Literal
 from fastapi import Cookie, Header, HTTPException, Query, Response
 from safety_dashboard.admin.session import AdminSessionManager
 from safety_dashboard.adapters.firestore_alerts import KST
+from safety_dashboard.alerts.history import delivery_history, history_csv
 from safety_dashboard.alerts.admin import (
     AlertAdminAuthorizationError,
     AlertAdminConfigurationError,
@@ -61,6 +62,30 @@ def build_router(services: ApiServices) -> APIRouter:
             notification_admin(), x_alert_admin_token, cookie_session, session_manager
         )
         return service.overview()
+
+    @router.get("/internal/v1/notifications/history")
+    def unified_history(
+        response: Response,
+        start: dt.date = Query(alias="from"),
+        end: dt.date = Query(alias="to"),
+        format: Literal["json", "csv"] = "json",
+        x_alert_admin_token: str = Header("", alias="X-Alert-Admin-Token"),
+        cookie_session: str = Cookie("", alias=AdminSessionManager.COOKIE_NAME),
+    ):
+        service = _authorized_admin(notification_admin(), x_alert_admin_token, cookie_session, session_manager)
+        if not 0 <= (end - start).days < 30 or end == dt.date.max:
+            raise HTTPException(422, "1일부터 30일까지 조회할 수 있습니다.")
+        response.headers["Cache-Control"] = "private, no-store"
+        try:
+            report = delivery_history(service.store, services.message_notification_preparation.store_factory(), start, end)
+        except Exception:
+            raise HTTPException(503, "전파 이력을 불러오지 못했습니다.", headers={"Cache-Control": "no-store"}) from None
+        if format == "csv":
+            return Response(history_csv(report), media_type="text/csv", headers={
+                "Cache-Control": "private, no-store",
+                "Content-Disposition": f'attachment; filename="delivery_{start}_{end}.csv"',
+            })
+        return report
 
     @router.get("/internal/v1/notifications/metrics")
     def notification_metrics(

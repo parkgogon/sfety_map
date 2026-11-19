@@ -93,12 +93,12 @@ const RAINFALL_STOPS: readonly ColorStop[] = [
 ];
 export const WIND_SPEED_LEGEND_VALUES = [0, 5, 10, 15, 20, 25] as const;
 const WIND_SPEED_STOPS: readonly ColorStop[] = [
-  [0, "--color-weather-wind-calm", "#EEF4F8"],
-  [5, "--color-weather-wind-light", "#C9DDEC"],
-  [10, "--color-weather-wind-moderate", "#8DB8D8"],
-  [15, "--color-weather-wind-fresh", "#568FBC"],
-  [20, "--color-weather-wind-strong", "#2F669B"],
-  [25, "--color-weather-wind-severe", "#183D70"],
+  [0, "--color-weather-wind-calm", "#afcddd"],
+  [5, "--color-weather-wind-light", "#448ea9"],
+  [10, "--color-weather-wind-moderate", "#168d91"],
+  [15, "--color-weather-wind-fresh", "#466bab"],
+  [20, "--color-weather-wind-strong", "#584b95"],
+  [25, "--color-weather-wind-severe", "#472c78"],
 ];
 const DESIGN_COLOR_CACHE = new Map<string, string>();
 
@@ -220,11 +220,12 @@ export function formatReferenceTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "시각 미확인";
   return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
+    hourCycle: "h23",
   }).format(date);
 }
 

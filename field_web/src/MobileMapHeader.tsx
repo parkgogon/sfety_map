@@ -24,12 +24,13 @@ export function formatMobileReferenceTime(value: string, full = false, now = new
 interface HeaderProps {
   data: MonitoringResponse;
   mode: MonitoringMode;
+  onExitTraining?: () => void;
   additionalNotice: boolean;
   panel: MobilePanel;
   onOpen: (panel: "status" | "more") => void;
 }
 
-export function MobileMapHeader({ data, mode, additionalNotice, panel, onOpen }: HeaderProps) {
+export function MobileMapHeader({ data, mode, additionalNotice, panel, onOpen, onExitTraining }: HeaderProps) {
   const health = data.status.health;
   const simulation = mode === "simulation" || health === "SIMULATION";
   const state = simulation ? "simulation" : health === "LIVE" ? "live" : health === "STALE" ? "stale" : "error";
@@ -44,10 +45,11 @@ export function MobileMapHeader({ data, mode, additionalNotice, panel, onOpen }:
           <span className="mobile-map-title">현장 안전지도</span>
           <span className={`mobile-map-status ${state}`} role="status">
             <span className="mobile-status-dot" aria-hidden="true" />
-            <span>{label} · {formatMobileReferenceTime(data.generated_at)} 기준{additionalNotice ? " · 안내" : ""}</span>
+            <span>{simulation ? "모의훈련" : label} · {formatMobileReferenceTime(data.generated_at)} 기준{additionalNotice ? " · 안내" : ""}</span>
           </span>
         </button>
       </h1>
+      {mode === "simulation" && <button type="button" className="exit-training" onClick={onExitTraining}>실시간 복귀</button>}
       <button type="button" className="mobile-icon-button" aria-label="더보기" aria-haspopup="dialog"
         aria-expanded={panel === "more"} onClick={() => onOpen("more")}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
@@ -94,9 +96,7 @@ export function MobileHeaderPanel({ panel, data, mode, refreshing, error, deepLi
       <button type="button" onClick={onControl}>중앙관제 열기</button>
       <button type="button" onClick={onRefresh} disabled={refreshing}>{refreshing ? "관제 자료 갱신 중…" : "관제 자료 새로고침"}</button>
       <a href={KMA_OFFICIAL_WARNING_URL} target="_blank" rel="noreferrer">기상청 특보 보기 ↗</a>
-      <button type="button" onClick={() => onChangeMode(mode === "simulation" ? "live" : "simulation")}>
-        {mode === "simulation" ? "실시간 화면으로 돌아가기" : "모의훈련 화면 보기"}
-      </button>
+      {mode === "live" && <button type="button" onClick={() => onChangeMode("simulation")}>모의훈련 화면 보기</button>}
     </nav>}
   </MobileBottomSheet>;
 }

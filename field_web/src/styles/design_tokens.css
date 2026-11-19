@@ -50,11 +50,12 @@
   --color-weather-rain-heavy: #7e22ce;
   --color-weather-rain-severe: #be123c;
   --color-weather-rain-extreme: #7f1d1d;
-  --color-weather-wind-calm: #38bdf8;
-  --color-weather-wind-gentle: #14b8a6;
-  --color-weather-wind-strong: #eab308;
-  --color-weather-wind-gale: #f97316;
-  --color-weather-wind-severe: #dc2626;
+  --color-weather-wind-calm: #afcddd;
+  --color-weather-wind-light: #448ea9;
+  --color-weather-wind-moderate: #168d91;
+  --color-weather-wind-fresh: #466bab;
+  --color-weather-wind-strong: #584b95;
+  --color-weather-wind-severe: #472c78;
 
   /* Spacing: 4px base scale */
   --space-1: .25rem;

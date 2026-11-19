@@ -33,7 +33,7 @@ def pending_key(destination, when, identifier):
 
 def history(value):
     allowed = ("id", "record_id", "source_revision", "destination", "state", "detail", "preview_text",
-               "created_at", "updated_at", "attempts", "message_id", "available_at", "resolved_at", "resolution")
+               "facility_count", "created_at", "updated_at", "attempts", "message_id", "available_at", "resolved_at", "resolution")
     return {**{k: value.get(k) for k in allowed}, "queue_key": "MH|"+value["updated_at"]+"|"+value["id"]}
 
 
@@ -152,7 +152,7 @@ class MessageDelivery:
             if not values[did]:writes[did]={'id':did,'record_id':record_id,'source_key':slot,'basis_hash':basis,'scope':'eligible','snapshot':preview,'created_at':stamp(now)}
             if existing:
                 queued = self._new_outbox(oid,'staff_group',preview['preview_text'],control,job_id=jid,record_id=record_id,
-                                          source_revision=current['source_revision'],basis_hash=basis)
+                                          source_revision=current['source_revision'],basis_hash=basis, facility_count=len(preview['facilities']))
                 writes.update({oid:queued,history_key(oid):history(queued)})
             return writes, False, {'state':'pending','sent':False}
         return store.run_record(record_id,keys,rearm)
@@ -199,7 +199,8 @@ class MessageDelivery:
             if quake and not quake.is_latest(current, values[quake.key]):
                 return {}, False, None
             value = self._new_outbox(identifier, "staff_group", preview["preview_text"], values[CONTROL],
-                job_id=job_id, record_id=record["id"], source_revision=record["source_revision"], basis_hash=basis)
+                job_id=job_id, record_id=record["id"], source_revision=record["source_revision"], basis_hash=basis,
+                facility_count=len(preview["facilities"]))
             return {identifier: value, history_key(identifier): history(value)}, False, None
         store.run_record(record["id"], keys, prepare)
 

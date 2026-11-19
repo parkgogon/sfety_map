@@ -190,7 +190,7 @@ export function KakaoMap({
   );
 
   return (
-    <div className="map-frame" aria-label="시설 위치 지도">
+    <div className={weatherLayer?.layer === "wind" ? "map-frame map-frame-wind" : "map-frame"} aria-label="시설 위치 지도">
       <div
         ref={elementRef}
         className={`map-canvas ${pickingReference ? "picking-reference" : ""}`}
