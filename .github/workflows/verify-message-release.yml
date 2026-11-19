@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   delivery:
-    if: github.event_name == 'workflow_dispatch' && startsWith(inputs.mode, 'delivery-') && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'delivery-status' && github.ref == 'refs/heads/ops/verify-field-map-history-20261120'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -52,7 +52,7 @@ jobs:
           python3 - <<'PY'
           import base64,os
           from pathlib import Path
-          source=base64.b64encode(Path('safety_dashboard/operations/rollout_message_delivery.py').read_bytes()).decode()
+          source=base64.b64encode(Path('scripts/verify_field_history.py').read_bytes()).decode()
           loader="import base64;exec(base64.b64decode("+repr(source)+"),{'__name__':'__main__'})"
           with open(os.environ['GITHUB_ENV'],'a') as f:f.write('VERIFY_LOADER='+loader+'\n')
           PY
